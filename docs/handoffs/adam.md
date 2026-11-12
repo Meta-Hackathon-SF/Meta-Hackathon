@@ -1,66 +1,124 @@
 # adam handoff
-- Owner: adam · Branch: `role/adam-planning` · Shared contract: 1.0.0 (+ D005 proposed additive)
-- Updated: 2026-11-12T21:35Z
-- Current phase: **P1 done; P2-P4 planning logic + planning UI done against fixtures.** Live Muse evidence and integration with the other owners (the actual P2 gate) are pending.
-- PR: draft https://github.com/willapat/Meta-Hackathon/pull/8 (awaiting D005 ACKs)
-- Status: verified offline. Live evidence is blocked on credentials; integration is blocked on the server scaffold (Kai) and snapshots (Patrik/Rishi).
+- Owner: adam · Branch: `role/adam-planning` · Shared contract: 1.0.0, plus proposed D005 and **D008 (target 1.1.0)**
+- Updated: 2026-11-12T23:15Z
+- Current phase: **README pivot (main `45a47e6`) merged in.**
+  - New scope implemented against fixtures: preference extraction, Muse-created events, negotiation and challenges.
+  - The model is confirmed live as `muse-spark-1.3`.
+  - Rishi's `rank_group` port is live-verified.
+  - The P2 integration gate (real routes, other owners' snapshots) is still pending.
+- PR: draft https://github.com/willapat/Meta-Hackathon/pull/8 (this branch). It now also carries D008.
 
-## Completed deliverables (fixture/stub evidence only)
-- P0: Muse provider facts verified from official dev.meta.ai docs → `server/providers/README.md`, `server/providers/muse.env.example`.
-- P1: `server/providers/`: the MusePort adapter (task allowlist, deadline/timeout, cancellation, bounded retry with Retry-After, local schema validation, sanitized telemetry), the stdlib Chat Completions transport, `FixtureMuse`, and the `python3 -m server.providers.smoke` live check.
-- P1: `server/planning/extraction.py`: quote-verified intent extraction that fails closed without consent. `wire.py` holds runtime validators for every contract shape.
-- P2: `QuestPlanner.plan`. Code computes the feasible options (shared time ∩ venue hours, group caps). Muse chooses among them and code validates the choice. The rationale is built only from allowlisted fact codes.
-- P3: `QuestPlanner.revise` carries revision lineage, returns `needs_input` when no slot works, rejects stale snapshots, and flags material changes via `requires_reconfirmation`.
-- P4: `QuestPlanner.continue`. The model sees only willing-host ids (no attendance); the host must be willing; invitations claiming attendance are rejected.
-- UI: `web/src/features/group-quests/planning/` (`PlanProposalCard`, `RevisionDiff`, `PlanStatusPanel`, `ContinuationCard`, `EvidenceBadge`, plus the `extractIntent`/`createLatestOnly` client helpers). There is also a dev-only fixture preview.
+## Completed deliverables
+Live evidence covers only the three calls listed below. Everything else is fixture evidence.
+- **Model ID (live):** the provider echoed `muse-spark-1.3` on every successful call. Calls used synthetic inputs and `reasoning_effort=low`:
+  - `extract_intent` ok, 23.8 s.
+  - `rank_group` ok via matching's `rank_with_muse`, 17.2 s.
+  - At the default "high" effort, `extract_intent` timed out at 30 s on 2 attempts.
+  - Wonder and Ember are not available in the documented model list and were not tested.
+- **For Rishi:** `server/providers/rank_port.py`.
+  - Registers the `rank_group.v1` TaskSpec. A conformance test fails if it drifts from `ranking.PROMPT_VERSION`/`REASON_CODES`.
+  - `KeywordMusePort` provides the keyword-argument `generate(...) -> {output, evidence}` that matching calls.
+  - `build_live_rank_port()` is the live constructor for `eval_cli.build_port()`.
+- **D008 contract draft:** the PROPOSED section of `contracts/protocol.ts`, validators in `server/planning/wire.py`, and fixture-generated examples in `contracts/examples/1.1.0/`.
+- **Implementations** (all in `server/planning/`):
+  - `preferences.py` (`PreferenceExtractor`): at most one follow-up, enforced by structure.
+  - `creation.py` (`EventCreator`): code-enumerated catalog options; eligibility of at least 3 is re-derived after Muse chooses.
+  - `negotiation.py` (`Negotiator`):
+    - The venue sees only `VenueBrief`.
+    - Code enforces `groupSize x lowest ceiling`, the persona floor, and a per-member check before any Deal.
+    - The Deal is always `awaiting_approval` and simulated.
+  - `challenges.py` (`ChallengeGenerator`): countable `sessions_together` goal, approved simulated rewards only, no attendance claims.
+- Earlier work, still valid: the MusePort adapter, D005 intent extraction, QuestPlanner plan/revise/continue, and the planning UI. Revise covers dropout re-planning; the waitlist refill itself is Kai's.
 
 ## Changed interfaces and files
-- New: `server/providers/*`, `server/planning/*`, `tests/planning/*`, `web/src/features/group-quests/planning/*`.
-- Shared (claimed):
-  - `contracts/protocol.ts`: appended a "PROPOSED (D005)" section (additive).
-  - `docs/DECISIONS.md`: added D005.
-  - No shell, route, manifest or global CSS changes.
-- Python ports: `MuseAdapter.generate(GenerateRequest)`, `IntentExtractor.extract(...)`, `QuestPlanner.plan/revise/continue(dict) -> dict`. See the two server READMEs.
+- **New:**
+  - `server/providers/rank_port.py`
+  - `server/planning/{preferences,creation,negotiation,challenges,prompts_v11}.py`
+  - `tests/planning/{test_rank_port,test_v11,fixtures_v11}.py`
+  - `contracts/examples/1.1.0/*.json`
+- **Changed:**
+  - `server/providers/port.py`: task enum gains 5 PROPOSED tasks, default budget 8000.
+  - `server/providers/transport.py`: network cause labels; truncation is detected first.
+  - `server/planning/prompts.py`: registers the 1.1 tasks.
+  - `server/planning/catalog.py`: synthetic bouldering gym and venue personas.
+  - `server/providers/muse.env.example`: 60 s timeout, `reasoning_effort=low`.
+  - The provider and planning READMEs.
+- **Shared (claimed):**
+  - `contracts/protocol.ts`: appended a PROPOSED D008 section.
+  - `contracts/examples/1.1.0/`: new.
+  - `docs/DECISIONS.md`: added D008.
 
-## Checks run + actual result (2026-11-12, macOS, Python 3.13.0, Node 24.13.0)
-- `python3 -m unittest discover -s tests/planning -t .` → **54 tests OK**. Coverage:
-  - Adapter and transport: malformed JSON, schema extras, timeout, cancellation, 429/5xx/auth, unknown task, not configured.
-  - Extraction: injection, consent, quote and bounds checks.
-  - Planning: unknown venue, out of budget, outside the common slot, over the duration cap, leaky public text, unzoned times, no common time, no venue, stale versions, intruder participant, extra private field, provider outage.
-  - Revisions and continuation: revision lineage and reconfirmation, old slot rejected after a change, impossible revision, continuation host/attendance guards.
-- `cd web && npx tsc -b` → clean. `npm run lint` → 0 warnings. `npm run build` → OK, and the preview fixtures are absent from `dist`.
-- `cd web && PLAYWRIGHT_CHANNEL=chrome npx playwright test` → **16/16 existing shell tests pass**, so there's no shell regression.
-- Preview screenshots in installed Chrome at 1280 px and 390 px: no horizontal overflow and no page errors. Join and host buttons respond. The only console error is a favicon 404.
-- `python3 -m server.providers.smoke` without a key → `not_configured`, exit 2.
-
-## Fixture versus live evidence
-Everything above is fixture or local-stub evidence. **No live Muse call has been made.** There are no latency or quality numbers, and no integrated three-device run.
+## Checks run + actual result (2026-11-12, macOS, Python 3.12.9)
+- `python3 -m unittest discover -s tests/planning -t .` → **97 tests OK**. The 41 new tests cover:
+  - Preferences:
+    - one follow-up only;
+    - follow-up merge;
+    - injected or unquoted values dropped;
+    - tampered `previous` re-bounded;
+    - consent is checked before any model call.
+  - Event creation:
+    - aggregates-only payload;
+    - at least 3 free members per option;
+    - avoid term rejected, then corrected;
+    - cost above cap fails closed;
+    - no overlap gives `no_fit` without a model call.
+  - Negotiation:
+    - venue payload limited to group totals;
+    - accept or counter above the limit refused;
+    - persona floor;
+    - money in a message;
+    - decline and rounds exhausted;
+    - outage.
+  - Challenges:
+    - other venue's reward never offered;
+    - attendance claim rejected;
+    - non-member feedback forbidden.
+  - Wire:
+    - examples validate;
+    - `perPersonMinor` must equal the ceiling split;
+    - simulated labels can't be removed;
+    - unknown fields rejected.
+- `pytest tests/matching tests/planning` (scratch venv) → **199 passed**. Matching is unaffected by the port changes.
+- Not run: the orchestration/privacy suites. Kai's `server/app/requirements-dev.lock` pins `fastapi==0.162.5`, which pip could not resolve here.
+- Live: only the 3 calls above. **The five new 1.1 tasks have not been called live.**
 
 ## Next consumer + exact action
+- **Rishi:**
+  1. Wire the live port in `server/matching/eval_cli.py` (your file, PR #7). This snippet replaces your existing `build_port()` stub and adds a new branch to `main()`:
+     ```python
+     def build_port():
+         from server.providers.rank_port import build_live_rank_port
+         return build_live_rank_port()        # RuntimeError if no MUSE_API_KEY
+     # in main(): if args.live, run evaluate(pools, build_port(), label="live muse-spark-1.3")
+     # and stop running FakeMusePort for that branch
+     ```
+  2. Raise `rank_with_muse(timeout_s=...)` to 60 s or more for live runs.
+  3. ACK D008 items 2-3 (`Candidate.preferences`; ranking people against an Opportunity).
 - **Kai:**
-  - Compose one `MuseAdapter` per process: `build_muse_adapter(register_planning_tasks(TaskRegistry()), load_muse_config())`.
-  - Register `POST /intents/extract` → `IntentExtractor`.
-  - Call `QuestPlanner.plan` from the quorum job and `revise` on availability change.
-  - Use `requires_reconfirmation` to decide between `proposed` and `scheduled`.
-  - Call `continue` from the time-skip job.
-  - Confirm D005 item 5 (namespace `server` package, stdlib only).
-- **Rishi:** register a `rank_group` TaskSpec and test it with `FixtureMuse`. Emit `GroupProposal` exactly as `wire.group_proposal` expects. ACK D005 item 4.
+  - Register `POST /preferences/extract` → `PreferenceExtractor`.
+  - Add jobs for `EventCreator.create` (when no stored opportunity fits), `Negotiator.negotiate` (venue opportunity + group) and `ChallengeGenerator.challenge` (after the meetup or time skip).
+  - Persist `Opportunity` and `Deal`, and own approval transitions and challenge progress.
+  - Overlap jobs: about 20 s per call.
+  - ACK D008 items 3-6.
 - **Will:**
-  - Render `ExtractionResult` (use `extractIntent`/`createLatestOnly`).
-  - Compose `PlanProposalCard`/`PlanStatusPanel`/`ContinuationCard` per `web/src/features/group-quests/planning/README.md`.
-  - ACK D005 items 2-3.
+  - Render `PreferenceExtractionResult`: one follow-up, then confirm with taps for any remaining `missingFields`.
+  - Build the pitch card from `Opportunity`.
+  - Build the negotiation view from `NegotiationTurn[]`, labeled simulated.
+  - Show a challenge card with its simulated reward label.
+  - ACK D008 items 1, 4 and 5.
 - **Patrik:**
-  - ACK that the extraction draft excludes identity/consent.
-  - Supply the `Consent` dict to the extract route.
-  - ACK or adjust `PublicPlanCard` as the public plan DTO.
-  - Confirm that `Candidate` snapshots for planning may include `maxBudgetMinor`/`maxDurationMinutes`/`availability`. Planning sends only group-level minimums to Muse, never per-person values.
+  - ACK the profile has no identity/consent fields.
+  - Decide on `Candidate.preferences` and on persisting the confirmed profile.
+  - Review the VenueBrief disclosure: total ÷ size reveals the lowest ceiling, but not whose.
+  - ACK D008 items 1, 2 and 4.
 
 ## Blocked on + owner
-- Live Muse evidence: needs `MUSE_API_KEY` (team/organizers). Adam then runs the smoke check and records the model id and latency.
-- Venue catalog source (owner unassigned): planning ships a labeled synthetic catalog until Kai and Patrik choose a table.
-- Server scaffold/routes: Kai.
+- ACKs for D005 and D008: Will, Patrik, Kai, Rishi.
+- Route registration and integrated runs: Kai's server composition.
+- Approved venue catalog and persona source: no owner assigned. Planning ships a labeled synthetic catalog.
 
 ## Next independent task
-- Run the live smoke check as soon as a key exists.
-- Add replay recording for a labeled cached fallback (P5).
-- Once Kai's scaffold lands, wire an integration test that runs extraction → plan through the real routes.
+- One live call per new 1.1 task (5 paid calls, synthetic inputs) to check structured-output adherence and latency. Not yet run because each call costs money.
+- Replay recording for a labeled cached fallback (P5).
+- Planning UI components for the pitch card, negotiation view and challenge card (`web/src/features/group-quests/planning/`), after Will ACKs the shapes.
+- Not in scope until the team agrees: Marketplace supply search, streaks and a rotating weekly host. These appear in the latest pitch draft but not in the README or the contracts.

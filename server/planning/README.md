@@ -69,3 +69,27 @@ cont   = await getattr(planner, "continue")(continuation_input)   # or planner.c
   - Without `simulateTimeSkip`, a call made before the prior plan ends is rejected.
 - Venues: `catalog.demo_venues(time_zone, start)` expands a SYNTHETIC, labeled demo catalog. An approved real catalog source is still unassigned.
 - Cancellation: cancel the awaiting task. Nothing is persisted here, so a cancelled or stale result is simply discarded by the caller.
+
+## PROPOSED contract 1.1.0 (D008): preferences, created events, negotiation, challenges
+Implemented and offline-tested. **The new tasks have not been called live yet.** Shapes are in `contracts/protocol.ts` (PROPOSED D008), validators in `wire.py`, and examples in `contracts/examples/1.1.0/`. All four classes take one `MusePort`: compose with `build_muse_adapter(register_planning_tasks(TaskRegistry()), config)`, which now registers the 1.1 tasks too.
+
+```python
+from server.planning import PreferenceExtractor, EventCreator, Negotiator, ChallengeGenerator
+
+# Will / Kai route POST /preferences/extract (consent dict from Patrik's get_consent(...).wire())
+out = await PreferenceExtractor(muse).extract(request=body, community=community_ctx, consent=consent, request_id=rid)
+out.result   # PreferenceExtractionResult: needs_follow_up (exactly one question) | ready_to_confirm
+
+# Kai job: nothing in the opportunity store fits
+await EventCreator(muse).create(create_event_input)      # -> CreateEventResult (created | no_fit)
+
+# Kai job: venue opportunity + chosen group (simulated venue assistants only)
+await Negotiator(muse).negotiate(negotiation_input)      # -> NegotiationResult (deal awaiting_approval | no_deal)
+
+# Kai job after the meetup / labeled time skip
+await ChallengeGenerator(muse).challenge(challenge_input)  # -> Challenge (progress 0; Kai updates)
+```
+- Every method validates its input and its own output, raises `PlanningError` (same codes as above), and has no side effects. Kai persists results and runs approvals.
+- To send the follow-up answer, call `extract` again with `followUp: {field, answer, previous}`. The response will never contain a second question.
+- Negotiation needs a persona for the venue: `catalog.SYNTHETIC_VENUE_PERSONAS` covers `venue-demo-boulder` and `venue-demo-cafe`. Use `catalog.demo_venues_with_gym(...)` for the climbing demo.
+- Live latency is about 17-24 s per call at `reasoning_effort=low`. A negotiation makes 2 calls per round, so a 2-round deal takes about 4 calls. Run it as a background job with streamed turns, not inside a request.
