@@ -13,7 +13,9 @@ export default function AppLayout() {
     const name =
       pathname === "/"
         ? "Home"
-        : pathname.slice(1).replace(/^\w/, (char) => char.toUpperCase());
+        : /^\/groups\/[^/]+\/quests$/.test(pathname)
+          ? "Group Quests"
+          : pathname.slice(1).replace(/^\w/, (char) => char.toUpperCase());
     document.title = `${name} | Facebook · Hackathon prototype`;
   }, [pathname, search]);
   return (

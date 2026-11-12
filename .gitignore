@@ -1,0 +1,23 @@
+# Python development and test output
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+
+# Local credentials and runtime data
+.env
+.env.*
+!.env.example
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Additional upstream Python patterns
+*.pyc

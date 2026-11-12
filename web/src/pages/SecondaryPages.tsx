@@ -12,6 +12,7 @@ import {
   Play,
   Plus,
   Send,
+  Sparkles,
   Users,
 } from "lucide-react";
 import PageFrame from "../layouts/PageFrame";
@@ -20,6 +21,7 @@ import PostCard from "../components/feed/PostCard";
 import Composer from "../components/feed/Composer";
 import { currentUser, notifications, people, photo } from "../data/demo";
 import { useApp } from "../state/context";
+import { questsPath } from "../features/group-quests/shell/communities";
 
 export function FriendsPage() {
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -118,16 +120,19 @@ export function GroupsPage() {
         {[
           {
             name: "Hackathon Builders Community",
+            communityId: "hackathon-builders",
             image: "team",
             members: "1.2K members · 8 posts a day",
           },
           {
             name: "Meta AI Explorers",
+            communityId: "meta-ai-explorers",
             image: "workspace",
             members: "845 members · 5 posts a day",
           },
           {
             name: "XR Student Collective",
+            communityId: "xr-student-collective",
             image: "headset",
             members: "328 members · 3 posts a day",
           },
@@ -160,6 +165,13 @@ export function GroupsPage() {
                   "Join group"
                 )}
               </button>
+              <Link
+                className="button-secondary mt-2 w-full"
+                to={questsPath(group.communityId)}
+              >
+                <Sparkles size={17} />
+                Group Quests
+              </Link>
             </div>
           </article>
         ))}
