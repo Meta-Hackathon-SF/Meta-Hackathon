@@ -1,0 +1,12 @@
+# will handoff
+- Owner: will
+- Branch: role/will-voice-ui
+- Status: PLANNED; foundation only
+- Shared contract: 1.0.0
+- Commit evidence: none for runtime implementation yet
+- First action: read role instructions, confirm branch, acknowledge interface dependencies.
+- Inputs needed: Adam's extraction results and missing fields; Patrik's self/session/consent API; Rishi/Adam/Kai/Patrik feature components.
+- Next consumers: Give Patrik confirmed payload, Adam extraction UX requirements, and every owner the feature component integration contract. Provide multi-device entry URL once deployed.
+- Checks executed: none for this workstream
+- Blockers: provider/server setup may require H0 decisions.
+- Next update: replace this status with timestamp, exact commit/files, checks, remaining blockers and next consumer action.

@@ -1,0 +1,12 @@
+# patrik handoff
+- Owner: patrik
+- Branch: role/patrik-privacy
+- Status: PLANNED; foundation only
+- Shared contract: 1.0.0
+- Commit evidence: none for runtime implementation yet
+- First action: read role instructions, confirm branch, acknowledge interface dependencies.
+- Inputs needed: Will's confirmed intent and explicit toggles; Kai's room/job/event tables; shared privacy/wire contracts.
+- Next consumers: Give Rishi authorized snapshot method, Adam minimized planning payload, Will auth/consent hooks, Kai authorization + invalidation hooks.
+- Checks executed: none for this workstream
+- Blockers: provider/server setup may require H0 decisions.
+- Next update: replace this status with timestamp, exact commit/files, checks, remaining blockers and next consumer action.

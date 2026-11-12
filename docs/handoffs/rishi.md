@@ -1,0 +1,12 @@
+# rishi handoff
+- Owner: rishi
+- Branch: role/rishi-matching
+- Status: PLANNED; foundation only
+- Shared contract: 1.0.0
+- Commit evidence: none for runtime implementation yet
+- First action: read role instructions, confirm branch, acknowledge interface dependencies.
+- Inputs needed: Patrik's authorized Candidate snapshots; Adam's MusePort; community size/time/currency limits.
+- Next consumers: Give Adam GroupProposal fixtures and Kai validated proposal IDs/revisions. Give Will matching-card component props.
+- Checks executed: none for this workstream
+- Blockers: provider/server setup may require H0 decisions.
+- Next update: replace this status with timestamp, exact commit/files, checks, remaining blockers and next consumer action.

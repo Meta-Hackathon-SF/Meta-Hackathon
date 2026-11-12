@@ -1,0 +1,12 @@
+# adam handoff
+- Owner: adam
+- Branch: role/adam-planning
+- Status: PLANNED; foundation only
+- Shared contract: 1.0.0
+- Commit evidence: none for runtime implementation yet
+- First action: read role instructions, confirm branch, acknowledge interface dependencies.
+- Inputs needed: Confirmed/minimized intents from Patrik; Rishi's GroupProposal; approved Venue catalog; workflow revision snapshots from Kai.
+- Next consumers: Give Rishi MusePort adapter and test fake, Will extraction endpoint/component contract, Kai PlanningPort and validated plan outcomes.
+- Checks executed: none for this workstream
+- Blockers: provider/server setup may require H0 decisions.
+- Next update: replace this status with timestamp, exact commit/files, checks, remaining blockers and next consumer action.

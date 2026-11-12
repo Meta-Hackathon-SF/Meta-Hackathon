@@ -1,0 +1,12 @@
+# kai handoff
+- Owner: kai
+- Branch: role/kai-orchestration
+- Status: PLANNED; foundation only
+- Shared contract: 1.0.0
+- Commit evidence: none for runtime implementation yet
+- First action: read role instructions, confirm branch, acknowledge interface dependencies.
+- Inputs needed: Patrik's authorization/consent guards; Rishi's versioned proposals; Adam's PlanningPort; participant commands from feature UI.
+- Next consumers: Give each owner API registration conventions, Will event-room components and stream client contract, Patrik table schema for policy review.
+- Checks executed: none for this workstream
+- Blockers: provider/server setup may require H0 decisions.
+- Next update: replace this status with timestamp, exact commit/files, checks, remaining blockers and next consumer action.
