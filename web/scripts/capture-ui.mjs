@@ -55,6 +55,13 @@ try {
     await page
       .locator("#post-hackathon .post-actions")
       .scrollIntoViewIfNeeded();
+    // Let Chromium paint sticky elements after the programmatic scroll.
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
     await page.screenshot({
       path: `${directory}/${name}-post-actions.png`,
       animations: "disabled",

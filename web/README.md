@@ -126,5 +126,5 @@ Set the Vercel project's **Root Directory** to `web`. `vercel.json` configures
 Vite, `npm ci`, `npm run build`, and `dist` output. Its SPA rewrite routes client
 paths to `/index.html`, supporting direct visits and refreshes.
 
-The project is ready for review and Vercel configuration. It has not been
-committed, pushed, or deployed.
+The project is ready for review and Vercel configuration. Local commits are on
+the feature branch; nothing has been pushed or deployed.
