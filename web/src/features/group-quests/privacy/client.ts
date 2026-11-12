@@ -43,13 +43,22 @@ export interface PrivacyClient {
   getIntent(communityId: string, signal?: AbortSignal): Promise<PrivateIntent | null>;
 }
 
+const MUTATIONS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 async function call<T>(base: string, path: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
+  const method = (init.method ?? "GET").toUpperCase();
   try {
     response = await fetch(base + path, {
       ...init,
       credentials: "include",
-      headers: { Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}) },
+      headers: {
+        Accept: "application/json",
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        // Kai's server requires one key per mutation (contracts/API.md). Each user
+        // action is a new key; privacy writes are also version-guarded (expectedVersion).
+        ...(MUTATIONS.has(method) ? { "Idempotency-Key": crypto.randomUUID() } : {}),
+      },
     });
   } catch (error) {
     if ((error as Error).name === "AbortError") throw error;

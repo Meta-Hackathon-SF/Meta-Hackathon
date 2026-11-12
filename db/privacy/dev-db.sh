@@ -2,7 +2,7 @@
 # Local throwaway Postgres for privacy development/tests. NOT a deployment.
 # Binds to 127.0.0.1 only and uses trust auth inside a disposable container.
 #
-#   db/privacy/dev-db.sh up      # start container + apply privacy migration + seed demo community
+#   db/privacy/dev-db.sh up      # start container + apply privacy migration + seed demo communities
 #   db/privacy/dev-db.sh down    # remove container
 #
 # Prints the DSNs:
@@ -35,10 +35,8 @@ DO $$ BEGIN
     CREATE ROLE gq_api_login LOGIN IN ROLE gq_api;
   END IF;
 END $$;
-INSERT INTO privacy.communities (community_id, name, area_ids, currency, is_demo)
-VALUES ('demo-campus', 'Demo Campus (synthetic)', ARRAY['demo-campus-central'], 'USD', true)
-ON CONFLICT DO NOTHING;
 SQL
+    docker exec -i "$NAME" psql -U postgres -v ON_ERROR_STOP=1 -q < "$HERE/002_demo_communities.sql"
     echo "GQ_ADMIN_DSN=$ADMIN_DSN"
     echo "GQ_DATABASE_URL=$API_DSN"
     ;;

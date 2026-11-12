@@ -29,6 +29,7 @@ from server.privacy.service import PrivacyService  # noqa: E402
 
 ADMIN_DSN = os.environ.get("GQ_TEST_ADMIN_DSN", "postgresql://postgres@127.0.0.1:54329/postgres")
 MIGRATION = ROOT / "db" / "privacy" / "001_privacy_foundation.sql"
+DEMO_SEED = ROOT / "db" / "privacy" / "002_demo_communities.sql"
 OTHER_COMMUNITY = {
     "community_id": "other-campus",
     "name": "Other Campus (synthetic)",
@@ -74,6 +75,7 @@ def admin(pg):
             "TRUNCATE privacy.private_intents, privacy.consents, privacy.memberships,"
             " privacy.sessions, privacy.participants, privacy.communities CASCADE"
         )
+        conn.execute(DEMO_SEED.read_text())
         seed_community(conn, DEMO_COMMUNITY)
         seed_community(conn, OTHER_COMMUNITY)
         yield conn

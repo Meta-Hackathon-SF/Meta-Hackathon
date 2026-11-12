@@ -166,10 +166,14 @@ export interface PrivacyCenterProps {
   communityName: string;
   /** Fires when matchability changes so the shell can gate "Find my group". */
   onMatchableChange?: (matchable: boolean) => void;
+  /** Current consent for this community; null when signed out or not a member. */
+  onConsentChange?: (consent: Consent | null) => void;
 }
 
 /** Composed privacy area for Will's feature shell. */
-export function PrivacyCenter({ client, communityId, communityName, onMatchableChange }: PrivacyCenterProps) {
+export function PrivacyCenter({
+  client, communityId, communityName, onMatchableChange, onConsentChange,
+}: PrivacyCenterProps) {
   const { state, reload, start } = usePrivacySession(client);
   const [intent, setIntent] = useState<PrivateIntent | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -181,6 +185,13 @@ export function PrivacyCenter({ client, communityId, communityName, onMatchableC
   useEffect(() => {
     onMatchableChange?.(matchable);
   }, [matchable, onMatchableChange]);
+
+  // Report by value (version + toggles), not object identity, so reloads don't loop.
+  const settled = state.status === "ready" || state.status === "signed_out";
+  const consentKey = membership ? JSON.stringify(membership.consent) : "none";
+  useEffect(() => {
+    if (settled) onConsentChange?.(consentKey === "none" ? null : (JSON.parse(consentKey) as Consent));
+  }, [settled, consentKey, onConsentChange]);
 
   const intentVersion = membership?.intentVersion ?? null;
   useEffect(() => {

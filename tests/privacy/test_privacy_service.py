@@ -289,3 +289,18 @@ def test_job_reauthorization_rejects_left_or_unknown(service):
     for pid in (a.participant_id, "p_does_not_exist"):
         with pytest.raises(PrivacyError):
             service.reauthorize_for_job(pid, COMMUNITY)
+
+
+def test_revoked_at_marks_participation_withdrawal_only(service):
+    _, actor = eligible_member(service, "A")
+    notices = []
+    service.add_listener(notices.append)
+    hidden = service.update_consent(actor, COMMUNITY, consent_req(1, public=False))
+    assert hidden.revoked_at is None and hidden.matching and hidden.model_processing
+    assert notices[-1].kind == "consent_revoked"  # profile visibility changed: projections must refresh
+    stopped = service.update_consent(actor, COMMUNITY, consent_req(2, public=False, matching=False))
+    assert stopped.revoked_at is not None
+
+
+def test_ready_reports_database(service):
+    assert service.ready() is True

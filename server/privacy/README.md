@@ -22,7 +22,7 @@ GQ_DATABASE_URL=postgresql://gq_api_login@127.0.0.1:54329/postgres GQ_COOKIE_INS
 | Consumer | Call | Notes |
 | --- | --- | --- |
 | Kai (all routes) | `actor_dependency(service)` FastAPI dependency -> `Actor` | 401 `UNAUTHENTICATED` envelope on failure |
-| Kai (composition) | `build_router(service)` under `/api/v1`; `install_error_handlers(app)` | handlers add `X-Request-Id`, `Cache-Control: no-store` |
+| Kai (composition) | `server.privacy.registration.privacy_registration(service)` in `create_app(registrations=[...])`, then `install_privacy_error_handler(app)` | without the handler, privacy errors become 503 under Kai's sanitizer. `install_error_handlers` is for the standalone dev harness only |
 | Rishi / Adam via Kai's job | `service.authorized_candidates(actor, communityId) -> list[Candidate]` | validated `Candidate` wire objects for `MatchInput.candidates` / `PlanInput.participants` |
 | Kai (enqueue guard) | `service.require_eligible(actor, communityId)` | raises `CONSENT_REQUIRED` |
 | Kai (worker) | `service.reauthorize_for_job(enqueuedBy, communityId) -> Actor` | `enqueuedBy` = the verified actor stored at enqueue time; rechecks membership + consent now |
@@ -51,9 +51,10 @@ Snapshot semantics:
 
 The server sets `participantId`, `intentVersion`, `consentVersion` and `confirmedAt`. `areaId` must belong to the community and `currency` must equal the community currency. Windows are RFC3339 UTC (`Z`), half-open, start < end, non-overlapping, 1-20 of them.
 
-`Consent.revokedAt` is set on a revision that withdraws any previously granted permission; it is `null` on revisions that only grant.
+`Consent.revokedAt` is set on a revision that withdraws matching or model processing; otherwise `null`. Hiding public interests leaves it `null` but emits `consent_revoked`.
 
 ## Storage (`db/privacy/001_privacy_foundation.sql`)
+- **Demo seed:** `002_demo_communities.sql` seeds `demo-campus` plus Will's shell communities (`hackathon-builders`, `meta-ai-explorers`, `xr-student-collective`), all `is_demo`.
 - **Tables:** `privacy.participants`, `sessions`, `communities`, `memberships`, `consents` (append-only revisions) and `private_intents` (one current row; overwritten on update, deleted on leave).
 - **Row-level security:** policies on all tables, scoped to the `gq_api` role. The API must connect as a non-owner, non-superuser, non-BYPASSRLS member of `gq_api`, and `Database` refuses to start otherwise.
 - **Fail-closed identity:** `gq.participant_id` is set per transaction only from a verified session. If it's unset, every query returns nothing.

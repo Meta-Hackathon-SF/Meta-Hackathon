@@ -49,5 +49,13 @@ class Database:
                 )
                 yield conn
 
+    def ping(self) -> bool:
+        """Readiness: a pooled connection answers within 0.5 s. Never raises."""
+        try:
+            with self._pool.connection(timeout=0.5) as conn:
+                return conn.execute("SELECT 1 AS ok").fetchone()["ok"] == 1
+        except Exception:
+            return False
+
     def close(self) -> None:
         self._pool.close()
