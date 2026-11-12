@@ -2,6 +2,7 @@
 - Owner: adam · Branch: `role/adam-planning` · Shared contract: 1.0.0 (+ D005 proposed additive)
 - Updated: 2026-11-12T21:35Z
 - Current phase: **P1 done; P2-P4 planning logic + planning UI done against fixtures.** Live Muse evidence and integration with the other owners (the actual P2 gate) are pending.
+- PR: draft https://github.com/willapat/Meta-Hackathon/pull/8 (awaiting D005 ACKs)
 - Status: verified offline. Live evidence is blocked on credentials; integration is blocked on the server scaffold (Kai) and snapshots (Patrik/Rishi).
 
 ## Completed deliverables (fixture/stub evidence only)
