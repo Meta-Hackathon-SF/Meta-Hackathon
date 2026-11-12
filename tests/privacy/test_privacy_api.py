@@ -6,8 +6,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from helpers import COMMUNITY, intent_body
-from privacy import build_router, install_error_handlers
+from privacy_helpers import COMMUNITY, intent_body
+from server.privacy import build_router, install_error_handlers
 
 
 @pytest.fixture

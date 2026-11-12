@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from helpers import intent_body, window
-from privacy import wire
+from privacy_helpers import intent_body, window
+from server.privacy import wire
 
 PROTOCOL = Path(__file__).resolve().parents[2] / "contracts" / "protocol.ts"
 

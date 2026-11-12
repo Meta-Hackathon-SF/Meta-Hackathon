@@ -10,8 +10,8 @@ import psycopg
 import pytest
 from psycopg.types.json import Jsonb
 
-from helpers import COMMUNITY, eligible_member, window
-from privacy.db import Database
+from privacy_helpers import COMMUNITY, eligible_member, window
+from server.privacy.db import Database
 
 
 def as_actor(conn, participant_id):

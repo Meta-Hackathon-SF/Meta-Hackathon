@@ -6,11 +6,11 @@ import threading
 
 import pytest
 
-from helpers import COMMUNITY, consent_req, eligible_member, intent_req, join_req, window
-from privacy.errors import PrivacyError
-from privacy.fixtures import seed_synthetic_profiles
-from privacy.service import Actor, hash_token
-from privacy.wire import MemberVersion, UpdateAvailabilityRequest
+from privacy_helpers import COMMUNITY, consent_req, eligible_member, intent_req, join_req, window
+from server.privacy.errors import PrivacyError
+from server.privacy.fixtures import seed_synthetic_profiles
+from server.privacy.service import Actor, hash_token
+from server.privacy.wire import MemberVersion, UpdateAvailabilityRequest
 
 
 def code(exc_info) -> str:

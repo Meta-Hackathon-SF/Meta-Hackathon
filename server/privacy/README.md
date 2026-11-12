@@ -1,6 +1,6 @@
 # Privacy and group-access system (Patrik)
 
-Status: **P1 implemented and verified locally with synthetic fixtures** against Postgres 17 in Docker. Not deployed, not integrated with Kai's server composition yet, no live participants. See `docs/handoffs/patrik.md` for current evidence.
+Status: **P1 + P2 privacy pieces (projections, UI) implemented and verified locally with synthetic fixtures** against Postgres 17 in Docker. Not deployed, not integrated with Kai's server composition yet, no live participants. See `docs/handoffs/patrik.md` for current evidence.
 
 ## Run locally
 ```sh
@@ -9,16 +9,16 @@ db/privacy/dev-db.sh up                  # disposable Postgres on 127.0.0.1:5432
 server/.venv/bin/python -m pytest tests/privacy -q
 # optional HTTP harness (privacy routes only; NOT the Group Quests server)
 GQ_DATABASE_URL=postgresql://gq_api_login@127.0.0.1:54329/postgres GQ_COOKIE_INSECURE_DEV=1 \
-  server/.venv/bin/uvicorn --app-dir server privacy.devapp:app --port 8787
+  server/.venv/bin/uvicorn server.privacy.devapp:app --port 8787
 ```
 
-## Auth approach (decision D005)
+## Auth approach (decision D007)
 - `POST /api/v1/session` creates a **pseudonymous guest participant** for this device and sets an opaque 256-bit session token in `gq_session` (HttpOnly, Secure, SameSite=Lax, path `/api`, 7-day expiry). `Authorization: Bearer <token>` is accepted for multi-device tests.
 - Only the SHA-256 hash is stored. Synthetic profiles can never hold a session.
 - Identity is the `Actor` returned by `PrivacyService.resolve(token)`. It cannot be built from a participantId. Request bodies never carry identity, and `participantId` in a body is rejected as an unknown field.
 - This is **not** Facebook login. The mock shell's demo users are not accounts.
 
-## Ports for other owners (import from `privacy`)
+## Ports for other owners (import from `server.privacy`)
 | Consumer | Call | Notes |
 | --- | --- | --- |
 | Kai (all routes) | `actor_dependency(service)` FastAPI dependency -> `Actor` | 401 `UNAUTHENTICATED` envelope on failure |
@@ -60,9 +60,18 @@ The server sets `participantId`, `intentVersion`, `consentVersion` and `confirme
 - **Cross-user access** goes only through the SECURITY DEFINER functions `authorized_candidates` and `member_versions`.
 - **Migration order:** privacy runs first. `db/workflow/` (Kai) may reference `privacy.participants(participant_id)` and `privacy.communities(community_id)`.
 
+## Public projections (`server/privacy/projections.py`)
+- `project_proposal(groupProposal, candidates) -> PublicGroupProposal`: from Rishi's GroupProposal. Members are re-derived from the snapshot; a member outside it gives `FORBIDDEN`.
+- `validate_public_proposal(dto, candidates)`: gate for an already-projected dict (e.g. `matching.public_projection`). Uses a strict shape, requires member profiles identical to the authorized ones (synthetic labels preserved), and leak-checks the text.
+- `project_plan(questPlan, candidates) -> PublicPlanCard`: drops `memberVersions`/`basedOnRevision`. It leak-checks title, activity, collaborationTask, publicRationale and opener. The plan's own cost is an allowed public amount.
+- `find_leaks(texts, candidates)` returns codes like `publicRationale:budget`, `:goal` (5-word overlap), `:unconsented_interest` and `:individual_constraint` (e.g. "Sam's budget", "can't afford", "only free after"). It never echoes the value.
+- **Limits:** the check is heuristic (known facts and phrasing), not proof. Paraphrased disclosures can pass, so public text must still be built from approved facts.
+
+## Privacy UI (`web/src/features/group-quests/privacy/`)
+See its README. `PrivacyCenter` handles the whole flow (start session -> consent-first join -> consent panel -> what-others-see preview -> leave). The building blocks are also exported. `httpPrivacyClient('/api/v1')` is the live client; `fixturePrivacyClient()` shows a "Fixture mode" badge.
+
 ## Not done yet
 These are planned, not implemented:
-- Public proposal/event projections (P2). `protocol.ts` defines no public proposal DTO yet; see D005 open question.
 - Quest leave (`POST /quests/:id/leave`, with Kai) and subscription invalidation (P3).
 - Invite scoping (P4).
 - Privacy UI under `web/src/features/group-quests/privacy/`.

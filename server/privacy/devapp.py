@@ -7,14 +7,14 @@ consent and intents locally:
     db/privacy/dev-db.sh up
     GQ_DATABASE_URL=postgresql://gq_api_login@127.0.0.1:54329/postgres \
     GQ_COOKIE_INSECURE_DEV=1 \
-    server/.venv/bin/uvicorn --app-dir server privacy.devapp:app --port 8787
+    server/.venv/bin/uvicorn server.privacy.devapp:app --port 8787
 """
 
 import os
 
 from fastapi import FastAPI
 
-from privacy import Database, PrivacyService, build_router, install_error_handlers
+from server.privacy import Database, PrivacyService, build_router, install_error_handlers
 
 app = FastAPI(title="Group Quests privacy dev harness (local only)")
 install_error_handlers(app)

@@ -1,59 +1,82 @@
 # patrik handoff
-Current phase: P1, done locally. P2 (public projections + privacy UI) is next.
-Status: verified with synthetic fixtures against local Postgres. Not integrated with Kai's server, not deployed, no live users.
-Branch + commit: role/patrik-privacy (see `git log`; the first privacy implementation commit is "feat(privacy): sessions, consent, private intents and authorized snapshots").
-Shared contract: 1.0.0, unchanged. Additive routes and semantics are proposed in docs/DECISIONS.md D005 (ACK pending).
+Updated: 2026-11-12T21:55Z
+Current phase:
+- P1 verified locally.
+- P2 privacy-owned pieces are built and verified locally: public projections, leak guard and privacy UI.
+- P2 live integration (Will's consent wiring, Kai's guards at routes and subscriptions) is not done.
+Status: verified with synthetic fixtures against local Postgres plus a local browser run. Not integrated into Kai's server or Will's shell, not deployed, no live users.
+Branch: role/patrik-privacy. Commits: b192050 (P1), plus the P2 commit "feat(privacy): public projections, leak guard and privacy UI".
+Shared contract: 1.0.0, unchanged. The additive routes, DTOs and semantics are in docs/DECISIONS.md **D007**, renumbered from my D005 because Rishi and Adam also used D005. ACKs pending.
 
 ## Completed deliverables
-- P0: auth approach and candidate service signature documented (D005, server/privacy/README.md).
+- P0: auth approach and candidate signature documented (D007, server/privacy/README.md).
 - P1:
-  - server/privacy/: guest sessions (hashed opaque token, cookie/Bearer), community membership, versioned consent (CAS + same-body retry), self-only PrivateIntent CRUD and availability updates, `authorized_candidates`, `require_eligible`, `reauthorize_for_job`, `check_member_versions`, and change listeners.
-  - db/privacy/: RLS migration, dev DB script and synthetic fixtures.
+  - sessions, membership, versioned consent and self-only intents
+  - RLS migration
+  - `authorized_candidates`, `require_eligible`, `reauthorize_for_job`, `check_member_versions` and change listeners
+- P2 (privacy part):
+  - `server/privacy/projections.py`: `PublicGroupProposal` (same shape as Rishi's `public_projection`), `PublicPlanCard`, `project_proposal`, `validate_public_proposal`, `project_plan`, and the `find_leaks` private-fact guard
+  - `web/src/features/group-quests/privacy/`: `PrivacyCenter`, `JoinCommunityCard`, `ConsentPanel`, `PublicPreview`, `LeaveCommunity`, the HTTP and fixture clients, and `usePrivacySession`
 
 ## Changed interfaces and files
-- New: `db/privacy/001_privacy_foundation.sql`, `db/privacy/dev-db.sh`, `server/privacy/{__init__,api,db,errors,fixtures,service,wire,devapp}.py`, `server/privacy/{README.md,requirements.txt}` and `tests/privacy/*`.
+- Import path is now `server.privacy` (namespace style matching Rishi/Adam). Test files are renamed to `test_privacy_*.py` so a combined `pytest tests/` run doesn't collide on basenames.
+- New: `server/privacy/projections.py`, `tests/privacy/test_privacy_projections.py`, `web/src/features/group-quests/privacy/*`.
 - Shared files touched:
-  - root `.gitignore` (new: venv/pycache/.env)
-  - `docs/DECISIONS.md` (D005 appended)
-  - Kai may take over `.gitignore` and the server manifests.
+  - `.gitignore` (root)
+  - `docs/DECISIONS.md` (D007, including ACK notes on Rishi D005 and Adam D005 items 2/3/5)
+  - no changes to `web/src/App.tsx`, `vite.config.ts` or the shell
 
 ## Checks run + actual result
-- `db/privacy/dev-db.sh up && server/.venv/bin/python -m pytest tests/privacy -q`: 76 passed (Python 3.14.2, Postgres 17-alpine, FastAPI 0.162.5, Pydantic 2.14.3, psycopg 3.3.9).
-- Coverage:
-  - wire drift against protocol.ts
-  - forged participantId, snake_case and coerced types
-  - non-UTC or overlapping windows
-  - RLS as a non-owner role: no actor sees nothing; cross-user read/update/delete/insert denied; sessions unreadable; internal function not executable
-  - superuser connection refused
-  - synthetic impersonation blocked
-  - stale/concurrent consent (6 threads, 1 winner)
-  - snapshot filtering by consent, leave and community
-  - publication recheck detects stale/revoked members
-  - job reauthorization after revoke/leave
-  - HTTP 401 envelope with X-Request-Id; validation errors don't echo values
-- Mutation check: loosening `intents_self` to `USING (true)` makes the direct policy tests fail (2 tests). Restored afterwards.
-- HTTP smoke via `privacy.devapp` + curl: session, join, and 401 envelope.
+- `server/.venv/bin/python -m pytest tests/privacy -q`: 100 passed. That's 76 from P1 plus 24 projection tests:
+  - allowlist drops memberVersions/feasibleWindows/private fields
+  - synthetic label can't be altered
+  - member outside the snapshot gives FORBIDDEN
+  - 8 leak phrasings rejected, 4 group-level phrasings allowed
+  - plan text fields all checked, and the plan's own cost is allowed
+  - a prompt-injection string is treated as data
+- `cd web && npx tsc -b`: ok. `npm run lint` (oxlint): ok, 0 warnings in privacy/. `npx vite build`: ok, though the privacy module isn't in the bundle until Will mounts it.
+- Browser run: a temporary preview page (not committed), Playwright, the privacy dev server and Postgres. The flow passed:
+  - signed out, then start
+  - join with all toggles off by default, and join blocked without a name
+  - join with matching + Muse, giving matchable v1
+  - withdrawing shows the warning; save gives v2, not matchable
+  - a second tab saves v3, then the first tab's stale save reloads to v3
+  - leave, then back to the join card with a notice
+  - fixture mode at 375px shows the badge, with no horizontal overflow
+  - Only console error: the expected 409 from the deliberate stale save. Screenshots were reviewed locally, not committed.
 
 ## Fixture versus live evidence
-All evidence uses synthetic profiles labeled "(demo)" with `isSynthetic=true`, plus guest sessions created by the tests. No live participants, provider calls, or deployed DB.
+- All evidence uses synthetic profiles ("(demo)", isSynthetic=true) and test guest sessions.
+- The leak guard is heuristic: it catches known facts and phrasing, not paraphrases.
+- No live participants, no Muse output was checked, no deployment.
 
 ## Next consumer + exact action
 - Kai:
-  - mount `build_router(service)` at /api/v1 with `install_error_handlers`
-  - use `actor_dependency` on every route
-  - run `db/privacy` before `db/workflow`, with FKs to `privacy.participants` / `privacy.communities`
-  - store the enqueuing actor's participantId on jobs and call `reauthorize_for_job` then `check_member_versions` before publishing
-  - register a listener for invalidation
-  - ACK D005
-- Rishi: consume `authorized_candidates(actor, communityId)` as `MatchInput.candidates`. Never query privacy tables. ACK the D005 open question on PublicGroupProposal.
-- Adam: use the same snapshot for `PlanInput.participants`, and only send minimum fields to Muse.
-- Will: the onboarding flow calls `POST /session` -> `POST /communities/:id/join` (explicit toggles) -> `PUT /intents/me` with `expectedVersion`.
+  - mount `build_router` and `install_error_handlers` at /api/v1, with `actor_dependency` on every route
+  - run the db/privacy migration first; FK to `privacy.participants` / `privacy.communities`
+  - jobs store the enqueuing participantId, then `reauthorize_for_job` and `check_member_versions` before publishing
+  - pass proposals and plans through `validate_public_proposal` / `project_plan` before any peer read, SSE or snapshot
+  - register a `ChangeNotice` listener to invalidate jobs
+  - ACK D007
+- Will:
+  - mount `<PrivacyCenter client={httpPrivacyClient()} .../>` in the feature shell
+  - gate "Find my group" with `onMatchableChange`
+  - add a vite `/api` proxy
+  - onboarding confirm step calls `PUT /intents/me` with `expectedVersion` (0 = create)
+  - ACK D007
+- Rishi: matching input = `authorized_candidates(actor, communityId)`. Keep `public_projection`; Kai gates it via `validate_public_proposal`.
+- Adam:
+  - planning input participants = the same snapshot
+  - the extract route's consent input = `get_consent(actor, communityId).wire()`
+  - your planner's public text goes through `project_plan`, which raises `INVALID_INPUT` with a leak code: retry or use a template
 
 ## Blocked on + owner
-- Kai's server scaffold, for integration (the privacy dev harness covers local use until then).
-- D005 ACKs from all.
-- Public proposal DTO, from Rishi + Kai.
+- Kai's server/app scaffold (live integration).
+- Will's shell route (UI mount).
+- D007 ACKs (all).
+- Muse credentials (Adam), before the leak guard can be checked on live model text.
 
 ## Next independent task
-- P2: allowlisted public projections (participant/proposal/event) with leak tests.
-- Privacy UI in web/src/features/group-quests/privacy/: consent panel, leave control, and a "what others see" preview.
+- P3: `POST /quests/:id/leave` (needs Kai's quest tables) and subscription invalidation hook, i.e. a per-quest membership recheck function for SSE reconnect.
+- Rate limit `POST /session`.
+- Adversarial test: revoke during an in-flight model call, then the publish recheck blocks it (fixture job).

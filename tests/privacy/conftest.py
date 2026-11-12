@@ -18,14 +18,14 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "server"))
+sys.path.insert(0, str(ROOT))
 
 import psycopg  # noqa: E402
 from psycopg import sql  # noqa: E402
 
-from privacy.db import Database  # noqa: E402
-from privacy.fixtures import DEMO_COMMUNITY, seed_community  # noqa: E402
-from privacy.service import PrivacyService  # noqa: E402
+from server.privacy.db import Database  # noqa: E402
+from server.privacy.fixtures import DEMO_COMMUNITY, seed_community  # noqa: E402
+from server.privacy.service import PrivacyService  # noqa: E402
 
 ADMIN_DSN = os.environ.get("GQ_TEST_ADMIN_DSN", "postgresql://postgres@127.0.0.1:54329/postgres")
 MIGRATION = ROOT / "db" / "privacy" / "001_privacy_foundation.sql"

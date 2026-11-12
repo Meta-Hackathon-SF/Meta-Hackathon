@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from privacy.wire import JoinCommunityRequest, PutIntentRequest, UpdateConsentRequest
+from server.privacy.wire import JoinCommunityRequest, PutIntentRequest, UpdateConsentRequest
 
 COMMUNITY = "demo-campus"
 AREA = "demo-campus-central"
