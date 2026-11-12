@@ -1,6 +1,6 @@
 # server/planning: adaptive planning (owner: Adam)
 
-Status: intent extraction **implemented and fixture-tested**; plan/revise/continue are pending (P2-P4). No live Muse evidence yet.
+Status: extraction, `plan`, `revise` and `continue` are **implemented and fixture-tested**; there is no live Muse evidence yet. The planning UI lives in `web/src/features/group-quests/planning/`.
 
 ## Intent extraction (for Will and Kai's route registration)
 `POST /api/v1/intents/extract` (route registered by Kai; behavior here). Wire shapes are **PROPOSED in docs/DECISIONS.md D005** and declared in `contracts/protocol.ts` under "PROPOSED (D005)".
@@ -45,3 +45,27 @@ Guarantees:
 
 ## Validators
 `server.planning.wire` validates contract 1.0.0 shapes: Window, Context, ModelEvidence, PrivateIntent, Candidate, GroupProposal, Venue, PlanInput, QuestPlan, PlanResult, ContinuationInput, Continuation, plus the proposed IntentDraft/ExtractionResult. Unknown keys are rejected.
+
+## PlanningPort (for Kai)
+```python
+from server.planning import QuestPlanner, plan_changes, requires_reconfirmation
+planner = QuestPlanner(muse)                       # telemetry= optional sanitized sink
+result = await planner.plan(plan_input)            # PlanInput dict -> PlanResult dict
+result = await planner.revise(plan_input)          # requires previousPlan (same proposalId)
+cont   = await getattr(planner, "continue")(continuation_input)   # or planner.continue_(...)
+```
+- Inputs are validated (`wire.plan_input`). Participants must be exactly `proposal.memberIds`, and each snapshot's intent/consent versions must equal `proposal.memberVersions`, otherwise you get `STALE_REVISION` before any model call. Kai should reload a fresh snapshot and retry.
+- Code-detected outcomes skip the model entirely:
+  - no shared slot of at least 15 min → `needs_input` (fields `["availability"]`)
+  - no open public venue in the area → `no_feasible_plan`
+- Muse's choice must name a catalog `venueId`, fit inside one feasible slot, stay within the group's min duration cap, and keep `costPerPersonMinor` at or below the group's min budget. Public text goes through a leak guard. A failed choice gets one code-written correction; if it fails again, the call raises a retryable `PROVIDER_UNAVAILABLE`. A fake plan is never returned.
+- `publicRationale` is rendered by code from allowlisted fact codes. Plans cite only `proposal.sharedInterests`.
+- Lineage: `revision = previous.revision + 1` and `basedOnRevision = previous.revision`. `requires_reconfirmation(prev, next)` is true when time, place or cost changed.
+- `planId` is generated here as an opaque id. Kai persists it or remaps it.
+- `continue`:
+  - The model receives only the ids of members who want to return. Attendance is never sent.
+  - The host must be one of those willing members, or null.
+  - Invitations that claim attendance are rejected.
+  - Without `simulateTimeSkip`, a call made before the prior plan ends is rejected.
+- Venues: `catalog.demo_venues(time_zone, start)` expands a SYNTHETIC, labeled demo catalog. An approved real catalog source is still unassigned.
+- Cancellation: cancel the awaiting task. Nothing is persisted here, so a cancelled or stale result is simply discarded by the caller.
