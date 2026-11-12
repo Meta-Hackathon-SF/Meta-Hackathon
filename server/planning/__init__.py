@@ -11,3 +11,7 @@ __all__ = [
     "PlanningError",
     "register_planning_tasks",
 ]
+
+from .planner import QuestPlanner, plan_changes, requires_reconfirmation  # noqa: E402
+
+__all__ += ["QuestPlanner", "plan_changes", "requires_reconfirmation"]
