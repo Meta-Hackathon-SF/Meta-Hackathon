@@ -1,6 +1,15 @@
 # server/providers: Muse adapter (owner: Adam)
 
-Status: **implemented and offline-tested; live call NOT yet verified** (no credentials in the dev environment as of 2026-11-12). Fixture tests prove local behavior, not Muse quality or latency.
+Status: **implemented, offline-tested, and live-verified for two tasks** (2026-11-12T22:42Z, `muse-spark-1.3`): one `extract_intent` smoke call and one `rank_group` call through matching's real `rank_with_muse`. Two single calls are not a latency or quality benchmark.
+
+## Live evidence (sanitized, synthetic inputs)
+| Date (UTC) | Task | Settings | Outcome | Provider-reported model | Latency |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-12T22:41Z | `extract_intent` | default effort ("high"), 30 s x 2 attempts | **timeout** on both attempts | - | 55.8 s total |
+| 2026-11-12T22:42Z | `extract_intent` | `reasoning_effort=low`, 90 s x 1 | ok, 6/6 fields kept by validators | `muse-spark-1.3` | 23.8 s |
+| 2026-11-12T22:44Z | `rank_group` | `reasoning_effort=low`, 90 s x 1 | ok, matching validator accepted | `muse-spark-1.3` | 17.2 s |
+
+**Model in use: `muse-spark-1.3` (Muse Spark family), confirmed by the provider's echoed `model` field.** Wonder and Ember are not listed in the docs we read and were not tested. Implication: use `MUSE_REASONING_EFFORT=low` and a 60 s+ per-attempt timeout; a chain of sequential calls will not fit a 60 s journey target without parallelism or precomputation.
 
 ## Verified provider facts
 Source: Meta's official Meta Model API docs at dev.meta.ai, read 2026-11-12 (`/docs/models.md`, `/docs/protocols/chat-completions`, `/docs/structured-output`, `/docs/error-handling`, `/docs/pricing-rate-limits`, `/docs/media-understanding`).
@@ -17,7 +26,7 @@ Source: Meta's official Meta Model API docs at dev.meta.ai, read 2026-11-12 (`/d
 | Errors | 400/401/402/403/404/413/429(`Retry-After`)/500/503(`Retry-After`)/504 | mapped in `transport.classify_status` |
 | Reasoning | Muse Spark always reasons; default `reasoning_effort` "high"; `"none"` returns 400 | optional `MUSE_REASONING_EFFORT` pass-through |
 | Audio | `input_audio` content parts (1.3 audio "not fully supported"); separate `muse-voice-transcribe-1.0` STT at `POST /v1/asr/transcribe` | not used here (Will owns transcription) |
-| Timeouts | not stated | 30 s/attempt default, overall deadline |
+| Timeouts | not stated | 30 s/attempt code default; example config uses 60 s with low effort (see live evidence) |
 
 Not yet verified: actual latency, structured-output adherence on our schemas, rate limits for our team's key, and whether `strict: true` accepts our schema keywords.
 
@@ -52,6 +61,16 @@ result.evidence  # ModelEvidence {model, source, generatedAt, latencyMs}
 - Errors are `ProviderError` with `.kind`, `.retryable`, `.api_code` (`PROVIDER_UNAVAILABLE`/`RATE_LIMITED`/`INVALID_INPUT`). Messages are sanitized and never include bodies.
 - Telemetry sink receives only `requestId, task, promptVersion, model, attempts, outcome, latencyMs` (+`status` on errors).
 - Semantic validation (IDs in the candidate pool, etc.) stays with the calling owner. Pass a code-generated `correction` string on a re-ask; never include user text in it.
+
+## Matching (`rank_group`) port
+`server/providers/rank_port.py` registers `rank_group.v1` (mirrors `server/matching/ranking.py`; `tests/planning/test_rank_port.py` fails on drift) and exposes the keyword-argument form matching calls:
+```python
+from server.providers.rank_port import build_live_rank_port, build_rank_port
+port = build_live_rank_port()   # env vars, then git-ignored muse.env; RuntimeError if no key
+out = await port.generate(task="rank_group", requestId=rid, promptVersion="rank_group.v1", payload=payload)
+# -> {"output": {...}, "evidence": {model, source, generatedAt, latencyMs}}
+```
+Matching's own `parse_rank_output` stays authoritative. Matching's default 20 s `timeout_s` is below the observed 17 s live latency margin; pass `timeout_s>=60` for live runs.
 
 ## Test double
 `server.providers.fixture.FixtureMuse(registry, ScriptedTransport().queue(task, output_or_error, ...))` runs the same pipeline with scripted output, labeled `source: "replay"`, `model: "fixture:scripted-muse"`. Use it in tests and visibly labeled fixture mode only; never in a live path.
