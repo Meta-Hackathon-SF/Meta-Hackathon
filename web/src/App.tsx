@@ -3,7 +3,6 @@ import AppLayout from "./layouts/AppLayout";
 import CampusPage from "./pages/CampusPage";
 import HomePage from "./pages/HomePage";
 import AppProvider from "./state/AppProvider";
-import GroupQuestsPage from "./features/group-quests/shell/GroupQuestsPage";
 import {
   EventsPage,
   FriendsPage,
@@ -27,10 +26,6 @@ export default function App() {
           <Route path="campus" element={<CampusPage />} />
           <Route path="friends" element={<FriendsPage />} />
           <Route path="groups" element={<GroupsPage />} />
-          <Route
-            path="groups/:communityId/quests"
-            element={<GroupQuestsPage />}
-          />
           <Route path="marketplace" element={<MarketplacePage />} />
           <Route path="watch" element={<WatchPage />} />
           <Route path="events" element={<EventsPage />} />
