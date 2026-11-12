@@ -7,6 +7,7 @@
 - Contract: 1.0.0, unchanged.
 - Implementation commits: `adb7dc6` (server baseline), `1a0e045` (privacy bootstrap alignment).
 - Test/evidence checkpoint: the commit containing this handoff adds `tests/orchestration/test_app.py`.
+- Integration checkpoint / shared-file claim (2026-11-12T21:32Z): latest human direction authorizes safe automatic squash merges. Kai is updating `AGENTS.md` with this standing policy and `PROJECT_KNOWLEDGE.md` with verified source/evidence. Current main was merged normally (`bdac27e`), preserving Rishi's D005 and Kai's D006; combined tests passed 144/144. The P0 phase and unimplemented event/persistence scope are unchanged.
 
 ## Completed deliverable
 

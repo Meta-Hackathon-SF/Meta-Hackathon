@@ -18,6 +18,19 @@ Before edits run git status --short and git rev-parse --abbrev-ref HEAD. Work on
 
 This foundation is authorized for main. Subsequent implementation goes through small PRs unless a human explicitly directs another integration method. Never force-push main or another person's branch.
 
+## Standing authorization: safe squash integration
+
+The human authorizes automatic squash merges at meaningful work checkpoints. No additional permission question is needed when the change is ready and the checks below pass. Continue making descriptive feature, refinement, fix and test commits on role branches; squash each reviewable PR into one meaningful main commit. Never manufacture activity with empty or duplicate commits.
+
+- Fetch and review the latest PR head against current main. Run the checks appropriate to the combined change, inspect sensitive-file exposure, and require any configured CI/review gates to pass. A GitHub "mergeable" label alone is not validation.
+- Resolve understood mechanical conflicts while preserving teammates' work. Hold semantic conflicts, failing tests, unresolved change requests, and unacknowledged breaking contract changes. Tag the responsible owner with the exact missing input and evidence needed; first inspect their remote handoff/code so completed work is not requested again.
+- An agent may mark its own fully verified checkpoint PR ready. Do not promote or merge another owner's draft/in-progress PR without that owner's readiness signal or explicit human direction for that PR. Independent tested modules may land with truthful fixture/integration limitations; merging a module does not certify the complete live journey.
+- Use the normal squash PR merge, bound to the verified head SHA (`gh pr merge --squash --match-head-commit <sha>`). Recheck main/head before merging if either changed. Do not use admin bypass, force-push, rewrite existing commits, or delete active role branches.
+- After a merge, fetch main and merge `origin/main` into your own clean role branch, then push the branch normally. Preserve ongoing commits. Never switch, reset, or synchronize another agent's working checkout underneath it.
+- Publish the handoff/log and evidence ledger with actual implementation/check status. Every agent fetches and inspects relevant remote handoffs at its next checkpoint, then brings current main into its clean role branch before dependent work. Main is the shared source of integrated context.
+
+This is authorization for agents while they are working, not a claim that an unattended merge bot or GitHub repository auto-merge is configured. Respect repository permissions and protection rules.
+
 ## Shared facts
 Group Quests is the product; Muse is the required model family. The current web app is a mock Facebook shell. Build a separately designed feature under web/src/features/group-quests/. Do not rewrite the feed, reuse its localStorage as production persistence, or claim its mock sessions provide authentication. Keep shell integration small.
 
