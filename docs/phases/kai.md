@@ -6,7 +6,7 @@ Hours are elapsed from the team's agreed start; check [the shared schedule](../P
 ## P0: Create integration baseline (H0-1)
 
 - [ ] Build: Inspect contracts and existing web host. Agree server stack, DB migration order and authentication with Patrik. Scaffold server/app/ with reproducible setup and service registration.
-- [ ] Exit evidence: Backend starts; health endpoint works; shared manifests and routes have one coordinator.
+- [x] Exit evidence (independent baseline): Backend starts; health endpoint works; shared manifests and routes have one coordinator. Verified by local HTTP probes and 42 offline tests; multi-owner ACK/database integration remains pending, so this does not pass the team-wide P0 gate.
 - [ ] Dependency / parallel fallback: Confirm hosting separately; documentation foundation does not imply deployment.
 - [ ] Handoff: update `docs/handoffs/kai.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/kai.md`.
 

@@ -1,0 +1,69 @@
+"""Runtime implementation of contracts/protocol.ts ApiError; never echo private input."""
+
+from typing import Literal
+
+from fastapi import Request
+from pydantic import BaseModel, ConfigDict
+from starlette.responses import JSONResponse
+
+ErrorCode = Literal[
+    "INVALID_INPUT",
+    "UNAUTHENTICATED",
+    "FORBIDDEN",
+    "NOT_FOUND",
+    "CONSENT_REQUIRED",
+    "STALE_REVISION",
+    "CAPACITY_REACHED",
+    "PROVIDER_UNAVAILABLE",
+    "RATE_LIMITED",
+    "IDEMPOTENCY_CONFLICT",
+]
+
+ERRORS: dict[ErrorCode, tuple[int, str, bool]] = {
+    "INVALID_INPUT": (400, "Request does not match the API requirements.", False),
+    "UNAUTHENTICATED": (401, "A verified session is required.", False),
+    "FORBIDDEN": (403, "This action is not permitted.", False),
+    "NOT_FOUND": (404, "Resource not found.", False),
+    "CONSENT_REQUIRED": (403, "Current consent is required.", False),
+    "STALE_REVISION": (409, "This revision is out of date. Refresh before retrying.", False),
+    "CAPACITY_REACHED": (409, "This quest has reached capacity.", False),
+    "PROVIDER_UNAVAILABLE": (503, "The requested service is not available. Try again later.", True),
+    "RATE_LIMITED": (429, "Too many requests. Try again later.", True),
+    "IDEMPOTENCY_CONFLICT": (409, "This idempotency key was used for a different request.", False),
+}
+
+
+class ErrorDetails(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    code: ErrorCode
+    message: str
+    requestId: str
+    retryable: bool
+
+
+class ApiError(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    error: ErrorDetails
+
+
+class ServiceError(Exception):
+    """Owners raise a stable error code, never a public free-form private message."""
+
+    def __init__(self, code: ErrorCode):
+        if code not in ERRORS:
+            raise ValueError("Unknown API error code")
+        self.code = code
+        super().__init__(code)
+
+
+def error_response(request: Request, code: ErrorCode) -> JSONResponse:
+    status, message, retryable = ERRORS[code]
+    body = ApiError(
+        error=ErrorDetails(
+            code=code,
+            message=message,
+            requestId=request.state.request_id,
+            retryable=retryable,
+        )
+    )
+    return JSONResponse(body.model_dump(), status_code=status)
