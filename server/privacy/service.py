@@ -113,6 +113,9 @@ class PrivacyService:
         self._db = db
         self._listeners: list[Listener] = []
 
+    def ready(self) -> bool:
+        return self._db.ping()
+
     # ------------------------------------------------------------------ notices
     def add_listener(self, listener: Listener) -> None:
         self._listeners.append(listener)
@@ -305,12 +308,14 @@ class PrivacyService:
                     if current["version"] == req.expected_version + 1 and _same_toggles(current, wanted):
                         return _consent(actor.participant_id, community_id, current)  # retried request
                     raise errors.stale()
-                revoked = any(
-                    current[col] and not getattr(wanted, attr)
-                    for col, attr in (("matching", "matching"),
-                                      ("model_processing", "model_processing"),
-                                      ("public_interests", "public_interests"))
+                # revokedAt marks withdrawal of participation (matching or model
+                # processing). Hiding public interests is a withdrawal too, so it
+                # still emits consent_revoked, but it does not set revokedAt.
+                participation_revoked = (
+                    (current["matching"] and not wanted.matching)
+                    or (current["model_processing"] and not wanted.model_processing)
                 )
+                revoked = participation_revoked or (current["public_interests"] and not wanted.public_interests)
                 row = conn.execute(
                     """
                     INSERT INTO privacy.consents
@@ -320,7 +325,8 @@ class PrivacyService:
                     RETURNING *
                     """,
                     (actor.participant_id, community_id, req.expected_version + 1,
-                     wanted.matching, wanted.model_processing, wanted.public_interests, revoked),
+                     wanted.matching, wanted.model_processing, wanted.public_interests,
+                     participation_revoked),
                 ).fetchone()
         except psycopg.errors.UniqueViolation:
             raise errors.stale() from None  # concurrent revision won the race

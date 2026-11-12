@@ -2,7 +2,15 @@
 
 These components cover sessions, consent, the public/private preview and leaving a community. They're scoped with `privacy.module.css`, so no global selectors change, and they don't depend on the mock shell's users or localStorage.
 
-## Mount (Will's shell)
+## Mount (Will's shell slot)
+`PrivacySlot` matches `PrivacySlotProps` from `shell/slots.ts`. Register it with one line:
+```ts
+import { PrivacySlot } from "../privacy";
+export const featureSlots: GroupQuestsSlots = { privacy: PrivacySlot };
+```
+It reports `onConsentChange(consent | null)`: null when signed out or not a member, and it fires on every saved revision. In `mode === "fixture"` it uses the in-memory client with its badge. Every mutation sends an `Idempotency-Key`, as Kai's server requires.
+
+## Mount (standalone)
 ```tsx
 import { PrivacyCenter, httpPrivacyClient } from "../privacy";
 const client = httpPrivacyClient("/api/v1"); // create once

@@ -109,3 +109,20 @@ def test_bearer_header_works_for_multi_device_tests(app):
     other = client(app)
     other.headers["Authorization"] = f"Bearer {token}"
     assert other.get("/api/v1/session").status_code == 200
+
+
+def test_session_resolved_once_per_request(app, service, monkeypatch):
+    a = signed_in(app)
+    calls = []
+    original = service.resolve
+    monkeypatch.setattr(service, "resolve", lambda token: calls.append(1) or original(token))
+    # Simulate Kai's router-level guard plus the route-level dependency.
+    from fastapi import Depends
+    from server.privacy import actor_dependency
+    guard = actor_dependency(service)
+    app.router.dependencies.append(Depends(guard))
+    try:
+        assert a.get("/api/v1/session").status_code == 200
+    finally:
+        app.router.dependencies.pop()
+    assert len(calls) == 1

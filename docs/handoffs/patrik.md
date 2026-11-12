@@ -1,11 +1,11 @@
 # patrik handoff
-Updated: 2026-11-12T21:55Z
+Updated: 2026-11-12T22:22Z
 Current phase:
 - P1 verified locally.
 - P2 privacy-owned pieces are built and verified locally: public projections, leak guard and privacy UI.
 - P2 live integration (Will's consent wiring, Kai's guards at routes and subscriptions) is not done.
 Status: verified with synthetic fixtures against local Postgres plus a local browser run. Not integrated into Kai's server or Will's shell, not deployed, no live users.
-Branch: role/patrik-privacy. Commits: b192050 (P1), plus the P2 commit "feat(privacy): public projections, leak guard and privacy UI".
+Branch: role/patrik-privacy. P1 (b192050) and P2 (329078f) merged to main via PR #6 (616e543). This update is the integration-fixes commit on top of main.
 Shared contract: 1.0.0, unchanged. The additive routes, DTOs and semantics are in docs/DECISIONS.md **D007**, renumbered from my D005 because Rishi and Adam also used D005. ACKs pending.
 
 ## Completed deliverables
@@ -26,7 +26,29 @@ Shared contract: 1.0.0, unchanged. The additive routes, DTOs and semantics are i
   - `docs/DECISIONS.md` (D007, including ACK notes on Rishi D005 and Adam D005 items 2/3/5)
   - no changes to `web/src/App.tsx`, `vite.config.ts` or the shell
 
+## Main sync (e5ba4d5: Kai's server + CI and Will's shell merged)
+- **Merge:** merged origin/main into role/patrik-privacy. The DECISIONS.md conflict was resolved by keeping D007 and Kai's D006. D007 now records Kai's ACK from D006.
+- **Backend CI, run locally:** fresh venv, `pip install -r server/app/requirements-dev.lock -r server/privacy/requirements.txt`, `pip install --no-deps -e .`, `pip check` gives no broken requirements. `pytest tests` against Postgres: 262 passed. Privacy testcases: 108, none skipped. The Kai composition test now runs instead of skipping.
+- **Frontend CI, run locally:** `npm ci && npm run lint && npm run build && npm run test:e2e`: 36 passed.
+- **Not done, needs Will:** registering `featureSlots.privacy = PrivacySlot`. Registering it now would replace Will's fixture-consent stand-in and break his 9 tests that call `grantFixtureConsent` (they check the "Fixture consent" checkbox). Exact switch-over for Will's spec helper, in fixture mode: click "Continue", fill "Display name", switch on "Find me a group" and "Let Muse read my preferences", click "Join community", wait for "You can be matched".
+
+## Integration fixes after Kai/Will branches
+These came from inspecting `origin/role/kai-orchestration@339ea63` and `origin/role/will-voice-ui@45a6732`:
+- **Error handler:** `server/privacy/registration.py` provides `privacy_registration(service)` for Kai's `create_app`, plus `install_privacy_error_handler(app)`. Without the handler, privacy errors become 503 PROVIDER_UNAVAILABLE in Kai's app (reproduced).
+- **Readiness:** a DB readiness probe that runs off the event loop.
+- **Single resolve:** the actor is resolved once per request.
+- **Idempotency:** the web client sends `Idempotency-Key` on every mutation, as Kai's registry requires.
+- **Will's slot:** `PrivacySlot` matches Will's `PrivacySlotProps {communityId, mode, onConsentChange}`.
+- **`revokedAt` narrowed** to matching/model withdrawal, so Will's `revokedAt === null` check is correct.
+- **Communities:** `db/privacy/002_demo_communities.sql` seeds Will's demo communities.
+
 ## Checks run + actual result
+- Integration fixes:
+  - `pytest tests/privacy tests/matching` on this branch: 205 passed, 1 skipped (the Kai composition test skips until Kai merges)
+  - `pytest tests/privacy` with Kai's `server/app` (339ea63, exported, not merged) on PYTHONPATH: 108 passed. This includes 5 composition tests: bootstrap needs a key but no session, protected routes give 401, privacy codes are preserved (409/404/400, not 500/503), Will's communities are joinable, readiness reports privacy ready.
+  - Browser check: `PrivacySlot` → Vite proxy → Kai's `create_app` + privacy → Postgres. It reported `null` before joining and v1 granted after; hiding interests kept `revokedAt` null; a stale save from a second tab gave 409 and a reload; withdrawing matching set `revokedAt`; all 5 mutations carried `Idempotency-Key`. The temporary files and servers were removed afterwards.
+  - `web`: tsc, oxlint and vite build ok.
+- Earlier P1/P2 checks:
 - `server/.venv/bin/python -m pytest tests/privacy -q`: 100 passed. That's 76 from P1 plus 24 projection tests:
   - allowlist drops memberVersions/feasibleWindows/private fields
   - synthetic label can't be altered
@@ -52,15 +74,16 @@ Shared contract: 1.0.0, unchanged. The additive routes, DTOs and semantics are i
 
 ## Next consumer + exact action
 - Kai:
-  - mount `build_router` and `install_error_handlers` at /api/v1, with `actor_dependency` on every route
+  - `create_app(registrations=[privacy_registration(service), ...])` then `install_privacy_error_handler(app)`
+  - add `psycopg[binary]>=3.2` and `psycopg-pool>=3.2` to pyproject
+  - `tests/privacy/test_privacy_kai_composition.py` runs automatically once server/app is on main
   - run the db/privacy migration first; FK to `privacy.participants` / `privacy.communities`
   - jobs store the enqueuing participantId, then `reauthorize_for_job` and `check_member_versions` before publishing
   - pass proposals and plans through `validate_public_proposal` / `project_plan` before any peer read, SSE or snapshot
   - register a `ChangeNotice` listener to invalidate jobs
   - ACK D007
 - Will:
-  - mount `<PrivacyCenter client={httpPrivacyClient()} .../>` in the feature shell
-  - gate "Find my group" with `onMatchableChange`
+  - register `featureSlots = { privacy: PrivacySlot }` (one line in shell/slots.ts)
   - add a vite `/api` proxy
   - onboarding confirm step calls `PUT /intents/me` with `expectedVersion` (0 = create)
   - ACK D007

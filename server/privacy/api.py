@@ -50,8 +50,16 @@ def session_token(request: Request) -> str | None:
 
 
 def actor_dependency(service: PrivacyService) -> Callable[[Request], Actor]:
+    """Resolve the session once per request; Kai's router-level guard and the
+    route-level dependency then share the same verified Actor."""
+
     def require_actor(request: Request) -> Actor:
-        return service.resolve(session_token(request))
+        cached = getattr(request.state, "gq_actor", None)
+        if isinstance(cached, Actor):
+            return cached
+        actor = service.resolve(session_token(request))
+        request.state.gq_actor = actor
+        return actor
 
     return require_actor
 
@@ -62,12 +70,19 @@ def error_response(request: Request, code: str, message: str, status: int, retry
     return JSONResponse(body.wire(), status_code=status, headers={"X-Request-Id": rid})
 
 
-def install_error_handlers(app: FastAPI) -> None:
-    """ApiError envelopes. Validation errors never echo submitted values."""
+def install_privacy_error_handler(app: FastAPI) -> None:
+    """PrivacyError -> ApiError. The only handler Kai's composed app needs from
+    privacy; request ids, validation errors and sanitizing stay Kai's."""
 
     @app.exception_handler(PrivacyError)
     async def _privacy(request: Request, exc: PrivacyError) -> JSONResponse:
         return error_response(request, exc.code, exc.message, exc.status, exc.retryable)
+
+
+def install_error_handlers(app: FastAPI) -> None:
+    """Standalone setup for the privacy dev harness and tests: privacy errors plus
+    request ids and validation envelopes. Kai's app uses install_privacy_error_handler."""
+    install_privacy_error_handler(app)
 
     @app.exception_handler(RequestValidationError)
     async def _invalid(request: Request, exc: RequestValidationError) -> JSONResponse:
