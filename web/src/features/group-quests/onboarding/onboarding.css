@@ -1,0 +1,304 @@
+/* Onboarding styles; scoped to .gq-root (provided by the feature shell). */
+.gq-root .gq-onboarding {
+  min-width: 0;
+}
+.gq-root .gq-card-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.gq-root .gq-card-title:focus {
+  outline: none;
+}
+.gq-root .gq-card-success {
+  border-color: #a8dfbc;
+}
+.gq-root .gq-muted {
+  color: var(--gq-muted);
+}
+.gq-root .gq-small {
+  font-size: 13px;
+}
+.gq-root .gq-strong {
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.gq-root .gq-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.gq-root .gq-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.gq-root .gq-row-between {
+  justify-content: space-between;
+}
+.gq-root .gq-actions {
+  margin-top: 16px;
+}
+.gq-root .gq-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color 0.12s;
+}
+.gq-root .gq-button-primary {
+  background: var(--gq-accent);
+  color: white;
+}
+.gq-root .gq-button-primary:hover:not(:disabled) {
+  background: var(--gq-accent-hover);
+}
+.gq-root .gq-button-secondary {
+  background: var(--gq-accent-soft);
+  color: var(--gq-accent);
+}
+.gq-root .gq-button-secondary:hover:not(:disabled) {
+  background: #e2dbff;
+}
+.gq-root .gq-button-ghost {
+  background: transparent;
+  color: var(--gq-muted);
+}
+.gq-root .gq-button-ghost:hover:not(:disabled) {
+  background: #f1f0f5;
+}
+.gq-root .gq-voice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+.gq-root .gq-button-record {
+  background: #fff0f0;
+  color: #a1251b;
+  border: 1px solid #f5c2c0;
+}
+.gq-root .gq-button-record.is-recording {
+  background: #a1251b;
+  color: white;
+}
+.gq-root .gq-record-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.gq-root .is-recording .gq-record-dot {
+  animation: gq-pulse 1s ease-in-out infinite;
+}
+@keyframes gq-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+.gq-root .gq-label {
+  display: block;
+  font-weight: 700;
+  margin: 12px 0 6px;
+  padding: 0;
+}
+.gq-root .gq-mini-label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gq-muted);
+  min-width: 0;
+}
+.gq-root .gq-input,
+.gq-root .gq-textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #cfcbe0;
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: white;
+  color: var(--gq-ink);
+}
+.gq-root .gq-row .gq-input {
+  flex: 1 1 160px;
+  width: auto;
+}
+.gq-root .gq-textarea {
+  resize: vertical;
+}
+.gq-root .gq-input:disabled,
+.gq-root .gq-textarea:disabled {
+  background: #f6f5f9;
+}
+.gq-root .has-error .gq-input,
+.gq-root .has-error .gq-textarea,
+.gq-root .gq-input[aria-invalid="true"] {
+  border-color: var(--gq-danger);
+}
+.gq-root .gq-error {
+  color: var(--gq-danger);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 6px 0 0;
+}
+.gq-root .gq-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.gq-root .gq-subfieldset {
+  border: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  min-width: 0;
+}
+.gq-root .gq-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+}
+.gq-root .gq-window {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+.gq-root .gq-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.gq-root .gq-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 12px;
+  border-radius: 999px;
+  background: var(--gq-accent-soft);
+  color: var(--gq-accent);
+  font-weight: 600;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.gq-root .gq-chip-remove {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+}
+.gq-root .gq-chip-remove:hover {
+  background: #ddd4ff;
+}
+.gq-root .gq-alert {
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 12px 0 0;
+}
+.gq-root .gq-alert p {
+  margin: 0;
+}
+.gq-root .gq-alert .gq-row {
+  margin-top: 8px;
+}
+.gq-root .gq-alert-info {
+  background: #f4f2fb;
+}
+.gq-root .gq-alert-error {
+  background: #fdecea;
+  color: #7a1a12;
+}
+.gq-root .gq-questions {
+  margin: 0;
+  padding-left: 18px;
+}
+.gq-root .gq-questions a {
+  color: var(--gq-accent);
+  text-decoration: underline;
+}
+.gq-root .gq-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  color: var(--gq-muted);
+}
+.gq-root .gq-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid var(--gq-accent-soft);
+  border-top-color: var(--gq-accent);
+  animation: gq-spin 0.8s linear infinite;
+}
+@keyframes gq-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.gq-root .gq-summary {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 16px 0 0;
+}
+.gq-root .gq-summary dt {
+  font-weight: 700;
+  color: var(--gq-muted);
+}
+.gq-root .gq-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.gq-root .gq-summary ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (max-width: 599px) {
+  .gq-root .gq-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gq-root .gq-window {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--gq-line);
+  }
+  .gq-root .gq-window .gq-mini-label:first-child {
+    grid-column: 1 / -1;
+  }
+  .gq-root .gq-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .gq-root .gq-summary dd {
+    margin-bottom: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gq-root .gq-spinner,
+  .gq-root .is-recording .gq-record-dot {
+    animation: none;
+  }
+}

@@ -1,5 +1,5 @@
 # patrik handoff
-Updated: 2026-11-12T21:39Z
+Updated: 2026-11-12T22:22Z
 Current phase:
 - P1 verified locally.
 - P2 privacy-owned pieces are built and verified locally: public projections, leak guard and privacy UI.
@@ -26,7 +26,13 @@ Shared contract: 1.0.0, unchanged. The additive routes, DTOs and semantics are i
   - `docs/DECISIONS.md` (D007, including ACK notes on Rishi D005 and Adam D005 items 2/3/5)
   - no changes to `web/src/App.tsx`, `vite.config.ts` or the shell
 
-## Integration fixes after Kai/Will branches (this update)
+## Main sync (e5ba4d5: Kai's server + CI and Will's shell merged)
+- **Merge:** merged origin/main into role/patrik-privacy. The DECISIONS.md conflict was resolved by keeping D007 and Kai's D006. D007 now records Kai's ACK from D006.
+- **Backend CI, run locally:** fresh venv, `pip install -r server/app/requirements-dev.lock -r server/privacy/requirements.txt`, `pip install --no-deps -e .`, `pip check` gives no broken requirements. `pytest tests` against Postgres: 262 passed. Privacy testcases: 108, none skipped. The Kai composition test now runs instead of skipping.
+- **Frontend CI, run locally:** `npm ci && npm run lint && npm run build && npm run test:e2e`: 36 passed.
+- **Not done, needs Will:** registering `featureSlots.privacy = PrivacySlot`. Registering it now would replace Will's fixture-consent stand-in and break his 9 tests that call `grantFixtureConsent` (they check the "Fixture consent" checkbox). Exact switch-over for Will's spec helper, in fixture mode: click "Continue", fill "Display name", switch on "Find me a group" and "Let Muse read my preferences", click "Join community", wait for "You can be matched".
+
+## Integration fixes after Kai/Will branches
 These came from inspecting `origin/role/kai-orchestration@339ea63` and `origin/role/will-voice-ui@45a6732`:
 - **Error handler:** `server/privacy/registration.py` provides `privacy_registration(service)` for Kai's `create_app`, plus `install_privacy_error_handler(app)`. Without the handler, privacy errors become 503 PROVIDER_UNAVAILABLE in Kai's app (reproduced).
 - **Readiness:** a DB readiness probe that runs off the event loop.

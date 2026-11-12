@@ -46,7 +46,9 @@ export default function Header() {
   const title =
     pathname === "/watch"
       ? "Reels"
-      : pathname.slice(1).replace(/^\w/, (char) => char.toUpperCase());
+      : /^\/groups\/[^/]+\/quests$/.test(pathname)
+        ? "Group Quests"
+        : pathname.slice(1).replace(/^\w/, (char) => char.toUpperCase());
 
   useEffect(() => {
     function dismiss(event: PointerEvent) {
