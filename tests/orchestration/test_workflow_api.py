@@ -182,5 +182,11 @@ def test_withdrawn_matching_consent_blocks_even_an_idempotent_replay(workflow_sc
             },
         )
         response = client.post(path, headers=headers, json={"revision": 1, "choice": "accept"})
-        assert response.status_code == 403
-        assert response.json()["error"]["code"] in {"CONSENT_REQUIRED", "FORBIDDEN"}
+        # RLS hides the quest after withdrawal, so NOT_FOUND is also a valid
+        # denial and must never replay the earlier successful response.
+        assert (response.status_code, response.json()["error"]["code"]) in {
+            (403, "CONSENT_REQUIRED"),
+            (403, "FORBIDDEN"),
+            (404, "NOT_FOUND"),
+        }
+        assert case.plan["title"] not in response.text
