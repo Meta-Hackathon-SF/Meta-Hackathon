@@ -105,3 +105,17 @@ Status: proposed. Implemented and offline-tested on role/adam-planning. Not inte
 ACK evidence: pending. Will: items 1, 4 and 5 (UI shapes). Patrik: items 1, 2 and 4 (privacy). Kai: items 3, 4, 5 and 6 (storage, transitions, routes). Rishi: items 2 and 3 (ranking input).
 Contract version / migration: additive; CONTRACT_VERSION stays 1.0.0 until ACK, then 1.1.0 together with the D005 shapes. Validators that reject unknown fields must add `Candidate.preferences` before producers send it. No database migration from Adam.
 Verification: `python3 -m unittest discover -s tests/planning -t .` gives 97 OK. `pytest tests/matching tests/planning` gives 199 passed. Live: the two calls in item 7 only. The new 1.1.0 tasks have not been called live.
+
+## D009: Product pivot to Constellations and proposed contract 2.0.0 (Rishi)
+ID / UTC timestamp: D009 / 2026-11-13T00:00Z
+Decision and rationale: Per the team PRD ("Constellations: Product Requirements Document", Nov 12 2026), the product changes from Group Quests to Constellations: a campus secret-society game inside Facebook Groups where Muse (the Keeper) reads private weekly confessions, forms societies of 3-5 by meaning, writes riddle chains, and reveals the community as a Sky of guessed vs actual prevalence. Rationale: a sharper young-adult problem (pluralistic ignorance among new students), AI that is essential (matching thousands of private answers by meaning and writing safe personal clues), and a live room-scale demo.
+Owner / affected producers and consumers (proposed, each must ACK):
+- Rishi: induction engine (M3 theme discovery, M4 society formation, validation, baseline comparison), induction UI.
+- Adam: single Muse adapter, Keeper prompting, M2 clarify, M5 identity, M6 riddles, M7 ritual quest, M8 Sky narration; Hunt UI.
+- Will: join/QR, confession capture (voice/text), follow-up, guess slider, edit/delete, feature composition and routing; Muse metadata chip.
+- Patrik: consent (3 toggles incl. 18+), private answers, blocks, M1 safety triage, output guard (no-quote 5+ words, sensitive terms), Sky threshold, deletion and 14-day TTL; consent screen and support card.
+- Kai: round lifecycle, parallel Muse job orchestration, passphrase/found-code confirm, SSE, Sky aggregates, ritual event + chat (P1), operator console, synthetic top-up, reset.
+Status (proposed or accepted): Product direction accepted by the team lead (Rishi). Ownership split and contract 2.0.0 proposed; pending ACKs.
+ACK evidence: pending Adam, Will, Patrik, Kai.
+Contract version / migration: contracts/constellations.ts at "2.0.0-proposed" is additive; contracts/protocol.ts 1.x stays in place (merged code and tests parse it) until each owner migrates. Reused merged modules: providers adapter (live-verified muse-spark-1.3, 2 calls), privacy sessions/consent, matching constraint validation and eval harness, orchestration workflow, voice transcription.
+Verification: documentation only; no Constellations runtime exists yet. Observed muse-spark-1.3 single-call latency of 17-24 s (2 calls) means the <60 s induction target requires parallel calls; tracked as top technical risk.

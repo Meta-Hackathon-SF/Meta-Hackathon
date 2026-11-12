@@ -1,45 +1,64 @@
-# Kai: Reliable event orchestration system
-Branch: `role/kai-orchestration`. Read root AGENTS.md and shared contracts first.
+# Kai: Round lifecycle and operator console
+Branch: `role/kai-orchestration` (unchanged). Read root AGENTS.md, PROJECT_KNOWLEDGE.md, docs/DECISIONS.md D009 and `contracts/constellations.ts` (version `2.0.0-proposed`) first. `contracts/protocol.ts` 1.x stays as legacy until you migrate; do not delete it.
+
+Product: Constellations, a campus secret-society game inside Facebook Groups. Muse is the Keeper (game master). Weekly Confession, Induction into societies of 3-5 by meaning, Hunt with 3-level riddles, in-person passphrase/found-code confirm, Sky reveal (guessed vs actual prevalence), then a Ritual quest (P1). Friendship only, 18+. Muse proposes, code enforces.
 
 ## Mission
-Start execution with [your phase-by-phase build checklist](../phases/kai.md). It specifies paths, work, dependencies, exit evidence and handoffs for P0-P6.
+Start with [your phase-by-phase build checklist](../phases/kai.md). It specifies paths, work, dependencies, exit evidence and handoffs for P0-P6 on the re-based timeline (P0 16:00 PST, freeze 04:30, deadline 10:30 AM PST Nov 13, team-supplied and not independently verified).
 
-Own durable state transitions and real-time delivery so model-generated proposals produce one correct event even under retries and simultaneous users.
+Own the round lifecycle and live delivery: open, locked, inducting, hunt levels, sky, closed. Fan out Muse calls in parallel so induction finishes in under 60 s, run mutual idempotent passphrase/found-code confirms, stream updates over SSE, compute Sky aggregates, and own the operator console and the Sky projector view.
+
+First action: record your ACK of D009 (proposed ownership and contract 2.0.0) in docs/DECISIONS.md or the PR discussion.
 
 ## Ownership
 - `server/orchestration/`
 - `server/app/`
 - `db/workflow/`
-- `web/src/features/group-quests/events/`
+- `web/src/features/constellations/operator/` (operator console)
+- `web/src/features/constellations/sky/` (Sky projector view, constellation light-up)
+- `web/src/features/constellations/events/` (ritual event + chat, P1)
 - `tests/orchestration/`
 Also own this role document, docs/handoffs/kai.md and docs/updates/kai.md.
-These are reserved paths; implementation does not exist until you add it.
+UI moves from `web/src/features/group-quests/<area>/` to `web/src/features/constellations/<area>/`; Will migrates the shell. Merged Group Quests code stays until migrated.
+
+## Reuse of merged modules
+`server/app` registry and /health composition baseline; `server/orchestration/` workflow, jobs/outbox, idempotency ledger and worker leases. Adapt: quests/proposals become rounds/societies/finds; the acceptance ledger becomes the idempotent Find; jobs/outbox drive parallel Muse calls; SSE snapshot stream reused for rounds.
 
 ## Producer/consumer contract
-Inputs: Patrik's authorization/consent guards; Rishi's versioned proposals; Adam's PlanningPort; participant commands from feature UI.
-Outputs: Persistent quests/events/messages/jobs, API composition, authorized SSE snapshots, event-room UI, draft hosting and recoverable failure states.
-Give each owner API registration conventions, Will event-room components and stream client contract, Patrik table schema for policy review.
+Inputs: Patrik's session/authorization hooks; Rishi's validated societies; Adam's M5/M6/M8/M7 job functions; Will's answer, guess and stream client; operator actions.
+Outputs: `Round` state machine (`status`, `levelUnlocked` 0-3, `demoTiming`), `Find` (mutual, idempotent, unique pair), `FoundCode`, `POST /rounds/:id/finds` returning confirmed|pending|not_a_match (wrong code reveals nothing; `NOT_IN_SOCIETY`), `SkyStats` (counts computed by server, `count >= threshold` themes only), `RitualQuest` approvals (P1), operator routes (create round, lock, advance-level, sky, reset, synthetic-topup, calls metadata), `GET /rounds/:id/stream`, ModelEvidence list.
+Give everyone API registration conventions; give Will the stream client and Sky/operator components; give Patrik table schema for policy review; give Adam server counts for M8.
+
+## Muse jobs owned
+None owned; orchestrates M1-M8 (parallel M5 per society, parallel M6 per target/seeker, precompute while the round is open where possible, retries and labeled fallbacks).
+Muse model verified live: `muse-spark-1.3` (provider echoed the model). Observed single-call latency 17-24 s at low reasoning effort (2 calls, not a benchmark), so fan-out must be parallel. Every Muse response shown in the UI carries a chip: model, call type, latency; cached responses are labeled "Replay of a saved round."
+
+## UI owned
+Operator console (pick question, open/lock, advance level, trigger Sky, reset, load synthetic top-up, per-call model metadata and latency); Sky projector view and in-Group Sky (stars are members, lines are confirmed finds, guessed vs actual prevalence); constellation light-up on confirm.
 
 ## Implementation sequence
-1. Scaffold backend and reproducible run instructions; coordinate server manifests and migration ordering.
-2. Implement acceptance transactions, capacity checks, idempotency ledger, outbox/worker leases and unique event identities.
-3. Dispatch planning after code detects quorum; revalidate versions before effects and require reconfirmation for material changes.
-4. Persist room conversation with explicit assistant identity; implement reconnect snapshot and sequence deduplication.
-5. Implement live change trigger, next-week time-skip command and explicit host acceptance creating draft/invite.
-6. Build event room components and demonstrate concurrency/crash/retry behavior.
+1. Reply D009 ACK first; agree session/auth and table order with Patrik; adapt registry to /api/v1 routes.
+2. Round state machine with ROUND_LOCKED errors and persistence; operator create/lock/advance/sky/reset.
+3. Lock pipeline: M1 (all answers, parallel) then M3/M4 then M5 per society in parallel then M6 fan-out; each output guarded; record call evidence; target 30 players in under 60 s.
+4. Find confirmation: mutual, idempotent, unique pair, found code 4 chars; wrong code returns generic not_a_match; constellation light-up via SSE.
+5. Sky aggregates from server counts (guessed vs actual per theme, society and find counts) with threshold; M8 narration validated against counts.
+6. Operator console, labeled synthetic top-up loader ("Synthetic player"), reset isolation; then ritual event + chat with 3+ approvals (P1).
 
 ## Checkpoints
-H1: acknowledge contracts, confirm dependencies and claim shared files.
-H4: independently executable module with synthetic fixtures and clear status.
-H7: integrated intent-to-event path with other owners.
-H10: handle live changes and failed inputs.
-H13: support next-week/hosting continuation and integration scenarios.
-H16: feature freeze; provide test evidence and no remaining contract ambiguity.
-Final six hours: polish your component, verify integration, and participate in shared demo work.
+H0-1 (16:00-17:00 PST, P0): ACK D009 first, confirm dependencies, claim shared files.
+17:00-20:00 (P1): module runs alone against labeled synthetic fixtures with clear status.
+20:00-23:00 (P2): integrated round on 3+ phones: join, confess, induct, riddles, confirm.
+23:00-02:00 (P3): Sky, safety triage, blocks and operator console complete; failure cases pass.
+02:00-04:30 (P4/P5): P1 features (ritual, riddle veto) only if the critical path is green; hardening; feature freeze at 04:30 with test evidence and no contract ambiguity.
+04:30-10:30 (P6): UI/demo/submission only. Polish your component, verify integration, rehearse, support backup video and Devpost.
 
 ## Required checks
-Concurrent accepts at capacity; duplicate key/same body; same key/new body; crash after commit; stale provider result; revoked actor; stream reconnect; duplicated opener; host acceptance replay.
-Report exact commands/results; do not manufacture performance or quality numbers.
+- Induction for 30 players in under 60 s (record actual); every society validated before release.
+- Confirmation mutual and idempotent; duplicate delivery and retries create one Find; wrong code never reveals membership.
+- Concurrent finds and double lock; crash after commit; stale provider result; SSE reconnect replay; revoked actor.
+- Sky: no theme, stat or line identifies an individual answer; M8 numbers match server counts.
+- Demo timing label; reset cannot erase unrelated sessions; synthetic top-up labeled.
+Report exact commands/results; do not manufacture performance or quality numbers. Fixture or fake-provider tests prove local behavior, not live Muse integration; label every synthetic element.
 
 ## Branch workflow
 ```sh
@@ -49,7 +68,7 @@ git switch --track origin/role/kai-orchestration
 git merge origin/main
 git status --short
 ```
-Only merge main into a clean branch. Use a separate worktree for another agent, not a shared checkout switched underneath it. Push to role/kai-orchestration; do not force-push. Shared contract modifications go through an explicit producer/consumer agreement and merge before dependent work.
+Only merge main into a clean branch. Use a separate worktree for another agent, not a shared checkout switched underneath it. Push to role/kai-orchestration; do not force-push. Shared contract modifications go through an explicit producer/consumer agreement in docs/DECISIONS.md and merge before dependent work.
 
 ## First prompt for your coding agent
-Read AGENTS.md, all common contract documents, docs/roles/kai.md and docs/handoffs/kai.md. Confirm the current branch is role/kai-orchestration. Inspect existing code, preserve unrelated edits, and implement the first incomplete checkpoint in my owned paths. Use the common contracts; report a concrete interface mismatch instead of creating a private incompatible version. Keep my handoff/log updated with verified evidence. Group Quests has a separate feature UI inside the existing mock Facebook shell.
+Read AGENTS.md, PROJECT_KNOWLEDGE.md, docs/DECISIONS.md (D009), contracts/constellations.ts, docs/roles/kai.md and docs/handoffs/kai.md. Confirm the current branch is role/kai-orchestration. First record my D009 ACK. Inspect existing code, preserve unrelated edits, and implement the first incomplete checkpoint in my owned paths, adapting the merged modules named above. Use the common contracts; report a concrete interface mismatch instead of creating a private incompatible version. Keep my handoff/log updated with verified evidence. Constellations has a separate feature UI at web/src/features/constellations/ inside the existing mock Facebook shell.

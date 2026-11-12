@@ -32,7 +32,7 @@ The human authorizes automatic integration at meaningful work checkpoints. No ad
 This is authorization for agents while they are working, not a claim that an unattended merge bot or GitHub repository auto-merge is configured. Respect repository permissions and protection rules.
 
 ## Shared facts
-Group Quests is the product; Muse is the required model family. The current web app is a mock Facebook shell. Build a separately designed feature under web/src/features/group-quests/. Do not rewrite the feed, reuse its localStorage as production persistence, or claim its mock sessions provide authentication. Keep shell integration small.
+**Constellations** is the product (pivoted from Group Quests on 2026-11-12; see docs/DECISIONS.md D009 and README.md). Muse is the required model family and plays the game master, "the Keeper"; the verified model is `muse-spark-1.3`. The proposed contract is contracts/constellations.ts (2.0.0-proposed); contracts/protocol.ts remains the legacy 1.x contract still used by merged modules and tests until each owner migrates. The current web app is a mock Facebook shell. Build a separately designed feature under web/src/features/constellations/ (Will migrates reusable pieces from web/src/features/group-quests/). Do not rewrite the feed, reuse its localStorage as production persistence, or claim its mock sessions provide authentication. Keep shell integration small.
 
 Runtime systems are not implemented merely because a contract or directory exists. Preserve planned / implemented / verified / deployed distinctions. All code must be new for this hackathon. Use dor only as documentation inspiration.
 
@@ -54,7 +54,7 @@ Auth comes from server-verified sessions, never a client-supplied participantId 
 ## Handoffs and verification
 Update docs/handoffs/<name>.md and append docs/updates/<name>.md at checkpoints with timestamp, branch/commit, changed contracts/files, commands/results, blocked dependencies and exact next consumer action. Inspect remote role logs when local main is stale. Shared context lives on main, not in private copies.
 
-Use focused tests for your behavior. Document failures honestly. For UI work run relevant web checks; for security/concurrency changes include adversarial cases. Never call a plan implemented, a replay live, or a target achieved. Update PROJECT_KNOWLEDGE.md when a merged implementation changes the evidence.
+Use focused tests for your behavior. Document failures honestly. For UI work run relevant web checks; for security/concurrency changes include adversarial cases. Never call a plan implemented, a replay live, or a target achieved. Never let a player see another player's words: riddles, society names and Sky themes pass the no-quote and sensitive-term guards, and safety-flagged answers never reach any game output. Update PROJECT_KNOWLEDGE.md when a merged implementation changes the evidence.
 
 ## Finish
 Push your role branch, report exact scope and verification, and open or prepare a reviewable PR if authorized. Keep main's documentation synchronized with implemented contracts. No unrequested new services, paid provider runs, or public deployments solely to verify documentation.

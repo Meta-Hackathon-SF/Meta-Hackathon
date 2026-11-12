@@ -1,57 +1,57 @@
 # Adam: phased build playbook
 
-Read [your role](../roles/adam.md), [shared instructions](../../AGENTS.md), and [phase coordination](README.md) first.
-Hours are elapsed from the team's agreed start; check [the shared schedule](../PLAN.md) for clock times. Inspect current code and your handoff before choosing a phase. These checklists describe required work, not completion evidence.
+Read [your role](../roles/adam.md), [shared instructions](../../AGENTS.md), `contracts/constellations.ts` and [phase coordination](README.md) first.
+Times are PST on Nov 12-13, 2026 (P0 starts 16:00; feature freeze 04:30; deadline 10:30 AM, team-supplied and not independently verified). Inspect current code and your handoff before choosing a phase. These checklists describe required work, not completion evidence; check an item only with evidence.
 
-## P0: Verify provider and ports (H0-1)
+## P0: Acknowledge and baseline (16:00-17:00)
 
-- [ ] Build: Read protocol and workflow contracts. Confirm model ID, auth, endpoint, structured-output support and audio support from organizer materials. Define adapter construction for Rishi and extraction result for Will.
-- [ ] Exit evidence: Sanitized provider configuration notes and one verified call when credentials are available.
-- [ ] Dependency / parallel fallback: If access is missing, document it and build the fake adapter without claiming live integration.
+- [ ] **D009 ACK (first item):** Reply to D009 (Constellations pivot, contract `2.0.0-proposed`) with your ACK or a concrete objection in docs/DECISIONS.md or the PR discussion. This is the first P0 item; nothing else is built before it.
+- [ ] Build: Read contracts/constellations.ts and D009. Reconfirm the live `muse-spark-1.3` adapter still works with one call; list task names to add (safety_screen ... sky_narration). Claim `constellations/hunt/`.
+- [ ] Exit evidence: ACK recorded; one live call echo and latency recorded (no secrets).
+- [ ] Dependency / parallel fallback: If provider fails, report; fixtures continue.
 - [ ] Handoff: update `docs/handoffs/adam.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/adam.md`.
 
-## P1: Build provider, extraction and validators (H1-4)
+## P1: Module with synthetic fixtures (17:00-20:00)
 
-- [ ] Build: Implement server/providers/ MusePort with bounded timeout, cancellation and sanitized error handling. Implement server/planning/ intent extraction and missing-field output. Add runtime validators for model responses.
-- [ ] Exit evidence: Rishi can call your adapter; Will can render a private draft and required follow-up fields.
-- [ ] Dependency / parallel fallback: Do not couple provider client to Kai's database implementation.
+- [ ] Build: Keeper system prompt, strict JSON schemas, one retry then labeled fallback; M5 identity, M6 riddles, M2 clarify as callable jobs; test fake MusePort; Hunt view against fixture riddles.
+- [ ] Exit evidence: Fixture societies yield identity and 3-level riddles passing the no-quote and sensitive checks; fake port published to teammates.
+- [ ] Dependency / parallel fallback: Patrik's guard may be a stub; swap for the real one at P2.
 - [ ] Handoff: update `docs/handoffs/adam.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/adam.md`.
 
-## P2: Plan an actual group activity (H4-7)
+## P2: Integrated round on 3+ phones (20:00-23:00)
 
-- [ ] Build: Consume GroupProposal and authorized participant constraints. Select approved venue/time/cost and an interaction-producing task. Build planning/ proposal UI and publish component props.
-- [ ] Exit evidence: A real group produces a feasible structured plan that Kai can persist after validation and acceptance.
-- [ ] Dependency / parallel fallback: Rishi provides proposals; Patrik minimizes inputs; Kai owns persistence.
+- [ ] Build: Live M5 per society and M6 per target/seeker in parallel from Kai's fan-out; M2 clarify endpoint for Will; Hunt view wired to `GET /rounds/:id/riddles` with released levels only.
+- [ ] Exit evidence: Live riddles for a 3+ phone round; per-call latency and model recorded; no riddle contains 5+ answer words.
+- [ ] Dependency / parallel fallback: Needs Rishi's societies and Patrik's findable details.
 - [ ] Handoff: update `docs/handoffs/adam.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/adam.md`.
 
-## P3: Implement revisions (H7-10)
+## P3: Sky, safety, blocks, operator complete (23:00-02:00)
 
-- [ ] Build: On changed availability, produce a new proposal or needs_input/no_feasible_plan. Include revision lineage; prevent public explanations from revealing private constraints.
-- [ ] Exit evidence: Demo a changed constraint altering the plan; the event is not silently rescheduled without reconfirmation.
-- [ ] Dependency / parallel fallback: Kai discards stale jobs and executes effects; you only return proposals.
+- [ ] Build: M8 Sky narration validated against server counts; M6 self-check field; red-team list of 30 answers through the guard; injection test.
+- [ ] Exit evidence: Every M8 number matches server counts; red-team results recorded.
+- [ ] Dependency / parallel fallback: Needs Kai's Sky counts.
 - [ ] Handoff: update `docs/handoffs/adam.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/adam.md`.
 
-## P4: Generate continuation and host invitation (H10-13)
+## P4: P1 features and hardening (02:00-03:30)
 
-- [ ] Build: Implement PlanningPort.continue using voluntary feedback and current participants. Generate a small next activity and a suggested willing host.
-- [ ] Exit evidence: Live reasoning follows the labeled time skip; host suggestion does not claim that attendance happened.
-- [ ] Dependency / parallel fallback: Kai supplies feedback/state and implements explicit host acceptance.
+- [ ] Build: M7 ritual quest (P1): venue from approved public list, under budget; riddle veto support (P1) if green.
+- [ ] Exit evidence: Out-of-allowlist venue rejected; nothing created without 3 approvals (with Kai).
+- [ ] Dependency / parallel fallback: Cut first if P3 not fully verified.
 - [ ] Handoff: update `docs/handoffs/adam.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/adam.md`.
 
-## P5: Freeze with adversarial evidence (H13-16)
+## P5: Freeze verification (03:30-04:30)
 
-- [ ] Build: Exercise malformed JSON, invalid venues, impossible plans, timeouts, injection and stale inputs. Document actual latency and schema validity.
-- [ ] Exit evidence: Provider and planning tests, verified integration, clear replay behavior and up-to-date handoff.
-- [ ] Dependency / parallel fallback: Do not add more model families just for the pitch.
+- [ ] Build: Freeze: failure cases (timeout, malformed JSON, replay labels) pass; latency numbers recorded.
+- [ ] Exit evidence: Verified results in handoff; live vs replay labeling confirmed.
+- [ ] Dependency / parallel fallback: Preserve failure state; no fake success.
 - [ ] Handoff: update `docs/handoffs/adam.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/adam.md`.
 
-## P6: Polish the reasoning demonstration (H16-22)
+## P6: UI, rehearsal, backup, submission (04:30-10:30)
 
-- [ ] Build: Improve public plan and change explanations, verify live model labels, rehearse adaptation and support the backup recording.
-- [ ] Exit evidence: Planning/replanning works in the five-minute flow; fallback is honest and recoverable.
-- [ ] Dependency / parallel fallback: No unvalidated feature additions after freeze.
+- [ ] Build: Hunt view polish, rehearsal of riddle reveals (Demo timing label), backup recording support, Devpost AI-integration section from evidence.
+- [ ] Exit evidence: Stable Hunt segment.
+- [ ] Dependency / parallel fallback: Critical fixes only.
 - [ ] Handoff: update `docs/handoffs/adam.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/adam.md`.
-
 
 ## Resume-worthy evidence
 Own the implementation and keep reproducible measurements for your system. Test counts alone are not impact. Report actual correctness, latency, reliability or observed usability results, with scope and limitations. Do not invent achieved improvement or user adoption.

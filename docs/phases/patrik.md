@@ -1,57 +1,57 @@
 # Patrik: phased build playbook
 
-Read [your role](../roles/patrik.md), [shared instructions](../../AGENTS.md), and [phase coordination](README.md) first.
-Hours are elapsed from the team's agreed start; check [the shared schedule](../PLAN.md) for clock times. Inspect current code and your handoff before choosing a phase. These checklists describe required work, not completion evidence.
+Read [your role](../roles/patrik.md), [shared instructions](../../AGENTS.md), `contracts/constellations.ts` and [phase coordination](README.md) first.
+Times are PST on Nov 12-13, 2026 (P0 starts 16:00; feature freeze 04:30; deadline 10:30 AM, team-supplied and not independently verified). Inspect current code and your handoff before choosing a phase. These checklists describe required work, not completion evidence; check an item only with evidence.
 
-## P0: Agree identity and storage boundaries (H0-1)
+## P0: Acknowledge and baseline (16:00-17:00)
 
-- [ ] Build: Read PRIVACY.md and Kai's schema proposal. Decide session/auth mechanism, private field ownership, public projections and migration order.
-- [ ] Exit evidence: Documented auth approach and authorized candidate service signature.
-- [ ] Dependency / parallel fallback: Use local synthetic identities for offline tests, never as production authorization.
+- [ ] **D009 ACK (first item):** Reply to D009 (Constellations pivot, contract `2.0.0-proposed`) with your ACK or a concrete objection in docs/DECISIONS.md or the PR discussion. This is the first P0 item; nothing else is built before it.
+- [ ] Build: Read contracts/constellations.ts and D009. Inspect merged sessions, consent and projections; list ConsentV2 changes (3 toggles incl. 18+). Agree session mechanism with Kai.
+- [ ] Exit evidence: ACK recorded; session and table order agreed; claim `constellations/privacy/`.
+- [ ] Dependency / parallel fallback: Parallel with Kai.
 - [ ] Handoff: update `docs/handoffs/patrik.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/patrik.md`.
 
-## P1: Implement private participant foundation (H1-4)
+## P1: Module with synthetic fixtures (17:00-20:00)
 
-- [ ] Build: Build server/privacy/ session checks, community membership, consent versions and self-only intent CRUD. Add db/privacy/ policies and fixture setup.
-- [ ] Exit evidence: Cross-user reads/writes denied; Rishi can obtain a minimized authorized snapshot through a service port.
-- [ ] Dependency / parallel fallback: Coordinate tables with Kai; do not create conflicting migrations independently.
+- [ ] Build: ConsentV2, private answer store with row-level checks, prompt builder, output guard (no-quote, sensitive terms), block store, delete and TTL logic; consent screen and support card on fixtures.
+- [ ] Exit evidence: Unit tests: 403 on foreign answer reads, prompt payload only random IDs plus text, guard fuzz with known answers.
+- [ ] Dependency / parallel fallback: Guard and prompt builder published to Adam, Rishi and Kai at end of P1.
 - [ ] Handoff: update `docs/handoffs/patrik.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/patrik.md`.
 
-## P2: Integrate consent and public views (H4-7)
+## P2: Integrated round on 3+ phones (20:00-23:00)
 
-- [ ] Build: Wire Will's consent and confirmation. Deliver public profile/proposal projections, identity guards and membership checks for routes/subscriptions. Build privacy/ controls.
-- [ ] Exit evidence: Live matching sees only opted-in candidates; room members cannot inspect another member's budget or raw transcript.
-- [ ] Dependency / parallel fallback: Rishi/Adam consume snapshots; Kai applies your guards at effects and reads.
+- [ ] Build: M1 safety screen through Adam's adapter before matching; flagged answers excluded; authorized snapshot for Rishi; guard wired on all Muse outputs; real session with Kai.
+- [ ] Exit evidence: Seeded distress answer never appears in societies, riddles or themes; live M1 latency recorded.
+- [ ] Dependency / parallel fallback: Fallback: keyword distress screen labeled as fallback.
 - [ ] Handoff: update `docs/handoffs/patrik.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/patrik.md`.
 
-## P3: Close revocation races (H7-10)
+## P3: Sky, safety, blocks, operator complete (23:00-02:00)
 
-- [ ] Build: Implement leave/revoke callbacks, version increments and subscription invalidation. Recheck queued model jobs before publication.
-- [ ] Exit evidence: A participant leaving during planning prevents stale publication and further private access.
-- [ ] Dependency / parallel fallback: Kai handles job invalidation/transactions; coordinate exact expected versions.
+- [ ] Build: Sky threshold (3 demo / 25 prod) on server aggregates; deletion endpoint, 14-day TTL job; block validation hook; red-team list of 30 answers; consent revoke during model call.
+- [ ] Exit evidence: Theme with 2 members never renders; deleted answer absent from re-run; red-team results recorded.
+- [ ] Dependency / parallel fallback: Needs Kai's aggregates.
 - [ ] Handoff: update `docs/handoffs/patrik.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/patrik.md`.
 
-## P4: Secure continuation and invitations (H10-13)
+## P4: P1 features and hardening (02:00-03:30)
 
-- [ ] Build: Ensure hosting requires explicit identity/acceptance; invitations are scoped and revocable. Only authorized, opted-in feedback reaches continuation.
-- [ ] Exit evidence: An old invite or revoked consent cannot regain access or authorize a new plan.
-- [ ] Dependency / parallel fallback: Review Kai's draft creation and Adam's feedback projection.
+- [ ] Build: P1: venue allowlist and 3-approval check for quests; veto never-sent guarantee; hardening.
+- [ ] Exit evidence: Quest outside allowlist rejected; vetoed riddle never sent.
+- [ ] Dependency / parallel fallback: Cut order: veto and ritual.
 - [ ] Handoff: update `docs/handoffs/patrik.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/patrik.md`.
 
-## P5: Freeze with access evidence (H13-16)
+## P5: Freeze verification (03:30-04:30)
 
-- [ ] Build: Exercise forged IDs, cross-room reads, revoked reconnects, public-field leakage and real database policies without service-role bypass.
-- [ ] Exit evidence: Documented adversarial tests and verified privacy boundaries, with remaining limits explicit.
-- [ ] Dependency / parallel fallback: If direct DB access exists, test it separately from API authorization.
+- [ ] Build: Freeze: rerun the entire privacy table; review Kai's schema and routes for authorization gaps.
+- [ ] Exit evidence: Verified results in handoff; any unmet row stated honestly.
+- [ ] Dependency / parallel fallback: Never cut: consent, triage, guard, threshold, labels.
 - [ ] Handoff: update `docs/handoffs/patrik.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/patrik.md`.
 
-## P6: Polish privacy interaction (H16-22)
+## P6: UI, rehearsal, backup, submission (04:30-10:30)
 
-- [ ] Build: Refine consent/leave controls and demo-safe public explanations. Verify the final deployed configuration and help rehearse safety answers.
-- [ ] Exit evidence: Visible controls work and measured tests support claims.
-- [ ] Dependency / parallel fallback: Do not claim encryption/provider retention guarantees that were not implemented.
+- [ ] Build: Polish consent and support card; verify labels; rehearsal; Devpost privacy section from tested rules only.
+- [ ] Exit evidence: Stable privacy segment.
+- [ ] Dependency / parallel fallback: Critical fixes only.
 - [ ] Handoff: update `docs/handoffs/patrik.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/patrik.md`.
-
 
 ## Resume-worthy evidence
 Own the implementation and keep reproducible measurements for your system. Test counts alone are not impact. Report actual correctness, latency, reliability or observed usability results, with scope and limitations. Do not invent achieved improvement or user adoption.

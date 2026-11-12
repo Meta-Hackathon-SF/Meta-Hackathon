@@ -1,122 +1,142 @@
-# Group Quests
-### From joining a group to belonging in one.
+# Constellations
+### Everyone thinks they're alone in the dark. Constellations shows you who's been shining next to you the whole time.
 
-An AI social coordinator for Facebook that turns the communities young adults already belong to into small groups that actually meet, adapt and keep showing up. Powered by Muse.
+A campus secret-society game inside Facebook Groups. Muse plays the Keeper: it privately asks each player one honest question, groups people whose answers mean the same thing into small secret societies, and gives each member riddles that lead to the others in real life. Friendship only, 18+.
 
-**Current state:** this repository contains the existing Facebook-style mock frontend, shared contracts, a FastAPI server baseline (`server/app/`), and early owner modules (for example `server/privacy/` and `server/matching/`, verified with fixtures). The end-to-end Group Quests journey is not yet live. A specification is not evidence of a working journey, live Muse integration, authentication or real Facebook access. See [PROJECT_KNOWLEDGE.md](PROJECT_KNOWLEDGE.md) for the evidence ledger.
+**Current state (2026-11-12):** the project is pivoting from Group Quests to Constellations. The Constellations runtime (rounds, induction, riddles, finds, Sky, operator console) is **not yet built**. What exists is reused from Group Quests and was built for a different journey:
+
+| Reused module | Status |
+| --- | --- |
+| Mock Facebook shell (`web/`) | Existing; lint/build passed earlier. Mock data only. |
+| FastAPI baseline (`server/app/`) | Fixture/offline verified. |
+| Muse adapter (`server/providers/`) | Live-verified with 2 calls on `muse-spark-1.3`. |
+| Privacy (`server/privacy/`) | Sessions, consent, projections. Postgres-tested locally; not integrated. |
+| Matching (`server/matching/`) | Constraint-gated group formation and eval harness. Offline fixtures. Must be adapted to meaning-based societies. |
+| Orchestration (`server/orchestration/`) | Partial workflow. Must be adapted to the round lifecycle. |
+| Voice and onboarding (`server/voice/`) | Fixture only. |
+
+A specification is not evidence of a working journey. See [PROJECT_KNOWLEDGE.md](PROJECT_KNOWLEDGE.md) for the evidence ledger.
 
 ## Start here
-**Coding agents: use the [execution map](docs/phases/README.md), then follow your own phased checklist.** Each phase names the work, starting paths, upstream dependencies, exit evidence and downstream handoff.
+**Coding agents: use the [execution map](docs/phases/README.md), then follow your own phased checklist.**
 
 | Your owner | Your build plan | Your branch |
 | --- | --- | --- |
-| Rishi | [P0-P6: opportunity matching](docs/phases/rishi.md) | `role/rishi-matching` |
-| Adam | [P0-P6: Muse planning, negotiation and challenges](docs/phases/adam.md) | `role/adam-planning` |
-| Will | [P0-P6: onboarding and feature UI](docs/phases/will.md) | `role/will-voice-ui` |
-| Patrik | [P0-P6: privacy and approvals](docs/phases/patrik.md) | `role/patrik-privacy` |
-| Kai | [P0-P6: durable workflow](docs/phases/kai.md) | `role/kai-orchestration` |
+| Rishi | [Induction engine](docs/phases/rishi.md) | `role/rishi-matching` |
+| Adam | [Muse adapter, Keeper voice, riddles](docs/phases/adam.md) | `role/adam-planning` |
+| Will | [Join, Confession, feature UI](docs/phases/will.md) | `role/will-voice-ui` |
+| Patrik | [Privacy, safety, output guard](docs/phases/patrik.md) | `role/patrik-privacy` |
+| Kai | [Round lifecycle, operator, Sky](docs/phases/kai.md) | `role/kai-orchestration` |
 
-1. Read [AGENTS.md](AGENTS.md), the common entry point for every coding agent.
-2. Read [PROJECT_KNOWLEDGE.md](PROJECT_KNOWLEDGE.md) for current facts and open decisions.
-3. Read [contracts/README.md](contracts/README.md) and [contracts/protocol.ts](contracts/protocol.ts).
+1. Read [AGENTS.md](AGENTS.md).
+2. Read [PROJECT_KNOWLEDGE.md](PROJECT_KNOWLEDGE.md) for facts and open decisions.
+3. Read [contracts/README.md](contracts/README.md), [contracts/constellations.ts](contracts/constellations.ts) (proposed) and [contracts/protocol.ts](contracts/protocol.ts) (legacy).
 4. Read your assignment in [docs/roles](docs/roles) and your handoff in [docs/handoffs](docs/handoffs).
-5. Switch to your assigned remote branch before making changes.
-6. Inspect current code and handoffs, implement your first incomplete deliverable, verify it, and publish the next handoff. Use a test-only adapter instead of waiting on another owner.
+5. Switch to your assigned branch before making changes.
+6. Implement your first incomplete deliverable, verify it, publish the next handoff. Use a test-only adapter instead of waiting on another owner.
 
-Phases: **P0 setup, P1 independent systems, P2 integration, P3 live adaptation, P4 keep-it-going and challenges, P5 stabilization, P6 UI/demo.** The final six hours are reserved for polish, demo, video and submission.
+Deadline used in planning: November 13, 2026, 10:30 AM PST (team-supplied, not independently verified). Feature freeze 04:30 AM. From 04:30 to 10:30 only UI, demo and submission work.
 
 ## Product boundary
-The existing `web/` application is the **mock Facebook shell**. Build on it, but give Group Quests its own feature UI under `web/src/features/group-quests/`, one subdirectory per owner. Will owns route and navigation integration (proposed entry `/groups/:communityId/quests`). Keep feature CSS scoped. Do not redesign the feed or treat its mock users, chats and localStorage as the product backend.
+The existing `web/` application is the **mock Facebook shell**, labeled "Simulated Facebook". Keep it. Constellations gets its own feature UI under `web/src/features/constellations/`, one subdirectory per owner. Existing code under `web/src/features/group-quests/` is reused and migrated by Will; do not delete it before its pieces are moved. Will owns route and navigation integration (a Constellations tab inside a Group). Keep feature CSS scoped. The shell's mock users, chats and localStorage are not the product backend.
 
 ## The problem
-Young adults join Facebook Groups for a new city, a new campus or a new hobby, and then nothing happens. Meeting people from a group means someone has to take the initiative: pick an activity, find a time, guess what others can afford, post it, and risk nobody showing up. Most people don't want to be that person, so plans die in the group chat. When a meetup does happen, it is usually a one-off. No one organizes the second one.
+Young adults arriving somewhere new mostly believe everyone else has already found their people. That belief is usually wrong, and it stops them reaching out. Social life happens in public while being alone is invisible, so everyone sees others' best moments. Each person is privately willing to talk but assumes others are less open (pluralistic ignorance).
 
-Existing apps (Timeleft, 222, Pie, Bumble Plans) show the demand is real. They get strangers into one room. The gap we target is different: **taking the initiative on everyone's behalf inside communities people already joined, adapting when plans change, and keeping the same small group coming back.**
+In the same research, first-year students felt they belonged less after viewing highly social photos of peers on Facebook. Facebook shows everyone's best night. Constellations shows everyone's real week.
 
-## Our solution
-Muse acts as each member's agent. Members say what they're comfortable with, not what they want to organize. Muse finds or creates the plan, forms the group, handles the logistics, rescues the plan when someone drops, and gives the group a reason to meet again.
-
-## One complete journey
-1. **Opt in from a Group.** A member joins Group Quests from a Facebook Group they already belong to.
-2. **Share preferences, not a plan.** By voice or quick taps, they give their schedule, budget, energy level, social comfort and interests. They don't pick an activity. If the input is vague, Muse asks one follow-up question. The member confirms the extracted profile.
-3. **Muse finds or creates the opportunity.** Muse looks for quests from three sources: venue offers, existing group events and member ideas. **When nothing that exists fits, Muse creates a new event itself**, using approved public venues and the group's shared constraints. Members don't need to have asked for the same thing.
-4. **Muse picks the group.** Code filters members by hard constraints (time, budget ceiling, area, consent, group size 3-5). Muse then ranks people against the opportunity and picks the group most likely to enjoy it together, with an allowlisted explanation.
-5. **Pitch and approve.** Each member sees a pitch card and taps to approve. Nothing is booked and no money is committed without each person's approval.
-6. **Event and chat.** Once enough members approve, the server creates one persistent in-app event and a group chat. Muse posts the opener.
-7. **Supporting: venue deal.** Where a venue is involved, Muse can negotiate on the group's behalf with the venue's business assistant on Messenger. The venue sees only group size, time and the group's total budget, and code enforces every member's budget ceiling. In this prototype, venue businesses are simulated and labeled.
-8. **Live adaptation.** If someone drops out or availability changes, Muse fills the spot from a waitlist, re-plans, or renegotiates. Members reconfirm any material change.
-9. **Retention: challenges.** After every meetup, Muse gives the group a personalized challenge with an incentive to meet again. Simulated rewards are labeled.
-10. **Keep it going.** One tap makes the quest recurring, and Muse keeps organizing it. The next-week time skip in the demo is simulated and labeled. Muse's reasoning after the skip runs live.
-
-**Example:** four students who just transferred to the same university are all in its transfer-students Group. None of them asked for climbing.
-- One says "low-key, under $15, Saturday afternoon".
-- One says "want to try something new, not a bar".
-- One says "active, but I'm a beginner".
-- One says "anything, I just want to meet people".
-
-A local bouldering gym posts an off-peak opening. Muse sees that it fits all four and pitches it. All four approve, and the event and group chat appear. As a supporting step, Muse negotiates a group intro rate within everyone's ceiling. On Friday one member drops, and a waitlisted member fills the spot. After the climb, Muse sets a challenge: send your first V2 together within three sessions (simulated reward). One tap makes it every other Saturday.
-
-If no gym had posted anything, Muse would have created the event itself from the approved venue catalog.
-
-## Why Facebook, and why AI
-Facebook already has the communities, the trust of an existing Group, Events and Messenger. Group Quests uses them instead of asking people to rebuild their social graph in a new app. This prototype simulates that integration; we claim no Groups or Messenger API access.
-
-AI is essential, not decorative:
-- **Interpreting open-ended preferences.** Muse turns "something chill, not a bar" into a structured profile.
-- **Matching people to opportunities.** People who wanted different things can still fit the same opportunity.
-- **Creating events.** When nothing that exists fits, Muse creates one.
-- **Acting as the user's agent.** Muse talks to the business's agent on Messenger to negotiate.
-- **Adapting.** Muse re-plans live when someone drops out or changes availability.
-- **Retention.** Muse generates challenges that bring the group back.
-
-Deterministic code enforces eligibility, authorization, budget ceilings, time intersections, group size, approvals and persistence. Muse proposes; the server validates and executes.
-
-**Model:** the core AI must run on a Muse model: **Spark, Wonder or Ember**. This is a hard Devpost requirement. Display the actual model metadata in the UI.
-
-**Matching baseline:** interest keywords matched to an opportunity, with the same hard constraints. Muse ranking is evaluated against this baseline. Do not claim improvement without a measured live result.
-
-## How we differ
-| Capability | Timeleft / 222 / Pie / Bumble Plans | Group Quests |
+| Finding | Number | Source |
 | --- | --- | --- |
-| Algorithmic or AI group matching | Yes | Yes |
-| Activities with strangers | Yes | Yes |
-| Built into existing Facebook communities | No | Proposed |
-| Muse creates an event when none fits | Not established | Proposed |
-| Adaptive re-planning and waitlist refill | Not established | Proposed |
-| Same group meeting again, with challenges and recurring quests | Some reconnect features | Core proposed experience |
-| Agent-to-business negotiation within member budgets | Not established | Supporting feature |
+| First-year students who believe peers have more friends vs fewer | 48% vs 31% (study 1); 55% vs 26% (study 2) | Whillans et al. 2017, via WEF |
+| Own close friends vs what students guessed peers had | 3.63 vs 4.15 | NPR via KUER |
+| Believing peers are ahead lowers well-being, even for students with above-average friends | Holds after controlling for friend count | The Conversation |
+| Young adults 19 to 29 who feel very or fairly lonely (Meta-Gallup, highest of any age) | 27% | Scripps News |
+| Correcting the misperception plus action prompts (Stanford, Columbia, Princeton; Nature Human Behaviour) | +0.44 close friends vs control (self-reported; no significant spring well-being difference) | Silicon Canals |
+| Young adults on Facebook daily (US and Canada, per Meta) | 40M+, one in four use Marketplace | Fortune |
 
-These are our proposed differentiators. We have not verified that no competitor offers them.
+Figures are quoted from the PRD with the sources it names. We have not independently re-verified them.
+
+## How a round works
+1. **Join (F1).** The player opens the Constellations tab in a Group, or scans a QR code. One screen explains what the Keeper does, what is private and what is shared. Three consent toggles (match me, write clues about me, I am 18+) are all required. No answer is collected before consent.
+2. **Confession (F2).** The operator picks one question. The player answers by voice or text, 1 to 400 characters. If the answer is too vague, the Keeper asks one follow-up, which the player can skip. The player then guesses what percent of the room said something like them. They can edit or delete the answer until the round locks.
+3. **Safety triage (F9).** Every answer is screened for distress, self-harm or harm to others before matching. Flagged answers are excluded everywhere. The player sees a private support card.
+4. **Induction (F3).** The operator locks the round. Muse groups players into societies of 3 to 5 by meaning, then names each society and gives it a motto, sigil and two-part passphrase. Code validates every society before anyone sees it. Poor matches get an honest "looser this week" label.
+5. **Hunt (F4).** Each player gets a 3-level riddle chain per other member: cryptic, medium, direct. Riddles never quote an answer. In the real product levels unlock Tuesday, Wednesday and Friday. In the demo they unlock every 20 seconds or on operator tap, labeled "Demo timing".
+6. **Passphrase and confirm (F5).** Two players who think they found each other say their halves aloud, then both enter the other's 4-character found code. The server confirms only if both are in the same society. A wrong code reveals nothing.
+7. **The Sky (F7).** A projector view shows every society as a constellation: stars are members, lines are confirmed finds. Headline stats show guessed vs actual prevalence per theme.
+8. **Ritual (F6, P1).** When every member is found, Muse proposes one public-place quest. It becomes an in-app Event and group chat once 3 or more say In.
+
+Operator console (F8) runs the question, lock, level advance, Sky, reset and synthetic top-up, and shows model metadata and latency for every call.
+
+Priorities: P0 is the demo (F1 to F5, F7, F8, F9). P1 is F6 and riddle veto. P2 is vision only.
+
+## Example round
+- **Maya**, first-year, 18. Moved 900 miles, eats most meals alone, posts like she is fine. She answers honestly. She is placed with four people who feel the same.
+- **Dev**, transfer student, 20. Thinks he is too late to make friends. His riddles give him a reason to approach someone that is not "be my friend".
+- **Jordan**, international student, 19. Shy in English. She answers by voice. Her riddles give a script for the first conversation.
+- **Sam**, sophomore with friends, 19. Plays for fun. Sam is the density that makes the game work for Maya.
+
+Maya writes "I eat in my room so no one sees me alone". Another player writes "cooking for one is depressing". A keyword baseline splits them. Muse puts them in the same society. Each gets riddles about the other, finds them in the dining hall, and the two confirm with the passphrase. On Sunday the Sky shows how many people guessed they were alone, against how many actually were.
+
+## Why Facebook
+Facebook already has the communities, and a Group carries existing trust. Constellations runs inside Groups young adults already belong to and gives them a weekly habit. This prototype simulates the shell. We claim no Groups, Messenger or Events API access.
+
+## Why only AI
+No human can read thousands of private answers, match them by meaning, and write safe, personal clues for every player every week. No chatbot sees more than one person. Code cannot understand what a confession means. Deterministic code validates every output and owns every guarantee.
+
+## The Keeper
+Muse makes every judgment call in the game. **Muse proposes, code enforces.**
+
+| # | Job | Input | Output (strict JSON) | Code check after |
+| --- | --- | --- | --- | --- |
+| M1 | Safety screen | One answer | `{flag: none/distress/harm, reason}` | Flagged answers excluded everywhere |
+| M2 | Clarify | One answer | `{needs_followup, question}` | Max one follow-up per player per round |
+| M3 | Theme discovery | Unflagged answers, anonymized IDs | `{themes: [{id, label, description, member_ids}]}` | Labels pass the no-quote check |
+| M4 | Society formation | Themes plus answers | `{societies: [{member_ids, shared_meaning, confidence}]}` | Size 3 to 5, everyone placed once, blocks respected |
+| M5 | Society identity | Shared meaning plus answers | `{name, motto, sigil_id, color_id, phrase_a, phrase_b}` | Fixed sigil/color sets; name passes no-quote check |
+| M6 | Riddles | Target's answer, approved findable details | `{levels: [cryptic, medium, direct]}` per target per seeker | No-quote check, sensitive-term check |
+| M7 | Ritual quest | Shared meaning, budget cap, venue list | `{title, place_id, time_window, why}` | Venue from approved public list, under budget |
+| M8 | Sky narration | Aggregate counts only | `{headlines: [..]}` | Every number matches server counts exactly |
+
+Prompting rules: one system prompt sets the Keeper's voice (warm, mysterious, never clinical, never therapeutic). Answers go out with random player IDs only. Every call asks for strict JSON; invalid JSON gets one retry, then a labeled fallback. M4 is told to group by underlying meaning, not shared keywords. M6 is told riddles must be findable in person and must never reveal or closely paraphrase the confession. M8 sees server-computed counts, never raw answers.
+
+**Model:** `muse-spark-1.3` was confirmed live; the provider echoed the model name. Wonder and Ember were not available in the docs we read and were not tested. Organizer confirmation is still open. Observed single-call latency was 17 to 24 seconds at low reasoning effort, from 2 calls. That is not a benchmark. Induction for 30 players in under 60 seconds therefore needs parallel calls (M5 per society, M6 per pair) and precomputation while the round is open. This is the top technical risk. Every Muse output in the UI carries a chip with model, call type and latency. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Baseline to beat
+A keyword or embedding-cluster baseline groups answers without Muse. The demo shows one live example where the baseline splits two people who meant the same thing and Muse joins them. We make no claim of measured improvement unless we measure it.
 
 ## Architecture
 ```mermaid
 flowchart TD
-    UI["Feature UI within Facebook shell"] --> AUTH["Consent, approvals and authorized API"]
-    AUTH --> OPP["Opportunities: offers, group events, member ideas, Muse-created events"]
-    OPP --> MATCH["Rank people against opportunity, pick group"]
-    MATCH --> PLAN["Muse planning, negotiation, challenges"]
-    PLAN --> FLOW["Durable workflow: events, waitlist, recurrence, challenge progress"]
-    FLOW --> UI
-    MATCH --> MUSE["Muse adapter (Spark / Wonder / Ember)"]
-    PLAN --> MUSE
-    AUTH --> DB["Private and shared persistence"]
-    FLOW --> DB
+    UI["Constellations UI in Simulated Facebook shell"] --> API["Authorized API /api/v1 (session, consent, operator role)"]
+    API --> PRIV["Privacy: answers, blocks, safety, output guard"]
+    API --> ROUND["Round lifecycle and job orchestration"]
+    ROUND --> IND["Induction engine: themes, societies, validation"]
+    ROUND --> KEEP["Keeper: identity, riddles, ritual, Sky narration"]
+    IND --> MUSE["Single Muse adapter (muse-spark-1.3)"]
+    KEEP --> MUSE
+    PRIV -->|"M1 safety screen"| MUSE
+    IND --> GUARD["Output guard: no-quote, sensitive terms"]
+    KEEP --> GUARD
+    GUARD --> ROUND
+    ROUND --> DB["Private and shared persistence"]
+    PRIV --> DB
+    ROUND -->|"SSE"| UI
 ```
+Frontend: React, TypeScript, Vite, React Router, Tailwind. Server: Python/FastAPI (`server/app/`, Python 3.11+); each owner registers one router through `server.app.registry`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [server/app/README.md](server/app/README.md).
 
-Frontend: the existing React, TypeScript, Vite, React Router and Tailwind shell. Server: Python/FastAPI (`server/app/`, Python 3.11+). Each owner registers one router through `server.app.registry`. See [architecture](docs/ARCHITECTURE.md) and [server/app/README.md](server/app/README.md).
+## Owners
+**Proposed, pending decision D009. Teammates must acknowledge.** Branch names are unchanged.
 
-## Five engineering owners
-| Owner | Branch | System | Owned paths |
-| --- | --- | --- | --- |
-| Rishi | `role/rishi-matching` | Ranks people against opportunities, picks the group, hard-constraint filtering, baseline evaluation | `server/matching/`, `web/src/features/group-quests/matching/`, `tests/matching/` |
-| Adam | `role/adam-planning` | Muse adapter, preference extraction, Muse-created events, negotiation loop and venue personas, re-planning, challenge generation | `server/planning/`, `server/providers/`, `web/src/features/group-quests/planning/`, `tests/planning/` |
-| Will | `role/will-voice-ui` | Voice/tap onboarding, feature composition, pitch card, live negotiation view, approve button, keep-it-going button, challenge UI | `web/src/features/group-quests/onboarding/`, `web/src/features/group-quests/shell/`, `server/voice/`, `tests/onboarding/` |
-| Patrik | `role/patrik-privacy` | Auth, consent, private projections; venue sees group totals only; no money committed without approval | `server/privacy/`, `db/privacy/`, `web/src/features/group-quests/privacy/`, `tests/privacy/` |
-| Kai | `role/kai-orchestration` | Opportunity store, deduplicated venue holds, waitlist, events and chat, recurring quests, challenge progress, real-time updates | `server/orchestration/`, `server/app/`, `db/workflow/`, `web/src/features/group-quests/events/`, `tests/orchestration/` |
+| Owner | Branch | System | Muse jobs | UI |
+| --- | --- | --- | --- | --- |
+| Rishi | `role/rishi-matching` | Induction engine: theme discovery, society formation by meaning, validation, keyword/embedding baseline and the live "baseline splits, Muse joins" example | M3, M4 | Induction screen |
+| Adam | `role/adam-planning` | Single Muse adapter, Keeper voice and prompting rules, society identity, riddle chains, ritual quest, Sky narration | M2, M5, M6, M7, M8 | Riddle cards, Hunt view |
+| Will | `role/will-voice-ui` | Join flow, Confession, Constellations tab, QR deep link, voice/text, guess slider, feature composition and routing | calls M2 via Adam | Join, Confession, guess slider, Muse metadata chip |
+| Patrik | `role/patrik-privacy` | Consent, answer access, blocks, safety triage, output guard, Sky threshold, delete and 14-day TTL, prompt-builder field stripping | M1 | Consent screen, private support card |
+| Kai | `role/kai-orchestration` | Round lifecycle, parallel Muse job orchestration, mutual idempotent confirm, SSE, Sky aggregates, Ritual, operator console, synthetic top-up, reset | none | Operator console, Sky projector view, constellation light-up |
 
-All five own substantial product systems and relevant UI. Presentation work is shared at freeze. It is not a substitute for technical ownership.
-
-Shared files require producer/consumer agreement: `contracts/`, database migration order, dependency manifests, root routing and cross-system API registration. Will coordinates web routing and package changes. Kai coordinates server composition and migration ordering. Patrik reviews authorization boundaries. Adam owns the single Muse adapter.
+Patrik's output guard is called on every Muse text output before release. Shared files (`contracts/`, migration order, dependency manifests, routing) need producer/consumer agreement.
 
 ## Local setup
 ```sh
@@ -137,71 +157,83 @@ Playwright may need `npx playwright install chromium`. The existing e2e tests ex
 Server baseline: follow [server/app/README.md](server/app/README.md) (venv, `requirements-dev.lock`, `uvicorn server.app.main:app`). `GET /health/ready` returns 503 until all five owners register. A running process is not evidence of a working journey.
 
 ## Configuration
-Server-only configuration includes the Muse API key, the Muse model (Spark, Wonder or Ember), the provider URL confirmed by organizers, database credentials and session settings. Use the placeholders in [server/app/.env.example](server/app/.env.example); real credentials stay outside Git. Only public settings such as a backend base URL may use Vite's client-exposed prefix.
+Server-only configuration: Muse API key, Muse model, provider URL, database credentials, session settings. Use the placeholders in [server/app/.env.example](server/app/.env.example) and [server/providers/muse.env.example](server/providers/muse.env.example). Real credentials stay outside Git. Only public settings such as a backend base URL may use Vite's client-exposed prefix.
 
 ## Contracts
-Current shared contract: **1.0.0** ([protocol.ts](contracts/protocol.ts)).
-
-The new direction requires these types, **proposed for contract 1.1.0 and not yet agreed**:
-- `PreferenceProfile`: schedule, budget ceiling, energy, social comfort and interests; replaces the activity-specific intent.
-- `Opportunity`: a venue offer, existing group event, member idea or Muse-created event.
-- `VenueOffer` / `Counteroffer`: negotiation messages carrying group totals only.
-- `Deal`: an agreed offer awaiting member approval.
-- `Challenge` / `Reward`: a post-meetup challenge with progress; rewards are labeled as simulated.
-
-Each type lands only with an entry in [docs/DECISIONS.md](docs/DECISIONS.md), acknowledgment from producer and consumers, runtime validators and examples.
-
-- [Wire protocol and service methods](contracts/README.md)
-- [State machine and event semantics](contracts/WORKFLOW.md)
-- [Access matrix](contracts/PRIVACY.md)
-- [HTTP surface](contracts/API.md)
+- [contracts/constellations.ts](contracts/constellations.ts): **proposed**, version `2.0.0-proposed`. Needs producer/consumer acknowledgment (D009).
+- [contracts/protocol.ts](contracts/protocol.ts): **legacy 1.x**. Still imported by merged code and tests. Do not delete.
+- [Wire protocol and service methods](contracts/README.md) · [HTTP surface](contracts/API.md) · [State machine](contracts/WORKFLOW.md) · [Access matrix](contracts/PRIVACY.md)
 - [Architecture](docs/ARCHITECTURE.md) · [Plan](docs/PLAN.md) · [Demo and Q&A](docs/DEMO.md) · [Agent launch prompts](docs/START_HERE.md)
 
-Update your own handoff and log at each checkpoint. Open small PRs to main; the PR owner's human merges them. No force pushes to main or to teammates' branches.
+Update your own handoff and log at each checkpoint. Open small PRs to main; the PR owner's human merges them. No force pushes to main or teammates' branches.
 
-## Truth labels and fallback behavior
+## Truth labels
 | Item | Demo requirement |
 | --- | --- |
-| Facebook shell / integration | Simulated, clearly labeled |
-| Seed profiles | Synthetic, explicitly labeled; cannot stand in for real judge acceptance |
-| Venue businesses and their assistants | Simulated, clearly labeled |
-| Rewards attached to challenges | Simulated, clearly labeled |
-| Real judges and teammates | Opt-in sessions with real persisted actions |
-| Muse matching, event creation, negotiation, challenges | Live validated responses showing actual model metadata (Spark, Wonder or Ember) |
-| Time skip / dropout fixture | User-triggered simulation; the reasoning that follows runs live |
-| Cached provider response | Labeled replay of its original saved scenario |
-| Database event creation | Real in-app persistence; never called a real Facebook Event |
+| Facebook shell and integration | Labeled "Simulated Facebook" |
+| Seeded answers and players | Labeled "Synthetic player"; never counted as real participants |
+| Accelerated riddle unlocks | Labeled "Demo timing" |
+| Muse output (society, riddle, Sky text) | Live, with chip: model, call type, latency |
+| Cached provider response | Labeled "Replay of a saved round" |
+| Players in the room | Real opt-in sessions with persisted actions |
+| Database events (Ritual) | Real in-app records; never called a real Facebook Event |
 
-Typing and quick taps always work if the microphone fails. If no opportunity or group fits, Muse creates an event or explains the no-fit state honestly. Never silently relax consent, capacity, time, location or budget constraints. A provider outage returns a retryable error or an explicitly labeled replay.
+Typing always works if the microphone fails. A provider outage shows a retryable error in the operator console or a labeled replay. Never silently relax consent, size or block constraints.
 
-## Privacy and behavior
-- Voice, transcripts and personal constraints are private.
-- Only consented, minimized structured fields enter model requests. Prompts never receive session tokens, contact details or home addresses.
-- **The venue sees only group size, time and the group's total budget.** It never sees individual budgets or identities.
-- **Code enforces each person's budget ceiling.** A deal above any member's ceiling is rejected regardless of what Muse proposes.
-- **No booking or money commitment without each member's explicit approval.**
-- Public explanations use allowlisted interests and activity details and are validated before publication.
-- Groups have 3-5 people, public venues by default, explicit approval, leave controls, and reconfirmation after material changes.
-- Model output cannot authorize itself or bypass server guards.
+## Privacy and safety
+No player ever sees another player's words. They see only riddles, society identities and aggregate patterns, enforced by server code.
 
-## Acceptance targets
-- Three real participants can join from separate devices.
-- Time from confirmed preferences to an approved quest is measured. The target is under 60 seconds; this is a target, not an achieved claim.
-- Every proposed group satisfies the hard constraints.
-- When no existing opportunity fits, Muse creates a valid event from approved venues.
-- Negotiation never produces a deal above any member's budget ceiling.
-- Nothing is booked without each member's approval.
-- Duplicate approvals and job retries create only one event and one venue hold per quest.
-- A dropout is refilled from the waitlist, or the group gets an honest re-plan or no-plan result.
-- The group receives a challenge after the meetup.
-- Keep-it-going creates a recurring quest.
-- Unauthorized participants cannot read private profiles or group messages.
-- All fixture, replay and simulated states are labeled.
+| Rule | Enforced by | Test |
+| --- | --- | --- |
+| Raw answers readable only by author and server | Row-level access checks (privacy module) | Another player's session gets 403 on any answer endpoint |
+| Prompts contain only random player IDs and answer text | Prompt builder strips profile fields | Unit test on every prompt payload |
+| No riddle, name or theme contains 5+ consecutive words from any answer | No-quote checker on every Muse output | Fuzz test with known answers |
+| No sensitive categories in riddles (health, sexuality, religion, finances, family trauma, home location) | Sensitive-term filter plus Muse self-check field | Red-team list of 30 answers |
+| Sky themes only above threshold (3 demo, 25 production) | Server aggregation | Theme with 2 members never renders |
+| Flagged distress answers excluded from all outputs | M1 flag plus server filter | Seeded distress answer never appears |
+| Delete anytime before lock; answers expire 14 days after the round | Deletion endpoint and TTL job | Deleted answer absent from re-run |
+| Riddle veto (P1) | Player review screen | Vetoed riddle never sent |
+| Friendship only, 18+, public places only for quests | Consent screen, venue allowlist | Quest outside allowlist rejected |
+| Blocked users never share a society | Server validation of M4 output | Society with a blocked pair is rejected and re-solved |
 
-No sign-up, friendship, loneliness or retention impact is claimed without measurement.
+Physical safety: the hunt happens in shared public spaces, riddles use only details the player marked as findable, and quests are in public venues with 3 or more people. Distress: a private card shows campus counseling and the 988 Suicide and Crisis Lifeline (US). The game never tries to counsel. These rules are specified; their tests are not yet written.
+
+## Demo success criteria
+All must be true at 10:30 AM:
+1. 6 or more real people answer a live question from their own phones.
+2. Muse forms societies of 3 to 5, each with a generated name and sigil, in under 60 seconds.
+3. Every player receives riddles about their society members that never quote or expose an answer.
+4. Two players confirm a match in person with the passphrase and see their constellation light up.
+5. The Sky shows guessed vs actual prevalence for the room.
+6. Muse model name and response metadata are visible in the UI.
+7. Every synthetic or simulated element is labeled.
+
+Run sheet: [docs/DEMO.md](docs/DEMO.md).
+
+## Product metrics (no targets claimed)
+| Stage | Metric |
+| --- | --- |
+| Engage | Share of Group members who answer the weekly Confession |
+| Reveal | Share who open the Sunday Sky |
+| Hunt | Share of societies where all members find each other within 5 days |
+| Ritual | Share of societies that complete their first quest |
+| Retain | Share of societies that meet again within 3 weeks |
+
+No loneliness, retention or friendship impact is claimed without measurement.
+
+## Non-goals
+- Real Facebook Groups, Messenger or Events API access.
+- Romantic matching.
+- Public posting of anyone's words. Individual answers are never shown to other players.
+- Mental health support or crisis counseling. Distress is routed to resources.
+- Multi-week seasons, merges, dorm leaderboards, the Grand Gathering (vision only).
+- Any impact claim without measurement.
+
+## Vision (P2, pitch only, not built)
+Wildcard: one person unlike you who shares one surprising answer. Constellation merges when two societies' answers connect. Dorm and Group leaderboards by sky brightness. Seasons and an end-of-semester Grand Gathering. An admin insights dashboard of aggregate needs. Later audiences: new-city Groups, new-grad cohorts, company new-hire classes.
 
 ## Pitch (30 seconds)
-Joining a Facebook Group is easy. Actually meeting people from it almost never happens, because someone has to take the initiative, and nobody wants to be that person. Group Quests makes Muse that person. Tell it your schedule, budget and comfort level by voice or a few taps. Muse finds an opportunity, or creates one, picks the few people it fits, and sets up the event and chat once you approve. If someone drops, it fills the spot. After you meet, it gives your group a challenge to come back, and one tap keeps it going every week. Facebook already has the communities. Group Quests turns them into small groups that actually meet, adapt and keep showing up.
+Nearly half of first-year students believe everyone else already has more friends than they do. That belief makes them lonelier and keeps them from reaching out, and Facebook mostly shows them everyone's best night. Constellations shows everyone's real week. Each week, Muse, the Keeper, privately asks one honest question. It reads every answer, groups the five people whose answers mean the same thing into a secret society, and gives each of them riddles about the others that get easier every day. When two people find each other, they confirm with a passphrase, in person. On Sunday the whole community appears as a night sky, with what people guessed next to what was true. No human can read that many private answers and match them by meaning, and no chatbot sees more than one person.
 
 ## Provenance
-The team referenced the documentation organization of dor-calhacks: shared entry instructions, contracts, role handoffs and an evidence ledger. This project is newly authored; no prior hackathon application code was copied. Competitor references (Timeleft, 222, Pie, Bumble Plans) come from team research and are used for positioning only.
+The team referenced the documentation organization of dor-calhacks: shared entry instructions, contracts, role handoffs and an evidence ledger. This project is newly authored; no prior hackathon application code was copied. The Constellations direction comes from the team's PRD of Nov 12, 2026. Existing Group Quests modules are the team's own earlier work and are reused.

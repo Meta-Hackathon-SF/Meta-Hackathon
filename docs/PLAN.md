@@ -1,34 +1,39 @@
-# 22-hour delivery plan
-For executable per-person instructions, use the [agent execution map](phases/README.md): [Rishi](phases/rishi.md), [Adam](phases/adam.md), [Will](phases/will.md), [Patrik](phases/patrik.md), [Kai](phases/kai.md). The shared phase gates apply to the complete integrated system; each person's checklist specifies their contribution.
+# 18.5-hour delivery plan: Constellations
+For executable per-person instructions, use the [agent execution map](phases/README.md): [Rishi](phases/rishi.md), [Adam](phases/adam.md), [Will](phases/will.md), [Patrik](phases/patrik.md), [Kai](phases/kai.md). The shared phase gates apply to the complete integrated system; each checklist specifies that person's contribution.
 
-Planning anchor supplied by team: November 12, 2026 12:30 PM PST to November 13 10:30 AM PST. Confirm official deadline with organizers. If starting late, compress scope rather than moving the deadline. Feature freeze six hours before cutoff.
+Product: Constellations (D009), a campus secret-society game inside Facebook Groups. Muse is the Keeper. Weekly Confession, Induction into societies of 3-5 by meaning, Hunt with 3-level riddles, in-person confirm, Sky reveal, Ritual quest (P1). Source of truth: the Constellations PRD (Nov 12, 2026).
+
+Re-based anchor: work resumes Nov 12, 2026 16:00 PST; deadline Nov 13, 2026 10:30 AM PST (team-supplied, not independently verified; confirm with organizers). About 18.5 h remain. Feature freeze at 04:30 AM; 04:30-10:30 is UI, demo and submission only. If late, compress scope rather than moving the deadline.
 
 | Phase | PST | Required exit |
 | --- | --- | --- |
-| H0-1 | Thu 12:30-1:30 PM | Real Muse call; server choice; API/schema ACKs; role branches |
-| H1-4 | 1:30-4:30 PM | Each owner demonstrates their module with synthetic inputs |
-| H4-7 | 4:30-7:30 PM | Three devices complete intent, match, accept and event creation |
-| H7-10 | 7:30-10:30 PM | Live changed availability triggers valid replan or no-plan result |
-| H10-13 | 10:30 PM-Fri 1:30 AM | Next-week time skip produces live continuation and host draft |
-| H13-16 | 1:30-4:30 AM | Integration stable, recovery cases checked, feature freeze |
-| H16-18 | 4:30-6:30 AM | UI polish, mobile/keyboard/error states |
-| H18-20 | 6:30-8:30 AM | Five-minute rehearsal and 2-3-minute backup recording |
-| H20-21 | 8:30-9:30 AM | Submission complete and links verified |
-| H21-22 | 9:30-10:30 AM | Critical fixes only, final verification and rest |
+| P0 | Thu 16:00-17:00 | D009 ACK by all five (first item); contracts/constellations.ts agreed; Muse call re-verified; branches and ownership confirmed |
+| P1 | 17:00-20:00 | Each owner demonstrates their module with labeled synthetic fixtures; Adam's adapter fake and Patrik's guard published |
+| P2 | 20:00-23:00 | Integrated round on 3+ phones: join, confess, induct, riddles, confirm |
+| P3 | 23:00-Fri 02:00 | Sky (guessed vs actual), safety triage, blocks, operator console complete; 30-player induction timed against 60 s |
+| P4 | 02:00-03:30 | Ritual quest, riddle veto (P1) only if P3 is green; hardening |
+| P5 | 03:30-04:30 | Failure cases pass; FEATURE FREEZE 04:30; working backup captured |
+| P6 | 04:30-10:30 | UI polish (mobile, keyboard, error states), 5-minute rehearsal, 2-3 minute backup recording, Devpost and submission links verified, final critical fixes only |
 
-Functional UI is built alongside systems; final six hours refine it. Schedule staggered rest, not five people simultaneously becoming unavailable.
+Suggested P6 split: 04:30-07:00 polish, 07:00-08:30 rehearsal plus backup recording, 08:30-09:30 submission and link verification, 09:30-10:30 critical fixes, final verification and rest. Functional UI exists by P2; schedule staggered rest, not five people simultaneously unavailable.
+
+## Demo success criteria (must all be true at 10:30)
+6+ real people answer on their own phones; societies of 3-5 with name and sigil in under 60 s; riddles never quote an answer; two players confirm a match in person and see their constellation light up; Sky shows guessed vs actual prevalence; Muse model name and response metadata visible; every synthetic element labeled. Judging slot: 5 minute demo plus 3 minutes Q&A.
+
+## Top technical risk
+Observed `muse-spark-1.3` single-call latency was 17-24 s at low reasoning effort (2 calls, not a benchmark). Induction under 60 s for 30 players needs parallel calls (M5 per society, M6 per target/seeker, precompute while the round is open). Kai and Adam own this; record actual timings.
 
 ## Ownership at checkpoints
-Rishi: feasibility -> Muse selection -> evaluated integrated groups.
-Adam: provider/extraction -> planning -> revision/continuation.
-Will: voice/text -> confirmed intent -> feature composition and measured journey.
-Patrik: identity/consent -> private persistence -> revocation and adversarial checks.
-Kai: server/storage -> acceptance/event workflow -> retry/concurrency/reconnect.
+Rishi: induction validator and baseline -> live M3/M4 -> blocks, edge cases, baseline demo example.
+Adam: adapter and Keeper prompts -> M5/M6/M2 live in parallel -> M8, red-team, M7 (P1).
+Will: shell migration, join, Confession -> live phones, QR, guess -> edit/delete, fallbacks, composition polish.
+Patrik: consent, private answers, guard -> M1 triage, snapshots -> threshold, TTL, red-team, privacy table rerun.
+Kai: round machine, operator, SSE, finds -> lock pipeline fan-out -> Sky, console, reset, ritual (P1), failure recovery.
 
-Every person owns meaningful engineering work. Pitch/video/submission are shared wrap-up responsibilities; no one is relegated to those instead of building a system.
+Every person owns meaningful engineering work. Pitch/video/submission are shared wrap-up responsibilities. Reused merged modules: shell (web/), server/app registry, providers adapter, privacy sessions/consent, matching validation and eval harness, orchestration workflow, voice transcription.
 
 ## Cut order
-Cut second community, decorative animations, extra challenge categories and open-ended chat extras first. Preserve truthful labels, live group formation, real acceptance, persistent event, live revision and a minimal host action. Never cut authorization or fake a live response to meet a checkpoint.
+Cut in this order: P2 vision items, Ritual, riddle veto, voice (text always works). Never cut: consent, safety triage, the no-quote guard, the Sky threshold, truth labels ("Simulated Facebook", "Synthetic player", "Demo timing", "Replay of a saved round"). Never fake a live Muse response to meet a checkpoint.
 
 ## Submission preparation
-Start Devpost text at H0, capture a working backup before feature freeze, finalize links by H21. Confirm team/rules/public repository/video requirements against organizers' source. Do not claim deployment or submission is complete until actually verified.
+Start Devpost text now (16:00); pitch opens with the problem (everyone thinks they are the only one; Facebook shows everyone's best night) and closes "Constellations shows you who's been shining next to you the whole time." Cite PRD figures with their sources only; make no impact claim (loneliness, retention, friendships) without measurement. Capture a working backup before 04:30; finalize links by 09:30. Confirm team, rules, public repository and video requirements against organizers' source. Do not claim deployment or submission is complete until actually verified.

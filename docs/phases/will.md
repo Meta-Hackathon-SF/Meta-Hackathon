@@ -1,57 +1,57 @@
 # Will: phased build playbook
 
-Read [your role](../roles/will.md), [shared instructions](../../AGENTS.md), and [phase coordination](README.md) first.
-Hours are elapsed from the team's agreed start; check [the shared schedule](../PLAN.md) for clock times. Inspect current code and your handoff before choosing a phase. These checklists describe required work, not completion evidence.
+Read [your role](../roles/will.md), [shared instructions](../../AGENTS.md), `contracts/constellations.ts` and [phase coordination](README.md) first.
+Times are PST on Nov 12-13, 2026 (P0 starts 16:00; feature freeze 04:30; deadline 10:30 AM, team-supplied and not independently verified). Inspect current code and your handoff before choosing a phase. These checklists describe required work, not completion evidence; check an item only with evidence.
 
-## P0: Map host and feature entry (H0-1)
+## P0: Acknowledge and baseline (16:00-17:00)
 
-- [ ] Build: Inspect web/src/App.tsx, layouts, pages and package.json. Read feature AGENTS.md. Agree on five component interfaces with owners and proposed feature route.
-- [ ] Exit evidence: Small route/component plan that preserves existing Facebook mock screens.
-- [ ] Dependency / parallel fallback: Feature visual design stays independent; no full shell rebuild.
+- [ ] **D009 ACK (first item):** Reply to D009 (Constellations pivot, contract `2.0.0-proposed`) with your ACK or a concrete objection in docs/DECISIONS.md or the PR discussion. This is the first P0 item; nothing else is built before it.
+- [ ] Build: Read contracts/constellations.ts and D009. Inspect merged shell, onboarding and `server/voice/`; plan the migration of `group-quests/shell` into `constellations/shell`. Claim shared web routing files.
+- [ ] Exit evidence: ACK recorded; migration plan and component slot contract published to all owners.
+- [ ] Dependency / parallel fallback: Publish slots before others build UI.
 - [ ] Handoff: update `docs/handoffs/will.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/will.md`.
 
-## P1: Build voice and typed intent (H1-4)
+## P1: Module with synthetic fixtures (17:00-20:00)
 
-- [ ] Build: Implement onboarding/ recording controls, typed fallback, transcript review and editable extracted fields. Add server/voice/ transcription adapter as needed. Handle missing fields via Adam's extraction contract.
-- [ ] Exit evidence: A user can submit corrected intent using a fake adapter and complete the flow by keyboard.
-- [ ] Dependency / parallel fallback: Use labeled development doubles while provider/auth endpoints land.
+- [ ] Build: Migrate shell, add Constellations tab with slots; join and explainer screens; Confession (text first, voice via merged recorder); guess slider; Muse chip component; fixture adapter for all screens.
+- [ ] Exit evidence: Join to guess flow runs on fixtures in a phone-width browser; chip renders; mock Facebook pages intact.
+- [ ] Dependency / parallel fallback: Consent slot may be a stub until Patrik's screen lands.
 - [ ] Handoff: update `docs/handoffs/will.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/will.md`.
 
-## P2: Wire the real journey (H4-7)
+## P2: Integrated round on 3+ phones (20:00-23:00)
 
-- [ ] Build: Connect Patrik's session/consent and self-intent APIs; Adam's extraction; Rishi's cards; Kai's event room. Register minimal feature entry and route.
-- [ ] Exit evidence: Three devices can enter the feature and reach a persisted action. Timer begins at confirmed submission and stops on acknowledged acceptance.
-- [ ] Dependency / parallel fallback: Each owner implements their component; report missing props/ports instead of rebuilding their system.
+- [ ] Build: Wire to real API: session, join, consent, answers, guess, follow-up (M2), stream client; compose Rishi, Adam, Kai, Patrik components; QR deep link.
+- [ ] Exit evidence: 3+ real phones join and confess; join under 30 s timed; no answer collected before consent.
+- [ ] Dependency / parallel fallback: Needs Kai routes and Patrik session; keep fixture fallback.
 - [ ] Handoff: update `docs/handoffs/will.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/will.md`.
 
-## P3: Make interaction resilient (H7-10)
+## P3: Sky, safety, blocks, operator complete (23:00-02:00)
 
-- [ ] Build: Handle mic denial, failed upload, stale responses, cancellation and reconnection. Present revised plans with a clear reconfirm action.
-- [ ] Exit evidence: A slow old request cannot overwrite corrected intent; interrupted flows offer recovery.
-- [ ] Dependency / parallel fallback: Coordinate command status and revision numbers with Kai.
+- [ ] Build: Edit/delete before lock, ROUND_LOCKED handling, voice failure fallback, mic denial, stale/cancelled requests, support card display on flag, all truth labels.
+- [ ] Exit evidence: Listed cases pass in browser checks; flagged answer shows private card.
+- [ ] Dependency / parallel fallback: Needs Patrik's flag signal.
 - [ ] Handoff: update `docs/handoffs/will.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/will.md`.
 
-## P4: Compose the continuation (H10-13)
+## P4: P1 features and hardening (02:00-03:30)
 
-- [ ] Build: Add labeled next-week navigation and host-acceptance entry using Adam/Kai components. Keep simulated state visibly distinguished.
-- [ ] Exit evidence: A returning user can see a generated next step and accept hosting.
-- [ ] Dependency / parallel fallback: No new business logic in the route component.
+- [ ] Build: P1: riddle veto screen and ritual vote UI if P3 is fully verified; hardening of routing and reconnect.
+- [ ] Exit evidence: Veto path works or is explicitly cut.
+- [ ] Dependency / parallel fallback: Cut order: veto, ritual, voice.
 - [ ] Handoff: update `docs/handoffs/will.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/will.md`.
 
-## P5: Freeze with usability evidence (H13-16)
+## P5: Freeze verification (03:30-04:30)
 
-- [ ] Build: Run phone/desktop, keyboard, error and timer checks. Test with actual consenting teammates and record task completion observations.
-- [ ] Exit evidence: Reproducible web checks, truthful measured first-action times and complete route integration.
-- [ ] Dependency / parallel fallback: Existing feed tests must still pass where feature routing affects the shell.
+- [ ] Build: Freeze: full journey on phones, keyboard and mobile overflow checks, QR URL stable and shared.
+- [ ] Exit evidence: Verified results in handoff; deploy status stated separately from local status.
+- [ ] Dependency / parallel fallback: Preserve text path.
 - [ ] Handoff: update `docs/handoffs/will.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/will.md`.
 
-## P6: Lead feature visual consistency (H16-22)
+## P6: UI, rehearsal, backup, submission (04:30-10:30)
 
-- [ ] Build: Refine spacing, typography, transitions and accessible states across owner components. Rehearse QR entry and actual demo devices.
-- [ ] Exit evidence: Polished separate feature UI, usable mobile journey and no mock/live confusion.
-- [ ] Dependency / parallel fallback: Other owners polish their own components; you are not the sole UI implementer.
+- [ ] Build: UI polish across the whole app (mobile, error states), five-minute rehearsal, backup recording, Devpost media.
+- [ ] Exit evidence: Stable end-to-end demo.
+- [ ] Dependency / parallel fallback: Critical fixes only.
 - [ ] Handoff: update `docs/handoffs/will.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/will.md`.
-
 
 ## Resume-worthy evidence
 Own the implementation and keep reproducible measurements for your system. Test counts alone are not impact. Report actual correctness, latency, reliability or observed usability results, with scope and limitations. Do not invent achieved improvement or user adoption.

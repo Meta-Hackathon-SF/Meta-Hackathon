@@ -1,45 +1,48 @@
-# Shared contracts v1.0.0
-This directory is the common interface agreement for all five workstreams. It contains normative design and TypeScript wire declarations, not a functioning backend or executable validators.
+# Shared contracts: Constellations (2.0.0-proposed)
+Common interface agreement for all five workstreams. Normative design and TypeScript wire declarations, not a running backend or executable validators.
 
-## Ownership and ports
-| Contract | Producer | Consumer | Boundary |
-| --- | --- | --- | --- |
-| Confirmed intent | Will (UI), Adam (extraction) | Patrik, Rishi | User edits/approves extraction; server persists version |
-| Authorized candidate snapshot | Patrik | Rishi, Adam | Server-only, opted-in, minimized fields |
-| GroupProposal / MatchResult | Rishi | Adam, Kai, matching UI | 3-5 eligible people or honest no-match |
-| QuestPlan / PlanResult | Adam | Kai, planning UI | Structured proposal; no side effects |
-| Consent and public projections | Patrik | All server routes and subscriptions | Fail closed on missing auth/consent |
-| EventRecord / WorkflowEvent | Kai | All feature UI | Persistent, versioned, authorized delivery |
-| Continuation | Adam | Kai, Will's feature shell | Live generation after labeled time skip |
-| Host acceptance | Kai | Event UI | Explicit actor action creates a draft |
+## Versioning
+- [constellations.ts](constellations.ts): version `2.0.0-proposed`. Becomes `2.0.0` once producers and consumers ACK decision D009 in docs/DECISIONS.md.
+- [protocol.ts](protocol.ts): legacy 1.x (Group Quests). Still imported and parsed by merged modules and tests; do not delete or edit. New code imports constellations.ts.
+- Changes after ACK need a DECISIONS.md entry and producer + consumer acknowledgment. Python serializers preserve camelCase; no private wire shapes per role directory.
 
 ## Normative reading
-- [protocol.ts](protocol.ts): field names, enums and service ports
-- [API.md](API.md): request/response conventions and public endpoints
-- [PRIVACY.md](PRIVACY.md): access, projections and revocation
-- [WORKFLOW.md](WORKFLOW.md): transaction/state semantics
+[constellations.ts](constellations.ts) types and ports; [API.md](API.md) routes; [PRIVACY.md](PRIVACY.md) access and tests; [WORKFLOW.md](WORKFLOW.md) state and job pipeline.
+
+## Ownership (proposed, D009)
+| Contract | Producer | Consumer | Boundary |
+| --- | --- | --- | --- |
+| Join, ConsentV2, Answer, Guess, FindableDetails | Will (UI), Patrik (storage) | Kai, Adam, Rishi | Answer 1-400 chars, voice or text, edit/delete before lock |
+| M2 clarify, M5 identity, M6 riddles, M7 quest, M8 narration, KeeperPort | Adam | Kai, Rishi, UI | One Muse adapter; strict JSON; output guarded |
+| M1 safety screen, OutputGuard, blocks, Sky threshold, TTL/delete | Patrik | All | Fail closed |
+| M3 themes, M4 societies, InductionPort | Rishi | Kai, Adam | Validated societies only |
+| Round lifecycle, jobs, finds, SSE, Sky aggregates, ritual, operator | Kai | All UI | Persistent, idempotent, authorized |
+| Muse chip component, Hunt/Induction/Sky views | Will, Adam, Rishi, Kai per screen | Players | Chip shows model, call type, latency |
 
 ## Validation rules
-Implement runtime schemas in the server before accepting traffic. Never trust TypeScript types at a network boundary. Reject unknown tool names and extra public-response fields. Treat absent optional facts as unknown; ask for missing required availability, area, currency or consent instead of inventing them.
-
-IDs are opaque server-created strings. Dates are RFC3339 UTC and intervals are half-open [start,end), with start < end. IANA timeZone is for local display and parsing confirmation. Money is a nonnegative integer in currency minor units; MVP uses one currency per community with no implicit conversion. Duration must fit every accepted member's available interval and duration cap. Venue must belong to the community area, be public, and be open throughout the event.
-
-Match uniqueness: no duplicate participants; include requester; all members consent; same community/area; size 3-5. A max-budget cap applies to every member. Private constraints must never appear in a public rationale. A plan is invalid if it cites a participant/venue outside the authorized snapshot/catalog.
-
-ModelEvidence.source is replay only for a replay; preserve this label into the UI. Mode is server-selected, not a client escape hatch. Live sessions may contain clearly labeled synthetic demo profiles, but synthetic acceptance is only permitted in a separate fixture scenario.
-
-## Versioning and integration
-Version 1.0.0 is the first shared agreement. Changes require an entry in docs/DECISIONS.md and acknowledgment by producer + consumers. Add matching examples and validators when implementation lands. Python serializers preserve camelCase. Do not create a second private set of wire shapes in each role directory.
-
-Provider schemas/endpoints are unconfirmed. MusePort is an internal adapter contract, not the provider's documented SDK. Adam owns that adapter; Rishi consumes it.
+Implement runtime schemas on the server before accepting traffic. Never trust TS types at a network boundary; reject unknown fields in public responses and unknown task names.
+- Societies: size 3-5; every consenting, unflagged player placed exactly once; no blocked pair; weak matches get `isLooseMatch` and the honest label, never dropped.
+- No-quote: no riddle, society name, theme label or headline contains 5+ consecutive words from any answer.
+- Sensitive categories (never in riddles or labels): health, sexuality, religion, finances, family trauma, location of home. Sensitive-term filter plus M6 self-check field.
+- Sky: a theme renders only if count >= threshold (3 demo, 25 production).
+- Prompts contain only random per-call player IDs and answer text. No names, emails, photos, session tokens, profile fields.
+- M8 receives counts only; every number in its headlines must equal server counts exactly.
+- Every Muse call: strict JSON, schema-validated, one retry on invalid JSON, then a labeled fallback or retryable operator error. Muse proposes, code enforces.
+- Found code: 4 characters; find is mutual, idempotent, unique per pair.
+- Ritual venues come from the approved public list and fit the budget cap; nothing created below 3 "In".
+- ModelEvidence.source is replay only for a saved round; UI shows "Replay of a saved round". Other labels: "Simulated Facebook", "Synthetic player", "Demo timing".
+- Auth from the server session only; never accept playerId as identity. Mode (live/demo timing) is server/operator-set, never client-escalated. Browser never receives service credentials.
+- IDs opaque and server-created; dates RFC3339 UTC.
 
 ## Required boundary cases
-- No microphone: typed input follows the same confirmation flow.
-- No shortlist: return no_match without relaxing hard constraints.
-- Model timeout or malformed JSON: bounded retry, then explicit error.
-- Same idempotency key/different body: conflict.
-- Duplicate acceptance: same result, no counter increment.
-- Plan revision changes during provider call: discard stale output.
-- Consent revoked during a job: prevent publication and remove candidate.
-- No common window after change: leave revision pending and ask for input.
-- User text says ignore rules: treat as data, preserve tool allowlist and guards.
+- Voice fails: typed input follows the same flow.
+- Vague answer: at most one follow-up per player per round.
+- Flagged (distress/harm) answer never appears in any prompt after M1, riddle, society, theme, Sky or log.
+- Wrong found code reveals nothing (generic "not a match", no society membership leak).
+- Duplicate confirm is idempotent; same key with different body returns 409.
+- Provider outage: retryable operator error, or a cached result labeled replay.
+- Deleted answer is absent from a re-run.
+- Society with a blocked pair is rejected and re-solved.
+- Prompt injection inside answers ("ignore rules") stays data; guards and allowlists unchanged.
+- Consent revoked mid-job: nothing published for that player.
+- Induction for 30 players under 60 s (see WORKFLOW latency note).

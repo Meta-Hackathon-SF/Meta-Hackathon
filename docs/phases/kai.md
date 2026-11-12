@@ -1,59 +1,57 @@
 # Kai: phased build playbook
 
-Read [your role](../roles/kai.md), [shared instructions](../../AGENTS.md), and [phase coordination](README.md) first.
-Hours are elapsed from the team's agreed start; check [the shared schedule](../PLAN.md) for clock times. Inspect current code and your handoff before choosing a phase. These checklists describe required work, not completion evidence.
+Read [your role](../roles/kai.md), [shared instructions](../../AGENTS.md), `contracts/constellations.ts` and [phase coordination](README.md) first.
+Times are PST on Nov 12-13, 2026 (P0 starts 16:00; feature freeze 04:30; deadline 10:30 AM, team-supplied and not independently verified). Inspect current code and your handoff before choosing a phase. These checklists describe required work, not completion evidence; check an item only with evidence.
 
-## P0: Create integration baseline (H0-1)
+## P0: Acknowledge and baseline (16:00-17:00)
 
-- [ ] Build: Inspect contracts and existing web host. Agree server stack, DB migration order and authentication with Patrik. Scaffold server/app/ with reproducible setup and service registration.
-- [x] Exit evidence (independent baseline): Backend starts; health endpoint works; shared manifests and routes have one coordinator. Verified by local HTTP probes and 42 offline tests; multi-owner ACK/database integration remains pending, so this does not pass the team-wide P0 gate.
-- [ ] Dependency / parallel fallback: Confirm hosting separately; documentation foundation does not imply deployment.
+- [ ] **D009 ACK (first item):** Reply to D009 (Constellations pivot, contract `2.0.0-proposed`) with your ACK or a concrete objection in docs/DECISIONS.md or the PR discussion. This is the first P0 item; nothing else is built before it.
+- [ ] Build: Read contracts/constellations.ts and D009. Inspect merged registry and orchestration workflow; plan `/api/v1` routes and round state machine. Agree session/tables with Patrik. Claim `constellations/operator/`, `sky/`.
+- [ ] Exit evidence: ACK recorded; route list and table order published.
+- [ ] Dependency / parallel fallback: Parallel with Patrik.
 - [ ] Handoff: update `docs/handoffs/kai.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/kai.md`.
 
-## P1: Build durable state (H1-4)
+## P1: Module with synthetic fixtures (17:00-20:00)
 
-Checkpoint: implementation committed on Kai role branch; local offline validation passes. Database exit evidence and privacy-owner approval remain pending CI/review. Stopped at P2 entry for human feedback; P2 exit is not claimed.
-
-- [ ] Build: Implement quests, versioned proposals, acceptance ledger, jobs/outbox and idempotency rules in orchestration/ and db/workflow/. Provide test adapters for ports.
-- [ ] Exit evidence: Duplicate acceptance does not increase count; job/state data survive a process restart.
-- [ ] Dependency / parallel fallback: Keep provider work outside DB transactions; use Patrik's auth contract.
+- [ ] Build: Round state machine and persistence, operator routes (create, lock, advance-level, sky, reset), SSE stream, idempotent Find with found codes, synthetic top-up loader; operator console and Sky view on fixtures.
+- [ ] Exit evidence: State transitions and duplicate-confirm tests pass; console works against fixture round.
+- [ ] Dependency / parallel fallback: Test adapters for ports; provider calls outside DB transactions.
 - [ ] Handoff: update `docs/handoffs/kai.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/kai.md`.
 
-## P2: Connect the event loop (H4-7)
+## P2: Integrated round on 3+ phones (20:00-23:00)
 
-- [ ] Build: Register real matching/planning/privacy services. Trigger planning at quorum, validate output, persist event and conversation, expose event-room component and authorized stream.
-- [ ] Exit evidence: Three participants create exactly one in-app event; browser refresh restores the snapshot.
-- [ ] Dependency / parallel fallback: Real provider output and consent checks required for live evidence.
+- [ ] Build: Lock pipeline: parallel M1, then M3/M4, M5 per society, M6 fan-out with guard on every output; confirm routes; stream to phones; measure 30-player induction time.
+- [ ] Exit evidence: 3+ phones: join, confess, induct, riddles, confirm; constellation light-up; induction timing recorded against 60 s.
+- [ ] Dependency / parallel fallback: Needs Rishi, Adam, Patrik live ports; precompute while round open; top risk if over 60 s.
 - [ ] Handoff: update `docs/handoffs/kai.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/kai.md`.
 
-## P3: Make revisions and retries reliable (H7-10)
+## P3: Sky, safety, blocks, operator complete (23:00-02:00)
 
-- [ ] Build: Implement stale-job rejection, worker lease recovery, reconnect replay, capacity concurrency and revision reconfirmation.
-- [ ] Exit evidence: Simultaneous accepts and retried jobs do not duplicate events; changed availability triggers revision.
-- [ ] Dependency / parallel fallback: Adam proposes new details; Patrik invalidates revoked snapshots.
+- [ ] Build: Sky aggregates (guessed vs actual, societies, finds, threshold), M8 via Adam, projector view, per-call model metadata and latency in console, reset isolation, wrong-code generic response.
+- [ ] Exit evidence: Sky shows guessed vs actual with only above-threshold themes; wrong code reveals nothing; reset leaves unrelated sessions.
+- [ ] Dependency / parallel fallback: Needs Patrik's threshold and Adam's M8.
 - [ ] Handoff: update `docs/handoffs/kai.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/kai.md`.
 
-## P4: Persist hosting progression (H10-13)
+## P4: P1 features and hardening (02:00-03:30)
 
-- [ ] Build: Implement authorized next-week trigger, live continuation job, host acceptance, draft quest and scoped invitation.
-- [ ] Exit evidence: Explicit host acceptance creates one draft, including on retry; simulated time skip remains labeled.
-- [ ] Dependency / parallel fallback: No fabricated attendance or unsolicited external messages.
+- [ ] Build: P1: ritual event and chat (3+ approvals), demo timing for level unlocks (20 s or operator tap), crash/retry/reconnect hardening.
+- [ ] Exit evidence: Ritual cannot be created with fewer than 3 approvals; retry creates one Find.
+- [ ] Dependency / parallel fallback: Cut ritual first.
 - [ ] Handoff: update `docs/handoffs/kai.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/kai.md`.
 
-## P5: Freeze with failure evidence (H13-16)
+## P5: Freeze verification (03:30-04:30)
 
-- [ ] Build: Exercise crash-after-commit, duplicate delivery, stale revisions, leave/revoke races and reconnect. Finalize backend startup/deployment/reset instructions.
-- [ ] Exit evidence: Recoverable integrated workflow and verified test results; current handoff and deployed status are distinct.
-- [ ] Dependency / parallel fallback: Preserve failure state instead of turning outages into fake success.
+- [ ] Build: Freeze: crash-after-commit, duplicate delivery, stale results, reconnect; startup, deploy and reset instructions.
+- [ ] Exit evidence: Verified results in handoff; deployed status distinct from local.
+- [ ] Dependency / parallel fallback: Preserve failure state; no fake success.
 - [ ] Handoff: update `docs/handoffs/kai.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/kai.md`.
 
-## P6: Polish event experience and release (H16-22)
+## P6: UI, rehearsal, backup, submission (04:30-10:30)
 
-- [ ] Build: Refine event-room status, loading, revisions and recovery UI. Check live server health and demo reset isolation; support shared rehearsal/submission.
-- [ ] Exit evidence: Stable event segment, accessible release links and reset that cannot erase unrelated sessions.
-- [ ] Dependency / parallel fallback: Critical fixes only after freeze; avoid architectural rewrites.
+- [ ] Build: Sky and operator polish, live health and reset checks, rehearsal, backup video, deployment links verified.
+- [ ] Exit evidence: Stable operator and Sky segments; links verified.
+- [ ] Dependency / parallel fallback: Critical fixes only.
 - [ ] Handoff: update `docs/handoffs/kai.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/kai.md`.
-
 
 ## Resume-worthy evidence
 Own the implementation and keep reproducible measurements for your system. Test counts alone are not impact. Report actual correctness, latency, reliability or observed usability results, with scope and limitations. Do not invent achieved improvement or user adoption.
