@@ -20,8 +20,17 @@ ACK evidence:
 Contract version / migration:
 Verification:
 
+## D005: Matching implementation baseline (Rishi)
+ID / UTC timestamp: D005 / 2026-11-12
+Decision and rationale: Rishi ACKs contract 1.0.0 (MatchInput, MatchResult, GroupProposal, MusePort) without changes. Matching is implemented in Python 3.10 stdlib under server/matching/ (compatible with the proposed FastAPI baseline in D004, no framework dependency) with runtime validators mirroring protocol.ts. MusePort is consumed through an injected port only; offline tests use a fake port labeled source "replay". The public MatchResult projection (no memberVersions/feasibleWindows) is offered as `public_projection()` for Patrik to adopt or replace with the shared DTO validator.
+Owner / affected producers and consumers: Rishi; consumes Patrik (Candidate snapshots) and Adam (MusePort); produces for Adam/Kai (GroupProposal) and Will (matching card).
+Status (proposed or accepted): Accepted for Rishi's ownership; non-breaking, no contract change.
+ACK evidence: pending from Adam (rank_group task payload shape), Patrik (projection), Kai (route POST /communities/:id/matches registration).
+Contract version / migration: 1.0.0, none.
+Verification: tests/matching (offline, fake MusePort).
+
 ## D007: Session mechanism, privacy routes and snapshot semantics (Patrik)
-ID / UTC timestamp: D007 / 2026-11-12T21:17Z. First drafted as D005, renumbered because Rishi and Adam each also used D005 on their branches. Suggested order at merge: D005 Rishi, D006 Adam, D007 Patrik.
+ID / UTC timestamp: D007 / 2026-11-12T21:17Z. First drafted as D005, renumbered because Rishi's D005 merged to main first and Adam's branch also uses D005. D006 is reserved for Adam's entry when it merges.
 Decision and rationale:
 - Sessions: `POST /api/v1/session` mints a pseudonymous guest participant and an opaque 256-bit token, held in an HttpOnly/Secure/SameSite=Lax `gq_session` cookie. `Authorization: Bearer` is also accepted for multi-device tests. Only the SHA-256 hash is stored, with 7-day expiry, and `DELETE /session` revokes it. We have no confirmed Facebook or Supabase auth, and the mock shell's users aren't accounts. Synthetic profiles can't hold sessions. Identity is a server `Actor`; a `participantId` in a body is rejected.
 - Storage: Postgres with RLS on all `privacy.*` tables. The API connects as a non-owner, non-bypass member of role `gq_api`, with transaction-local `gq.participant_id`. Cross-user reads go only through the `authorized_candidates` / `member_versions` SECURITY DEFINER functions. Privacy migrations run before `db/workflow/`.
