@@ -1,12 +1,15 @@
 # kai handoff
 - Owner: kai
 - Branch: role/kai-orchestration
-- Status: PLANNED; foundation only
+- Current phase: P0, implementing the independent server baseline
+- Status: IMPLEMENTING; no runtime completion claimed yet
 - Shared contract: 1.0.0
-- Commit evidence: none for runtime implementation yet
-- First action: read role instructions, confirm branch, acknowledge interface dependencies.
+- Commit evidence: P0 implementation is being committed; tests and final evidence follow as a separate checkpoint.
+- First deliverable: runnable FastAPI application, health/readiness checks, fail-closed service registration, sanitized protocol errors and offline tests.
+- Shared-file claim before edits: Kai coordinates new root `pyproject.toml`, root `.gitignore`, and `server/app/requirements-dev.lock`. No edits to `contracts/`, other owners' modules, web manifests, or root routing are planned.
+- Coordination: follow the proposed FastAPI baseline. PostgreSQL/Supabase configuration, migration ordering with Patrik, and the concrete privacy/session adapter remain pending acknowledgment; this scaffold will not choose an auth mechanism or create database tables.
 - Inputs needed: Patrik's authorization/consent guards; Rishi's versioned proposals; Adam's PlanningPort; participant commands from feature UI.
 - Next consumers: Give each owner API registration conventions, Will event-room components and stream client contract, Patrik table schema for policy review.
-- Checks executed: none for this workstream
-- Blockers: provider/server setup may require H0 decisions.
+- Checks executed: 40 local offline tests passed; Ruff and pip dependency checks passed; live HTTP liveness/readiness/error checks passed. Web lint/build passed. Fresh lockfile install is being verified; test sources will be included in the following focused test commit.
+- Blockers: live service composition requires owner ACKs, Patrik's verified-session dependency, and database/schema agreement. No deployment or live provider call is claimed.
 - Next update: replace this status with timestamp, exact commit/files, checks, remaining blockers and next consumer action.
