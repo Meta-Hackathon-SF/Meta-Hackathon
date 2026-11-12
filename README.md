@@ -12,3 +12,7 @@ cd Meta-Hackathon
 ## Team
 
 - Will Patton
+- Kai Luzniak
+- Patrik Liska
+- Adam Zhang
+- Rishi Bagri
