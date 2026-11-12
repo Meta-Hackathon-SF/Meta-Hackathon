@@ -15,9 +15,9 @@ from uuid import uuid4
 
 import psycopg
 from psycopg.types.json import Jsonb
+
 from server.orchestration.domain import WorkflowError, requires_reconfirmation
 from server.orchestration.wire import validate_acceptance, validate_plan, validate_proposal
-
 from server.privacy import Actor, Database, PrivacyService
 
 SQL_ERRORS = {

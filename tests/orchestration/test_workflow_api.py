@@ -7,10 +7,11 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
-from server.orchestration.api import create_workflow_app
-from server.orchestration.repository import WorkflowRepository
 
 from server.app.config import Settings
+from server.orchestration.api import create_workflow_app
+from server.orchestration.repository import WorkflowRepository
+from server.privacy.projections import project_plan, project_proposal
 
 if TYPE_CHECKING:
     from workflow_fixtures import WorkflowCase
@@ -57,7 +58,12 @@ def test_http_acceptance_ack_and_reload_restore_the_scheduled_event(
             assert response.headers["Cache-Control"] == "no-store"
     _, scheduled = case.finalize()
     restored_repository = WorkflowRepository(
-        case.database, case.privacy, worker_database=case.worker_database, mode="fixture"
+        case.database,
+        case.privacy,
+        worker_database=case.worker_database,
+        mode="fixture",
+        proposal_projection=project_proposal,
+        plan_projection=project_plan,
     )
     with TestClient(app_for(case, repository=restored_repository)) as reloaded_client:
         response = reloaded_client.get(f"/api/v1/quests/{case.quest_id}", headers=case.headers(1))

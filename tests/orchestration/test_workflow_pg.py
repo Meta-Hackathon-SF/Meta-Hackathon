@@ -13,10 +13,11 @@ from typing import TYPE_CHECKING
 
 import psycopg
 import pytest
+
 from server.orchestration.domain import WorkflowError
 from server.orchestration.repository import WorkflowRepository
-
 from server.privacy import PrivacyError
+from server.privacy.projections import project_plan, project_proposal
 
 if TYPE_CHECKING:
     from workflow_fixtures import WorkflowCase
@@ -172,7 +173,12 @@ def test_pending_job_and_scheduled_event_survive_a_fresh_python_process(
     case.quorum()
     # A distinct instance must discover the job from PostgreSQL rather than a process-local queue.
     restarted = WorkflowRepository(
-        case.database, case.privacy, worker_database=case.worker_database, mode="fixture"
+        case.database,
+        case.privacy,
+        worker_database=case.worker_database,
+        mode="fixture",
+        proposal_projection=project_proposal,
+        plan_projection=project_plan,
     )
     job = restarted.claim_job(worker_id="restarted-process")
     assert job is not None
@@ -181,13 +187,17 @@ def test_pending_job_and_scheduled_event_survive_a_fresh_python_process(
 import json, sys
 from server.privacy import Database, PrivacyService
 from server.orchestration.repository import WorkflowRepository
+from server.privacy.projections import project_plan, project_proposal
 request = json.load(sys.stdin)
 database = Database(request['apiDsn'])
 worker = Database(request['workerDsn'])
 try:
     privacy = PrivacyService(database)
     actor = privacy.resolve(request['session'])
-    repository = WorkflowRepository(database, privacy, worker_database=worker, mode='fixture')
+    repository = WorkflowRepository(
+        database, privacy, worker_database=worker, mode='fixture',
+        proposal_projection=project_proposal, plan_projection=project_plan,
+    )
     print(json.dumps(repository.snapshot(actor, request['questId'])))
 finally:
     worker.close()
@@ -307,7 +317,12 @@ def test_api_role_cannot_claim_worker_jobs(workflow_scenario: WorkflowCase):
     case.quorum()
     with pytest.raises((WorkflowError, psycopg.errors.InsufficientPrivilege)):
         unauthorized_worker = WorkflowRepository(
-            case.database, case.privacy, worker_database=case.database, mode="fixture"
+            case.database,
+            case.privacy,
+            worker_database=case.database,
+            mode="fixture",
+            proposal_projection=project_proposal,
+            plan_projection=project_plan,
         )
         unauthorized_worker.claim_job(worker_id="ordinary-api-role")
 

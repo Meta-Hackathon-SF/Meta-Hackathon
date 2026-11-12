@@ -1,5 +1,42 @@
 # Kai handoff
 
+## Current checkpoint: P1 implemented, stopped at P2 entry
+
+- Branch: `role/kai-orchestration`; contract 1.0.0 unchanged. Latest main README proposes opportunity/preferences 1.1.0; this checkpoint does not invent those unapproved contracts.
+- User requested a feedback stop and lower agent usage. All three isolated workers finished and stopped. No P2 UI/live integration or P3 expansion is scheduled.
+- Integrated lifecycle (`992ae2a`), persistence (`a8b98dc`) and tests (`43247d7`): strict DTOs, frozen acceptance quorum, versioned plans, durable idempotency/jobs/outbox, separate worker capabilities, atomic event/conversation/opener writes, authorized HTTP reads/acceptance and injected bounded finalizer.
+- Local combined validation: **279 passed, 74 skipped** (29 workflow + 45 privacy database cases lack local PostgreSQL); Ruff check/format pass. Actual PostgreSQL CI remains required. No live Muse, real participant/device demo, or browser-refresh milestone is claimed.
+- Runtime projections and authoritative proposal loader must be explicitly injected; absent adapters fail closed. Production imports only public privacy exports. Tests inject existing privacy projections solely as fixture adapters pending Patrik's public-port ACK.
+- Merge gates: PostgreSQL CI and @patrikliska13 review of schema/capability grants, public projection ports, and atomic consent-revocation protocol. Version checks detect prior commits but do not prove a simultaneous revoke/commit race safe. Keep PR draft until resolved.
+- Ownership: lifecycle worker owned domain/wire/lifecycle tests; persistence worker owned repository/migration/README; test worker owned DB/API harness and risk report. Lead owned HTTP/worker composition, dependency manifest/lock, CI and integration docs. No teammate code overwritten.
+- Resume after feedback: inspect latest main/role handoffs, agree privacy atomic guard/export, bind Adam's real planner and Rishi's authoritative proposal via public ports, then mount Will's EventsSlot and prove three real accepts plus browser refresh. Existing owner implementations must be reused, not duplicated.
+- Migration/run details: `db/workflow/README.md`; test/review boundaries: `tests/orchestration/INTEGRATION_RISKS.md`. Apply privacy migration before workflow migration with owner credentials; run API/worker under separate non-bypass logins. No deployed service or production migration executed.
+
+Updated: 2026-11-12T22:15+00:00
+
+## Historical P0 handoff (superseded status, preserved evidence)
+
+## Active P1 checkpoint / requested stop
+
+The latest human task explicitly authorizes three parallel subagents in isolated
+detached worktrees and asks to stop at a resumable P2 entry point for feedback.
+Lead owns HTTP/service composition, shared manifest/CI edits, event UI, and all
+handoff/integration edits. Subagent ownership is disjoint: lifecycle owns
+`domain.py`, `wire.py`, `test_lifecycle.py`; persistence owns `repository.py`,
+`db/workflow/001_workflow.sql` and its README; verification owns workflow test
+fixtures, PostgreSQL/API tests and the test integration-risk report. No worker
+pushes/merges, edits shared files, or writes into another worker's worktree.
+The lead reviews and cherry-picks coherent commits onto `role/kai-orchestration`.
+
+P0 PR #5 merged as `e687906` after its current-head CI passed 244 backend/Postgres
+tests and 16 browser tests. Existing matching/privacy modules are on main;
+planning and onboarding are published on their owners' branches and will not be
+copied or rebuilt. Shared-file claim for this checkpoint: root `pyproject.toml`,
+the app dependency lock, CI validation, and this handoff/progress ledger. A new
+workflow schema/worker capability needs Patrik's security review before merge.
+Final evidence must label model fixtures and test guest sessions. P3-P6 are out
+of this session's scope; record remaining live integration/review tasks and stop.
+
 - Updated: 2026-11-12T21:24Z
 - Owner / branch: Kai / `role/kai-orchestration`
 - Current phase: **P0 independent server baseline verified; coordination gate pending**.

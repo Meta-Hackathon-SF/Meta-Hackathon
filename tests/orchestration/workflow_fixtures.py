@@ -18,8 +18,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from psycopg import sql
-from server.orchestration.repository import WorkflowRepository
 
+from server.orchestration.repository import WorkflowRepository
 from server.privacy import (
     Actor,
     Database,
@@ -28,6 +28,7 @@ from server.privacy import (
     install_error_handlers,
 )
 from server.privacy.fixtures import DEMO_COMMUNITY, seed_community
+from server.privacy.projections import project_plan, project_proposal
 
 ROOT = Path(__file__).resolve().parents[2]
 COMMUNITY = DEMO_COMMUNITY["community_id"]
@@ -156,7 +157,12 @@ def workflow_case_factory(workflow_pg) -> Iterator[Callable[..., WorkflowCase]]:
     worker_database = Database(workflow_pg["worker_dsn"], max_size=8)
     privacy = PrivacyService(database)
     repository = WorkflowRepository(
-        database, privacy, worker_database=worker_database, mode="fixture"
+        database,
+        privacy,
+        worker_database=worker_database,
+        mode="fixture",
+        proposal_projection=project_proposal,
+        plan_projection=project_plan,
     )
     app = FastAPI()
     app.include_router(build_router(privacy), prefix="/api/v1")

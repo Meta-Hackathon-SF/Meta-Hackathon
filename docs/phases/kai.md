@@ -12,6 +12,8 @@ Hours are elapsed from the team's agreed start; check [the shared schedule](../P
 
 ## P1: Build durable state (H1-4)
 
+Checkpoint: implementation committed on Kai role branch; local offline validation passes. Database exit evidence and privacy-owner approval remain pending CI/review. Stopped at P2 entry for human feedback; P2 exit is not claimed.
+
 - [ ] Build: Implement quests, versioned proposals, acceptance ledger, jobs/outbox and idempotency rules in orchestration/ and db/workflow/. Provide test adapters for ports.
 - [ ] Exit evidence: Duplicate acceptance does not increase count; job/state data survive a process restart.
 - [ ] Dependency / parallel fallback: Keep provider work outside DB transactions; use Patrik's auth contract.
