@@ -145,3 +145,30 @@ export interface PlanningPort {
   revise(input: PlanInput): Promise<PlanResult>;
   continue(input: ContinuationInput): Promise<Continuation>;
 }
+
+/* ---------------------------------------------------------------------------
+ * PROPOSED (docs/DECISIONS.md D005) — additive, pending Will + Patrik ACK.
+ * Not part of v1.0.0 until acknowledged; CONTRACT_VERSION is unchanged.
+ * Producer: Adam (server/planning). Consumers: Will (onboarding UI), Patrik
+ * (PUT /intents/me receives the confirmed copy).
+ * POST /intents/extract  body: { transcript: string (1..2000), communityId: Id }
+ * ------------------------------------------------------------------------- */
+export type IntentField =
+  | "goal" | "interests" | "areaId" | "availability"
+  | "maxBudgetMinor" | "maxDurationMinutes";
+/** Private, unconfirmed draft. No identity, consent or version fields. */
+export interface IntentDraft {
+  communityId: Id;
+  goal: string | null; interests: string[]; areaId: Id | null;
+  timeZone: string;            // community default; user may edit
+  availability: Window[];      // empty when not stated
+  maxBudgetMinor: number | null; currency: string;
+  maxDurationMinutes: number | null; groupPreference: "small";
+}
+export interface ExtractionResult {
+  status: "draft";
+  draft: IntentDraft;
+  missingFields: IntentField[];
+  questions: { field: IntentField; question: string }[];
+  evidence: ModelEvidence;
+}
