@@ -1,6 +1,6 @@
 """Manual live smoke check: ONE real Muse extraction call on a SYNTHETIC transcript.
 
-    MUSE_API_KEY=... python3 -m server.providers.smoke
+    python3 -m server.providers.smoke        # reads server/providers/muse.env if present
 
 Not part of the offline test suite (costs a paid call). Prints only sanitized
 metadata: model id reported by the provider, latency, attempts, missing fields.
@@ -15,6 +15,7 @@ import uuid
 
 from server.planning import Area, CommunityContext, IntentExtractor, PlanningError, register_planning_tasks
 from server.providers import TaskRegistry, build_muse_adapter, load_muse_config
+from server.providers.config import DEFAULT_ENV_FILE, load_env_file
 
 SYNTHETIC_TRANSCRIPT = (
     "Synthetic test note: I'd like to meet a few people who like board games. "
@@ -23,9 +24,14 @@ SYNTHETIC_TRANSCRIPT = (
 
 
 async def main() -> int:
-    config = load_muse_config()
+    load_env_file()  # optional git-ignored server/providers/muse.env
+    try:
+        config = load_muse_config()
+    except ValueError as exc:
+        print(json.dumps({"status": "invalid_config", "message": str(exc)}))
+        return 2
     if config is None:
-        print(json.dumps({"status": "not_configured", "hint": "set MUSE_API_KEY (or MODEL_API_KEY)"}))
+        print(json.dumps({"status": "not_configured", "hint": f"set MUSE_API_KEY in {DEFAULT_ENV_FILE} or the environment"}))
         return 2
     records: list[dict] = []
     muse = build_muse_adapter(register_planning_tasks(TaskRegistry()), config, telemetry=records.append)

@@ -224,6 +224,21 @@ class ConfigTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_muse_config({"MUSE_API_KEY": "k", "MUSE_MODEL": model})
 
+    def test_env_file_loader_parses_and_never_overrides(self):
+        import os
+        import tempfile
+
+        from server.providers.config import load_env_file
+
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "muse.env")
+            with open(path, "w") as fh:
+                fh.write("# comment\nMUSE_API_KEY=\"from-file\"\nexport MUSE_MODEL=muse-spark-1.2\nMUSE_TIMEOUT_S=\nbad line\n")
+            env = {"MUSE_MODEL": "muse-spark-1.3"}
+            self.assertTrue(load_env_file(path, env))
+            self.assertEqual(env, {"MUSE_API_KEY": "from-file", "MUSE_MODEL": "muse-spark-1.3"})
+            self.assertFalse(load_env_file(os.path.join(d, "missing.env"), env))
+
     def test_http_base_url_rejected(self):
         with self.assertRaises(ValueError):
             load_muse_config({"MUSE_API_KEY": "k", "MUSE_BASE_URL": "http://api.meta.ai/v1"})

@@ -24,9 +24,11 @@ Not yet verified: actual latency, structured-output adherence on our schemas, ra
 ## Configuration
 Copy [`muse.env.example`](muse.env.example) outside Git. Server-only; never expose as `VITE_*`. Missing key means `load_muse_config()` returns `None` and every call fails closed with `PROVIDER_UNAVAILABLE` (`kind: not_configured`); there is no silent fixture fallback.
 
+Local setup: put your key in `server/providers/muse.env` (git-ignored, mode 600; copy of the example). Real environment variables take precedence over the file.
+
 Live smoke check (one paid call, synthetic transcript, sanitized output):
 ```sh
-MUSE_API_KEY=... python3 -m server.providers.smoke   # exit 0 ok, 2 not configured, 1 error
+python3 -m server.providers.smoke   # exit 0 ok, 2 not configured/invalid, 1 provider error
 ```
 
 ## Port (Python form of `MusePort` in contracts/protocol.ts)

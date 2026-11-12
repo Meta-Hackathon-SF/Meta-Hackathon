@@ -79,3 +79,33 @@ def load_muse_config(env: Mapping[str, str] | None = None) -> MuseConfig | None:
         max_attempts=int(env.get("MUSE_MAX_ATTEMPTS") or 2),
         reasoning_effort=env.get("MUSE_REASONING_EFFORT") or None,
     )
+
+
+DEFAULT_ENV_FILE = os.path.join(os.path.dirname(__file__), "muse.env")
+
+
+def load_env_file(path: str = DEFAULT_ENV_FILE, env: dict[str, str] | None = None) -> bool:
+    """Load simple KEY=VALUE lines into the environment without overriding existing values.
+
+    Local-development convenience only: ``muse.env`` is git-ignored. Deployed
+    servers should set real environment variables instead. Returns False when
+    the file does not exist.
+    """
+    target = os.environ if env is None else env
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.readlines()
+    except FileNotFoundError:
+        return False
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip().removeprefix("export ").strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+            value = value[1:-1]
+        if key and value and key not in target:
+            target[key] = value
+    return True
