@@ -1,0 +1,119 @@
+{
+  "context": {
+    "requestId": "req-v11",
+    "contractVersion": "1.0.0",
+    "mode": "fixture"
+  },
+  "questId": "quest-synthetic-1",
+  "event": {
+    "eventId": "evt-synthetic-1",
+    "questId": "quest-synthetic-1",
+    "planId": "plan-synthetic-1",
+    "revision": 1,
+    "status": "completed",
+    "title": "First Bouldering Session",
+    "venueId": "venue-demo-boulder",
+    "start": "2026-11-14T22:00:00Z",
+    "end": "2026-11-14T23:30:00Z",
+    "acceptedMemberIds": [
+      "p-ana",
+      "p-bo",
+      "p-cy",
+      "p-dee"
+    ],
+    "conversationId": "conv-synthetic-1"
+  },
+  "priorPlan": {
+    "planId": "plan-synthetic-1",
+    "proposalId": "prop-synthetic-1",
+    "revision": 1,
+    "basedOnRevision": null,
+    "memberVersions": [
+      {
+        "participantId": "p-ana",
+        "intentVersion": 1,
+        "consentVersion": 1
+      },
+      {
+        "participantId": "p-bo",
+        "intentVersion": 1,
+        "consentVersion": 1
+      },
+      {
+        "participantId": "p-cy",
+        "intentVersion": 1,
+        "consentVersion": 1
+      },
+      {
+        "participantId": "p-dee",
+        "intentVersion": 1,
+        "consentVersion": 1
+      }
+    ],
+    "title": "First Bouldering Session",
+    "activity": "An intro bouldering session on the beginner wall, taking turns spotting each other.",
+    "collaborationTask": "Pick one beginner route and work out the moves together.",
+    "venueId": "venue-demo-boulder",
+    "start": "2026-11-14T22:00:00Z",
+    "end": "2026-11-14T23:30:00Z",
+    "timeZone": "America/Los_Angeles",
+    "costPerPersonMinor": 1500,
+    "currency": "USD",
+    "minimumSize": 3,
+    "maximumSize": 5,
+    "publicRationale": "This quest fits a time that works for everyone, and happens at an approved public venue.",
+    "opener": "Hi everyone, welcome to your first bouldering session. Say hi!",
+    "evidence": {
+      "model": "fixture:scripted-muse",
+      "source": "replay",
+      "generatedAt": "2026-11-12T20:00:00.000Z",
+      "latencyMs": 5
+    }
+  },
+  "feedback": [
+    {
+      "participantId": "p-ana",
+      "attended": null,
+      "wantsReturn": true
+    },
+    {
+      "participantId": "p-bo",
+      "attended": null,
+      "wantsReturn": true
+    },
+    {
+      "participantId": "p-cy",
+      "attended": null,
+      "wantsReturn": true
+    },
+    {
+      "participantId": "p-dee",
+      "attended": null,
+      "wantsReturn": false
+    }
+  ],
+  "rewardOptions": [
+    {
+      "rewardOptionId": "rw-gym-pass",
+      "label": "Free shoe rental on your next visit (simulated reward)",
+      "sponsor": "venue",
+      "venueId": "venue-demo-boulder",
+      "isSimulated": true
+    },
+    {
+      "rewardOptionId": "rw-cafe",
+      "label": "Cafe group snack (simulated reward)",
+      "sponsor": "venue",
+      "venueId": "venue-demo-cafe",
+      "isSimulated": true
+    },
+    {
+      "rewardOptionId": "rw-badge",
+      "label": "Group Quests streak badge (simulated reward)",
+      "sponsor": "group_quests",
+      "venueId": null,
+      "isSimulated": true
+    }
+  ],
+  "simulateTimeSkip": true
+}

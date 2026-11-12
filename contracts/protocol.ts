@@ -145,3 +145,175 @@ export interface PlanningPort {
   revise(input: PlanInput): Promise<PlanResult>;
   continue(input: ContinuationInput): Promise<Continuation>;
 }
+
+/* ---------------------------------------------------------------------------
+ * PROPOSED (docs/DECISIONS.md D005) — additive, pending Will + Patrik ACK.
+ * Not part of v1.0.0 until acknowledged; CONTRACT_VERSION is unchanged.
+ * Producer: Adam (server/planning). Consumers: Will (onboarding UI), Patrik
+ * (PUT /intents/me receives the confirmed copy).
+ * POST /intents/extract  body: { transcript: string (1..2000), communityId: Id }
+ * ------------------------------------------------------------------------- */
+export type IntentField =
+  | "goal" | "interests" | "areaId" | "availability"
+  | "maxBudgetMinor" | "maxDurationMinutes";
+/** Private, unconfirmed draft. No identity, consent or version fields. */
+export interface IntentDraft {
+  communityId: Id;
+  goal: string | null; interests: string[]; areaId: Id | null;
+  timeZone: string;            // community default; user may edit
+  availability: Window[];      // empty when not stated
+  maxBudgetMinor: number | null; currency: string;
+  maxDurationMinutes: number | null; groupPreference: "small";
+}
+export interface ExtractionResult {
+  status: "draft";
+  draft: IntentDraft;
+  missingFields: IntentField[];
+  questions: { field: IntentField; question: string }[];
+  evidence: ModelEvidence;
+}
+
+/* ---------------------------------------------------------------------------
+ * PROPOSED (docs/DECISIONS.md D008) — target contract 1.1.0, pending ACK from
+ * Will, Patrik, Kai and Rishi. Not part of v1.0.0; CONTRACT_VERSION unchanged.
+ * Producer: Adam (server/planning). Examples: contracts/examples/1.1.0/.
+ * Python validators: server/planning/wire.py ("PROPOSED (D008)").
+ * ------------------------------------------------------------------------- */
+export type Energy = "low" | "medium" | "high";
+export type SocialComfort = "quiet" | "balanced" | "outgoing";
+export type PreferenceField =
+  | "availability" | "maxBudgetMinor" | "areaId"
+  | "interests" | "energy" | "socialComfort";
+
+/** Private draft of what a member is comfortable with. Never an activity choice. */
+export interface PreferenceProfile {
+  communityId: Id;
+  availability: Window[];          // [] when not stated
+  timeZone: string;                // community default
+  maxBudgetMinor: number | null;   // per-person ceiling; code enforces it everywhere
+  currency: string;                // community currency
+  areaId: Id | null;               // community allowlist only
+  interests: string[];             // things they enjoy, 0..8
+  avoid: string[];                 // private dislikes ("bars"), 0..5; never public
+  energy: Energy | null;
+  socialComfort: SocialComfort | null;
+  openToNew: boolean | null;
+}
+/** POST /preferences/extract. A request carrying followUp never receives another question. */
+export interface PreferenceExtractionRequest {
+  communityId: Id;
+  transcript: string;              // 1..2000; voice transcript or typed text
+  followUp?: { field: PreferenceField; answer: string; previous: PreferenceProfile };
+}
+export interface PreferenceExtractionResult {
+  status: "needs_follow_up" | "ready_to_confirm";
+  profile: PreferenceProfile;
+  missingFields: PreferenceField[];
+  followUp: { field: PreferenceField; question: string } | null; // non-null iff needs_follow_up
+  evidence: ModelEvidence;
+}
+/** Optional 1.1 extension of Candidate (Patrik's snapshot): non-public traits for matching/creation. */
+export interface PreferenceTraits {
+  energy: Energy | null; socialComfort: SocialComfort | null;
+  avoid: string[]; openToNew: boolean | null;
+}
+// Candidate 1.1 = Candidate & { preferences?: PreferenceTraits }
+
+export type OpportunitySource = "venue_offer" | "group_event" | "member_idea" | "muse_created";
+/** Kai owns storage and the full union; Adam produces source "muse_created". */
+export interface Opportunity {
+  opportunityId: Id; communityId: Id; source: OpportunitySource;
+  title: string; activity: string; collaborationTask: string;
+  venueId: Id; window: Window; timeZone: string;
+  costPerPersonMinor: number; currency: string;
+  minimumSize: 3; maximumSize: 5;
+  publicRationale: string;         // built by code from allowlisted facts
+  isSimulated: boolean;            // true for simulated venue businesses
+  evidence: ModelEvidence | null;  // null only for non-model sources
+}
+export interface CreateEventInput {
+  context: Context; communityId: Id;
+  candidates: Candidate[];         // 3..50 authorized snapshots (Candidate 1.1)
+  venues: Venue[];                 // approved catalog only
+}
+export type CreateEventResult =
+  | { status: "created"; opportunity: Opportunity; eligibleMemberCount: number }
+  | { status: "no_fit"; reason: "too_few_overlap" | "no_open_venue" | "budget" };
+
+/** The ONLY facts the (simulated) venue assistant receives. No identities, no individual budgets. */
+export interface VenueBrief {
+  negotiationId: Id; venueId: Id; activity: string;
+  groupSize: number; window: Window;
+  totalBudgetMinor: number; currency: string;   // groupSize x lowest member ceiling
+}
+export interface VenueOffer {
+  negotiationId: Id; round: number; venueId: Id;
+  action: "offer" | "final_offer" | "decline";
+  window: Window; groupSize: number;
+  totalPriceMinor: number; currency: string;
+  terms: string;                   // public; validated like other public text
+  isSimulated: true; evidence: ModelEvidence;
+}
+export interface Counteroffer {
+  negotiationId: Id; round: number;
+  action: "counter" | "accept" | "walk_away";
+  totalPriceMinor: number; currency: string; window: Window;
+  message: string;                 // sent to the venue; validated public text
+  evidence: ModelEvidence;
+}
+export type NegotiationTurn =
+  | { by: "venue"; offer: VenueOffer }
+  | { by: "group_agent"; counter: Counteroffer };
+/** Agreed terms awaiting EVERY member's approval. Nothing is booked or paid here. */
+export interface Deal {
+  dealId: Id; negotiationId: Id; opportunityId: Id; venueId: Id;
+  window: Window; groupSize: number;
+  totalPriceMinor: number; perPersonMinor: number; currency: string;
+  terms: string; rounds: number;
+  status: "awaiting_approval";     // Kai owns later transitions
+  isSimulated: true;
+  evidence: ModelEvidence;
+}
+export interface NegotiationInput {
+  context: Context; negotiationId: Id; opportunity: Opportunity;
+  participants: Candidate[];       // 3..5, server-side only; never sent to the venue
+  maxRounds: number;               // 1..4
+}
+export type NegotiationResult =
+  | { status: "deal"; deal: Deal; turns: NegotiationTurn[] }
+  | { status: "no_deal"; reason: "over_budget" | "venue_declined" | "rounds_exhausted";
+      turns: NegotiationTurn[] };
+
+export interface RewardOption {
+  rewardOptionId: Id; label: string; sponsor: "venue" | "group_quests";
+  venueId: Id | null; isSimulated: true;
+}
+export interface Reward {
+  rewardId: Id; rewardOptionId: Id; label: string;
+  sponsor: "venue" | "group_quests"; venueId: Id | null; isSimulated: true;
+}
+export interface ChallengeInput {
+  context: Context; questId: Id; event: EventRecord; priorPlan: QuestPlan;
+  feedback: { participantId: Id; attended: boolean | null; wantsReturn: boolean }[];
+  rewardOptions: RewardOption[];   // approved list; Muse may pick one or none
+  simulateTimeSkip: boolean;
+}
+/** Post-meetup challenge. Goal metric is code-verifiable; Kai updates progress. */
+export interface Challenge {
+  challengeId: Id; questId: Id; basedOnEventId: Id;
+  title: string; description: string;
+  goal: { metric: "sessions_together"; target: number };  // 2..6
+  dueBy: IsoTime;
+  progress: { completed: number; target: number };
+  reward: Reward | null;
+  evidence: ModelEvidence;
+}
+/** Additional MusePort tasks (allowlisted in server/providers/port.py). */
+export type MuseTaskV11 =
+  | "extract_preferences" | "create_event" | "negotiate" | "venue_persona" | "challenge";
+export interface PlanningPortV11 extends PlanningPort {
+  extractPreferences(input: PreferenceExtractionRequest): Promise<PreferenceExtractionResult>;
+  createEvent(input: CreateEventInput): Promise<CreateEventResult>;
+  negotiate(input: NegotiationInput): Promise<NegotiationResult>;
+  challenge(input: ChallengeInput): Promise<Challenge>;
+}

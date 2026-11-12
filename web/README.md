@@ -1,4 +1,4 @@
-# Meta Closer Together with AI — frontend
+   # Meta Closer Together with AI — frontend
 
 An unofficial Facebook-style frontend prototype, built with React, TypeScript,
 Vite, Tailwind CSS v4, React Router, and Lucide React. All people, communities,
