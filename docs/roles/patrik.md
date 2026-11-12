@@ -2,6 +2,8 @@
 Branch: `role/patrik-privacy`. Read root AGENTS.md and shared contracts first.
 
 ## Mission
+Start execution with [your phase-by-phase build checklist](../phases/patrik.md). It specifies paths, work, dependencies, exit evidence and handoffs for P0-P6.
+
 Own identity, consent, authorized snapshots and public projections so private constraints never become shared room state.
 
 ## Ownership

@@ -2,6 +2,8 @@
 Branch: `role/kai-orchestration`. Read root AGENTS.md and shared contracts first.
 
 ## Mission
+Start execution with [your phase-by-phase build checklist](../phases/kai.md). It specifies paths, work, dependencies, exit evidence and handoffs for P0-P6.
+
 Own durable state transitions and real-time delivery so model-generated proposals produce one correct event even under retries and simultaneous users.
 
 ## Ownership

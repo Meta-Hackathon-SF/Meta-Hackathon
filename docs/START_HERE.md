@@ -1,4 +1,6 @@
 # Launch your coding agent
+Start with the [execution map](phases/README.md) and your [per-person phased build checklist](phases/README.md). These define P0-P6 tasks, dependencies and completion evidence. Read the playbook alongside your role assignment before writing code.
+
 Each teammate clones this repository locally and checks out their branch. The common AGENTS.md is on every branch. All shared contracts remain visible to everyone.
 
 | Person | Branch | Read next |

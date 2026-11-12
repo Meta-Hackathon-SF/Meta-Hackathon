@@ -2,6 +2,8 @@
 Branch: `role/rishi-matching`. Read root AGENTS.md and shared contracts first.
 
 ## Mission
+Start execution with [your phase-by-phase build checklist](../phases/rishi.md). It specifies paths, work, dependencies, exit evidence and handoffs for P0-P6.
+
 Build compatible teams from several people's intents, with hard feasibility gates and a Muse-ranked group-level objective.
 
 ## Ownership

@@ -1,4 +1,6 @@
 # 22-hour delivery plan
+For executable per-person instructions, use the [agent execution map](phases/README.md): [Rishi](phases/rishi.md), [Adam](phases/adam.md), [Will](phases/will.md), [Patrik](phases/patrik.md), [Kai](phases/kai.md). The shared phase gates apply to the complete integrated system; each person's checklist specifies their contribution.
+
 Planning anchor supplied by team: November 12, 2026 12:30 PM PST to November 13 10:30 AM PST. Confirm official deadline with organizers. If starting late, compress scope rather than moving the deadline. Feature freeze six hours before cutoff.
 
 | Phase | PST | Required exit |

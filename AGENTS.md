@@ -3,6 +3,8 @@
 Read this file at the start of every task and after resuming. These instructions apply to the entire repository. Directory-level AGENTS.md files add ownership guidance. The latest explicit human task takes precedence.
 
 ## Required context
+Execution is phase-driven: read docs/phases/README.md and docs/phases/<name>.md. Inspect code and handoff evidence before selecting the first incomplete deliverable. Each phase has explicit work, dependencies, exit evidence and next consumers. Keep the last six hours for UI/demo. Update your handoff with the current phase and actual verification; never claim completion from elapsed time alone.
+
 Read README.md, PROJECT_KNOWLEDGE.md, contracts/README.md, contracts/protocol.ts, contracts/API.md, contracts/WORKFLOW.md, contracts/PRIVACY.md, docs/ARCHITECTURE.md, your docs/roles/<name>.md, and your docs/handoffs/<name>.md. Read docs/PLAN.md before scheduling work.
 
 ## Branch identity
@@ -12,7 +14,7 @@ Read README.md, PROJECT_KNOWLEDGE.md, contracts/README.md, contracts/protocol.ts
 - Patrik: role/patrik-privacy
 - Kai: role/kai-orchestration
 
-Before edits run git status --short and git branch --show-current. Work only on the assigned role branch. If a clean checkout is on main, fetch and switch to the existing role branch. If another person's uncommitted work is present, preserve it and use a separate git worktree; never stash, discard, reset, or move their work without direction. Do not invent a new branch when the assigned branch already exists remotely.
+Before edits run git status --short and git rev-parse --abbrev-ref HEAD. Work only on the assigned role branch. If a clean checkout is on main, fetch and switch to the existing role branch (older Git: checkout). If another person's uncommitted work is present, preserve it and use a separate git worktree; never stash, discard, reset, or move their work without direction. Do not invent a new branch when the assigned branch already exists remotely.
 
 This foundation is authorized for main. Subsequent implementation goes through small PRs unless a human explicitly directs another integration method. Never force-push main or another person's branch.
 

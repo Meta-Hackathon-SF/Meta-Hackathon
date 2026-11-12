@@ -2,6 +2,8 @@
 Branch: `role/adam-planning`. Read root AGENTS.md and shared contracts first.
 
 ## Mission
+Start execution with [your phase-by-phase build checklist](../phases/adam.md). It specifies paths, work, dependencies, exit evidence and handoffs for P0-P6.
+
 Build the stateful Muse propose/validate/revise loop. Own the single Muse adapter and intent extraction so other owners never invent provider APIs.
 
 ## Ownership

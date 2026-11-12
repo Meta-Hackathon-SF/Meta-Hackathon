@@ -6,11 +6,30 @@ A hackathon feature for Facebook that helps young adults form small teams, do so
 **Current state:** this repository contains an existing Facebook-style mock frontend plus shared engineering instructions and contracts. The Group Quests runtime is to be implemented. A specification is not evidence of a working backend, Muse integration, authentication, or real Facebook access.
 
 ## Start here
+**Coding agents: use the [execution map](docs/phases/README.md), then follow your own phased checklist below.** Each phase names the work, starting paths, upstream dependencies, exit evidence and downstream handoff.
+
+| Your owner | Your build plan | Your branch |
+| --- | --- | --- |
+| Rishi | [P0-P6: group recommendation](docs/phases/rishi.md) | `role/rishi-matching` |
+| Adam | [P0-P6: adaptive planning](docs/phases/adam.md) | `role/adam-planning` |
+| Will | [P0-P6: voice interaction and feature composition](docs/phases/will.md) | `role/will-voice-ui` |
+| Patrik | [P0-P6: privacy and access](docs/phases/patrik.md) | `role/patrik-privacy` |
+| Kai | [P0-P6: reliable events](docs/phases/kai.md) | `role/kai-orchestration` |
+
 1. Read [AGENTS.md](AGENTS.md), the common entry point for every coding agent.
 2. Read [PROJECT_KNOWLEDGE.md](PROJECT_KNOWLEDGE.md) for current facts and open decisions.
 3. Read [contracts/README.md](contracts/README.md) and [contracts/protocol.ts](contracts/protocol.ts).
 4. Read your named assignment in [docs/roles](docs/roles) and your handoff in [docs/handoffs](docs/handoffs).
 5. Switch to your assigned remote branch before making changes.
+6. Inspect the current code and handoff, choose the first incomplete task in your phased checklist, implement it, verify it, and publish the next handoff. Do not wait for other owners when a test-only adapter can unblock independent work.
+
+Phases: **P0 setup (H0-1), P1 independent systems (H1-4), P2 integration (H4-7), P3 live adaptation (H7-10), P4 return/hosting (H10-13), P5 stabilization (H13-16), P6 UI/demo (H16-22).** The final six hours remain reserved for polish, demo, video and submission.
+
+Paste this into your agent, substituting your name:
+
+> I am NAME. Read AGENTS.md, docs/phases/README.md, docs/roles/NAME.md, docs/phases/NAME.md and docs/handoffs/NAME.md plus the shared contracts. Confirm my role branch and inspect current progress. Implement my first incomplete phase deliverable within my owned paths, run relevant checks, and update my handoff with exact evidence and the next consumer action. Continue independent work if an upstream dependency is blocked. Preserve the mock Facebook shell and build our feature UI in its separate area.
+
+Already on a role branch? Fetch and merge `origin/main` from a clean working tree to receive shared plan updates. A new main commit does not automatically update your branch.
 
 ## Product boundary
 The existing `web/` application is the **mock Facebook shell**. Build on it, but give Group Quests its own feature UI. Do not redesign the feed or treat its mock Facebook cards, people, chats, and localStorage as the live product backend.

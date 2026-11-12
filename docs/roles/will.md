@@ -2,6 +2,8 @@
 Branch: `role/will-voice-ui`. Read root AGENTS.md and shared contracts first.
 
 ## Mission
+Start execution with [your phase-by-phase build checklist](../phases/will.md). It specifies paths, work, dependencies, exit evidence and handoffs for P0-P6.
+
 Own the user's voice-to-confirmed-intent journey and compose independently owned feature components within the existing mock Facebook shell.
 
 ## Ownership
