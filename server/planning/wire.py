@@ -351,3 +351,363 @@ def extraction_result(v: Any, path: str = "extraction") -> dict:
         _str(q["question"], f"{path}.questions[{i}].question", max_len=200)
     model_evidence(v["evidence"], f"{path}.evidence")
     return v
+
+
+# --- PROPOSED (D008, target 1.1.0): preferences, opportunities, negotiation, challenges
+ENERGY = ("low", "medium", "high")
+SOCIAL_COMFORT = ("quiet", "balanced", "outgoing")
+PREFERENCE_FIELDS = ("availability", "maxBudgetMinor", "areaId", "interests", "energy", "socialComfort")
+OPPORTUNITY_SOURCES = ("venue_offer", "group_event", "member_idea", "muse_created")
+MAX_GROUP = 5
+MIN_GROUP = 3
+
+
+def _nullable(v: Any, check, *args, **kwargs) -> Any:
+    return None if v is None else check(v, *args, **kwargs)
+
+
+def _strings(v: Any, path: str, *, max_items: int, max_len: int) -> list:
+    for i, s in enumerate(_list(v, path, max_items=max_items)):
+        _str(s, f"{path}[{i}]", max_len=max_len)
+    return v
+
+
+def preference_profile(v: Any, path: str = "profile") -> dict:
+    _obj(v, path, (
+        "communityId", "availability", "timeZone", "maxBudgetMinor", "currency", "areaId",
+        "interests", "avoid", "energy", "socialComfort", "openToNew",
+    ))
+    _id(v["communityId"], f"{path}.communityId")
+    windows(v["availability"], f"{path}.availability", max_items=6)
+    _str(v["timeZone"], f"{path}.timeZone", max_len=64)
+    _nullable(v["maxBudgetMinor"], _int, f"{path}.maxBudgetMinor", hi=10**7)
+    _currency(v["currency"], f"{path}.currency")
+    _nullable(v["areaId"], _id, f"{path}.areaId")
+    _strings(v["interests"], f"{path}.interests", max_items=8, max_len=40)
+    _strings(v["avoid"], f"{path}.avoid", max_items=5, max_len=40)
+    if v["energy"] is not None:
+        _lit(v["energy"], f"{path}.energy", *ENERGY)
+    if v["socialComfort"] is not None:
+        _lit(v["socialComfort"], f"{path}.socialComfort", *SOCIAL_COMFORT)
+    _nullable(v["openToNew"], _bool, f"{path}.openToNew")
+    return v
+
+
+def preference_extraction_request(v: Any, path: str = "request") -> dict:
+    _obj(v, path, ("communityId", "transcript"), ("followUp",))
+    _id(v["communityId"], f"{path}.communityId")
+    _str(v["transcript"], f"{path}.transcript", max_len=2000)
+    if "followUp" in v:
+        f = _obj(v["followUp"], f"{path}.followUp", ("field", "answer", "previous"))
+        _lit(f["field"], f"{path}.followUp.field", *PREFERENCE_FIELDS)
+        _str(f["answer"], f"{path}.followUp.answer", max_len=500)
+        preference_profile(f["previous"], f"{path}.followUp.previous")
+        if f["previous"]["communityId"] != v["communityId"]:
+            raise ContractError(f"{path}.followUp.previous.communityId", "must match communityId")
+    return v
+
+
+def preference_extraction_result(v: Any, path: str = "extraction") -> dict:
+    _obj(v, path, ("status", "profile", "missingFields", "followUp", "evidence"))
+    _lit(v["status"], f"{path}.status", "needs_follow_up", "ready_to_confirm")
+    preference_profile(v["profile"], f"{path}.profile")
+    missing = _list(v["missingFields"], f"{path}.missingFields", max_items=len(PREFERENCE_FIELDS))
+    for i, f in enumerate(missing):
+        _lit(f, f"{path}.missingFields[{i}]", *PREFERENCE_FIELDS)
+    if v["followUp"] is None:
+        if v["status"] == "needs_follow_up":
+            raise ContractError(f"{path}.followUp", "required when status is needs_follow_up")
+    else:
+        if v["status"] != "needs_follow_up":
+            raise ContractError(f"{path}.followUp", "only allowed when status is needs_follow_up")
+        _obj(v["followUp"], f"{path}.followUp", ("field", "question"))
+        _lit(v["followUp"]["field"], f"{path}.followUp.field", *missing)
+        _str(v["followUp"]["question"], f"{path}.followUp.question", max_len=200)
+    model_evidence(v["evidence"], f"{path}.evidence")
+    return v
+
+
+def preference_traits(v: Any, path: str = "preferences") -> dict:
+    _obj(v, path, ("energy", "socialComfort", "avoid", "openToNew"))
+    if v["energy"] is not None:
+        _lit(v["energy"], f"{path}.energy", *ENERGY)
+    if v["socialComfort"] is not None:
+        _lit(v["socialComfort"], f"{path}.socialComfort", *SOCIAL_COMFORT)
+    _strings(v["avoid"], f"{path}.avoid", max_items=5, max_len=40)
+    _nullable(v["openToNew"], _bool, f"{path}.openToNew")
+    return v
+
+
+def candidate_v11(v: Any, path: str = "candidate") -> dict:
+    """Candidate 1.1: the 1.0 snapshot plus optional non-public PreferenceTraits."""
+    _obj(v, path, ("intent", "publicProfile"), ("preferences",))
+    candidate({k: v[k] for k in ("intent", "publicProfile")}, path)
+    if "preferences" in v:
+        preference_traits(v["preferences"], f"{path}.preferences")
+    return v
+
+
+def _size(v: Any, path: str) -> int:
+    return _int(v, path, lo=MIN_GROUP, hi=MAX_GROUP)
+
+
+def opportunity(v: Any, path: str = "opportunity") -> dict:
+    _obj(v, path, (
+        "opportunityId", "communityId", "source", "title", "activity", "collaborationTask",
+        "venueId", "window", "timeZone", "costPerPersonMinor", "currency", "minimumSize",
+        "maximumSize", "publicRationale", "isSimulated", "evidence",
+    ))
+    _id(v["opportunityId"], f"{path}.opportunityId")
+    _id(v["communityId"], f"{path}.communityId")
+    _lit(v["source"], f"{path}.source", *OPPORTUNITY_SOURCES)
+    _str(v["title"], f"{path}.title", max_len=80)
+    _str(v["activity"], f"{path}.activity", max_len=400)
+    _str(v["collaborationTask"], f"{path}.collaborationTask", max_len=400)
+    _id(v["venueId"], f"{path}.venueId")
+    window(v["window"], f"{path}.window")
+    _str(v["timeZone"], f"{path}.timeZone", max_len=64)
+    _int(v["costPerPersonMinor"], f"{path}.costPerPersonMinor", hi=10**7)
+    _currency(v["currency"], f"{path}.currency")
+    _lit(v["minimumSize"], f"{path}.minimumSize", 3)
+    _lit(v["maximumSize"], f"{path}.maximumSize", 5)
+    _str(v["publicRationale"], f"{path}.publicRationale", max_len=600)
+    _bool(v["isSimulated"], f"{path}.isSimulated")
+    if v["evidence"] is None:
+        if v["source"] == "muse_created":
+            raise ContractError(f"{path}.evidence", "required for muse_created")
+    else:
+        model_evidence(v["evidence"], f"{path}.evidence")
+    return v
+
+
+def create_event_input(v: Any, path: str = "createEventInput") -> dict:
+    _obj(v, path, ("context", "communityId", "candidates", "venues"))
+    context(v["context"], f"{path}.context")
+    _id(v["communityId"], f"{path}.communityId")
+    cands = _list(v["candidates"], f"{path}.candidates", min_items=MIN_GROUP, max_items=50)
+    for i, c in enumerate(cands):
+        candidate_v11(c, f"{path}.candidates[{i}]")
+        if c["intent"]["communityId"] != v["communityId"]:
+            raise ContractError(f"{path}.candidates[{i}]", "candidate outside community")
+    ids = [c["intent"]["participantId"] for c in cands]
+    if len(set(ids)) != len(ids):
+        raise ContractError(f"{path}.candidates", "duplicate participant")
+    for i, ven in enumerate(_list(v["venues"], f"{path}.venues", max_items=200)):
+        venue(ven, f"{path}.venues[{i}]")
+    return v
+
+
+def create_event_result(v: Any, path: str = "createEventResult") -> dict:
+    if not isinstance(v, dict):
+        raise ContractError(path, "expected object")
+    if v.get("status") == "created":
+        _obj(v, path, ("status", "opportunity", "eligibleMemberCount"))
+        opportunity(v["opportunity"], f"{path}.opportunity")
+        if v["opportunity"]["source"] != "muse_created":
+            raise ContractError(f"{path}.opportunity.source", "expected muse_created")
+        _int(v["eligibleMemberCount"], f"{path}.eligibleMemberCount", lo=MIN_GROUP, hi=50)
+    elif v.get("status") == "no_fit":
+        _obj(v, path, ("status", "reason"))
+        _lit(v["reason"], f"{path}.reason", "too_few_overlap", "no_open_venue", "budget")
+    else:
+        raise ContractError(f"{path}.status", "unknown status")
+    return v
+
+
+def venue_brief(v: Any, path: str = "venueBrief") -> dict:
+    _obj(v, path, ("negotiationId", "venueId", "activity", "groupSize", "window", "totalBudgetMinor", "currency"))
+    _id(v["negotiationId"], f"{path}.negotiationId")
+    _id(v["venueId"], f"{path}.venueId")
+    _str(v["activity"], f"{path}.activity", max_len=400)
+    _size(v["groupSize"], f"{path}.groupSize")
+    window(v["window"], f"{path}.window")
+    _int(v["totalBudgetMinor"], f"{path}.totalBudgetMinor", hi=10**7)
+    _currency(v["currency"], f"{path}.currency")
+    return v
+
+
+def venue_offer(v: Any, path: str = "offer") -> dict:
+    _obj(v, path, (
+        "negotiationId", "round", "venueId", "action", "window", "groupSize",
+        "totalPriceMinor", "currency", "terms", "isSimulated", "evidence",
+    ))
+    _id(v["negotiationId"], f"{path}.negotiationId")
+    _int(v["round"], f"{path}.round", lo=1, hi=8)
+    _id(v["venueId"], f"{path}.venueId")
+    _lit(v["action"], f"{path}.action", "offer", "final_offer", "decline")
+    window(v["window"], f"{path}.window")
+    _size(v["groupSize"], f"{path}.groupSize")
+    _int(v["totalPriceMinor"], f"{path}.totalPriceMinor", hi=10**7)
+    _currency(v["currency"], f"{path}.currency")
+    _str(v["terms"], f"{path}.terms", max_len=300)
+    _lit(v["isSimulated"], f"{path}.isSimulated", True)
+    model_evidence(v["evidence"], f"{path}.evidence")
+    return v
+
+
+def counteroffer(v: Any, path: str = "counter") -> dict:
+    _obj(v, path, ("negotiationId", "round", "action", "totalPriceMinor", "currency", "window", "message", "evidence"))
+    _id(v["negotiationId"], f"{path}.negotiationId")
+    _int(v["round"], f"{path}.round", lo=1, hi=8)
+    _lit(v["action"], f"{path}.action", "counter", "accept", "walk_away")
+    _int(v["totalPriceMinor"], f"{path}.totalPriceMinor", hi=10**7)
+    _currency(v["currency"], f"{path}.currency")
+    window(v["window"], f"{path}.window")
+    _str(v["message"], f"{path}.message", max_len=300)
+    model_evidence(v["evidence"], f"{path}.evidence")
+    return v
+
+
+def negotiation_turn(v: Any, path: str) -> dict:
+    if not isinstance(v, dict):
+        raise ContractError(path, "expected object")
+    if v.get("by") == "venue":
+        _obj(v, path, ("by", "offer"))
+        venue_offer(v["offer"], f"{path}.offer")
+    elif v.get("by") == "group_agent":
+        _obj(v, path, ("by", "counter"))
+        counteroffer(v["counter"], f"{path}.counter")
+    else:
+        raise ContractError(f"{path}.by", "expected venue or group_agent")
+    return v
+
+
+def deal(v: Any, path: str = "deal") -> dict:
+    _obj(v, path, (
+        "dealId", "negotiationId", "opportunityId", "venueId", "window", "groupSize",
+        "totalPriceMinor", "perPersonMinor", "currency", "terms", "rounds", "status",
+        "isSimulated", "evidence",
+    ))
+    for k in ("dealId", "negotiationId", "opportunityId", "venueId"):
+        _id(v[k], f"{path}.{k}")
+    window(v["window"], f"{path}.window")
+    size = _size(v["groupSize"], f"{path}.groupSize")
+    total = _int(v["totalPriceMinor"], f"{path}.totalPriceMinor", hi=10**7)
+    per = _int(v["perPersonMinor"], f"{path}.perPersonMinor", hi=10**7)
+    if per != -(-total // size):
+        raise ContractError(f"{path}.perPersonMinor", "must equal ceil(totalPriceMinor / groupSize)")
+    _currency(v["currency"], f"{path}.currency")
+    _str(v["terms"], f"{path}.terms", max_len=300)
+    _int(v["rounds"], f"{path}.rounds", lo=1, hi=8)
+    _lit(v["status"], f"{path}.status", "awaiting_approval")
+    _lit(v["isSimulated"], f"{path}.isSimulated", True)
+    model_evidence(v["evidence"], f"{path}.evidence")
+    return v
+
+
+def negotiation_input(v: Any, path: str = "negotiationInput") -> dict:
+    _obj(v, path, ("context", "negotiationId", "opportunity", "participants", "maxRounds"))
+    context(v["context"], f"{path}.context")
+    _id(v["negotiationId"], f"{path}.negotiationId")
+    opportunity(v["opportunity"], f"{path}.opportunity")
+    parts = _list(v["participants"], f"{path}.participants", min_items=MIN_GROUP, max_items=MAX_GROUP)
+    for i, c in enumerate(parts):
+        candidate_v11(c, f"{path}.participants[{i}]")
+    ids = [c["intent"]["participantId"] for c in parts]
+    if len(set(ids)) != len(ids):
+        raise ContractError(f"{path}.participants", "duplicate participant")
+    _int(v["maxRounds"], f"{path}.maxRounds", lo=1, hi=4)
+    return v
+
+
+def negotiation_result(v: Any, path: str = "negotiationResult") -> dict:
+    if not isinstance(v, dict):
+        raise ContractError(path, "expected object")
+    if v.get("status") == "deal":
+        _obj(v, path, ("status", "deal", "turns"))
+        deal(v["deal"], f"{path}.deal")
+    elif v.get("status") == "no_deal":
+        _obj(v, path, ("status", "reason", "turns"))
+        _lit(v["reason"], f"{path}.reason", "over_budget", "venue_declined", "rounds_exhausted")
+    else:
+        raise ContractError(f"{path}.status", "unknown status")
+    for i, t in enumerate(_list(v["turns"], f"{path}.turns", max_items=16)):
+        negotiation_turn(t, f"{path}.turns[{i}]")
+    return v
+
+
+def _reward_common(v: Any, path: str) -> None:
+    _str(v["label"], f"{path}.label", max_len=120)
+    _lit(v["sponsor"], f"{path}.sponsor", "venue", "group_quests")
+    _nullable(v["venueId"], _id, f"{path}.venueId")
+    if (v["sponsor"] == "venue") != (v["venueId"] is not None):
+        raise ContractError(f"{path}.venueId", "required exactly when sponsor is venue")
+    _lit(v["isSimulated"], f"{path}.isSimulated", True)
+
+
+def reward_option(v: Any, path: str = "rewardOption") -> dict:
+    _obj(v, path, ("rewardOptionId", "label", "sponsor", "venueId", "isSimulated"))
+    _id(v["rewardOptionId"], f"{path}.rewardOptionId")
+    _reward_common(v, path)
+    return v
+
+
+def reward(v: Any, path: str = "reward") -> dict:
+    _obj(v, path, ("rewardId", "rewardOptionId", "label", "sponsor", "venueId", "isSimulated"))
+    _id(v["rewardId"], f"{path}.rewardId")
+    _id(v["rewardOptionId"], f"{path}.rewardOptionId")
+    _reward_common(v, path)
+    return v
+
+
+def event_record(v: Any, path: str = "event") -> dict:
+    _obj(v, path, (
+        "eventId", "questId", "planId", "revision", "status", "title", "venueId",
+        "start", "end", "acceptedMemberIds", "conversationId",
+    ))
+    for k in ("eventId", "questId", "planId", "venueId", "conversationId"):
+        _id(v[k], f"{path}.{k}")
+    _int(v["revision"], f"{path}.revision", lo=1)
+    _lit(v["status"], f"{path}.status", "scheduled", "cancelled", "completed")
+    _str(v["title"], f"{path}.title", max_len=80)
+    window({"start": v["start"], "end": v["end"]}, path)
+    for i, m in enumerate(_list(v["acceptedMemberIds"], f"{path}.acceptedMemberIds", max_items=MAX_GROUP)):
+        _id(m, f"{path}.acceptedMemberIds[{i}]")
+    return v
+
+
+def challenge_input(v: Any, path: str = "challengeInput") -> dict:
+    _obj(v, path, ("context", "questId", "event", "priorPlan", "feedback", "rewardOptions", "simulateTimeSkip"))
+    context(v["context"], f"{path}.context")
+    _id(v["questId"], f"{path}.questId")
+    event_record(v["event"], f"{path}.event")
+    if v["event"]["questId"] != v["questId"]:
+        raise ContractError(f"{path}.event.questId", "must match questId")
+    quest_plan(v["priorPlan"], f"{path}.priorPlan")
+    seen: set[str] = set()
+    for i, f in enumerate(_list(v["feedback"], f"{path}.feedback", max_items=MAX_GROUP)):
+        p = f"{path}.feedback[{i}]"
+        _obj(f, p, ("participantId", "attended", "wantsReturn"))
+        _id(f["participantId"], f"{p}.participantId")
+        _nullable(f["attended"], _bool, f"{p}.attended")
+        _bool(f["wantsReturn"], f"{p}.wantsReturn")
+        if f["participantId"] in seen:
+            raise ContractError(p, "duplicate feedback participant")
+        seen.add(f["participantId"])
+    for i, r in enumerate(_list(v["rewardOptions"], f"{path}.rewardOptions", max_items=20)):
+        reward_option(r, f"{path}.rewardOptions[{i}]")
+    _bool(v["simulateTimeSkip"], f"{path}.simulateTimeSkip")
+    return v
+
+
+def challenge(v: Any, path: str = "challenge") -> dict:
+    _obj(v, path, (
+        "challengeId", "questId", "basedOnEventId", "title", "description", "goal",
+        "dueBy", "progress", "reward", "evidence",
+    ))
+    for k in ("challengeId", "questId", "basedOnEventId"):
+        _id(v[k], f"{path}.{k}")
+    _str(v["title"], f"{path}.title", max_len=80)
+    _str(v["description"], f"{path}.description", max_len=400)
+    _obj(v["goal"], f"{path}.goal", ("metric", "target"))
+    _lit(v["goal"]["metric"], f"{path}.goal.metric", "sessions_together")
+    target = _int(v["goal"]["target"], f"{path}.goal.target", lo=2, hi=6)
+    _time(v["dueBy"], f"{path}.dueBy")
+    _obj(v["progress"], f"{path}.progress", ("completed", "target"))
+    _int(v["progress"]["completed"], f"{path}.progress.completed", hi=target)
+    if v["progress"]["target"] != target:
+        raise ContractError(f"{path}.progress.target", "must equal goal.target")
+    if v["reward"] is not None:
+        reward(v["reward"], f"{path}.reward")
+    model_evidence(v["evidence"], f"{path}.evidence")
+    return v

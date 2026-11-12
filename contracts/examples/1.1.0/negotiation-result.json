@@ -1,0 +1,119 @@
+{
+  "status": "deal",
+  "deal": {
+    "dealId": "deal-example-1",
+    "negotiationId": "neg-synthetic-1",
+    "opportunityId": "opp-synthetic-1",
+    "venueId": "venue-demo-boulder",
+    "window": {
+      "start": "2026-11-14T22:00:00Z",
+      "end": "2026-11-14T23:30:00Z"
+    },
+    "groupSize": 4,
+    "totalPriceMinor": 6000,
+    "perPersonMinor": 1500,
+    "currency": "USD",
+    "terms": "Off-peak slot with shoe rental included.",
+    "rounds": 2,
+    "status": "awaiting_approval",
+    "isSimulated": true,
+    "evidence": {
+      "model": "fixture:scripted-muse",
+      "source": "replay",
+      "generatedAt": "2026-11-12T22:53:12.206Z",
+      "latencyMs": 0
+    }
+  },
+  "turns": [
+    {
+      "by": "venue",
+      "offer": {
+        "negotiationId": "neg-synthetic-1",
+        "round": 1,
+        "venueId": "venue-demo-boulder",
+        "action": "offer",
+        "window": {
+          "start": "2026-11-14T22:00:00Z",
+          "end": "2026-11-14T23:30:00Z"
+        },
+        "groupSize": 4,
+        "totalPriceMinor": 8800,
+        "currency": "USD",
+        "terms": "Off-peak slot with shoe rental included.",
+        "isSimulated": true,
+        "evidence": {
+          "model": "fixture:scripted-muse",
+          "source": "replay",
+          "generatedAt": "2026-11-12T22:53:12.206Z",
+          "latencyMs": 0
+        }
+      }
+    },
+    {
+      "by": "group_agent",
+      "counter": {
+        "negotiationId": "neg-synthetic-1",
+        "round": 1,
+        "action": "counter",
+        "totalPriceMinor": 5600,
+        "currency": "USD",
+        "window": {
+          "start": "2026-11-14T22:00:00Z",
+          "end": "2026-11-14T23:30:00Z"
+        },
+        "message": "Thanks! We're a group of four first-timers on an off-peak slot.",
+        "evidence": {
+          "model": "fixture:scripted-muse",
+          "source": "replay",
+          "generatedAt": "2026-11-12T22:53:12.206Z",
+          "latencyMs": 0
+        }
+      }
+    },
+    {
+      "by": "venue",
+      "offer": {
+        "negotiationId": "neg-synthetic-1",
+        "round": 2,
+        "venueId": "venue-demo-boulder",
+        "action": "final_offer",
+        "window": {
+          "start": "2026-11-14T22:00:00Z",
+          "end": "2026-11-14T23:30:00Z"
+        },
+        "groupSize": 4,
+        "totalPriceMinor": 6000,
+        "currency": "USD",
+        "terms": "Off-peak slot with shoe rental included.",
+        "isSimulated": true,
+        "evidence": {
+          "model": "fixture:scripted-muse",
+          "source": "replay",
+          "generatedAt": "2026-11-12T22:53:12.206Z",
+          "latencyMs": 0
+        }
+      }
+    },
+    {
+      "by": "group_agent",
+      "counter": {
+        "negotiationId": "neg-synthetic-1",
+        "round": 2,
+        "action": "accept",
+        "totalPriceMinor": 6000,
+        "currency": "USD",
+        "window": {
+          "start": "2026-11-14T22:00:00Z",
+          "end": "2026-11-14T23:30:00Z"
+        },
+        "message": "That works for us, thank you!",
+        "evidence": {
+          "model": "fixture:scripted-muse",
+          "source": "replay",
+          "generatedAt": "2026-11-12T22:53:12.206Z",
+          "latencyMs": 0
+        }
+      }
+    }
+  ]
+}

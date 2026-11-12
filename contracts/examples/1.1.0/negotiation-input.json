@@ -1,0 +1,195 @@
+{
+  "context": {
+    "requestId": "req-v11",
+    "contractVersion": "1.0.0",
+    "mode": "fixture"
+  },
+  "negotiationId": "neg-synthetic-1",
+  "opportunity": {
+    "opportunityId": "opp-synthetic-1",
+    "communityId": "c-synthetic",
+    "source": "muse_created",
+    "title": "First Bouldering Session",
+    "activity": "An intro bouldering session on the beginner wall, taking turns spotting and cheering each other on.",
+    "collaborationTask": "As a team, pick one beginner route and work out the moves together until everyone has tried it.",
+    "venueId": "venue-demo-boulder",
+    "window": {
+      "start": "2026-11-14T22:00:00Z",
+      "end": "2026-11-14T23:30:00Z"
+    },
+    "timeZone": "America/Los_Angeles",
+    "costPerPersonMinor": 1500,
+    "currency": "USD",
+    "minimumSize": 3,
+    "maximumSize": 5,
+    "publicRationale": "This quest fits a time when enough members are free, and happens at an approved public venue.",
+    "isSimulated": false,
+    "evidence": {
+      "model": "fixture:scripted-muse",
+      "source": "replay",
+      "generatedAt": "2026-11-12T20:00:00.000Z",
+      "latencyMs": 5
+    }
+  },
+  "participants": [
+    {
+      "intent": {
+        "participantId": "p-ana",
+        "communityId": "c-synthetic",
+        "intentVersion": 1,
+        "goal": "meet new people",
+        "interests": [
+          "coffee"
+        ],
+        "areaId": "area-north",
+        "timeZone": "America/Los_Angeles",
+        "availability": [
+          {
+            "start": "2026-11-14T21:00:00Z",
+            "end": "2026-11-15T01:00:00Z"
+          }
+        ],
+        "maxBudgetMinor": 1500,
+        "currency": "USD",
+        "maxDurationMinutes": 120,
+        "groupPreference": "small",
+        "consentVersion": 1,
+        "confirmedAt": "2026-11-12T19:00:00Z"
+      },
+      "publicProfile": {
+        "participantId": "p-ana",
+        "displayName": "Ana (synthetic)",
+        "publicInterests": [
+          "coffee"
+        ],
+        "isSynthetic": true
+      },
+      "preferences": {
+        "energy": "low",
+        "socialComfort": "quiet",
+        "avoid": [],
+        "openToNew": true
+      }
+    },
+    {
+      "intent": {
+        "participantId": "p-bo",
+        "communityId": "c-synthetic",
+        "intentVersion": 1,
+        "goal": "meet new people",
+        "interests": [
+          "art"
+        ],
+        "areaId": "area-north",
+        "timeZone": "America/Los_Angeles",
+        "availability": [
+          {
+            "start": "2026-11-14T21:00:00Z",
+            "end": "2026-11-15T00:00:00Z"
+          }
+        ],
+        "maxBudgetMinor": 2000,
+        "currency": "USD",
+        "maxDurationMinutes": 120,
+        "groupPreference": "small",
+        "consentVersion": 1,
+        "confirmedAt": "2026-11-12T19:00:00Z"
+      },
+      "publicProfile": {
+        "participantId": "p-bo",
+        "displayName": "Bo (synthetic)",
+        "publicInterests": [
+          "art"
+        ],
+        "isSynthetic": true
+      },
+      "preferences": {
+        "energy": "medium",
+        "socialComfort": "balanced",
+        "avoid": [
+          "bars"
+        ],
+        "openToNew": true
+      }
+    },
+    {
+      "intent": {
+        "participantId": "p-cy",
+        "communityId": "c-synthetic",
+        "intentVersion": 1,
+        "goal": "meet new people",
+        "interests": [
+          "climbing"
+        ],
+        "areaId": "area-north",
+        "timeZone": "America/Los_Angeles",
+        "availability": [
+          {
+            "start": "2026-11-14T22:00:00Z",
+            "end": "2026-11-15T01:00:00Z"
+          }
+        ],
+        "maxBudgetMinor": 2500,
+        "currency": "USD",
+        "maxDurationMinutes": 120,
+        "groupPreference": "small",
+        "consentVersion": 1,
+        "confirmedAt": "2026-11-12T19:00:00Z"
+      },
+      "publicProfile": {
+        "participantId": "p-cy",
+        "displayName": "Cy (synthetic)",
+        "publicInterests": [
+          "climbing"
+        ],
+        "isSynthetic": true
+      },
+      "preferences": {
+        "energy": "high",
+        "socialComfort": "balanced",
+        "avoid": [],
+        "openToNew": true
+      }
+    },
+    {
+      "intent": {
+        "participantId": "p-dee",
+        "communityId": "c-synthetic",
+        "intentVersion": 1,
+        "goal": "meet new people",
+        "interests": [
+          "music"
+        ],
+        "areaId": "area-north",
+        "timeZone": "America/Los_Angeles",
+        "availability": [
+          {
+            "start": "2026-11-14T21:00:00Z",
+            "end": "2026-11-15T01:00:00Z"
+          }
+        ],
+        "maxBudgetMinor": 3000,
+        "currency": "USD",
+        "maxDurationMinutes": 120,
+        "groupPreference": "small",
+        "consentVersion": 1,
+        "confirmedAt": "2026-11-12T19:00:00Z"
+      },
+      "publicProfile": {
+        "participantId": "p-dee",
+        "displayName": "Dee (synthetic)",
+        "publicInterests": [
+          "music"
+        ],
+        "isSynthetic": true
+      },
+      "preferences": {
+        "energy": null,
+        "socialComfort": "outgoing",
+        "avoid": [],
+        "openToNew": true
+      }
+    }
+  ],
+  "maxRounds": 3
+}

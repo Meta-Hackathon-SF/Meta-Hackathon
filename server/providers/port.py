@@ -7,7 +7,8 @@ Python form: ``await port.generate(GenerateRequest(...)) -> GenerateResult``.
 asyncio cancellation plays the role of the TypeScript AbortSignal.
 
 Every task is registered as a TaskSpec owned by the calling system: planning
-owns extract_intent/plan/revise/continue; matching (Rishi) owns rank_group.
+owns extract_intent/extract_preferences/plan/revise/continue/create_event/
+negotiate/venue_persona/challenge; matching (Rishi) owns rank_group.
 The adapter only executes registered (task, promptVersion) pairs, so neither
 user text nor model output can choose instructions, tools or URLs.
 """
@@ -18,7 +19,11 @@ from typing import Any, Literal, Protocol, TypedDict, get_args
 
 from .schema import check_schema_supported
 
-Task = Literal["extract_intent", "rank_group", "plan", "revise", "continue"]
+Task = Literal[
+    "extract_intent", "rank_group", "plan", "revise", "continue",
+    # PROPOSED (D008, target 1.1.0); additive to the MusePort task enum.
+    "extract_preferences", "create_event", "negotiate", "venue_persona", "challenge",
+]
 TASKS: frozenset[str] = frozenset(get_args(Task))
 
 

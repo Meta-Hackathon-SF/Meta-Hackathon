@@ -1,0 +1,34 @@
+{
+  "status": "needs_follow_up",
+  "profile": {
+    "communityId": "c-synthetic",
+    "availability": [],
+    "timeZone": "America/Los_Angeles",
+    "maxBudgetMinor": 1500,
+    "currency": "USD",
+    "areaId": null,
+    "interests": [],
+    "avoid": [
+      "bars"
+    ],
+    "energy": "low",
+    "socialComfort": null,
+    "openToNew": true
+  },
+  "missingFields": [
+    "availability",
+    "areaId",
+    "interests",
+    "socialComfort"
+  ],
+  "followUp": {
+    "field": "availability",
+    "question": "When are you free in the next two weeks? A day and time range works, like \"Saturday 2-5pm\"."
+  },
+  "evidence": {
+    "model": "fixture:scripted-muse",
+    "source": "replay",
+    "generatedAt": "2026-11-12T22:53:12.203Z",
+    "latencyMs": 0
+  }
+}

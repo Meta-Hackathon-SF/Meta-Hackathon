@@ -1,0 +1,30 @@
+{
+  "status": "created",
+  "opportunity": {
+    "opportunityId": "opp-example-1",
+    "communityId": "c-synthetic",
+    "source": "muse_created",
+    "title": "First Bouldering Session",
+    "activity": "An intro bouldering session on the beginner wall, taking turns spotting and cheering each other on.",
+    "collaborationTask": "As a team, pick one beginner route and work out the moves together until everyone has tried it.",
+    "venueId": "venue-demo-boulder",
+    "window": {
+      "start": "2026-11-14T22:00:00Z",
+      "end": "2026-11-14T23:30:00Z"
+    },
+    "timeZone": "America/Los_Angeles",
+    "costPerPersonMinor": 1500,
+    "currency": "USD",
+    "minimumSize": 3,
+    "maximumSize": 5,
+    "publicRationale": "This quest draws on interests members listed, like climbing, fits a time when enough members are free, and happens at an approved public venue. It is an easy way for new people to start talking.",
+    "isSimulated": false,
+    "evidence": {
+      "model": "fixture:scripted-muse",
+      "source": "replay",
+      "generatedAt": "2026-11-12T22:53:12.205Z",
+      "latencyMs": 0
+    }
+  },
+  "eligibleMemberCount": 4
+}
