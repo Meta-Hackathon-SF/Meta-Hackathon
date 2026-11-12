@@ -20,6 +20,15 @@ ACK evidence:
 Contract version / migration:
 Verification:
 
+## D005: Matching implementation baseline (Rishi)
+ID / UTC timestamp: D005 / 2026-11-12
+Decision and rationale: Rishi ACKs contract 1.0.0 (MatchInput, MatchResult, GroupProposal, MusePort) without changes. Matching is implemented in Python 3.10 stdlib under server/matching/ (compatible with the proposed FastAPI baseline in D004, no framework dependency) with runtime validators mirroring protocol.ts. MusePort is consumed through an injected port only; offline tests use a fake port labeled source "replay". The public MatchResult projection (no memberVersions/feasibleWindows) is offered as `public_projection()` for Patrik to adopt or replace with the shared DTO validator.
+Owner / affected producers and consumers: Rishi; consumes Patrik (Candidate snapshots) and Adam (MusePort); produces for Adam/Kai (GroupProposal) and Will (matching card).
+Status (proposed or accepted): Accepted for Rishi's ownership; non-breaking, no contract change.
+ACK evidence: pending from Adam (rank_group task payload shape), Patrik (projection), Kai (route POST /communities/:id/matches registration).
+Contract version / migration: 1.0.0, none.
+Verification: tests/matching (offline, fake MusePort).
+
 ## D006: Kai's server composition checkpoint and upstream acknowledgments
 ID / UTC timestamp: D006 / 2026-11-12T21:24Z
 Decision and rationale:
