@@ -19,3 +19,19 @@ Status (proposed or accepted):
 ACK evidence:
 Contract version / migration:
 Verification:
+
+## D005: Session mechanism, privacy routes and snapshot semantics
+ID / UTC timestamp: D005 / 2026-11-12T21:17Z
+Decision and rationale:
+- Sessions: `POST /api/v1/session` mints a pseudonymous guest participant and an opaque 256-bit token, held in an HttpOnly/Secure/SameSite=Lax `gq_session` cookie. `Authorization: Bearer` is also accepted for multi-device tests. Only the SHA-256 hash is stored, with 7-day expiry, and `DELETE /session` revokes it. We have no confirmed Facebook or Supabase auth, and the mock shell's users aren't accounts. Synthetic profiles can't hold sessions. Identity is a server `Actor`; a `participantId` in a body is rejected.
+- Storage: Postgres with RLS on all `privacy.*` tables. The API connects as a non-owner, non-bypass member of role `gq_api`, with transaction-local `gq.participant_id`. Cross-user reads go only through the `authorized_candidates` / `member_versions` SECURITY DEFINER functions. Privacy migrations run before `db/workflow/`.
+- Additive routes beyond contracts/API.md: `POST /session`, `DELETE /session`, `GET /communities/:id/consent`, `POST /communities/:id/leave`, `GET /intents/me?communityId=`. `PUT /intents/me` and `PATCH /intents/me/availability` carry `communityId` in the body, since a participant can belong to more than one community.
+- Snapshot semantics: `Candidate.intent.consentVersion` is the current consent revision that authorizes the snapshot. `publicInterests` is `[]` without public-interest consent. The requester must be eligible and is included.
+- `Consent.revokedAt` is set on a revision that withdraws a previously granted toggle, and null otherwise.
+- Queued jobs: the workflow stores the enqueuing Actor's participantId. The worker calls `reauthorize_for_job`, which rechecks membership and consent before acting.
+Owner / affected producers and consumers: Patrik (producer). Kai (server composition, jobs, workflow FKs), Rishi and Adam (Candidate consumers), Will (session/consent/intent UI calls).
+Status: proposed. Implemented on role/patrik-privacy. No wire type in protocol.ts changed.
+ACK evidence: pending from Kai, Rishi, Adam and Will.
+Open question for P2: protocol.ts has no public proposal or event-card DTO. Patrik proposes adding `PublicGroupProposal {proposalId, communityId, revision, members: PublicParticipant[], sharedInterests, publicRationale, evidence}`, without memberVersions or feasibleWindows. Needs ACK from Rishi (producer of GroupProposal) and Kai/Will (consumers).
+Contract version / migration: contract 1.0.0 unchanged; db/privacy/001_privacy_foundation.sql.
+Verification: `server/.venv/bin/python -m pytest tests/privacy -q` -> 76 passed against local Postgres 17 (synthetic fixtures only).
