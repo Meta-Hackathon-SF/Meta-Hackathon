@@ -38,7 +38,7 @@ class TaskSpec:
     instructions: str
     output_schema: dict[str, Any]
     schema_name: str
-    max_output_tokens: int = 2048
+    max_output_tokens: int = 8000
     temperature: float | None = 0.4
 
     def __post_init__(self) -> None:

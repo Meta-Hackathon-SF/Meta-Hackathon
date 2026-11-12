@@ -7,6 +7,11 @@ from server.providers.port import TaskRegistry, TaskSpec
 
 EXTRACT_PROMPT_VERSION = "extract-intent.v1"
 
+# Muse Spark always reasons and reasoning tokens count toward
+# max_completion_tokens. A live call on 2026-11-12 spent 1,498 of a 1,500
+# budget on reasoning and returned null content, so budgets leave ample room.
+REASONING_BUDGET = 8000
+
 
 def _quoted(value_schema: dict[str, Any]) -> dict[str, Any]:
     return {
@@ -181,11 +186,11 @@ Rules:
 
 def register_planning_tasks(registry: TaskRegistry) -> TaskRegistry:
     registry.register(TaskSpec(task="plan", prompt_version=PLAN_PROMPT_VERSION, instructions=PLAN_INSTRUCTIONS,
-                               output_schema=PLAN_SCHEMA, schema_name="quest_plan", max_output_tokens=2000, temperature=0.7))
+                               output_schema=PLAN_SCHEMA, schema_name="quest_plan", max_output_tokens=REASONING_BUDGET, temperature=0.7))
     registry.register(TaskSpec(task="revise", prompt_version=REVISE_PROMPT_VERSION, instructions=REVISE_INSTRUCTIONS,
-                               output_schema=PLAN_SCHEMA, schema_name="quest_plan", max_output_tokens=2000, temperature=0.4))
+                               output_schema=PLAN_SCHEMA, schema_name="quest_plan", max_output_tokens=REASONING_BUDGET, temperature=0.4))
     registry.register(TaskSpec(task="continue", prompt_version=CONTINUE_PROMPT_VERSION, instructions=CONTINUE_INSTRUCTIONS,
-                               output_schema=CONTINUE_SCHEMA, schema_name="continuation", max_output_tokens=1200, temperature=0.7))
+                               output_schema=CONTINUE_SCHEMA, schema_name="continuation", max_output_tokens=REASONING_BUDGET, temperature=0.7))
     _register_extract(registry)
     return registry
 
@@ -197,7 +202,7 @@ def _register_extract(registry: TaskRegistry) -> TaskRegistry:
         instructions=EXTRACT_INSTRUCTIONS,
         output_schema=EXTRACT_SCHEMA,
         schema_name="intent_extraction",
-        max_output_tokens=1500,
+        max_output_tokens=REASONING_BUDGET,
         temperature=0.0,
     ))
     return registry

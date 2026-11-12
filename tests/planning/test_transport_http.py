@@ -97,6 +97,19 @@ class TransportTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ProviderError) as ctx:
             await MetaChatCompletionsTransport(cfg).complete(self.request)
         self.assertIn(ctx.exception.kind, ("unavailable", "timeout"))
+        if ctx.exception.kind == "unavailable":
+            self.assertIn("connection_refused", ctx.exception.message)
+
+    def test_network_cause_labels(self):
+        import socket
+        import ssl
+        import urllib.error
+
+        from server.providers.transport import network_cause
+
+        self.assertEqual(network_cause(urllib.error.URLError(ssl.SSLCertVerificationError("x"))), "tls_certificate_verify_failed")
+        self.assertEqual(network_cause(urllib.error.URLError(socket.gaierror(8, "nodename"))), "dns_lookup_failed")
+        self.assertEqual(network_cause(urllib.error.URLError(ConnectionRefusedError(61, "refused"))), "connection_refused")
 
     def test_envelope_parsing(self):
         with self.assertRaises(ProviderError):
@@ -106,6 +119,11 @@ class TransportTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ProviderError) as ctx:
             parse_chat_completion(completion('{"a":', finish="length"))
         self.assertEqual(ctx.exception.kind, "malformed_output")
+        # Observed live: reasoning exhausted the budget, content null, finish_reason "length".
+        truncated = json.dumps({"choices": [{"message": {"content": None}, "finish_reason": "length"}]}).encode()
+        with self.assertRaises(ProviderError) as ctx:
+            parse_chat_completion(truncated)
+        self.assertIn("budget exhausted", ctx.exception.message)
 
 
 if __name__ == "__main__":

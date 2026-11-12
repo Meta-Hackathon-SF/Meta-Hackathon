@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import socket
+import ssl
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -58,6 +60,26 @@ def _retry_after(headers: Any) -> float | None:
         return max(0.0, float(raw))
     except ValueError:
         return None
+
+
+def network_cause(exc: BaseException) -> str:
+    """Fixed, non-sensitive cause label for a failed connection (no hostnames, bodies or keys)."""
+    reason = getattr(exc, "reason", exc)
+    if isinstance(reason, ssl.SSLCertVerificationError):
+        return "tls_certificate_verify_failed"
+    if isinstance(reason, ssl.SSLError):
+        return "tls_error"
+    if isinstance(reason, socket.gaierror):
+        return "dns_lookup_failed"
+    if isinstance(reason, ConnectionRefusedError):
+        return "connection_refused"
+    if isinstance(reason, ConnectionResetError):
+        return "connection_reset"
+    if isinstance(reason, (TimeoutError, socket.timeout)):
+        return "connect_timeout"
+    if isinstance(reason, OSError) and reason.errno is not None:
+        return f"os_error_{reason.errno}"
+    return "network_error"
 
 
 def classify_status(status: int, retry_after: float | None) -> ProviderError:
@@ -117,8 +139,8 @@ class MetaChatCompletionsTransport:
             raise classify_status(exc.code, _retry_after(exc.headers)) from None
         except TimeoutError:
             raise ProviderError("timeout", "provider request timed out") from None
-        except (urllib.error.URLError, OSError):
-            raise ProviderError("unavailable", "provider unreachable") from None
+        except (urllib.error.URLError, OSError) as exc:
+            raise ProviderError("unavailable", f"provider unreachable ({network_cause(exc)})") from None
         if len(raw) > MAX_RESPONSE_BYTES:
             raise ProviderError("malformed_output", "provider response too large")
         return parse_chat_completion(raw)
@@ -136,9 +158,10 @@ def parse_chat_completion(raw: bytes) -> ChatResponse:
         content = choice["message"]["content"]
     except (ValueError, KeyError, IndexError, TypeError):
         raise ProviderError("malformed_output", "unexpected provider response envelope") from None
+    if choice.get("finish_reason") == "length":
+        # Reasoning tokens count toward max_completion_tokens; raise the TaskSpec budget.
+        raise ProviderError("malformed_output", "provider output truncated (completion token budget exhausted)")
     if not isinstance(content, str):
         raise ProviderError("malformed_output", "provider returned no text content")
-    if choice.get("finish_reason") == "length":
-        raise ProviderError("malformed_output", "provider output truncated")
     model = doc.get("model") if isinstance(doc.get("model"), str) else None
     return ChatResponse(text=content, model=model)
