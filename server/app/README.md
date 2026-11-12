@@ -59,7 +59,11 @@ instead of independently creating conflicting manifests.
 - `authorize`: a required FastAPI dependency implementing server-side verified
   session/consent checks. Patrik owns its implementation. Supply the same public
   privacy dependency to every protected router; never infer identity from a
-  client participant ID or the Facebook shell's localStorage. Resource membership
+  client participant ID or the Facebook shell's localStorage. The sole bootstrap
+  exception is privacy-owned `POST /session`, which still requires an idempotency
+  key. `GET /session`, `DELETE /session`, and all other API routes keep the guard.
+  Session creation behavior remains Patrik's implementation, never a fake actor
+  supplied by this app. Resource membership
   and consent must also be rechecked by the owning handler/transaction/stream.
 - `ready`: an async, bounded health probe returning a literal bool. Return true
   only when that service's real dependencies are ready. Missing, throwing,
@@ -108,9 +112,14 @@ startup registration conflicts, and wire-error compatibility.
 
 ## Still pending
 
-Patrik: confirm the public session/authorization dependency and PostgreSQL/schema
-boundary; review the no-store/error behavior. Adam/Rishi/Will: acknowledge the
-registration convention and supply owner routers/readiness probes. Kai: agree
-migration order before tables, then implement P1 transactions, durable jobs,
-idempotency and event identity. No PostgreSQL instance or public deployment has
-been created or verified at this checkpoint.
+Remote role handoffs now provide privacy, extraction, matching, and onboarding
+implementations. They are not merged into this branch or live-integrated here.
+Kai has reviewed the published ports; see `docs/handoffs/kai.md` and the
+coordinator entry in `docs/DECISIONS.md` for exact acknowledgments and mismatches.
+Patrik: use the canonical `server.privacy` namespace, register `build_router` with
+`actor_dependency`, and install the privacy error handler at composition time;
+review session bootstrap, no-store/error behavior and database schema boundaries.
+Adam/Rishi/Will: acknowledge registration and supply owner routers/readiness
+probes. Kai's next system work is P1 transactions, durable jobs, idempotency and
+event identity, with privacy migrations first. No PostgreSQL instance or public
+deployment has been created or verified on this Windows checkout.

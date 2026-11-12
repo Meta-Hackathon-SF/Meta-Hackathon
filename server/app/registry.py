@@ -2,6 +2,7 @@
 
 import re
 from collections.abc import Awaitable, Callable, Sequence
+from copy import copy
 from dataclasses import dataclass
 from typing import Literal
 
@@ -40,17 +41,38 @@ def register_services(app: FastAPI, registrations: Sequence[ServiceRegistration]
         if not registration.router.routes:
             raise ValueError("A service registration must include routes")
         seen_owners.add(registration.owner)
+        bootstrap_routes: list[APIRoute] = []
+        protected_routes: list[APIRoute] = []
         for route in registration.router.routes:
             if not isinstance(route, APIRoute):
                 raise ValueError("Only HTTP API routes may be registered in this baseline")
+            if route.path == "/session" and "POST" in route.methods:
+                if registration.owner != "privacy" or route.methods != {"POST"}:
+                    raise ValueError("Only privacy may register POST /session bootstrap")
+                bootstrap_routes.append(route)
+            else:
+                protected_routes.append(route)
             normalized = re.sub(r"\{[^}]+\}", "{}", route.path)
             for method in route.methods:
                 identity = (method, normalized)
                 if identity in seen_routes:
                     raise ValueError("Duplicate service method/path registration")
                 seen_routes.add(identity)
+        # Keep the owner's lifespan handlers once; do not mutate its router or remove
+        # route-level dependencies. Only the reviewed session-creation route skips
+        # the global verified-session dependency, so a new browser can obtain one.
+        protected_router = copy(registration.router)
+        protected_router.routes = protected_routes
         app.include_router(
-            registration.router,
+            protected_router,
             prefix="/api/v1",
             dependencies=[Depends(registration.authorize), Depends(require_idempotency_key)],
         )
+        if bootstrap_routes:
+            bootstrap_router = APIRouter()
+            bootstrap_router.routes = bootstrap_routes
+            app.include_router(
+                bootstrap_router,
+                prefix="/api/v1",
+                dependencies=[Depends(require_idempotency_key)],
+            )
