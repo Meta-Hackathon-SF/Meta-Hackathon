@@ -8,6 +8,7 @@
 - Implementation commits: `adb7dc6` (server baseline), `1a0e045` (privacy bootstrap alignment).
 - Test/evidence checkpoint: the commit containing this handoff adds `tests/orchestration/test_app.py`.
 - Integration checkpoint / shared-file claim (2026-11-12T21:32Z): latest human direction authorizes safe automatic squash merges. Kai is updating `AGENTS.md` with this standing policy and `PROJECT_KNOWLEDGE.md` with verified source/evidence. Current main was merged normally (`bdac27e`), preserving Rishi's D005 and Kai's D006; combined tests passed 144/144. The P0 phase and unimplemented event/persistence scope are unchanged.
+- CI/shared-file claim: `.github/workflows/validation.yml` will provide read-only PR validation with disposable Postgres 17, the combined backend tests, and web lint/build/Playwright. Privacy arrived on main during integration (`616e543`); merged normally as `abf9a88` without changing its implementation. Main/head validation must be refreshed before squash merging. CI results, not an unavailable local database, will provide database-backed evidence for the candidate.
 
 ## Completed deliverable
 
