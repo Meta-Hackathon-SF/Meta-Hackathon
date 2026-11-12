@@ -192,6 +192,9 @@ def register_planning_tasks(registry: TaskRegistry) -> TaskRegistry:
     registry.register(TaskSpec(task="continue", prompt_version=CONTINUE_PROMPT_VERSION, instructions=CONTINUE_INSTRUCTIONS,
                                output_schema=CONTINUE_SCHEMA, schema_name="continuation", max_output_tokens=REASONING_BUDGET, temperature=0.7))
     _register_extract(registry)
+    from .prompts_v11 import register_v11_tasks  # PROPOSED D008; local import avoids a cycle
+
+    register_v11_tasks(registry)
     return registry
 
 

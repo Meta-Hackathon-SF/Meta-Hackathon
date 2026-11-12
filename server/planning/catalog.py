@@ -62,3 +62,44 @@ SYNTHETIC_DEMO_CATALOG: tuple[CatalogVenue, ...] = (
 
 def demo_venues(*, time_zone: str, start: datetime, days: int = 14) -> list[dict]:
     return [expand_venue(v, time_zone=time_zone, start=start, days=days) for v in SYNTHETIC_DEMO_CATALOG]
+
+
+# --- PROPOSED (D008): simulated venue businesses for negotiation demos -------
+_GYM = {d: [("10:00", "22:00")] for d in range(7)}
+SYNTHETIC_BOULDER_GYM = CatalogVenue(
+    "venue-demo-boulder", "Campus Bouldering Gym (synthetic demo venue)", "area-north",
+    "Demo address withheld: Rec Center", _GYM,
+)
+
+
+@dataclass(frozen=True)
+class VenuePersona:
+    """A SIMULATED business assistant. Prices are invented demo values, labeled as such."""
+
+    venue_id: str
+    style: str
+    list_price_per_person_minor: int
+    floor_price_per_person_minor: int
+
+    def __post_init__(self) -> None:
+        if not 0 <= self.floor_price_per_person_minor <= self.list_price_per_person_minor:
+            raise ValueError("floor must be between 0 and list price")
+
+
+SYNTHETIC_VENUE_PERSONAS: Mapping[str, VenuePersona] = {
+    "venue-demo-boulder": VenuePersona(
+        "venue-demo-boulder", "friendly climbing gym that wants new members on quiet weekday and Saturday-afternoon slots",
+        list_price_per_person_minor=2200, floor_price_per_person_minor=1200,
+    ),
+    "venue-demo-cafe": VenuePersona(
+        "venue-demo-cafe", "student cafe that offers group board-game tables with a drink",
+        list_price_per_person_minor=900, floor_price_per_person_minor=500,
+    ),
+}
+
+
+def demo_venues_with_gym(*, time_zone: str, start: datetime, days: int = 14) -> list[dict]:
+    """Demo catalog plus the synthetic bouldering gym used by the negotiation demo."""
+    return demo_venues(time_zone=time_zone, start=start, days=days) + [
+        expand_venue(SYNTHETIC_BOULDER_GYM, time_zone=time_zone, start=start, days=days)
+    ]
