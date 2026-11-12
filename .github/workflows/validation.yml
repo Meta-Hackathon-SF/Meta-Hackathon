@@ -53,8 +53,8 @@ jobs:
           python -m pip check
       - name: Check Kai-owned Python formatting and lint
         run: |
-          python -m ruff check server/app tests/orchestration
-          python -m ruff format --check server/app tests/orchestration
+          python -m ruff check server/app server/orchestration tests/orchestration
+          python -m ruff format --check server/app server/orchestration tests/orchestration
       - name: Require an actual PostgreSQL connection
         run: |
           python - <<'PY'
@@ -65,7 +65,7 @@ jobs:
           PY
       - name: Run combined offline and database-backed tests
         run: python -m pytest tests -q --junitxml=.pytest_cache/ci-results.xml
-      - name: Reject silently skipped privacy tests
+      - name: Reject silently skipped privacy or workflow database tests
         run: |
           python - <<'PY'
           from xml.etree import ElementTree
@@ -73,6 +73,9 @@ jobs:
           privacy = [case for case in root.findall('.//testcase') if 'privacy' in case.get('classname', '')]
           assert privacy, 'No privacy tests were collected'
           assert not any(case.find('skipped') is not None for case in privacy), 'Privacy tests were skipped'
+          workflow = [case for case in root.findall('.//testcase') if 'workflow_' in case.get('classname', '')]
+          assert workflow, 'No workflow integration tests were collected'
+          assert not any(case.find('skipped') is not None for case in workflow), 'Workflow tests were skipped'
           PY
 
   frontend:
