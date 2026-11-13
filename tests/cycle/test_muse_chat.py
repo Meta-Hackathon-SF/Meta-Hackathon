@@ -241,3 +241,21 @@ def test_draft_from_flat_fields_or_json_string_and_ids_never_shown_as_text():
         {"kind": "create", "context": CONTEXT}, "p1"
     )
     assert out["draft"]["placeId"] == "v-quad" and out["draft"]["day"] == "Friday"
+
+
+def test_create_requests_require_every_draft_field_in_the_schema():
+    fake = FakeMuse({"text": "Draft below."})
+    MuseChat(CONFIG, send=fake).reply({"kind": "create", "context": CONTEXT}, "p1")
+    MuseChat(CONFIG, send=fake).reply({"kind": "hangout", "context": CONTEXT}, "p1")
+    create, hangout = (
+        c["body"]["response_format"]["json_schema"]["schema"]["required"] for c in fake.calls
+    )
+    assert create == [
+        "text",
+        "draftTitle",
+        "draftPlaceId",
+        "draftDay",
+        "draftTime",
+        "draftDescription",
+    ]
+    assert hangout == ["text"]

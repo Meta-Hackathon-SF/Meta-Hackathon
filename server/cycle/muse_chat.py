@@ -71,6 +71,16 @@ _SCHEMA = {
 }
 
 
+_DRAFT_FIELDS = ("draftTitle", "draftPlaceId", "draftDay", "draftTime", "draftDescription")
+
+
+def _schema(kind: str) -> dict[str, Any]:
+    """For create, every draft field is required: live tests showed optional ones were skipped."""
+    if kind != "create":
+        return _SCHEMA
+    return {**_SCHEMA, "required": ["text", *_DRAFT_FIELDS]}
+
+
 class MuseChatError(Exception):
     """Carries one of the cycle API error codes; never the request or provider body."""
 
@@ -331,7 +341,11 @@ class MuseChat:
             "max_completion_tokens": 900,
             "response_format": {
                 "type": "json_schema",
-                "json_schema": {"name": "group_chat_line", "strict": False, "schema": _SCHEMA},
+                "json_schema": {
+                    "name": "group_chat_line",
+                    "strict": False,
+                    "schema": _schema(kind),
+                },
             },
             "messages": [
                 {"role": "developer", "content": INSTRUCTIONS},
