@@ -1,7 +1,7 @@
 # patrik handoff
-Current step: 3 (Daily loop), see docs/PLAN.md. Role tasks 1-3 done offline (1-2 merged to main via PR #15); tasks 1-6 done offline; next is task 7 (consent screen + support card UI).
+Current step: 3 (Daily loop), see docs/PLAN.md. Role tasks 1-3 done offline (1-2 merged to main via PR #15); tasks 1-7 done (offline/fixture); task 7 UI awaits Will's mount.
 Status: implemented + tested offline (fixture/in-memory only). Not mounted in a composed app; no live journey.
-Branch + commit: `role/patrik-privacy`, based on main `0ab9713`. See git log for the checkpoint commit.
+Branch + commit: `role/patrik-privacy`; tasks 1-6 merged to main via #15 and #24 (`70a08ea`). See git log for the checkpoint commit.
 Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
 
 ## Completed tasks
@@ -12,6 +12,7 @@ Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
 5. OutputGuard (`server/privacy/guard.py`): protocol `check`, `check_chat(..., revealed)`, `text_guard()` for Will. 30-item sensitive red-team list, 5-word quote fuzz with disguises, PII/contact cases, and no false positives on all 44 question-bank questions and the fixture public texts.
 4. M1 safety screening (`server/privacy/safety.py`): `register_safety_task`, `SafetyScreener(muse).screen` with a code pre-screen that Muse cannot downgrade, retryable `PROVIDER_UNAVAILABLE` on provider failure, `sync_screen()` for Will. No live M1 call made.
 6. `formationSnapshot` lease + `publish_guard` per Kai's CHANGE on #13 (`server/privacy/formation.py`), block/report storage (`server/privacy/moderation.py`, `db/privacy/003_blocks_reports.sql`), `POST /me/blocks`. Fix: a player with any flagged answer is now excluded entirely (week-sample `expectedFormation.excluded`).
+7. Privacy UI (`web/src/features/constellations/privacy/`): `PrivacyGate`, `JoinScreen` (3 toggles default off), `PrivacySettings` (version-checked consent, delete my data, sign out), `SupportCard` (counseling, 988, 911), runtime-validated live client + labeled fixture client (sessionStorage per tab).
 
 ## Changed interfaces and files
 - Ports: `require_session(token) -> Actor(player_id, session_id, community_id, is_operator)`, `actor_dependency`, `require_consent`, `require_operator`, `add_listener(ChangeNotice)`, `build_router`, `install_privacy_error_handler`. Details in server/privacy/README.md.
@@ -22,6 +23,7 @@ Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
 - `ChangeNotice` gained kinds `answer_deleted` (with `cycle_id`) and `data_deleted`; `consent_version` is now optional (None for non-consent kinds).
 
 ## Checks run + actual result
+- Task 7 (2026-11-13): web lint clean for privacy folder; `tsc -b` and `npm run build` pass; Playwright flow on a temporary uncommitted mount around Will's real DailyPage passed desktop + mobile (join gate, keyboard, reload, pause hides daily page, restore, delete, sign out, tel:988); existing e2e 32 passed after revert. Live browser run against the server not done.
 - Task 6 (2026-11-13): formation/moderation tests 22 passed: snapshot passes Rishi's `FormationSnapshot.from_dict`; guard goes stale on delete/edit/revoke/block/flagged player/forged revision; a concurrent consent change waits for the guard (thread test); nested calls and rollback work. Full `pytest tests` **527 passed**. Mutations (guard never stale, flagged player kept, lock released before commit body) fail 6/2/2 tests.
 - Task 4 (2026-11-13): safety tests 26 passed with Adam's labeled FixtureMuse (scripted, `source: replay`); composition test: distress answer through Will's real CycleService is stored flagged and excluded from `eligible_answers`. Full `pytest tests` **503 passed**. Mutations (disabled pre-screen, model downgrade allowed) each fail 5 tests. No live model call.
 - Task 5 (2026-11-13): `tests/privacy/test_privacy_guard.py` 138 passed; full `pytest tests` **476 passed**. Mutation checks: no zero-width stripping, 6-word quote window, no sensitive check, contact blocked after reveal each fail the suite. Verified through Adam's `guard_allows` and Rishi's `sky._guard_ok` helpers.
@@ -36,10 +38,12 @@ All evidence is offline (in-memory SQLite, synthetic names). No model call. No c
 
 ## Requests answered
 - 2026-11-13 Kai #13 (registry, session/consent, M1, OutputGuard, report/block store, publish gate): ACK registry; DELIVERED session/consent (#15), listeners, answer store (#24); planned OutputGuard -> M1 -> report/block -> formationSnapshot; CHANGE proposal `formation_snapshot` + `check_publish(cycleId, revision, playerIds)`. https://github.com/willapat/Meta-Hackathon/pull/13#issuecomment-6842159029
-- PR opened: #24 (task 3).
+- PR #24 (tasks 3-6) merged to main as `70a08ea` (normal merge, head `50a50a2`, 555 tests passed locally; main has no CI configured).
+- 2026-11-13 Kai #13 CHANGEs (publish guard holds lock through commit; snapshot stays exact contract shape): ACK + DELIVERED https://github.com/willapat/Meta-Hackathon/pull/13#issuecomment-6842340554
 - ACK D005 and D006 (producer shapes) recorded in docs/DECISIONS.md.
 
 ## Blocked on
+- `@willapat` (Will): mount `PrivacyGate` around `DailyPage` in `App.tsx` (snippet in web/src/features/constellations/privacy/README.md) and optionally use `SupportCard`; add the Playwright flow from the PR.
 - `@willapat` / `@beatopia`: wire `AnswerStore(store, privacy, answer_model=DailyAnswer, guess_model=PrevalenceGuess)` in place of the test-only adapter; call `mark_locked(cycleId, lockedAt)` on Saturday lock (or Kai's `on_locked` hook does). The store accepts his `DailyAnswer` model or a camelCase dict.
 - `@beatopia` (Kai): ACK or CHANGE on the delivered `prepare_formation` / `publish_guard` / `ModerationStore` seams (#13); wire `resolve_handle` for `POST /me/blocks`. D007 ACKs (Kai, Will) received and copied.
 
