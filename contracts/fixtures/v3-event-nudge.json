@@ -1,0 +1,33 @@
+{
+  "contractVersion": "3.0.0",
+  "_note": "S13. Buckets only from 3 up (3-5, 6-9, 10+), never counts or who. Approved eventIds only (D015).",
+  "events": [
+    {
+      "eventId": "ev-board-games",
+      "title": "Board games night",
+      "placeId": "place-student-union",
+      "startsAt": "2026-11-14T02:00:00Z",
+      "endsAt": "2026-11-14T04:00:00Z",
+      "constellationInterestBucket": "3-5",
+      "myInterest": false,
+      "kind": "catalog"
+    },
+    {
+      "eventId": "ev-open-mic",
+      "title": "Open mic",
+      "placeId": "place-cafe",
+      "startsAt": "2026-11-15T01:00:00Z",
+      "endsAt": "2026-11-15T03:00:00Z",
+      "constellationInterestBucket": "none",
+      "myInterest": true,
+      "kind": "catalog"
+    }
+  ],
+  "nudge": {
+    "nudgeId": "nd-01",
+    "eventId": "ev-board-games",
+    "copy": "A few people from your constellations are going to Board games night.",
+    "interestBucket": "3-5",
+    "expiresAt": "2026-11-14T02:00:00Z"
+  }
+}

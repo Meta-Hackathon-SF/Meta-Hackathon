@@ -1,7 +1,7 @@
 # Facebook Space
 ### You're not the only one feeling this. Facebook Space shows you who's been feeling it right next to you.
 
-Most people our age feel like the only one carrying a private feeling, and they are almost never the only one. Facebook Space is a weekly game inside Facebook Groups that lets a Group find that out. Monday to Friday, Muse asks one honest question a day. Once you answer, you see the constellations you are in that day, drawn in that day's color. The only number shown is how many people answered today. On Saturday you see all your constellations for the week across the whole sky. On Sunday your closest 2 to 4 people appear as your main constellation, drawn as the Meta logo, with a 24-hour anonymous group chat. Names are revealed only when people both choose to. Friendship only, 18+.
+Most people our age feel like the only one carrying a private feeling, and they are almost never the only one. Facebook Space is a weekly game inside Facebook Groups that lets a Group find that out. Monday to Friday, Muse asks one honest question a day. Once you answer, you see the constellations you are in that day, drawn in that day's color. The only number shown is how many people answered today. On Saturday you see all your constellations for the week across the whole sky. On Sunday your closest 3 to 5 people appear as your main constellation, drawn as the Meta logo, with a 24-hour anonymous group chat. Names are revealed only when people both choose to. Friendship only, 18+.
 
 **v3 redesign:** the full spec is [docs/PRD-v3.md](docs/PRD-v3.md) (decision D012, contract 3.0.0, proposed). Constellations and rooms have no names, and there are no percentages, Sky stats or prevalence guesses. Anonymity is the design.
 
@@ -42,15 +42,15 @@ Done:
 To do:
 - [ ] Contract 3.0.0 draft and D012. Owns `contracts/protocol.ts`, `docs/DECISIONS.md`. Accepts: typechecks, fixtures updated, every owner has an ACK or CHANGE.
 - [ ] Instant daily placement, code only, under 1 s. Owns `server/matching`. Accepts: a new answer returns that day's constellations in under 1 s with no Muse call.
-- [ ] Day-close formation of daily constellations (M3 batched). Owns `server/matching`. Accepts: closing a day produces constellations of 2+ people, each person placed, blocks respected.
+- [ ] Day-close formation of daily constellations (M3 batched). Owns `server/matching`. Accepts: closing a day produces constellations of 3+ people (nothing smaller is ever shown), each person placed, blocks respected.
 - [ ] Week co-membership graph. Owns `server/matching`. Accepts: shared-constellation counts per pair are reproducible from the day results.
-- [ ] Sunday main constellation: 2+ shared constellations or high closeness, groups of 3 to 5, blocks, repair, fallback, plus Meta-logo anchors. Owns `server/matching`. Accepts: validator passes; every player is in one group or labeled unplaced; fallback is labeled "Fallback grouping".
+- [ ] Sunday main constellation: pairs sharing 2+ constellations or high closeness, groups of 3 to 5 (reuses M4 on the candidate set), blocks, repair, fallback, plus Meta-logo anchors. Owns `server/matching`. Accepts: validator passes; every player is in one group or labeled unplaced; fallback is labeled "Fallback grouping".
 - [ ] Sky layout: week-randomized star indices over about 10k positions, plus second-degree constellations (max 2 per star, caps). Owns `server/matching`. Accepts: your index differs week to week; no star exceeds 2 second-degree groups; the cap holds on a 10k fixture.
 - [ ] Formation progress stream with real candidate edges. Owns `server/matching`. Accepts: edges shown are ones the algorithm actually scored, not decoration.
 - [ ] Event constellation-interest counts and nudge eligibility (bucketed, 3+ only, allowlist from #44). Owns `server/matching`. Accepts: a count under 3 is never returned; an event outside the allowlist is never eligible.
 - [ ] Custom-event cluster finder (repeat matches over 3 weeks). Owns `server/matching`. Accepts: a seeded cluster of 3+ repeat matches is found; a one-off match is not.
 - [ ] Remove M5 naming, M8 Sky narration and the guess from matching. Owns `server/matching`. Accepts: grep finds no naming, prevalence or guess code; tests green.
-- [ ] Live quality run (`live_eval --gold --live`). Owns `server/matching`. Accepts: results and model/latency recorded in the handoff, labeled live.
+- [x] Live quality run. Done by Adam's live evals (`docs/audits/2026-11-13-live-evals.md`, synthetic gold set, 30 players): Muse scored pairwise precision/recall 0.95/0.88 (Spark), 0.98/0.89 (Ember), 1.0/1.0 (Wonder) against 0.13 for the keyword baseline. Small runs (1-3 per model), directional only.
 
 ### Adam (`@adamzhang06`, branch `role/adam-planning`)
 Muse adapter, event data, copy jobs.
@@ -84,7 +84,7 @@ Jobs, chat, sky UI, API composition.
 - [ ] Job runner for day close, lock, reveal and 24-hour expiry. Accepts: each job runs once, is idempotent, and a post to an expired chat returns `ROOM_EXPIRED`.
 - [ ] Saturday sky canvas (about 10k stars, no zoom). Accepts: renders your constellations plus low-opacity second-degree ones at demo frame rate on a laptop.
 - [ ] Loading screen on SSE `formation.progress`. Accepts: shows the real candidate edges as they arrive; falls back to a labeled visualization if the stream drops.
-- [ ] Sunday Meta-logo reveal. Accepts: the main constellation is drawn on the logo anchors for 2 to 4 people.
+- [ ] Sunday Meta-logo reveal. Accepts: the main constellation is drawn on the logo anchors for 3 to 5 people.
 - [ ] 24-hour chat change. Accepts: the chat expires 24 hours after reveal; mutual reveal still works; contact info is still blocked.
 - [ ] New route composition: `/sky/stars`, `/sky/mine`, `/main`, `/events`, invites. Accepts: each route is auth-checked and returns only the caller's own data.
 
@@ -127,7 +127,7 @@ Once there is enough daily-question information, those answers become the primar
 2. **Daily answer (Mon-Fri).** One question per day. Answer by voice or text, 1 to 400 characters. Muse may ask one follow-up. Every answer is screened for distress or harm first; flagged answers are excluded everywhere and the player sees a private support card.
 3. **Daily reveal.** Right after you answer, code places you instantly (under 1 s) and you see the constellations you are in that day, in that day's color. You may be in several. They have no names. The only number on screen is how many people answered today. When the day closes, Muse-assisted formation (M3, batched) settles the day's constellations.
 4. **Saturday.** The week locks. You see all your constellations from the week, plus low-opacity second-degree constellations, across the whole sky of about 10k stars. No zoom. Your star position is randomized each week. A loading screen shows the algorithm trying real candidate connections.
-5. **Sunday.** Your main constellation forms from the closest 2 to 4 people: 2 or more shared constellations, or very similar answers. It is drawn as the Meta logo, with a 24-hour anonymous group chat. Every message is screened; contact info is blocked; report and block are one tap. The chat expires 24 hours after it opens.
+5. **Sunday.** Your main constellation forms from the closest 3 to 5 people: those who share 2 or more constellations with you, or have very similar answers. It is drawn as the Meta logo, with a 24-hour anonymous group chat. Every message is screened; contact info is blocked; report and block are one tap. The chat expires 24 hours after it opens.
 6. **Mutual reveal.** Anyone can ask to reveal. Names appear only for people who both asked. A one-sided request reveals nothing.
 7. **Events.** You get a nudge to an approved event when people from your constellations are going. Counts are bucketed and shown only at 3 or more. Every few weeks, a cluster of repeat matches can get a custom event: Muse proposes, an operator approves, and it runs only with 3+ RSVPs. Public places only.
 

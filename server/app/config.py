@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import urlsplit
 
-CONTRACT_VERSION = "2.2.0"
+CONTRACT_VERSION = "3.0.0"
 Environment = Literal["development", "test", "production"]
 
 

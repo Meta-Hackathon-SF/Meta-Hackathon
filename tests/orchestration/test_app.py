@@ -75,7 +75,7 @@ def test_default_server_is_alive_but_not_ready():
         assert response.json() == {
             "status": "ok",
             "service": "constellations",
-            "contractVersion": "2.2.0",
+            "contractVersion": "3.0.0",
         }
         UUID(response.headers["X-Request-Id"])
         response = client.get("/health/ready")

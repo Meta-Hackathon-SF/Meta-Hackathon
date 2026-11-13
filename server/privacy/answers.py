@@ -242,7 +242,8 @@ class AnswerStore:
         with self._store.tx() as conn:
             return conn.execute(
                 """
-                SELECT a.answer_id, a.player_id, a.day, a.text, a.weight, a.edited_at, p.is_synthetic,
+                SELECT a.answer_id, a.player_id, a.day, a.question_id, a.text, a.weight, a.edited_at,
+                  p.is_synthetic,
                   (SELECT max(c.version) FROM current_consents c
                    WHERE c.player_id = a.player_id AND (:community IS NULL OR c.community_id = :community)
                   ) AS consent_version

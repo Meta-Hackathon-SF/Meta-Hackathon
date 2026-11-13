@@ -60,6 +60,7 @@ def test_snapshot_is_exact_contract_shape(parts, week):
     lease = formation.prepare_formation(CYCLE, COMMUNITY)
     snap = lease.snapshot
     assert set(snap) == {"answers", "idMap", "blockedPairs"}
+    # D014: no question source injected -> no questions, so no answer carries a questionId (#62 validator)
     assert all(set(a) == {"id", "text", "weight"} for a in snap["answers"])
     assert set(snap["idMap"].values()) == set(lease.player_ids)
     assert {a["id"] for a in snap["answers"]} == set(snap["idMap"])

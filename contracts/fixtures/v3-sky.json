@@ -1,0 +1,61 @@
+{
+  "contractVersion": "3.0.0",
+  "_note": "S9. positions is base64 Int16Array [x0,y0,...] on a 0..32767 grid (3 stars here; 10,000 live). secondDegree is [] below 30 eligible players (R2).",
+  "stars": {
+    "weekSeed": "wk-2026-11-09-demo",
+    "count": 3,
+    "positions": "AAAAAP9/AAAAgP9/"
+  },
+  "mine": {
+    "myStarIndex": 1,
+    "mine": [
+      {
+        "constellationId": "dc-blue-01",
+        "day": 1,
+        "colorId": "blue",
+        "starIndices": [
+          1,
+          0,
+          2
+        ]
+      },
+      {
+        "constellationId": "dc-teal-01",
+        "day": 2,
+        "colorId": "teal",
+        "starIndices": [
+          1,
+          2,
+          0
+        ]
+      }
+    ],
+    "secondDegree": [
+      {
+        "constellationId": "dc-amber-09",
+        "viaStarIndex": 2,
+        "starIndices": [
+          2,
+          5,
+          9
+        ]
+      }
+    ]
+  },
+  "mineSmallCommunity": {
+    "myStarIndex": 1,
+    "mine": [
+      {
+        "constellationId": "dc-blue-01",
+        "day": 1,
+        "colorId": "blue",
+        "starIndices": [
+          1,
+          0,
+          2
+        ]
+      }
+    ],
+    "secondDegree": []
+  }
+}

@@ -13,7 +13,7 @@ durable store is supplied. The default in-memory store is per process.
 """
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from typing import Any, Protocol
 
 from server.matching.formation import FormationService
@@ -137,10 +137,15 @@ def build_matching_port(*, muse: MusePortLike, snapshots: SnapshotSource,
                         themes: ThemeStore | None = None, allow_fallback: bool = True,
                         synthetic_tags: tuple[str, ...] = (), parallel_themes: bool = True,
                         precompute_threshold: int | None = DEMO_SKY_THRESHOLD,
+                        approved_event_ids: Collection[str] = (),
                         **sky_kwargs: Any) -> MatchingPort:
-    """Public factory. Register Muse specs separately with register_formation_specs."""
+    """Public factory. Register Muse specs separately with register_formation_specs.
+
+    `approved_event_ids` (Adam's VenueCatalog.event_ids) is the only set of event ids that
+    may count toward M4 affinity hints; empty means events never count."""
     formation = FormationService(muse, snapshots, guard, allow_fallback=allow_fallback,
-                                 parallel_themes=parallel_themes)
+                                 parallel_themes=parallel_themes,
+                                 approved_event_ids=approved_event_ids)
     return MatchingPort(formation, SkyService(muse, guard, **sky_kwargs), guesses,
                         themes=themes, synthetic_tags=synthetic_tags,
                         precompute_threshold=precompute_threshold)
