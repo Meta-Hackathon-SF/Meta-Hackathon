@@ -19,3 +19,5 @@ Format: UTC timestamp | branch/commit | phase/status | interfaces/files | checks
 2026-11-13T05:00Z | role/patrik-privacy | step 3/5: role task 4 M1 screening implemented, tested offline (fixture Muse) | server/privacy/safety.py, tests/privacy/test_privacy_safety.py | pytest tests 503 passed; 2 mutation checks fail as expected; no live M1 call | DELIVERED note on PR #24 | publish gate awaits Kai ACK on #13
 
 2026-11-13T05:40Z | role/patrik-privacy | step 4/5: role task 6 formationSnapshot lease + publish_guard, block/report storage | server/privacy/formation.py, moderation.py, db/privacy/003_blocks_reports.sql, POST /me/blocks, reentrant store tx | pytest tests 527 passed; 3 mutation checks fail as expected | D007 ACK from Kai copied; DELIVERED on #13 | Kai to ACK seams and wire resolve_handle
+
+2026-11-13T05:55Z | main 70a08ea (PR #24 merged) | tasks 1-6 on main | answer store, OutputGuard, M1, formation lease + publish guard, blocks/reports | 555 passed on merged head before merge | DELIVERED to Kai on #13 | next: task 7 UI

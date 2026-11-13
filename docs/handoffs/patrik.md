@@ -1,7 +1,7 @@
 # patrik handoff
 Current step: 3 (Daily loop), see docs/PLAN.md. Role tasks 1-3 done offline (1-2 merged to main via PR #15); tasks 1-6 done offline; next is task 7 (consent screen + support card UI).
 Status: implemented + tested offline (fixture/in-memory only). Not mounted in a composed app; no live journey.
-Branch + commit: `role/patrik-privacy`, based on main `0ab9713`. See git log for the checkpoint commit.
+Branch + commit: `role/patrik-privacy`; tasks 1-6 merged to main via #15 and #24 (`70a08ea`). See git log for the checkpoint commit.
 Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
 
 ## Completed tasks
@@ -36,7 +36,8 @@ All evidence is offline (in-memory SQLite, synthetic names). No model call. No c
 
 ## Requests answered
 - 2026-11-13 Kai #13 (registry, session/consent, M1, OutputGuard, report/block store, publish gate): ACK registry; DELIVERED session/consent (#15), listeners, answer store (#24); planned OutputGuard -> M1 -> report/block -> formationSnapshot; CHANGE proposal `formation_snapshot` + `check_publish(cycleId, revision, playerIds)`. https://github.com/willapat/Meta-Hackathon/pull/13#issuecomment-6842159029
-- PR opened: #24 (task 3).
+- PR #24 (tasks 3-6) merged to main as `70a08ea` (normal merge, head `50a50a2`, 555 tests passed locally; main has no CI configured).
+- 2026-11-13 Kai #13 CHANGEs (publish guard holds lock through commit; snapshot stays exact contract shape): ACK + DELIVERED https://github.com/willapat/Meta-Hackathon/pull/13#issuecomment-6842340554
 - ACK D005 and D006 (producer shapes) recorded in docs/DECISIONS.md.
 
 ## Blocked on
