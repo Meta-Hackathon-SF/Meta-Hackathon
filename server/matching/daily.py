@@ -6,6 +6,7 @@ Daily method (PRD-v3): tags name a shared meaning. Muse may propose tags at day 
 A tag with 3+ players becomes a constellation. Blocks are respected: a blocked pair never
 shares a group.
 """
+
 from __future__ import annotations
 
 import random
@@ -14,13 +15,12 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from itertools import combinations
 
-from server.matching.baseline import cosine, player_vectors, similarity_matrix
-from server.matching.baseline import partition
+from server.matching.baseline import partition, player_vectors, similarity_matrix
 from server.matching.models import MatchingError, PromptText, pair
 
-MIN_VISIBLE = 3          # protocol V3.minVisibleConstellation (R2)
+MIN_VISIBLE = 3  # protocol V3.minVisibleConstellation (R2)
 MAX_DAILY_PER_PLAYER = 3  # V3.maxDailyConstellations
-MAX_DAILY_STARS = 12      # V3.dailyConstellationMaxStars
+MAX_DAILY_STARS = 12  # V3.dailyConstellationMaxStars
 MAIN_MIN, MAIN_MAX = 3, 5
 SECOND_DEGREE_MIN_ELIGIBLE = 30
 SECOND_DEGREE_MAX_PER_STAR = 2
@@ -33,17 +33,20 @@ Group = tuple[str, ...]
 @dataclass(frozen=True)
 class Tag:
     """A meaning tag: a name that is never shown, plus the keywords that evidence it."""
+
     tag_id: str
     keywords: frozenset[str]
 
 
-def keyword_tags(answers: Sequence[PromptText], min_players: int = MIN_VISIBLE,
-                 limit: int = 40) -> tuple[Tag, ...]:
+def keyword_tags(
+    answers: Sequence[PromptText], min_players: int = MIN_VISIBLE, limit: int = 40
+) -> tuple[Tag, ...]:
     """Fallback tags: shared keywords that at least `min_players` players used."""
     vectors = player_vectors(answers)
     users = Counter(tok for vec in vectors.values() for tok in vec)
-    kept = sorted((t for t, n in users.items() if n >= min_players),
-                  key=lambda t: (-users[t], t))[:limit]
+    kept = sorted((t for t, n in users.items() if n >= min_players), key=lambda t: (-users[t], t))[
+        :limit
+    ]
     return tuple(Tag(f"kw-{t}", frozenset({t})) for t in kept)
 
 
@@ -51,8 +54,9 @@ def _score(vec: Mapping[str, float], tag: Tag) -> float:
     return sum(vec.get(k, 0.0) for k in tag.keywords)
 
 
-def _drop_blocked(members: Iterable[str], blocked: set[tuple[str, str]],
-                  strength: Mapping[str, float]) -> list[str]:
+def _drop_blocked(
+    members: Iterable[str], blocked: set[tuple[str, str]], strength: Mapping[str, float]
+) -> list[str]:
     """Greedy: keep strongest members first, skip anyone blocked with a kept member."""
     kept: list[str] = []
     for ref in sorted(members, key=lambda r: (-strength.get(r, 0.0), r)):
@@ -61,8 +65,11 @@ def _drop_blocked(members: Iterable[str], blocked: set[tuple[str, str]],
     return kept
 
 
-def daily_groups(answers: Sequence[PromptText], blocked_ref_pairs: Iterable[tuple[str, str]] = (),
-                 tags: Sequence[Tag] | None = None) -> tuple[tuple[Group, ...], tuple[str, ...]]:
+def daily_groups(
+    answers: Sequence[PromptText],
+    blocked_ref_pairs: Iterable[tuple[str, str]] = (),
+    tags: Sequence[Tag] | None = None,
+) -> tuple[tuple[Group, ...], tuple[str, ...]]:
     """Return (constellations, unplaced refs). Each constellation has 3..12 refs."""
     blocked = {pair(a, b) for a, b in blocked_ref_pairs}
     vectors = player_vectors(answers)
@@ -104,14 +111,19 @@ def week_graph(days: Iterable[Iterable[Sequence[str]]]) -> dict[tuple[str, str],
     return dict(weights)
 
 
-def main_groups(players: Sequence[str], graph: Mapping[tuple[str, str], int],
-                answers: Sequence[PromptText] = (),
-                blocked_pairs: Iterable[tuple[str, str]] = ()) -> tuple[tuple[Group, ...], tuple[str, ...]]:
+def main_groups(
+    players: Sequence[str],
+    graph: Mapping[tuple[str, str], int],
+    answers: Sequence[PromptText] = (),
+    blocked_pairs: Iterable[tuple[str, str]] = (),
+) -> tuple[tuple[Group, ...], tuple[str, ...]]:
     """Sunday main constellations: 3-5, one per player. Candidates are players who share 2+
     constellations or have similar answers. Players with no qualifying match are unplaced."""
     sim = dict(similarity_matrix(answers)) if answers else {}
-    closeness = {pair(a, b): graph.get(pair(a, b), 0) + sim.get(pair(a, b), 0.0)
-                 for a, b in combinations(sorted(set(players)), 2)}
+    closeness = {
+        pair(a, b): graph.get(pair(a, b), 0) + sim.get(pair(a, b), 0.0)
+        for a, b in combinations(sorted(set(players)), 2)
+    }
     qualified = {r for (a, b), w in graph.items() if w >= 2 for r in (a, b)}
     qualified |= {r for (a, b), s in sim.items() if s >= 0.35 for r in (a, b)}
     pool = sorted(qualified & set(players))
@@ -140,8 +152,9 @@ def star_indices(week_seed: str, refs: Sequence[str], count: int = SKY_STARS) ->
     return dict(zip(sorted(refs), slots))
 
 
-def second_degree(mine: Sequence[Group], all_groups: Sequence[Group], eligible: int
-                  ) -> tuple[tuple[str, Group], ...]:
+def second_degree(
+    mine: Sequence[Group], all_groups: Sequence[Group], eligible: int
+) -> tuple[tuple[str, Group], ...]:
     """(via_ref, group) pairs: for each star in my groups, its 2 biggest other groups.
     Empty below SECOND_DEGREE_MIN_ELIGIBLE (R2). Groups under 3 are never returned."""
     if eligible < SECOND_DEGREE_MIN_ELIGIBLE:
@@ -149,8 +162,9 @@ def second_degree(mine: Sequence[Group], all_groups: Sequence[Group], eligible: 
     mine_set = set(mine)
     out: list[tuple[str, Group]] = []
     for ref in sorted({r for g in mine for r in g}):
-        others = sorted((g for g in all_groups
-                         if ref in g and g not in mine_set and len(g) >= MIN_VISIBLE),
-                        key=lambda g: (-len(g), g))
+        others = sorted(
+            (g for g in all_groups if ref in g and g not in mine_set and len(g) >= MIN_VISIBLE),
+            key=lambda g: (-len(g), g),
+        )
         out.extend((ref, g) for g in others[:SECOND_DEGREE_MAX_PER_STAR])
     return tuple(out)

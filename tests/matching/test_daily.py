@@ -1,10 +1,16 @@
 """v3 daily producers: offline, deterministic, synthetic."""
+
 from __future__ import annotations
 
 import time
 
 from server.matching.daily import (
-    daily_groups, main_groups, second_degree, sky_positions, star_indices, week_graph,
+    daily_groups,
+    main_groups,
+    second_degree,
+    sky_positions,
+    star_indices,
+    week_graph,
 )
 from server.matching.models import PromptText
 
@@ -31,7 +37,9 @@ def test_under_three_never_becomes_a_constellation():
 
 
 def test_instant_placement_is_fast_for_a_thousand_players():
-    answers = [PromptText(f"p{i}", f"topic{i % 40} shared words about thing{i % 7}") for i in range(1000)]
+    answers = [
+        PromptText(f"p{i}", f"topic{i % 40} shared words about thing{i % 7}") for i in range(1000)
+    ]
     start = time.perf_counter()
     daily_groups(answers)
     assert time.perf_counter() - start < 1.0
