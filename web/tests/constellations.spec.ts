@@ -241,7 +241,7 @@ test("weekend: lock closes answers, week sky and formation are labeled previews,
   await expect(page.getByRole("button", { name: "Open chat" })).toHaveCount(0);
   await advance(page, 2); // forming, revealed
   await page.goto(DAILY);
-  await expect(page.getByTestId("spc-weekend-sun")).toContainText("Sunday's reveal is open");
+  await expect(page.getByTestId("spc-weekend-sun")).toContainText("Your constellation is ready");
   await page.getByRole("button", { name: "View constellation" }).click();
   // Fixture mode has no formation data: the canvas says so, shows no member count and offers no chat.
   await expect(page.getByTestId("spc-main-unavailable")).toBeVisible();
@@ -500,15 +500,15 @@ async function toSundayChat(page: Page) {
   return page.getByTestId("spc-chat");
 }
 
-test("v3 sky: entering the sky plays the telescope zoom; Sunday draws the Meta logo ribbon", async ({ page }) => {
+test("v3 sky: the week sky opens directly (no telescope); Sunday draws the constellation", async ({ page }) => {
   await newCycle(page);
   await openSpace(page);
   await answer(page, 1, LONG);
   await advance(page, 5);
   await page.goto(DAILY);
   await page.getByRole("button", { name: "View sky" }).click();
-  await expect(page.getByTestId("spc-telescope")).toBeVisible(); // iris + streaks on entry
-  await expect(page.getByTestId("spc-telescope")).toHaveCount(0, { timeout: 5000 }); // removes itself
+  await expect(page.getByTestId("spc-canvas-sky")).toBeVisible();
+  await expect(page.getByTestId("spc-telescope")).toHaveCount(0); // V4: no telescope animation
   await advance(page, 2);
   await page.goto(`${DAILY}?s=main`);
   await expect(page.getByTestId("spc-canvas-main")).toBeVisible();

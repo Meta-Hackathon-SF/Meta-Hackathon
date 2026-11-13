@@ -7,7 +7,6 @@ import { DAY_LONG, DAY_SHORT, dayHex, type Screen } from "./model";
 import { DemoNote, StarField } from "./parts";
 import "./reveal.css";
 import SkyCanvas from "./SkyCanvas";
-import Telescope from "./Telescope";
 import { ChatHttpError } from "../../chat/client";
 import { openRevealThread, promoteLiveRoom, SUNDAY_THREAD_ID } from "../../messenger/inbox";
 import { SUPPORT_RESOURCES } from "./preview";
@@ -71,7 +70,6 @@ export function CanvasScreen(p: CanvasProps) {
 
   return (
     <div className="spc-stage" data-testid={`spc-canvas-${p.mode}`}>
-      <Telescope />
       <SkyCanvas
         input={{ mode: p.mode, answered: p.answered, viewDay: p.viewDay, emptyDay: p.dailyEmpty, noMatch, focusDay: p.mode === "sky" ? focus : null, members: main.status === "ready" ? main.members : undefined }}
         interactive={p.mode === "sky" || p.mode === "daily" || (p.mode === "main" && settled)}

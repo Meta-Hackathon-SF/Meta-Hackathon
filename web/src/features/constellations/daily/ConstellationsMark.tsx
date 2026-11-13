@@ -1,19 +1,20 @@
-import { SPACE_LINES, SPACE_STARS } from "../../../components/navigation/spaceMark";
-
-/** Circular Facebook Space badge. Same geometry as the sidebar and tab icons (SPACE_STARS). */
+/** Circular Facebook Space badge: a feature identity, like Facebook's Memories or Marketplace circles. */
 export default function ConstellationsMark({ size = 40 }: { size?: number }) {
   return (
     <span className="cst-mark" style={{ width: size, height: size }} aria-hidden="true">
-      <svg viewBox="0 0 36 36" width={size} height={size} focusable="false">
-        <g stroke="#fff" strokeWidth="1.5" strokeLinecap="round" opacity="0.85">
-          {SPACE_LINES.map(([a, b]) => (
-            <line key={`${a}-${b}`} x1={SPACE_STARS[a][0]} y1={SPACE_STARS[a][1]} x2={SPACE_STARS[b][0]} y2={SPACE_STARS[b][1]} />
-          ))}
+      <svg viewBox="0 0 40 40" width={size} height={size} focusable="false">
+        <g stroke="#fff" strokeWidth="1.6" strokeLinecap="round" opacity="0.85">
+          <line x1="11" y1="25" x2="18" y2="14" />
+          <line x1="18" y1="14" x2="27" y2="18" />
+          <line x1="27" y1="18" x2="30" y2="28" />
+          <line x1="11" y1="25" x2="20" y2="29" />
         </g>
         <g fill="#fff">
-          {SPACE_STARS.map(([x, y, r]) => (
-            <circle key={`${x}-${y}`} cx={x} cy={y} r={r} />
-          ))}
+          <circle cx="11" cy="25" r="2.4" />
+          <circle cx="18" cy="14" r="3" />
+          <circle cx="27" cy="18" r="2.4" />
+          <circle cx="30" cy="28" r="2" />
+          <circle cx="20" cy="29" r="2" />
         </g>
       </svg>
     </span>

@@ -21,8 +21,6 @@ import { MAX_CHARS, message, useDaily } from "./useDaily";
 import "./space/space.css";
 
 const COMMUNITY = PLAY_COMMUNITY;
-/** Sentence openers that fill the box; the player finishes them. Not answers, not stored. */
-const STARTERS = ["Honestly, ", "Mostly ", "I usually "];
 const PAGE = CONSTELLATIONS_PATH;
 
 function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
@@ -75,12 +73,12 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
       ? "Meet the people who answered like you."
       : status === "locked" || status === "forming"
         ? "Your week is in the sky."
-        : "One easy question a day. On Sunday, meet the 5 or more people who answered like you.";
+        : "One easy question a day. On Sunday, meet the 3–5 people who answered like you.";
 
   return (
     <section className="card spc-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
       <div className="spc-feed-head">
-        <SpaceAvatar size={48} />
+        <SpaceAvatar />
         <div className="spc-grow">
           <Link to={PAGE} className="spc-feed-name">
             {FEATURE_NAME}
@@ -114,6 +112,7 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
             <div className="spc-comment-box">
               <textarea
                 aria-label="Your answer"
+                rows={1}
                 value={draft}
                 maxLength={MAX_CHARS}
                 onChange={(e) => {
@@ -127,8 +126,7 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
                     void send();
                   }
                 }}
-                placeholder={voice.recording ? "Listening…" : joined ? "Tap and answer, only you see it" : "Join to answer…"}
-                rows={2}
+                placeholder={voice.recording ? "Listening…" : joined ? "Answer privately…" : "Join to answer…"}
               />
               <div className="spc-comment-tools">
                 <button
@@ -147,15 +145,6 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
               </div>
             </div>
           </div>
-          {!draft && !voice.recording && joined && (
-            <div className="spc-starters" role="group" aria-label="Ways to start">
-              {STARTERS.map((t) => (
-                <button key={t} type="button" className="spc-starter" onClick={() => setDraft(t)}>
-                  {t}
-                </button>
-              ))}
-            </div>
-          )}
           <p className="spc-comment-note" aria-live="polite">
             <Lock size={11} aria-hidden="true" /> {voice.recording || voice.hint !== "or just talk" ? voice.hint : "Only you can see your answer"}
           </p>

@@ -1,17 +1,14 @@
 import type { ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
-import { SPACE_LINES, SPACE_STARS } from "../../../../components/navigation/spaceMark";
 
-/** The Space mark: the same five-star constellation as the sidebar, tabs and post header (SPACE_STARS). */
+/** Three stars joined by two lines: the Space mark. */
 export function Glyph({ size = 20, color = "#fff" }: { size?: number; color?: string }) {
   return (
-    <svg viewBox="0 0 36 36" width={size} height={size} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-      {SPACE_LINES.map(([a, b]) => (
-        <line key={`${a}-${b}`} x1={SPACE_STARS[a][0]} y1={SPACE_STARS[a][1]} x2={SPACE_STARS[b][0]} y2={SPACE_STARS[b][1]} />
-      ))}
-      {SPACE_STARS.map(([x, y, r]) => (
-        <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill={color} stroke="none" />
-      ))}
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.6" aria-hidden="true">
+      <path d="M5 17 L10 7 L19 12" />
+      <circle cx="5" cy="17" r="2" fill={color} />
+      <circle cx="10" cy="7" r="2" fill={color} />
+      <circle cx="19" cy="12" r="2" fill={color} />
     </svg>
   );
 }
@@ -56,9 +53,9 @@ export function TopBar({ title, onBack, dark, children, dot }: { title: ReactNod
   );
 }
 
-/** Small honesty note shown only when the client is the in-browser fixture. */
-export function DemoNote({ dark }: { dark?: boolean }) {
-  return <span className={`spc-preview${dark ? " is-dark" : ""}`}>Demo data</span>;
+/** Marks content that is not from a producer yet (contract 3.0.0 pending). */
+export function PreviewTag({ children = "Preview · synthetic", dark }: { children?: ReactNode; dark?: boolean }) {
+  return <span className={`spc-preview${dark ? " is-dark" : ""}`}>{children}</span>;
 }
 
 export function StarField({ dense }: { dense?: boolean }) {
@@ -82,4 +79,9 @@ export function MicIcon({ color = "currentColor" }: { color?: string }) {
       <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
     </svg>
   );
+}
+
+/** Small honesty note shown only when the client is the in-browser fixture. */
+export function DemoNote({ dark }: { dark?: boolean }) {
+  return <span className={`spc-preview${dark ? " is-dark" : ""}`}>Demo data</span>;
 }

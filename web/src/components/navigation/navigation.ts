@@ -14,7 +14,6 @@ import {
   MessengerIcon,
   SavedIcon,
   SpaceIcon,
-  SpaceTabIcon,
   VideoIcon,
 } from "./AppIcons";
 import type { ComponentType } from "react";
@@ -31,12 +30,10 @@ export const tabIcons = {
   video: asTab(VideoTabIcon),
   marketplace: asTab(MarketplaceTabIcon),
   gaming: asTab(GamingTabIcon),
-  space: asTab(SpaceTabIcon),
 };
 
 export const primaryNavigation = [
   { to: "/", label: "Home", icon: tabIcons.home },
-  { to: "/space", label: "Facebook Space", icon: tabIcons.space },
   { to: "/friends", label: "Friends", icon: tabIcons.friends },
   { to: "/watch", label: "Video", icon: tabIcons.video },
   { to: "/marketplace", label: "Marketplace", icon: tabIcons.marketplace },
