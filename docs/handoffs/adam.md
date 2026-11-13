@@ -16,6 +16,12 @@ Full description, every issue hit and its fix: **docs/DEPLOYMENT.md, "Live deplo
 - Operator role: granted per player in the container only (`grant_operator`); test player `p_a0c715cbb0da42a10781999b` has it.
 - Still off: v3 per-viewer routes uncomposed in `server/app/weekly.py` (404), so the day count shows 0.
 
+## Demo control flow (D019, 2026-11-13)
+- The live site has no demo buttons; `/space/stage` drives the week: Start demo week (cast arrives), Next day to Friday (phones' Mon-Thu filled from `server/app/stage_script.py`), presenters type Friday (the stage shows the line), Lock and match, Reveal.
+- Phones appear automatically (two newest real joiners, not the stage viewer) with display names. Privacy → Demo screen on a phone: Auto / Phone A / Phone B / Hide me.
+- After reveal each phone panel draws its constellation map; the middle regroups every player into constellations and outlines A's and B's.
+- Run sheet and the full phone script: docs/DEMO.md "Stage view".
+
 ## Stage view and synthetic cast (2026-11-13)
 - `/space/stage` (D017): presenter screen, two opted-in phones and the Muse pipeline, week controls. Merged in #104. Not yet run against production with two real sessions.
 - Synthetic cast (D018): 100 personas in `server/privacy/data/demo_population.json`; top-up adds them (108 with the fixture players), their guesses and activity signals. Feed regenerated: `python -m server.privacy.demo_population --export-feed web/src/data/population.json`.

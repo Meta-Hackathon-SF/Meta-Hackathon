@@ -1,18 +1,19 @@
 /*
- * Phone-side opt-in for the presenter screen. Only the player can put their own
- * answers on stage; the default is off.
+ * Phone-side control for the presenter screen. The stage shows the two newest
+ * players automatically; here a player can pin a slot or take themselves off.
  */
 import { useEffect, useState } from "react";
-import { chooseSlot, fetchMySlot, stageAvailable, type Slot } from "./client";
+import { chooseSlot, fetchMySlot, stageAvailable, type SlotChoice } from "./client";
 
-const CHOICES: { value: Slot | null; label: string }[] = [
-  { value: null, label: "Off" },
+const CHOICES: { value: SlotChoice; label: string }[] = [
+  { value: null, label: "Auto" },
   { value: "A", label: "Phone A" },
   { value: "B", label: "Phone B" },
+  { value: "off", label: "Hide me" },
 ];
 
 export function StageOptIn() {
-  const [slot, setSlot] = useState<Slot | null>(null);
+  const [slot, setSlot] = useState<SlotChoice>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -24,7 +25,7 @@ export function StageOptIn() {
     return () => ctl.abort();
   }, []);
   if (!stageAvailable) return null;
-  const pick = async (value: Slot | null) => {
+  const pick = async (value: SlotChoice) => {
     setBusy(true);
     setError(null);
     try {
@@ -38,7 +39,7 @@ export function StageOptIn() {
   return (
     <div className="spc-card spc-rounded spc-pad-md spc-col is-tight" data-testid="stage-optin">
       <div className="spc-strong">Demo screen</div>
-      <p className="spc-sub">Show my answers and my constellation on the presenter's screen. Only for the live demo. Off unless you turn it on.</p>
+      <p className="spc-sub">During the live demo, the two newest players appear on the presenter's screen with their name and answers. Pick a side or hide yourself.</p>
       <div className="spc-row" role="radiogroup" aria-label="Demo screen">
         {CHOICES.map((c) => (
           <button
@@ -49,7 +50,7 @@ export function StageOptIn() {
             className={`spc-btn spc-btn-sm spc-grow ${slot === c.value ? "spc-btn-primary" : "spc-btn-gray"}`}
             disabled={busy}
             onClick={() => void pick(c.value)}
-            data-testid={`stage-optin-${c.value ?? "off"}`}
+            data-testid={`stage-optin-${c.value ?? "auto"}`}
           >
             {c.label}
           </button>
