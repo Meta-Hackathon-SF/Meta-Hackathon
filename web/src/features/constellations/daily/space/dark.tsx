@@ -277,7 +277,7 @@ export function ChatScreen({
           <h2>{expired ? "This room has closed" : room ? "Chat" : "Your room isn't open"}</h2>
           <p className="spc-sub">
             {expired
-              ? "The 24 hours are up. Nothing was saved."
+              ? "Its time is up. Chats are deleted 7 days after they close."
               : !live
                 ? "Chat needs the live server."
                 : (snapshot.notice ?? (snapshot.status === "unavailable" ? "The chat service is unavailable." : "Connecting to your room."))}
@@ -321,7 +321,7 @@ export function ChatScreen({
         <span className="spc-chat-left">{hoursLeft} h left</span>
       </div>
       <div className="spc-keep">
-        <span className="spc-grow">Gone in {hoursLeft} h. Names stay hidden unless you both reveal.</span>
+        <span className="spc-grow">Closes in {hoursLeft} h. Names stay hidden unless you both reveal.</span>
       </div>
       {reveal && (
         <div className="spc-keep-note">
