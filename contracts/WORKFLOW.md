@@ -19,7 +19,7 @@ Demo: operator advances day, lock and reveal by button; UI shows "Demo timing". 
 `open -> locked -> forming -> revealed -> closed`. `currentDay` advances 1..5 while open. No backward transitions except operator reset on fixture cycles. Answer writes check status at commit time (`CYCLE_LOCKED`).
 
 ## Streaks
-`current` counts consecutive question days (Mon-Fri) answered on the day; weekends do not break it. Missing a day resets to 0 at that day's end. Catch-up never changes streaks. Streak is private to the player.
+`current` counts consecutive question days (Mon-Fri) answered on the day; weekends do not break it. A day caught up before lock is neutral (does not extend, does not break); a day with no answer breaks it. Between a missed day ending and its catch-up, `current` shows 0; after the catch-up it is restored (D008). Streak is private to the player.
 
 ## Formation job (Saturday lock)
 1. Kai's worker calls `PrivacyPort.formationSnapshot(cycleId)`: consenting, unflagged, non-deleted answers with weights, random per-call ids, blocked pairs.
