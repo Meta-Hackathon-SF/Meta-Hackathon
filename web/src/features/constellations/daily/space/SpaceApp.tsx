@@ -88,7 +88,7 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
     if (!cycle || cycle.status === "closed") cycle = cycle ? await client.reset(cycle.cycleId) : await client.createCycle();
     const id = cycle.cycleId;
     while (cycle.status === "open") {
-      // Operator-only on the server. Fills each released day with labeled synthetic players.
+      // Any account on a demo week. Fills each released day with labeled synthetic players.
       await client.topUp(id);
       const mine = await client.myAnswers(id);
       for (let d = 1; d <= cycle.currentDay; d++)
@@ -238,8 +238,10 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
     );
 
   // The server decides who is an operator; the in-browser fixture is always one.
+  // Every account can run a demo-timing week (server: server/cycle/api.py); real-calendar weeks stay operator-only.
   const isOperator = client.mode === "fixture" ? client.isOperator : view.isOperator;
-  const demo = isOperator ? <DemoPanel client={client} cycleId={cycleId} status={current?.cycle.status} day={current?.cycle.currentDay} refresh={() => void refresh()} /> : null;
+  const canDemo = isOperator || !current || current.cycle.demoTiming === true || current.cycle.status === "closed";
+  const demo = canDemo ? <DemoPanel client={client} cycleId={cycleId} status={current?.cycle.status} day={current?.cycle.currentDay} refresh={() => void refresh()} /> : null;
 
   if (!current || !week)
     return (
