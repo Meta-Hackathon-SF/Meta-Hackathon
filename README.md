@@ -1,7 +1,13 @@
 # Facebook Space
-### You're not the only one feeling this. Facebook Space shows you who's been feeling it right next to you.
+### Find the people who get you.
 
-Most people our age feel like the only one carrying a private feeling, and they are almost never the only one. Facebook Space is a weekly game inside Facebook Groups that lets a Group find that out. Monday to Friday, Muse asks one honest question a day. Once you answer, you see the constellations you are in that day, drawn in that day's color. The only number shown is how many people answered today. On Saturday you see all your constellations for the week across the whole sky. On Sunday your closest 3 to 5 people appear as your main constellation, drawn as the Meta logo, with a 24-hour anonymous group chat. Names are revealed only when people both choose to. Friendship only, 18+.
+Meeting people has never been easier, but finding people we genuinely connect with is still difficult. Social pressure and fear of judgment keep us from sharing parts of ourselves, even when those are the very things that could bring us closer together.
+
+Facebook Space is a weekly social discovery experience within Facebook Groups that helps people find meaningful connections through shared experiences. Every weekday, users answer one private question, and Meta Muse interprets their responses to discover connections beyond shared interests or keywords.
+
+Throughout the week, these connections develop into constellations. On Saturday, users can explore their connections across the week, and on Sunday, they're introduced to a small group of people they genuinely relate to through a 24-hour anonymous chat. Identities are revealed only through mutual consent.
+
+**The idea is simple: the people who understand you best might already be around you. Facebook Space helps you find them without having to be the first to open up.**
 
 **v3 redesign:** the full spec is [docs/PRD-v3.md](docs/PRD-v3.md) (decision D012, contract 3.0.0, proposed). Constellations and rooms have no names, and there are no percentages, Sky stats or prevalence guesses. Anonymity is the design.
 
