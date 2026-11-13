@@ -612,11 +612,13 @@ ANSWER = "Synthetic private submission number {} for this week"
 CAST_SIZE = 8 + len(demo_population.players())  # fixture players + the synthetic demo cast
 
 
-def test_stage_shows_only_opted_in_players_answers_to_operators():
+def test_stage_shows_only_opted_in_players_answers():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, _job = formed(env, client)
         operator, on_stage, private_player = players[:3]
-        assert call(client, on_stage, "GET", "/operator/stage").status_code == 403
+        # Any signed-in member may open the stage (demo); without a session it is refused.
+        assert call(client, on_stage, "GET", "/operator/stage").status_code == 200
+        assert client.get("/api/v1/operator/stage").status_code == 401
         assert call(client, on_stage, "GET", "/me/stage").json() == {"slot": None}
         bad = call(client, on_stage, "POST", "/me/stage", json={"slot": "C"})
         assert bad.status_code in (400, 422)
