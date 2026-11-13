@@ -126,6 +126,8 @@ class KeywordMusePort:
 
     ``signal`` is accepted for protocol parity and ignored: cancel the awaiting
     asyncio task instead, which propagates into the HTTP attempt.
+    ``deadline_s`` is the caller's overall cap for this call (the router never
+    starts a fallback past it); it defaults to the port's.
     ``correction`` is the caller's re-ask feedback after its own validator
     rejected the previous answer (e.g. "2 unknown member ids; group 3 has 6
     members"). It must be code-generated: never player or model text. The
@@ -137,7 +139,8 @@ class KeywordMusePort:
         self._deadline_s = deadline_s
 
     async def run(self, *, task: str, requestId: str, promptVersion: str,
-                  payload: Any, signal: Any = None, correction: str | None = None) -> dict[str, Any]:
+                  payload: Any, signal: Any = None, correction: str | None = None,
+                  deadline_s: float | None = None) -> dict[str, Any]:
         if correction is not None and not isinstance(correction, str):
             raise TypeError("correction must be a string")
         result = await self._muse.run(MuseRequest(
@@ -145,7 +148,8 @@ class KeywordMusePort:
             request_id=requestId,
             prompt_version=promptVersion,
             payload=payload,
-            deadline_s=self._deadline_s,
+            # A caller's own cap (e.g. naming's 20 s) lets the router budget its fallback.
+            deadline_s=deadline_s if deadline_s is not None else self._deadline_s,
             correction=correction or None,
         ))
         return {"output": result.output, "evidence": dict(result.evidence)}

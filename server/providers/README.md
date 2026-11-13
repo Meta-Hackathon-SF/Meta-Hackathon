@@ -82,9 +82,29 @@ result.evidence  # MuseCallEvidence {model, source, generatedAt, latencyMs, call
 - Telemetry sink receives only `requestId, task, callType, promptVersion, model, source, attempts, outcome, latencyMs`, plus `inputTokens, outputTokens, reasoningTokens` (summed across attempts) and `estCostUsd` when the provider reports usage, and `status` on errors. No payloads, prompts or outputs.
 - `adapter.reasoning_trace` ([`trace.py`](trace.py)): one entry per call plus code verdicts `(stage, code, count)` noted by services; fixed vocabulary, no text; fixture runs say `replay`. Served by the PROPOSED `GET /operator/reasoning` once Kai passes it to `PlanningRuntime(trace=...)`.
 - Malformed-output retries tell Muse which schema location failed (sanitized; never model or player text).
+- Transport calls run on a dedicated 64-thread pool (bursts no longer queue into the model timeout), and a wrapped socket timeout is reported as `timeout`, not `unavailable`.
 
 ## Router ([`router.py`](router.py))
-`build_muse_router(registry, config)` returns one MusePort that serves each task with its measured model (`MEASURED_ROUTES`): M1 Ember low (8 s, 1 attempt, then Spark), M2 Ember minimal (6 s, 1 attempt, then Spark), M5 and M8 Wonder low (12 s / 30 s, 1 attempt, then Ember; never Spark for M8), M6 and M7 Spark low (45 s, then Ember). M4 is routed to Ember (live checks in docs/audits/2026-11-13-live-evals.md, A2); M3 has no route yet and runs on the base model (audit #74). Fallback only on rate limit, outage, timeout or malformed output, never past the caller's `deadline_s`, and every fallback is noted in the trace. Shares one evidence log and trace across models. Override with `MUSE_ROUTES` via `parse_routes`. **Kai's composed app still builds a single-model adapter**; switching is one line in `server/app/weekly.py` (requested on #49).
+`build_muse_router(registry, config)` returns one MusePort that serves each task with its measured model (`MEASURED_ROUTES`). Every MuseTask is routed:
+
+| Task | Model, budget, fallback |
+| --- | --- |
+| M1 safety | Ember low, 8 s, 1 attempt, then Spark |
+| M2 follow-up | Ember minimal, **10 s** (audit 3: 6 s left no room for the fallback), then Spark |
+| M3 themes (v3 daily step) | **Ember low, 20 s, then Spark** (audit 3: quality held, about 5x faster) |
+| M4 grouping | Ember low, 30 s, then Spark |
+| M9 topics | Ember low, 20 s, then Spark |
+| M10 sensitivity | **Spark low, 30 s, then Ember** (audit 3 red team: Ember let through 10/41 crafted sensitive names, Spark 0/43) |
+| M6 questions, M7 nudges | Spark low, 45 s, then Ember |
+| M5 names, M8 Sky (removed in v3) | Wonder low, short budget, then Ember |
+
+Fallback happens only on rate limit, outage, timeout or malformed output. It never runs past the caller's `deadline_s` (callers can now pass it per call through `KeywordMusePort.run(deadline_s=)`), and every fallback is noted in the trace. One evidence log and one trace are shared across models. A deploy can override any task with `MUSE_ROUTES` (`task=model:effort:timeout:attempts>fallback;...`); an invalid value fails at startup.
+
+**Model choice is code, not Muse.** We measured each model on each task (docs/audits) and route accordingly.
+
+**After deploy:** run `python -m server.providers.route_check` (prints the table, no calls), then `--live` (one tiny ping per task, about $0.01). It reports the model that actually served each task, its latency, any fallback and its cost, and exits non-zero if any task missed its primary model. On 2026-11-13 the live check passed on all 10 tasks with the primary model, for $0.0087.
+
+**Kai's composed app still builds a single-model Spark adapter.** Switching is one line in `server/app/weekly.py` (P0, #70).
 - Semantic checks (ids in the pool, numbers equal to server counts, OutputGuard) stay with the calling owner. Pass a code-generated `correction` string on a re-ask; never put player text in it.
 - [`voice.py`](voice.py) holds `MUSE_VOICE`, the shared style block for player-facing text. Style only; guards decide.
 

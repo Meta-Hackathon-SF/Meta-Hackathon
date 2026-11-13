@@ -85,13 +85,22 @@ SPARK, WONDER, EMBER = "muse-spark-1.3", "muse-wonder-1.0", "muse-ember-1.0"
 #    sequential), M4 2-17 s; Spark's first M4 attempt timed out at 75 s in 3 of 4
 #    runs in the same session. Ember v1 (no questions) was 0.98/0.89. One attempt
 #    per call: FormationService does its own re-solve with a correction.
-# theme_discovery (M3) stays on the base model (not compared head to head).
+# theme_discovery (M3): routed after audit 3 (see below).
 MEASURED_ROUTES: dict[str, Route] = {
     "safety_screen": Route(EMBER, "low", 8.0, (SPARK,), max_attempts=1),
     "constellation_formation": Route(EMBER, "low", 30.0, (SPARK,), max_attempts=1),
+    # Audit 3 (v3): M3 is the daily step. Ember raw F1 0.84-0.94 vs Spark 0.87-0.96,
+    # p50 about 4 s vs 20-25 s, 13x cheaper. 20 s per attempt leaves room for Spark
+    # inside v3's 45 s day-close cap.
+    "theme_discovery": Route(EMBER, "low", 20.0, (SPARK,), max_attempts=1),
     "activity_classification": Route(EMBER, "low", 20.0, (SPARK,)),
-    "sensitivity_screen": Route(EMBER, "low", 15.0, (SPARK,), max_attempts=1),
-    "clarify": Route(EMBER, "minimal", 6.0, (SPARK,), max_attempts=1),
+    # Audit 3 red team: on adversarial names and headlines, 10/41 sensitive items got
+    # past Ember and 0/43 past Spark. Batch work, so Spark first; Ember only if Spark
+    # fails (callers still fail closed when both fail).
+    "sensitivity_screen": Route(SPARK, "low", 30.0, (EMBER,), max_attempts=1),
+    # Audit 3: with 6 s, 12 of 40 follow-ups under load got none (Spark fallback did
+    # not fit). 10 s keeps the follow-up interactive and lets the fallback finish.
+    "clarify": Route(EMBER, "minimal", 10.0, (SPARK,), max_attempts=1),
     "question_generation": Route(SPARK, "low", 45.0, (EMBER,)),
     "event_nudge": Route(SPARK, "low", 45.0, (EMBER,)),
     "constellation_naming": Route(WONDER, "low", 12.0, (EMBER,), max_attempts=1),
@@ -102,9 +111,9 @@ DEFAULT_ROUTES: dict[str, Route] = MEASURED_ROUTES
 
 
 def parse_routes(spec: str) -> dict[str, Route]:
-    """``"clarify=muse-ember-1.0:low:20>muse-spark-1.3;event_nudge=muse-spark-1.3:low"``.
+    """``"clarify=muse-ember-1.0:low:20:1>muse-spark-1.3;event_nudge=muse-spark-1.3:low"``.
 
-    Per task: model[:effort[:timeout_s]] then optional ``>fallback>fallback``.
+    Per task: model[:effort[:timeout_s[:max_attempts]]] then optional ``>fallback>fallback``.
     """
     routes: dict[str, Route] = {}
     for part in filter(None, (p.strip() for p in spec.split(";"))):
@@ -112,10 +121,11 @@ def parse_routes(spec: str) -> dict[str, Route]:
         if not sep or task.strip() not in TASKS:
             raise ValueError(f"bad route {part!r}")
         primary, *fallbacks = [x.strip() for x in rest.split(">")]
-        model, effort, timeout = (primary.split(":") + [None, None])[:3]
+        model, effort, timeout, attempts = (primary.split(":") + [None, None, None])[:4]
         routes[task.strip()] = Route(model=model, effort=effort or None,
                                      timeout_s=float(timeout) if timeout else None,
-                                     fallbacks=tuple(fallbacks))
+                                     fallbacks=tuple(fallbacks),
+                                     max_attempts=int(attempts) if attempts else None)
     return routes
 
 
@@ -198,6 +208,19 @@ class MuseRouter:
         raise last
 
 
+def routes_from_env(env: Mapping[str, str] | None = None) -> dict[str, Route]:
+    """MEASURED_ROUTES, with any task overridden by ``MUSE_ROUTES`` (deploy-time tuning).
+
+    An invalid ``MUSE_ROUTES`` raises ValueError at startup instead of silently
+    running on unexpected models.
+    """
+    import os
+
+    spec = (os.environ if env is None else env).get("MUSE_ROUTES", "").strip()
+    return {**MEASURED_ROUTES, **(parse_routes(spec) if spec else {})}
+
+
 def build_muse_router(registry: TaskRegistry, config: MuseConfig | None,
                       routes: Mapping[str, Route] | None = None, **kwargs: Any) -> MuseRouter:
-    return MuseRouter(registry, config, DEFAULT_ROUTES if routes is None else routes, **kwargs)
+    """``routes=None`` uses the measured routes plus any ``MUSE_ROUTES`` override."""
+    return MuseRouter(registry, config, routes_from_env() if routes is None else routes, **kwargs)
