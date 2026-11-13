@@ -6,8 +6,8 @@ The real product runs over a week. The demo compresses one week with operator co
 ## Five minutes
 | Time | Beat | On screen | Owner |
 | --- | --- | --- | --- |
-| 0:00-0:30 | Problem: young people feel like the only one feeling something, and people systematically underestimate how many peers share their private feelings (e.g. first-years think peers have more friends, Whillans et al. 2017 via WEF). Facebook shows everyone's best night; Constellations shows everyone's real week. | Slide, "Simulated Facebook" | Presenter |
-| 0:30-1:10 | Room scans QR, joins the Group's Constellations tab, accepts consent (match me, anonymous chat, 18+). | Phones | Will, Patrik |
+| 0:00-0:30 | Problem: young people feel like the only one feeling something, and people systematically underestimate how many peers share their private feelings (e.g. first-years think peers have more friends, Whillans et al. 2017 via WEF). Facebook shows everyone's best night; Facebook Space shows everyone's real week. | Slide, "Simulated Facebook" | Presenter |
+| 0:30-1:10 | Room scans QR, joins the Group's Facebook Space tab, accepts consent (match me, anonymous chat, 18+). | Phones | Will, Patrik |
 | 1:10-2:00 | Monday's question. Room answers by voice or text; one Muse follow-up. Streak chip appears. Operator advances to Wednesday: catch-up list shows missed days. Everyone moves the guess slider. | Phones + operator console | Will |
 | 2:00-2:40 | Saturday lock. Formation runs live. Baseline split example: keywords separate "I eat in my room so no one sees me alone" and "cooking for one is depressing"; Muse joins them. Real latency on screen. | Formation debug view, Muse chip | Rishi |
 | 2:40-3:40 | Sunday reveal. Each phone: constellation name and shape, anonymous room with "Star 1-5". Live chat; a contact-info message gets blocked; a report hides a message. Muse posts an event nudge. | Phones | Kai, Patrik, Adam |

@@ -11,7 +11,7 @@ Updated: 2026-11-13T04:29Z
 4. Streaks (on-day only; caught-up day neutral; missed day resets).
 5. Daily answer UI (`web/src/features/constellations/daily/`): voice or text, follow-up, catch-up, streak chip, guess slider, labels.
 6. Operator console (`web/src/features/constellations/operator/`): new cycle, advance, lock, form, reveal, close, synthetic top-up, reset, Muse call list, report queue view.
-7. Constellations tab under Groups (`/groups/hackathon-builders/constellations`, `/operator`); feed tests unchanged and passing.
+7. Facebook Space tab under Groups (`/groups/hackathon-builders/constellations`, `/operator`); feed tests unchanged and passing.
 
 ## Interfaces published
 - `server.cycle.CycleService`: `current(communityId)`, `advance(cycleId, to)` (= `CyclePort`), `create_cycle`, `reset`, `synthetic_topup`, `current_view`, `released_questions`, `my_answers`, `submit_answer`, `edit_answer`, `delete_answer`, `followup`, `put_guess`, `streak`.
@@ -43,13 +43,13 @@ Updated: 2026-11-13T04:29Z
 
 ## Facebook-native redesign (2026-11-13T04:29Z, branch `feat/will-constellations-feed-ui`)
 - Home feed card (`daily/FeedCard.tsx`) directly under the composer: Join opens Patrik's `JoinScreen` in the shell `Modal`; joined players answer today's question in place.
-- Left sidebar shortcut "Constellations"; `LeftSidebar` NavLinks now use `end` so only the exact page highlights.
+- Left sidebar shortcut "Facebook Space"; `LeftSidebar` NavLinks now use `end` so only the exact page highlights.
 - Page rebuilt as a Facebook Group page (cover, tabs, About column). Modules split: `useDaily.ts`, `QuestionPost.tsx`, `GuessCard.tsx`, `WeekGraph.tsx` (Obsidian-style force graph, draggable, keyboard-focusable day nodes).
 - Styling uses the shell's tokens (`--blue`, `.card`, `.button-*`, `.post-meta`). My CSS restyles Patrik's `.cstp-card` only where it sits inside my page or my join dialog (spacing, border); his files are unchanged.
 - Checks: web lint 0 errors (warnings only), build ok, Playwright 42 passed; `pytest tests` 560 passed. Fixture mode only; not on a real phone.
 
 ## Product direction from Will (human), 2026-11-13T04:38Z: needs a team decision, not yet proposed
-- Constellations is a Facebook-wide feature, not one Group's. The UI now lives at `/constellations`; until the contract changes it plays in `PLAY_COMMUNITY` ("hackathon-builders") because cycles and sessions are community-scoped in 2.0.0 / D007.
+- Facebook Space is a Facebook-wide feature, not one Group's. The UI now lives at `/constellations`; until the contract changes it plays in `PLAY_COMMUNITY` ("hackathon-builders") because cycles and sessions are community-scoped in 2.0.0 / D007.
 - A constellation is you plus the people whose answers are most similar; the closer the match, the brighter their star. People who share your Groups may get a brighter signal.
 - "Sky" and "Constellation" are one view; the UI has no separate Sky tab.
 - Implications for owners (unacked): Rishi would publish per-member closeness (0-1) for each constellation and a shared-Group boost; Kai's reveal view would draw it; Patrik's sessions and Will's cycles would become global or multi-community. The Constellation tab shows only a labeled Example until that data exists.
@@ -92,7 +92,7 @@ All fixture. Server tests use `server/cycle/testing.py` (TEST-ONLY stand-ins for
 From Will's product notes: streak rewards (`rewards.ts`, `StreakRewards.tsx`; cosmetic, computed in code from the server Streak + `isCatchUp`), "Why this group" (`MatchReasons.tsx`, Example, counts only before reveal), event heat (`EventHeat.tsx`, Example, code threshold 3 + bucketed counts), audience copy on the feed card and About. Verified: lint 0 errors, build ok, Playwright constellations suite passes (fixture mode only).
 
 ## Rename: players see "Facebook Space" (Will, human, 2026-11-13)
-The feature is shown as **Facebook Space**; each person's matched group is still a "constellation". Internal names, contract types and `web/src/features/constellations/` paths are unchanged. Routes: `/space`, `/space/operator`; `/constellations` and the old Group links redirect. `FEATURE_NAME` lives in `daily/communities.ts`. Open: Patrik's `JoinScreen` heading still reads "Join Constellations in {communityName}" (his file; asked on PR #33).
+The feature is shown as **Facebook Space**; each person's matched group is still a "constellation". Internal names, contract types and `web/src/features/constellations/` paths are unchanged. Routes: `/space`, `/space/operator`; `/constellations` and the old Group links redirect. `FEATURE_NAME` lives in `daily/communities.ts`. Open: Patrik's `JoinScreen` heading still reads "Join Facebook Space in {communityName}" (his file; asked on PR #33).
 Shell (same branch): system font stack, sidebar in Facebook order (Meta AI and Gaming are placeholder pages), compact Create story card with story bubbles, floating New message button, compact not-joined feature card.
 
 ## Merged 2026-11-13: PR #31 (dd606d4) and PR #33 (19d6cf9)

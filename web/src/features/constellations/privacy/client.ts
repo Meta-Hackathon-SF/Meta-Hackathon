@@ -162,7 +162,7 @@ export function httpPrivacyClient(base: string): PrivacyClient {
       });
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;
-      throw new PrivacyError("NETWORK", "Can't reach Constellations right now.", true);
+      throw new PrivacyError("NETWORK", "Can't reach Facebook Space right now.", true);
     }
     if (res.status === 204 || res.status === 202) return null;
     const body: unknown = await res.json().catch(() => null);
@@ -256,7 +256,7 @@ export function fixturePrivacyClient(): PrivacyClient {
       return view!;
     },
     async updateConsent(expectedVersion, toggles) {
-      if (!view) throw new PrivacyError("UNAUTHENTICATED", "Join this Group's Constellations to continue.");
+      if (!view) throw new PrivacyError("UNAUTHENTICATED", "Join Facebook Space to continue.");
       const c = view.consent;
       if (c.version !== expectedVersion) {
         throw new PrivacyError("STALE_REVISION", "This was changed elsewhere. Reload and try again.");
@@ -270,7 +270,7 @@ export function fixturePrivacyClient(): PrivacyClient {
       save(null);
     },
     async deleteMyData() {
-      if (!view) throw new PrivacyError("UNAUTHENTICATED", "Join this Group's Constellations to continue.");
+      if (!view) throw new PrivacyError("UNAUTHENTICATED", "Join Facebook Space to continue.");
       writeFixtureActivity(null);
       save({ ...view, consent: { ...view.consent, useActivity: false } });
     },

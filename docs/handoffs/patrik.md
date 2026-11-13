@@ -44,7 +44,7 @@ All evidence is offline (in-memory SQLite, synthetic names). No model call. No c
 - ACK D005 and D006 (producer shapes) recorded in docs/DECISIONS.md.
 
 ## Blocked on
-- D011 live speech-to-text (draft PR, branch `feat/live-transcription`): needs `@willapat` ACK/adoption (his `server/voice`, `server/cycle/api.py`, daily UI) and `@beatopia` registry support for WebSocket routes before passing `live_stt`.
+- D012 live speech-to-text (draft PR, branch `feat/live-transcription`): needs `@willapat` ACK/adoption (his `server/voice`, `server/cycle/api.py`, daily UI) and `@beatopia` registry support for WebSocket routes before passing `live_stt`.
 - `@beatopia` (Kai): in `server/app/composition.py` call `privacy_registration(privacy, answers=..., moderation=..., resolve_handle=chat.resolve_handle)` so /me/data and /me/blocks mount.
 - `@willapat` (Will): mount `PrivacyGate` around `DailyPage` in `App.tsx` (snippet in web/src/features/constellations/privacy/README.md) and optionally use `SupportCard`; add the Playwright flow from the PR.
 - `@willapat` / `@beatopia`: wire `AnswerStore(store, privacy, answer_model=DailyAnswer, guess_model=PrevalenceGuess)` in place of the test-only adapter; call `mark_locked(cycleId, lockedAt)` on Saturday lock (or Kai's `on_locked` hook does). The store accepts his `DailyAnswer` model or a camelCase dict.

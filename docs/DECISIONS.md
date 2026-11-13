@@ -110,8 +110,16 @@ Status: implemented on branch `feat/will-force-d009-d010` at the direction of Wi
 Contract version / migration: 2.1.0 together with D009 if accepted (additive: `Consent.useActivity?: boolean`, default false); no data to migrate.
 Verification: none yet (proposal). UI: web/tests/constellations.spec.ts "why-this-group" and "event heat" tests prove counts-only and the threshold in the Example.
 
-## D011: Live speech-to-text while the player talks (proposed by Patrik, at the human's direction)
-ID / UTC timestamp: D011 / 2026-11-13T07:30Z (proposed)
+## D011: Brand rename to Facebook Space
+ID / UTC timestamp: D011 / 2026-11-13T06:00Z
+Decision and rationale: the product brand is **Facebook Space** everywhere players or readers see it (README, docs, contracts, UI copy, server messages). The 3-5 person group stays a **constellation**, and the Sky keeps its name. Code identifiers, wire fields (`constellationId`, `Constellation`), folder paths (`web/src/features/constellations/`, `tests/matching`) and branch names are unchanged, so no owner's code or contract shapes break. Earlier decision entries and append-only update logs keep the old name as history.
+Owner: Rishi (team lead). Affected: all owners (copy only).
+Status: accepted.
+Contract version / migration: 2.0.0 unchanged (comments only).
+Verification: `git grep -w Constellations` matches only history (DECISIONS entries before D011, docs/updates).
+
+## D012: Live speech-to-text while the player talks (proposed by Patrik, at the human's direction)
+ID / UTC timestamp: D012 / 2026-11-13T07:30Z (proposed; first filed as D011, renumbered after the brand-rename D011 landed)
 Decision and rationale: Today a voice answer is recorded whole, then sent to `POST /voice/transcribe`. Proposal: an additive WebSocket route `WS /api/v1/voice/live` that relays 16 kHz mono PCM16 from the browser to Muse Voice Transcribe realtime (`wss://api.meta.ai/v1/asr/realtime`, `PUSH_TO_TALK`, cumulative partials) and streams partial then final text back, so words appear in the answer box as the player speaks. The server holds the key (never the browser). The transcript is a draft only: the player edits it and submits through `POST /cycles/:id/answers`, where M1 screening runs as before.
 Guards: session from the cookie (Patrik's `actor_dependency`, now typed `HTTPConnection` so it works on WebSockets) and `require_consent` before any audio; same-host Origin check (cookie-authenticated WebSockets are not covered by CORS); 60 s and size caps per turn; final text capped at 400 chars; audio and transcripts never logged or stored; provider errors never echoed. The route is mounted only when live STT is configured; otherwise the browser falls back to `POST /voice/transcribe`, and typing always works.
 Owner and affected: Will (owner of `server/voice`, `server/cycle/api.py`, the daily UI); Kai (composition: the registry is HTTP-only today, so it must accept WebSocket routes before passing `live_stt`); Patrik (privacy review: no new data stored; audio already goes to Muse for transcription).

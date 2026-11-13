@@ -393,7 +393,7 @@ export function PrivacySettings({
 }
 
 /**
- * Wrap the Constellations page: shows the join screen until this Group's
+ * Wrap the Facebook Space page: shows the join screen until this Group's
  * session exists with all three consents, then renders ``children`` with a
  * collapsible "Privacy and data" panel. ``onDataDeleted`` lets the page refresh.
  */

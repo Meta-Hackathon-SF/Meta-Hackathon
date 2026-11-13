@@ -203,11 +203,11 @@ def build_router(
 
     # Mounted only when configured: without a key there is no live route, and the
     # browser falls back to POST /voice/transcribe. Composition must also accept
-    # WebSocket routes (Kai's registry is HTTP-only today; see D011).
+    # WebSocket routes (Kai's registry is HTTP-only today; see D012).
     if live_stt is not None:
         @router.websocket("/voice/live")
         async def live(websocket: WebSocket):
-            """PROPOSED (D011): live speech-to-text while the player talks. One
+            """PROPOSED (D012): live speech-to-text while the player talks. One
             push-to-talk turn per connection; see server/voice/live.py."""
             if not origin_allowed(websocket.headers, live_origins):
                 await websocket.close(code=1008)  # cookie-authenticated: same host only

@@ -1,7 +1,7 @@
-# Constellations
-### You're not the only one feeling this. Constellations shows you who's been feeling it right next to you.
+# Facebook Space
+### You're not the only one feeling this. Facebook Space shows you who's been feeling it right next to you.
 
-Most people our age feel like the only one carrying a private feeling, and they are almost never the only one. Constellations is a weekly game inside Facebook Groups that lets a Group find that out. Monday to Friday, Muse asks one honest question a day. On Saturday the week locks. On Sunday each player wakes up in a constellation: 3 to 5 people from their Group whose answers meant the same thing, in an anonymous, moderated chat that lasts one week. Names are revealed only when two people both choose to. The Sky shows the whole Group what people guessed about each other next to what was true. Friendship only, 18+.
+Most people our age feel like the only one carrying a private feeling, and they are almost never the only one. Facebook Space is a weekly game inside Facebook Groups that lets a Group find that out. Monday to Friday, Muse asks one honest question a day. On Saturday the week locks. On Sunday each player wakes up in a constellation: 3 to 5 people from their Group whose answers meant the same thing, in an anonymous, moderated chat that lasts one week. Names are revealed only when two people both choose to. The Sky shows the whole Group what people guessed about each other next to what was true. Friendship only, 18+.
 
 **Current state (2026-11-12):** main holds the mock Facebook web UI (`web/`, labeled "Simulated Facebook"), docs, contract 2.0.0 and shared fixtures. The weekly-game runtime is **not built**. Archived Group Quests server code (FastAPI app, Muse adapter, privacy/session code, voice boundary) lives on `archive/group-quests-before-pivot` and is restored by each owner into their own paths, then retested (build step 2).
 
@@ -29,12 +29,12 @@ Build order: [docs/PLAN.md](docs/PLAN.md). Steps 6 (event nudges) and 7 (questio
 Deadline used in planning: November 13, 2026, 10:30 AM PST (team-supplied, not independently verified). Feature freeze 04:30 AM.
 
 ## Product boundary
-`web/` is the mock Facebook shell. Keep it and its feed tests. Constellations lives in its own UI under `web/src/features/constellations/<area>/`, reached from a Constellations tab inside a Group (Will owns routing). Feature CSS stays scoped. The shell's mock users and localStorage are not the product backend.
+`web/` is the mock Facebook shell. Keep it and its feed tests. Facebook Space lives in its own UI under `web/src/features/constellations/<area>/` (code name: constellations), reached from the Facebook Space shortcut in the left sidebar (`/space`) and its card on the home feed (Will owns routing). Feature CSS stays scoped. The shell's mock users and localStorage are not the product backend.
 
 ## The problem
 Young people tend to feel like the only one feeling something: lonely, pretending to be fine, missing home, behind everyone else, eating alone. Almost nobody says it out loud, so each person sees only other people's public side and assumes their own inner life is unusual. It usually isn't. Many people in the same Group privately feel the same thing, and each of them thinks they are the exception (pluralistic ignorance). That belief keeps people quiet, and quiet keeps it going.
 
-The research below shows the same pattern. People consistently underestimate how many peers share their private feelings and experiences. The friend-count study is one example: first-year students believed peers had more friends than they did, and felt they belonged less after seeing highly social photos of peers on Facebook. Facebook shows everyone's best night. Constellations shows everyone's real week.
+The research below shows the same pattern. People consistently underestimate how many peers share their private feelings and experiences. The friend-count study is one example: first-year students believed peers had more friends than they did, and felt they belonged less after seeing highly social photos of peers on Facebook. Facebook shows everyone's best night. Facebook Space shows everyone's real week.
 
 | Finding | Number | Source |
 | --- | --- | --- |
@@ -48,7 +48,7 @@ The research below shows the same pattern. People consistently underestimate how
 Figures are quoted from the PRD with the sources it names. We have not independently re-verified them.
 
 ## How a week works
-1. **Join.** Constellations tab inside a Group, or QR. One screen explains what is private and what is shared. Three consent toggles (match me, anonymous chat, 18+) are required before any answer.
+1. **Join.** Facebook Space tab inside a Group, or QR. One screen explains what is private and what is shared. Three consent toggles (match me, anonymous chat, 18+) are required before any answer.
 2. **Daily answer (Mon-Fri).** One question per day from the question bank. Answer by voice or text, 1 to 400 characters. Muse may ask one follow-up. Answering on the day counts at full weight and builds a streak.
 3. **Catch-up.** Missed a day? Answer it any time before Saturday lock. Catch-up answers count at lower weight and never extend a streak.
 4. **Guess.** Each player guesses what percent of the Group feels like them this week.
@@ -70,7 +70,7 @@ Operator console runs the demo week (advance day, lock, reveal, synthetic top-up
 Sunday, Maya and Dev are "Star 1" and "Star 3" in the same room. Muse nudges the room toward Thursday's open mic. After two days of chat they both tap reveal. The Sky shows the Group guessed 12% eat alone. It was 57%.
 
 ## Why Facebook
-Facebook already has the communities, and a Group carries existing trust. Constellations runs inside Groups young adults already belong to and gives them a weekly habit. This prototype simulates the shell. We claim no Groups, Messenger or Events API access.
+Facebook already has the communities, and a Group carries existing trust. Facebook Space runs inside Groups young adults already belong to and gives them a weekly habit. This prototype simulates the shell. We claim no Groups, Messenger or Events API access.
 
 ## Why only AI
 No human can read a week of private answers from thousands of people, match them by meaning, and moderate every anonymous room. No chatbot sees more than one person. Code cannot understand what an answer means. Deterministic code validates every output and owns every guarantee.
@@ -200,7 +200,7 @@ Run sheet: [docs/DEMO.md](docs/DEMO.md).
 Real Facebook APIs; romantic matching; showing anyone's answers; counseling; leaderboards or seasons (vision only); any impact claim without measurement.
 
 ## Pitch (30 seconds)
-Most people our age feel like they're the only one feeling something: lonely, faking fine, missing home, behind. They aren't, but nobody says it out loud. Constellations is a weekly game in Facebook Groups. Every weekday Muse asks one honest question. On Sunday you land in a constellation with the three to five people whose answers meant the same thing as yours, in an anonymous chat that lasts a week. Reveal yourself only when you both want to. Then the Group sees the sky: "You thought 12% felt this. It was 57%."
+Most people our age feel like they're the only one feeling something: lonely, faking fine, missing home, behind. They aren't, but nobody says it out loud. Facebook Space is a weekly game in Facebook Groups. Every weekday Muse asks one honest question. On Sunday you land in a constellation with the three to five people whose answers meant the same thing as yours, in an anonymous chat that lasts a week. Reveal yourself only when you both want to. Then the Group sees the sky: "You thought 12% felt this. It was 57%."
 
 ## Provenance
-The team referenced the documentation organization of dor-calhacks: shared entry instructions, contracts, role handoffs and an evidence ledger. This project is newly authored; no prior hackathon application code was copied. The Constellations direction comes from the team's PRD of Nov 12, 2026. Archived Group Quests infrastructure on `archive/group-quests-before-pivot` is the team's own earlier hackathon code; reusable parts are restored per owner and retested. The weekly-game direction was approved on Nov 12, 2026 (D005).
+The team referenced the documentation organization of dor-calhacks: shared entry instructions, contracts, role handoffs and an evidence ledger. This project is newly authored; no prior hackathon application code was copied. The Facebook Space direction comes from the team's PRD of Nov 12, 2026. Archived Group Quests infrastructure on `archive/group-quests-before-pivot` is the team's own earlier hackathon code; reusable parts are restored per owner and retested. The weekly-game direction was approved on Nov 12, 2026 (D005).

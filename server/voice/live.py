@@ -1,6 +1,6 @@
 """Live (streaming) speech-to-text for daily answers.
 
-PROPOSED by Patrik for Will (owner of server/voice); see docs/DECISIONS.md D011.
+PROPOSED by Patrik for Will (owner of server/voice); see docs/DECISIONS.md D012.
 
 The browser streams 16 kHz mono PCM16 over a WebSocket to this server; the
 server holds the Muse key and relays the audio to Muse Voice Transcribe

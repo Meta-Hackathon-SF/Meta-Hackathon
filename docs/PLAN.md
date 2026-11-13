@@ -1,4 +1,4 @@
-# Delivery plan: Constellations weekly game (contract 2.0.0)
+# Delivery plan: Facebook Space weekly game (contract 2.0.0)
 Deadline used in planning: Nov 13, 2026, 10:30 AM PST (team-supplied, not independently verified). Feature freeze 04:30 AM. 04:30-10:30 is UI, demo and submission only.
 
 Per-person tasks, owned paths, interfaces and acceptance checks: [docs/roles](roles). Each owner develops independently against `contracts/protocol.ts` and `contracts/fixtures/`, then integrates through the ports.

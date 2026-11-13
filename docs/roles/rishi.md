@@ -16,7 +16,7 @@ Consume: `PrivacyPort.formationSnapshot` (Patrik), `MusePort.run` (Adam), `Outpu
 Until those land, use a labeled test-only adapter over `contracts/fixtures/week-sample.json`.
 
 ## Tasks
-1. Restore and adapt from `archive/group-quests-before-pivot`: `server/matching/{feasibility,evaluation,eval_cli}.py` patterns only where they fit; rename to Constellations terms; retest.
+1. Restore and adapt from `archive/group-quests-before-pivot`: `server/matching/{feasibility,evaluation,eval_cli}.py` patterns only where they fit; rename to Facebook Space terms; retest.
 2. Frozen Python dataclasses (standard library, no Pydantic) mirroring protocol.ts 2.0.0 for Theme, Constellation, SkyStats, with hand-written `from_dict` validators and camelCase `to_wire()`. Chosen so matching runs without installed dependencies; output is plain JSON and passes Kai's Pydantic wire validators.
 3. Baseline grouper (keyword/TF-IDF or embeddings) with weights. Must split Maya and Dev in `week-sample.json` so the demo shows Muse joining them.
 4. M3 theme discovery + M4 formation prompts (group by meaning, not keywords; weights as confidence hints; blocked pairs listed). Strict JSON, schema validation.

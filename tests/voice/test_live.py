@@ -1,4 +1,4 @@
-"""Live speech-to-text relay (/voice/live, PROPOSED D011). Offline: a fake Muse
+"""Live speech-to-text relay (/voice/live, PROPOSED D012). Offline: a fake Muse
 realtime upstream follows the documented protocol (handshake reply, cumulative
 partials, final after endStream). No network, no key, no paid call."""
 

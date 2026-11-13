@@ -1,4 +1,4 @@
-# HTTP surface (Constellations 2.0.0, proposed)
+# HTTP surface (Facebook Space 2.0.0, proposed)
 Base `/api/v1`. Kai owns API composition: the FastAPI app, router registration, envelope, idempotency and the SSE stream. Each route's named owner implements its handler as a router in their own package; Kai mounts it. Operator routes require the operator role.
 
 ## Envelope and errors
@@ -22,7 +22,7 @@ Status codes: 400 `INVALID_INPUT`, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN`/`CONSE
 | GET /cycles/current | session | WeeklyCycle, today's DailyQuestion, my Streak, my CatchUpState |
 | GET /cycles/:id/questions | session | DailyQuestion[] released so far (never future days) |
 | POST /cycles/:id/answers | day, text 1-400, source | 202; DailyAnswer (self) with server weight; M1 via Patrik at submit |
-| WS /voice/live (PROPOSED, D011) | binary PCM16 mono 16 kHz frames, text `stop` | `{type:"ready"}`, `{type:"partial"|"final", text}` (final ≤ 400 chars), or `{type:"error", code, message, retryable}`. Session cookie + consent + same-host origin; mounted only when live STT is configured; a draft only, the player submits via POST answers (M1 there) |
+| WS /voice/live (PROPOSED, D012) | binary PCM16 mono 16 kHz frames, text `stop` | `{type:"ready"}`, `{type:"partial"|"final", text}` (final ≤ 400 chars), or `{type:"error", code, message, retryable}`. Session cookie + consent + same-host origin; mounted only when live STT is configured; a draft only, the player submits via POST answers (M1 there) |
 | PATCH / DELETE /cycles/:id/answers/:day | text / none | updated or deleted; `CYCLE_LOCKED` after Saturday lock |
 | GET /cycles/:id/answers/:day/followup | session | M2 `{needsFollowup, question}`, max one per answer |
 | PUT /cycles/:id/guess | percent 0-100 | stored apart from answers |

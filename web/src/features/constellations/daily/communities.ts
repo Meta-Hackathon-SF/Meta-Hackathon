@@ -1,5 +1,5 @@
 /*
- * Facebook Space (internal name: Constellations) is Facebook-wide, not one
+ * Facebook Space (code name: constellations) is Facebook-wide, not one
  * Group's. Everyone plays in one pool, "facebook-space" (seeded by
  * db/privacy/004_activity.sql). Groups are a matching signal (D010): people in
  * the same Groups shine a little brighter, they are not a boundary.
