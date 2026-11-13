@@ -85,3 +85,26 @@ Status: accepted.
 ACK evidence: proposal by `@willapat` in https://github.com/willapat/Meta-Hackathon/pull/14; accepted by `@rishibagri`.
 Contract version / migration: 2.0.0 unchanged (Streak shape unchanged); contracts/WORKFLOW.md streak paragraph updated.
 Verification: Will's streak fixture tests.
+
+## D009: Brightness in the constellation (proposed by Will)
+ID / UTC timestamp: D009 / 2026-11-13T04:45Z (proposed)
+Decision and rationale: Product direction from Will (human): a constellation shows you and the players whose answers meant the most similar things; the more similar, the closer and brighter their star. Shared Groups may add a small boost. Proposal, kept additive so 2.0.0 consumers keep working:
+1. Additive optional field on `AnonymousHandle`: `brightness?: "bright" | "mid" | "faint"` (PUBLIC to room members). Rishi's formation computes a private per-member closeness 0..1 and the server bands it into three levels, so members never see exact scores and a score can't be used to infer anyone's answers. `isSelf` handles omit it.
+2. Shared-Group boost is applied inside the private closeness score only. No field says that two players share a Group, because that would leak membership.
+3. Scope: stays community-scoped for 2.0.x (sessions D007, `CyclePort.current(communityId)`). The UI is already general (`/constellations`) and plays in one community. Cross-Group play is a post-hackathon change and is not part of this entry.
+Owner and affected: producer Rishi (closeness in formation); Kai (room members carry the band, reveal view draws it); consumer Will (UI). Patrik: no shape change; asked to confirm the band leaks nothing under the privacy rules.
+Status: proposed; needs ACK from `@rishibagri`, `@beatopia`, `@patrikliska13`. Until then the UI shows a labeled Example only.
+Contract version / migration: 2.1.0 (additive, optional); no data to migrate; fixture `chat-room` gains the band on non-self members.
+Verification: none yet (proposal).
+
+## D010: More matching signals: Groups, Events, Posts and Comments (proposed by Will)
+ID / UTC timestamp: D010 / 2026-11-13T05:10Z (proposed)
+Decision and rationale: Product direction from Will (human, product notes): matching and the "why this group" context should also use the Groups a player is in, the Events they are interested in or going to, and their Posts and Comments, not only daily answers. Target audience: people (emphasis college age) who feel they don't relate, want to meet people, and find it hard to take the first step. Proposal:
+1. A fourth, optional consent toggle `useActivity` (default off), separate from the three required join toggles. Off means matching uses daily answers only, exactly as today.
+2. When on, formation (Rishi) may read: Group memberships, Event interest/going, and topics derived from the player's own Posts and Comments. Raw post or comment text never leaves the formation step, is never quoted, and never reaches any output (same no-quote and sensitive-term guards as answers). Sensitive categories (health, sexuality, religion, finances, family trauma, home location) are excluded at derivation.
+3. Shared Groups and shared Events only raise the private closeness score (D009). Before mutual reveal the UI shows counts only ("2 of your 4 stars are in a Group you're in"); which star shares what appears only after both reveal. Already-friends are noted as a count so constellations favour new people.
+4. Event heat ("Where people like you are going"): events come from the approved venue catalog (Adam, M7). Code drops any event with fewer than 3 similar people and shows bucketed counts only (3–5, 6–9, 10+). Marking "Interested" is private.
+Owner and affected: Patrik (consent toggle, storage, deletion of the new data, privacy sign-off), Rishi (formation inputs and closeness), Adam (event catalog and nudges), Kai (reveal view shows the context). Will: UI only.
+Status: proposed; needs ACK from `@patrikliska13`, `@rishibagri`, `@adamzhang06`, `@beatopia`. Until then the UI shows these as labeled Examples marked "Needs your OK" and reads none of this data.
+Contract version / migration: 2.1.0 together with D009 if accepted (additive: `Consent.useActivity?: boolean`, default false); no data to migrate.
+Verification: none yet (proposal). UI: web/tests/constellations.spec.ts "why-this-group" and "event heat" tests prove counts-only and the threshold in the Example.

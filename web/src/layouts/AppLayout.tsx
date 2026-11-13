@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Outlet, useLocation } from "react-router";
+import { Link, Outlet, useLocation } from "react-router";
+import { SquarePen } from "lucide-react";
 import Header from "../components/navigation/Header";
 import MobileNavigation from "../components/navigation/MobileNavigation";
 import CreatePostModal from "../components/feed/CreatePostModal";
@@ -24,6 +25,11 @@ export default function AppLayout() {
       <Header />
       <Outlet />
       <MobileNavigation />
+      {pathname !== "/messages" && (
+        <Link to="/messages" className="new-message-fab" aria-label="New message" title="New message">
+          <SquarePen size={20} />
+        </Link>
+      )}
       {composerOpen && <CreatePostModal />}
     </>
   );

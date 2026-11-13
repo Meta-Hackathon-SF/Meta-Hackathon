@@ -1,4 +1,4 @@
-import { ImagePlus, Smile, Video } from "lucide-react";
+import { FeelingIcon, LiveVideoIcon, PhotoVideoIcon } from "../navigation/AppIcons";
 import Avatar from "../common/Avatar";
 import { currentUser } from "../../data/demo";
 import { useApp } from "../../state/context";
@@ -21,7 +21,7 @@ export default function Composer() {
             notify("Live video is a placeholder in this frontend prototype.")
           }
         >
-          <Video size={26} fill="currentColor" />
+          <LiveVideoIcon size={26} />
         </button>
         <button
           className="icon-button composer-photo"
@@ -29,7 +29,7 @@ export default function Composer() {
           aria-label="Add a photo to your post"
           onClick={() => setComposerOpen(true)}
         >
-          <ImagePlus size={27} />
+          <PhotoVideoIcon size={26} />
         </button>
         <button
           className="icon-button composer-feeling"
@@ -37,7 +37,7 @@ export default function Composer() {
           aria-label="Feeling/activity"
           onClick={() => setComposerOpen(true)}
         >
-          <Smile size={26} />
+          <FeelingIcon size={26} />
         </button>
       </div>
     </section>
