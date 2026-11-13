@@ -1,0 +1,8 @@
+# Privacy service runtime + test dependencies (owner: Patrik).
+# Storage is SQLite from the Python standard library: no database server.
+# Kai's server composition may include this with: -r privacy/requirements.txt
+fastapi>=0.115
+pydantic>=2.11
+uvicorn>=0.30
+httpx>=0.27
+pytest>=8

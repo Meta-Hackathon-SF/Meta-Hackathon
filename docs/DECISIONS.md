@@ -47,13 +47,23 @@ Owners (branches unchanged):
 - Will: weekly cycle, daily-answer experience, voice, streaks, weighted submissions, operator controls, Groups tab.
 - Patrik: verification, sessions, consent, private answer storage, safety screening, output guards, retention.
 - Kai: anonymous chat, moderation pipeline, expiration, mutual reveal, realtime delivery, API composition, Sky UI.
-Status: approved by Rishi (team lead direction). ACK pending `@adamzhang06`, `@willapat`, `@patrikliska13`, `@beatopia`.
+Status: approved by Rishi (team lead direction). ACK pending `@adamzhang06`, `@willapat`, `@beatopia`.
+ACK evidence: `@patrikliska13` ACK 2026-11-13T02:40Z (recorded here from role/patrik-privacy; no PR thread was reachable from Patrik's agent).
 Verification: docs/roles/*.md list tasks and acceptance checks.
 
 ## D006: Contract 2.0.0
 ID / UTC timestamp: D006 / 2026-11-12T23:00Z
 Decision and rationale: `contracts/protocol.ts` 2.0.0 replaces 1.0.0. New types: Question, WeeklyCycle, DailyQuestion, DailyAnswer (server weights), Streak, CatchUpState, PrevalenceGuess, ChatRoom, AnonymousHandle, ChatMessage, Report, RevealRequest, MutualReveal, EventNudge, Venue, SyntheticSignal, StreamEvent. Ports: MusePort, PrivacyPort, OutputGuard, FormationPort, QuestionPort, NudgePort, CyclePort, ChatPort. Shared fixtures in `contracts/fixtures/`.
 Status: proposed. Each producer ACKs its shapes; changes go through a PR plus an entry here.
-ACK evidence: pending all owners.
+ACK evidence: `@patrikliska13` ACK 2026-11-13T02:40Z for Player, Consent, Block, SafetyFlag, PrivacyPort, OutputGuard, M1 (producer). Pending other owners.
 Contract version / migration: 2.0.0; 1.0.0 retired, no data to migrate.
 Verification: `npx -p typescript@5.6.3 tsc --noEmit --strict --target es2020 --lib es2020,dom contracts/protocol.ts` passes at the commit that adds it; fixtures parse as JSON.
+
+## D007: Privacy storage and session shapes (proposed by Patrik)
+ID / UTC timestamp: D007 / 2026-11-13T02:40Z
+Decision and rationale: (1) The privacy module stores sessions, consent and (next) private answers in **SQLite from the Python standard library** (`db/privacy/001_privacy.sql`, `server/privacy/store.py`) instead of PostgreSQL, so it runs and tests with no database server or container. Access control moves from Postgres RLS into code: every private query is keyed to the verified session's player, with adversarial tests. (2) Sessions are scoped to one Group: `requireSession` returns `{playerId, communityId, isOperator}`. (3) `POST /communities/:id/join` and `GET /session` return `{player: Player, consent: Consent, isOperator}`; join requires all three toggles (403 `CONSENT_REQUIRED`, nothing stored) and is idempotent for an existing session in that Group. (4) Additive route `DELETE /session` (sign out). (5) Cookie `cst_session` (HttpOnly, Secure, SameSite=Lax, path /api). (6) Operator role granted only by a local setup function, never over HTTP. (7) `ChangeNotice` (ids/versions only) on consent change: `consent_revoked` whenever the player is no longer fully consented.
+Owner and affected: producer Patrik; consumers Kai (composition, migration order, D002 database choice), Will (join screen, operator console, answer routes call `require_consent`).
+Status: proposed. No wire type in contracts/protocol.ts changes.
+ACK evidence: pending `@beatopia` (storage vs D002, composition), `@willapat` (join/session response shape).
+Contract version / migration: 2.0.0 unchanged; no data to migrate.
+Verification: `server/.venv/bin/python -m pytest tests/privacy -q` 68 passed offline; mutation checks (unscoped consent query, removed synthetic-session filter, removed join consent gate) each fail the suite.
