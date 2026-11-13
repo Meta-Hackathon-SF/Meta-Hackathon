@@ -79,3 +79,11 @@
   .cstp-split { grid-template-columns: 1fr; }
   .cstp-card { margin: 12px; padding: 16px; }
 }
+.cstp-activity {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, #e2e5e9);
+}
+.cstp-activity h3 {
+  margin: 0 0 6px;
+}

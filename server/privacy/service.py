@@ -103,6 +103,7 @@ def _consent(row: sqlite3.Row) -> Consent:
         is_adult=bool(row["is_adult"]),
         version=row["version"],
         revoked_at=row["revoked_at"],
+        use_activity=bool(row["use_activity"]) if "use_activity" in row.keys() else False,
     )
 
 
@@ -239,7 +240,9 @@ class PrivacyService:
     @staticmethod
     def _own_consent_row(conn: sqlite3.Connection, actor: Actor) -> sqlite3.Row:
         row = conn.execute(
-            "SELECT * FROM current_consents WHERE player_id = ? AND community_id = ?",
+            "SELECT c.*, EXISTS (SELECT 1 FROM activity_signals a WHERE a.player_id = c.player_id"
+            " AND a.community_id = c.community_id) AS use_activity"
+            " FROM current_consents c WHERE c.player_id = ? AND c.community_id = ?",
             (actor.player_id, actor.community_id),
         ).fetchone()
         if row is None:

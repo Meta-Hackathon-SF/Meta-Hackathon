@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from "react";
-import { allOn, PrivacyError, type ConsentToggles, type PrivacyClient, type SessionView } from "./client";
+import { allOn, PrivacyError, type ActivityInput, type ConsentToggles, type PrivacyClient, type SessionView } from "./client";
 import { NO_TOGGLES, PRIVATE_ITEMS, SHARED_ITEMS, TOGGLES } from "./copy";
 import { usePrivacySession } from "./usePrivacySession";
 import "./privacy.css";
@@ -129,7 +129,8 @@ export function JoinScreen({
       }}
     >
       <FixtureBadge client={client} />
-      <h2>Join Facebook Space in {communityName}</h2>
+      <h2>Join Facebook Space</h2>
+      <p className="cstp-hint">Plays across {communityName}.</p>
       <p className="cstp-lede">
         One honest question a day, Monday to Friday. On Sunday you meet the people whose answers meant the same thing,
         anonymously.
@@ -165,6 +166,80 @@ export function JoinScreen({
   );
 }
 
+/**
+ * D010: optional fourth switch, off by default and separate from the three
+ * required ones. On: sends Group, Event and friend ids plus my own post and
+ * comment text, which the server turns into allowlisted topics and discards.
+ */
+function ActivitySwitch({
+  client,
+  view,
+  disabled,
+  collect,
+  onChange,
+}: {
+  client: PrivacyClient;
+  view: SessionView;
+  disabled: boolean;
+  collect: () => ActivityInput;
+  onChange: (view: SessionView) => void;
+}) {
+  const on = view.consent.useActivity === true;
+  const [busy, setBusy] = useState(false);
+  const [topics, setTopics] = useState<string[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const id = useId();
+  return (
+    <div className="cstp-activity" data-testid="cstp-activity">
+      <h3>Brighten matches with my activity</h3>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-describedby={id}
+        className="cstp-switch"
+        disabled={disabled || busy}
+        data-testid="cstp-toggle-useActivity"
+        onClick={() => {
+          setBusy(true);
+          setError(null);
+          client.setActivity(!on, on ? undefined : collect()).then(
+            (result) => {
+              setBusy(false);
+              setTopics(result.useActivity ? result.topics : null);
+              onChange({ ...view, consent: { ...view.consent, useActivity: result.useActivity } });
+            },
+            (e: unknown) => {
+              setBusy(false);
+              setError(errorText(e));
+            },
+          );
+        }}
+      >
+        <span className="cstp-switch-track" aria-hidden="true">
+          <span className="cstp-switch-thumb" />
+        </span>
+        <span className="cstp-switch-label">Use my Groups, Events, friends and post topics</span>
+      </button>
+      <p id={id} className="cstp-detail">
+        Optional. People in your Groups or going to the same events shine a little brighter. Your posts and comments
+        are reduced to everyday topics like "music" or "coffee"; the words themselves are never kept or shown.
+        Turning this off deletes it.
+      </p>
+      {on && topics && (
+        <p className="cstp-ok" role="status" data-testid="cstp-activity-topics">
+          {topics.length ? `Topics found: ${topics.join(", ")}` : "No topics found in your posts yet."}
+        </p>
+      )}
+      {error && (
+        <p className="cstp-error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** Consent changes (version-checked), delete my data, sign out. */
 export function PrivacySettings({
   client,
@@ -172,12 +247,15 @@ export function PrivacySettings({
   onChange,
   onSignedOut,
   onDataDeleted,
+  collectActivity,
 }: {
   client: PrivacyClient;
   view: SessionView;
   onChange: (view: SessionView) => void;
   onSignedOut: () => void;
   onDataDeleted?: () => void;
+  /** D010: when given, shows the optional "use my activity" switch. */
+  collectActivity?: () => ActivityInput;
 }) {
   const current: ConsentToggles = {
     matchAnswers: view.consent.matchAnswers,
@@ -255,6 +333,16 @@ export function PrivacySettings({
         </button>
       </div>
 
+      {collectActivity && (
+        <ActivitySwitch
+          client={client}
+          view={view}
+          disabled={busy || !allOn(current)}
+          collect={collectActivity}
+          onChange={onChange}
+        />
+      )}
+
       <h3>Delete my data</h3>
       <p className="cstp-detail">
         Deletes every answer and guess you've written, now. Answers are also deleted automatically 14 days after each
@@ -315,12 +403,14 @@ export function PrivacyGate({
   communityName,
   children,
   onDataDeleted,
+  collectActivity,
 }: {
   client: PrivacyClient;
   communityId: string;
   communityName: string;
   children: ReactNode;
   onDataDeleted?: () => void;
+  collectActivity?: () => ActivityInput;
 }) {
   const { state, reload, set } = usePrivacySession(client, communityId);
 
@@ -350,6 +440,7 @@ export function PrivacyGate({
       onChange={set}
       onSignedOut={() => set(null)}
       onDataDeleted={onDataDeleted}
+      collectActivity={collectActivity}
     />
   );
   if (!allOn(state.view.consent)) return settings;

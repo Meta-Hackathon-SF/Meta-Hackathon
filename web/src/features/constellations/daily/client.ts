@@ -33,6 +33,7 @@ export type {
 };
 
 import { parseFormationDebug, type FormationDebugProps } from "../formation";
+import type { NudgeRequester } from "../nudges";
 
 export type { FormationDebugProps };
 
@@ -127,6 +128,14 @@ export interface CycleClient {
   reports(signal?: AbortSignal): Promise<Report[]>;
   /** Rishi's operator-only formation comparison (ids only). Null when there is none. */
   formationDebug(cycleId: string, signal?: AbortSignal): Promise<FormationDebugProps | null>;
+  /**
+   * The signed-in player's own constellation room for a cycle (Kai's
+   * `GET /cycles/:id/room`), or null before reveal / when they have none.
+   * The operator console uses it as the room to nudge in the demo.
+   */
+  myRoomId(cycleId: string, signal?: AbortSignal): Promise<string | null>;
+  /** Adam's M7 nudge call: live `POST /operator/rooms/:id/nudge`; fixture returns a labeled replay. */
+  readonly nudge: NudgeRequester;
   /** Fixture only: forget this tab's answers and guess after "delete my data". */
   clearLocalData?(): void;
   /** Fires when cycle state may have changed (operator action, SSE later). */
