@@ -17,7 +17,21 @@ Railway variables on `constellations-api`: `CONSTELLATIONS_ENV=production`, `CON
 
 ### What was verified live
 
-In a real browser against the Vercel URL, with a synthetic test player: join (201), operator starts a week (201), Monday question shown, a labeled synthetic answer accepted (202 in 1.7 s, with Muse reached through the Vercel relay). **Not yet verified live:** Skip to Sunday, formation, naming, chat, SSE through the Vercel rewrite, the event nudge, and the synthetic top-up.
+In a real browser against the Vercel URL, with a synthetic test player holding the operator role (last run 2026-11-13T15:25Z to 15:35Z, cycle `cycle-b6db42065ac4…`):
+
+| Step | Result |
+| --- | --- |
+| Join | 201 |
+| Operator starts a week | 201; Monday question shown |
+| Answer (M1 safety screen, M2 follow-up) | 202 in about 1 to 2 s; Muse live on `muse-ember-1.0` |
+| Advance Monday to Friday | 200 each |
+| Synthetic top-up (`POST /operator/cycles/{id}/synthetic-topup`) | 200; 38 labeled synthetic players and their answers |
+| Lock and formation | Muse ran the whole job in about 10 s: 1 M3 and 1 M4 on `muse-ember-1.0`, 12 M5 and 2 M8 on `muse-wonder-1.0`, all `source: live` in `/operator/calls` |
+| Reveal | 200 once the formation job had finished; cycle `revealed` |
+| Sky (`GET /cycles/{id}/sky`) | 200: 38 eligible players, 12 constellations, 1 theme above threshold, 5 suppressed, live M8 headlines |
+| Event stream (`GET /stream`) through the Vercel rewrite | 200 `text/event-stream`, events delivered |
+
+**Not verified live:** sending a chat message in a real room, mutual reveal, the room event nudge, and the per-task `route_check --live` after the switch to the Vercel relay.
 
 ### Issues we hit, and what fixed them
 
@@ -27,15 +41,20 @@ In a real browser against the Vercel URL, with a synthetic test player: join (20
    - Our error label hid the cause: `invalid_request` covers 400, 404, 413 and 422. To see the provider's real message, run a small script in the container that prints the status and error body with the key redacted.
    - `python -m server.providers.route_check --live` in the container (about $0.01) checks every task end to end.
 4. **Operator actions return 403 for a newly joined player.** By design the operator role is never granted over HTTP. Grant it in the container with `server.privacy.fixtures.grant_operator(PrivacyStore(os.environ["CST_PRIVACY_DB"]), "<playerId>", "facebook-space")`. The player ID comes from `GET /api/v1/session` in that browser. Each demo browser needs this once.
-5. **A redeploy erases the current week.** Weeks live in `InMemoryCycleRepository` (`server/cycle/service.py`); players and sessions persist. Every merge to `main` and every Railway variable change redeploys. **Do not merge or change variables during the demo; start the demo week after the last deploy.**
+5. **A redeploy erases the current week.** Weeks live in `InMemoryCycleRepository` (`server/cycle/service.py`); players and sessions persist. Every merge to `main` and every Railway variable change redeploys. **Do not merge or change variables during the demo; start the demo week after the last deploy.** This happened twice during the 15:15Z test run (#99 and #100 merged mid-run). The workflow store (jobs, rooms, Sky, stream events) is in Postgres and does survive.
 6. **`railway ssh` needs a registered key** (`railway ssh keys add`) and an interactive terminal for a passphrase-protected key; agents cannot run it. To run a script in the container without copying files: `railway ssh --service constellations-api -- sh -c "echo $(base64 < script.py | tr -d '\n') | base64 -d | python"`.
 7. **`api/` on Vercel is ES modules** (`api/package.json` has `"type": "module"`). CommonJS `require` in a function there fails at load.
 8. **Tracked `.pyc` files and a missing `.dockerignore`** made builds noisy; fixed in #89. `**/*.env` is excluded from the image, so secrets only come from Railway variables.
 
 ### Known gaps on the live site
 
-- The v3 per-viewer routes are not composed in `server/app/weekly.py`: `/days/{n}/constellations`, `/events`, `/me/nudges` and custom events return 404. After answering, the sky screen therefore shows "0 people answered today" with a "Preview · synthetic" badge.
-- "Skip to Sunday" on the live site answers only for the current player. The 38 labeled synthetic players come from `POST /operator/cycles/{id}/synthetic-topup`, which refuses unless the week is a fixture week and only fills days already reached. Not yet run against production.
+- **The Space tab's Sunday screens are previews.** "Your constellation" and "Chat" in `web/src/features/constellations/daily/space/` show hardcoded "Preview · synthetic" content and make no server calls, even though the server has the real constellations, rooms and Sky. The real chat client exists (`web/src/features/constellations/chat/client.ts`) but the Space tab does not use it. This is the biggest gap between what the server does and what the demo shows.
+- **"Skip to Sunday" stops with "The requested service is not available".** It asks for the reveal immediately after the lock, before the formation job (about 10 s) has finished, and the server answers 503. Wait a few seconds and press "Reveal (Sunday)". In the 15:25Z run the reveal still failed minutes later until an operator `POST /operator/cycles/{id}/form` was sent, which reported the job `succeeded`; whether the first job had failed is unknown because the server logs nothing for it. A proper fix is for the button to wait and retry while the cycle is `forming`.
+- **"Skip to Sunday" adds no synthetic players on the live site.** Run the top-up yourself while the week is open and on Friday (it only fills days already reached, and needs a week created with demo timing).
+- **Every non-GET request needs an `Idempotency-Key` header**, or the API answers 400 `INVALID_INPUT`. The web client adds it; hand-written `fetch`/curl calls must too.
+- `GET /operator/cycles/{id}/formation-debug` returned 503 after a successful formation.
+- The v3 per-viewer routes are not composed in `server/app/weekly.py`: `/days/{n}/constellations` returns 404, so after answering, the sky screen shows "0 people answered today".
+- The server writes no request or error logs in production (`--no-access-log`, swallowed job errors), so failures can only be diagnosed through `/jobs/{id}`, `/operator/calls` and the API responses.
 - Privacy `InterestBucket` uses `6-10`/`11+`; the contract and matching use `6-9`/`10+`.
 
 ## Original plan (pre-deploy, by Will)

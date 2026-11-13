@@ -8,8 +8,10 @@ Updated: 2026-11-13T12:10Z
 Full description, every issue hit and its fix: **docs/DEPLOYMENT.md, "Live deployment"**. Summary:
 - Web on Vercel (https://constellations-demo-zeta.vercel.app), API + Postgres on Railway; both deploy on every merge to `main`.
 - Browser → Vercel `/api/v1` rewrite (#91) → Railway → Vercel Muse relay `/api/muse/v1` (#93) → `api.meta.ai`. The relay exists because Meta lists zero models for our key from Railway's IPs.
-- Verified in a real browser: join, operator start week, question, synthetic answer accepted with Muse reached through the relay.
-- Not verified live: Skip to Sunday, formation, naming, chat, SSE through Vercel, nudge, synthetic top-up (needs Adam's go-ahead: writes 38 labeled synthetic players to the production DB).
+- Verified in a real browser (15:25Z to 15:35Z): join, start week, answers, advance to Friday, synthetic top-up (38 labeled players), formation (M3, M4, 12x M5, 2x M8 live in about 10 s), reveal, real Sky numbers, event stream through Vercel.
+- Not verified live: a real chat message, mutual reveal, room nudge.
+- **Biggest gap:** the Space tab's constellation and chat screens are hardcoded previews and do not read the server's real constellations or rooms.
+- "Skip to Sunday" fails with 503 because it reveals before formation finishes; press "Reveal (Sunday)" after about 10 s.
 - **A redeploy erases the current week** (in-memory cycle store). No merges or Railway variable changes during the demo.
 - Operator role: granted per player in the container only (`grant_operator`); test player `p_a0c715cbb0da42a10781999b` has it.
 - Still off: v3 per-viewer routes uncomposed in `server/app/weekly.py` (404), so the day count shows 0.
