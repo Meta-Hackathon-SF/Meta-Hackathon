@@ -61,7 +61,7 @@ class Route:
 SPARK, WONDER, EMBER = "muse-spark-1.3", "muse-wonder-1.0", "muse-ember-1.0"
 
 # Measured 2026-11-13 on synthetic inputs through the real services, prompts and
-# OutputGuard (74 live calls, 2-10 per cell; docs/audits/2026-11-13-model-routing.md).
+# OutputGuard (74 live calls, 2-10 per cell; docs/audits/2026-11-13-live-evals.md).
 #  - clarify (M2, interactive, high volume): Ember minimal 10/10 valid, p50 0.9 s,
 #    $0.0001; Spark low p50 7.3 s. Ember low stalled ~68 s on 3 of 10, hence one
 #    short attempt; the service already falls back to the curated hint.
