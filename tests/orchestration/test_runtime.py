@@ -541,6 +541,7 @@ def test_mutual_reveal_updates_sky_count_without_duplicate_narration():
                 for request in env.transport.calls
             )
 
+        assert m8_calls() == 1  # Sky job only; formation does not precompute it.
         assert call(client, a, "GET", f"/cycles/{cycle_id}/sky").json()["mutualReveals"] == 0
         room_a = call(client, a, "GET", f"/cycles/{cycle_id}/room").json()
         room_b = call(client, b, "GET", f"/cycles/{cycle_id}/room").json()

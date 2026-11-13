@@ -207,6 +207,7 @@ def build_weekly_app(
             guard=guard,
             themes=themes,
             approved_event_ids=VenueCatalog.load().event_ids(),
+            precompute_threshold=None,
         )
 
     runtime = holder["runtime"] = WeeklyRuntime(
