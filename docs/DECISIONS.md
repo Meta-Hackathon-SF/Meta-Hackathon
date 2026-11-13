@@ -48,6 +48,7 @@ Owners (branches unchanged):
 - Patrik: verification, sessions, consent, private answer storage, safety screening, output guards, retention.
 - Kai: anonymous chat, moderation pipeline, expiration, mutual reveal, realtime delivery, API composition, Sky UI.
 Status: approved by Rishi (team lead direction). ACK pending `@adamzhang06`, `@willapat`, `@patrikliska13`, `@beatopia`.
+ACK `@willapat` 2026-11-13: https://github.com/willapat/Meta-Hackathon/pull/14
 Verification: docs/roles/*.md list tasks and acceptance checks.
 
 ## D006: Contract 2.0.0
@@ -55,5 +56,6 @@ ID / UTC timestamp: D006 / 2026-11-12T23:00Z
 Decision and rationale: `contracts/protocol.ts` 2.0.0 replaces 1.0.0. New types: Question, WeeklyCycle, DailyQuestion, DailyAnswer (server weights), Streak, CatchUpState, PrevalenceGuess, ChatRoom, AnonymousHandle, ChatMessage, Report, RevealRequest, MutualReveal, EventNudge, Venue, SyntheticSignal, StreamEvent. Ports: MusePort, PrivacyPort, OutputGuard, FormationPort, QuestionPort, NudgePort, CyclePort, ChatPort. Shared fixtures in `contracts/fixtures/`.
 Status: proposed. Each producer ACKs its shapes; changes go through a PR plus an entry here.
 ACK evidence: pending all owners.
+ACK `@willapat` 2026-11-13 (WeeklyCycle, DailyQuestion, DailyAnswer, WEIGHTS, Streak, CatchUpState, PrevalenceGuess, CyclePort): https://github.com/willapat/Meta-Hackathon/pull/14
 Contract version / migration: 2.0.0; 1.0.0 retired, no data to migrate.
 Verification: `npx -p typescript@5.6.3 tsc --noEmit --strict --target es2020 --lib es2020,dom contracts/protocol.ts` passes at the commit that adds it; fixtures parse as JSON.
