@@ -18,6 +18,7 @@ import {
   type Streak,
   type WeeklyCycle,
 } from "./client";
+import type { EventNudge } from "../../../../../contracts/protocol.ts";
 
 const STORE_KEY = "cst-fixture-v1";
 const PLAYER = "p-fixture-you";
@@ -76,6 +77,33 @@ function question(cycleId: string, day: CycleDay): DailyQuestion {
 }
 
 const STEPS = ["open", "locked", "forming", "revealed", "closed"] as const;
+
+const FIXTURE_ROOM_ID = "room-orion";
+
+/** Fixture nudge: a saved M7 result, always labeled "Replay of a saved cycle" by the card. */
+async function replayNudge(roomId: string, signal?: AbortSignal): Promise<EventNudge> {
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, 250);
+    signal?.addEventListener("abort", () => {
+      clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    });
+  });
+  const start = new Date();
+  start.setDate(start.getDate() + 2);
+  start.setHours(19, 0, 0, 0);
+  const end = new Date(start.getTime() + 2 * 3600_000);
+  return {
+    nudgeId: `nudge-replay-${roomId}`,
+    constellationId: "c-1",
+    title: "Open mic night",
+    placeId: "v-cafe",
+    timeWindow: { start: start.toISOString(), end: end.toISOString() },
+    why: "Low stakes and easy to leave early.",
+    minAttendees: 3,
+    evidence: { model: "muse-spark-1.3", source: "replay", generatedAt: new Date().toISOString(), latencyMs: 0, callType: "M7" },
+  };
+}
 
 export function createFixtureClient(): CycleClient {
   let state = load();
@@ -296,6 +324,12 @@ export function createFixtureClient(): CycleClient {
     async formationDebug() {
       return null; // formation runs on the server; the fixture adapter has none
     },
+    async myRoomId(cycleId) {
+      // The synthetic room from contracts/fixtures/chat-room.json, once the fixture week is revealed.
+      const cycle = state.cycle;
+      return cycle && cycle.cycleId === cycleId && cycle.status === "revealed" ? FIXTURE_ROOM_ID : null;
+    },
+    nudge: replayNudge,
     clearLocalData() {
       state = { ...state, answers: [], guess: null, followUps: {} };
       save();

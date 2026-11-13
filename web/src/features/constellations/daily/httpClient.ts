@@ -3,6 +3,7 @@
  * Used only when VITE_CONSTELLATIONS_API is set. The session is the server's
  * cookie (Patrik); this client never sends a playerId or a weight.
  */
+import { createNudgeRequester } from "../nudges";
 import {
   ClientError,
   parseAnswer,
@@ -129,6 +130,23 @@ export function createHttpClient(
         throw error;
       }
     },
+    async myRoomId(id, signal) {
+      try {
+        return await call("GET", `${c(id)}/room`, (v) => {
+          const room = (v as { room?: { roomId?: unknown }; roomId?: unknown } | null) ?? {};
+          const roomId = room.room?.roomId ?? room.roomId;
+          return typeof roomId === "string" && roomId.length > 0 && roomId.length <= 128
+            ? roomId
+            : (() => {
+                throw new ClientError("PROVIDER_UNAVAILABLE", "The server sent an unexpected response.", true);
+              })();
+        }, { signal });
+      } catch (error) {
+        if (error instanceof ClientError && (error.code === "NOT_FOUND" || error.code === "FORBIDDEN")) return null;
+        throw error;
+      }
+    },
+    nudge: createNudgeRequester(base),
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);

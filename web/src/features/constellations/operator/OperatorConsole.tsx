@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import LeftSidebar from "../../../components/layout/LeftSidebar";
-import { Activity, CalendarDays, Flag, RotateCcw, Sparkles, UserPlus, Users } from "lucide-react";
+import { Activity, CalendarDays, Flag, MapPin, RotateCcw, Sparkles, UserPlus, Users } from "lucide-react";
 import {
   ClientError,
   type CurrentCycle,
@@ -13,6 +13,7 @@ import {
 import { getCycleClient } from "../daily/clientContext";
 import { CONSTELLATIONS_PATH, FEATURE_NAME, PLAY_COMMUNITY } from "../daily/communities";
 import { FormationDebug } from "../formation";
+import { OperatorNudgePanel } from "../nudges";
 import "../daily/daily.css";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -81,6 +82,8 @@ export default function OperatorConsole() {
   const [calls, setCalls] = useState<MuseCallEvidence[] | string>("Loading…");
   const [reports, setReports] = useState<Report[] | string>("Loading…");
   const [formation, setFormation] = useState<FormationDebugProps | string | null>(null);
+  const [myRoom, setMyRoom] = useState<string | null>(null);
+  const [nudgeRoom, setNudgeRoom] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -100,6 +103,12 @@ export default function OperatorConsole() {
           (err) => id === request.current && setFormation(`Not available: ${text(err)}`),
         );
       else setFormation(null);
+      if (value && value.cycle.status === "revealed")
+        client.myRoomId(value.cycle.cycleId).then(
+          (roomId) => id === request.current && setMyRoom(roomId),
+          () => id === request.current && setMyRoom(null),
+        );
+      else setMyRoom(null);
     } catch (err) {
       if (id === request.current) {
         setLoaded(true);
@@ -413,6 +422,14 @@ export default function OperatorConsole() {
         </section>
       </div>
 
+      <NudgeSection
+        client={client}
+        revealed={cycle?.status === "revealed"}
+        rooms={roomChoices(myRoom, reports)}
+        selected={nudgeRoom}
+        onSelect={setNudgeRoom}
+      />
+
       <section className="card cst-panel" aria-labelledby="cst-op-formation">
         <h2 id="cst-op-formation" className="cst-card-title">
           <Users size={18} aria-hidden="true" /> Formation
@@ -434,5 +451,60 @@ export default function OperatorConsole() {
       </section>
     </main>
     </div>
+  );
+}
+
+/** Rooms the operator can nudge: their own room (GET /cycles/:id/room), then rooms seen in the report queue. */
+function roomChoices(myRoom: string | null, reports: Report[] | string): { roomId: string; label: string }[] {
+  const out: { roomId: string; label: string }[] = [];
+  if (myRoom) out.push({ roomId: myRoom, label: `Your room · ${myRoom}` });
+  if (typeof reports !== "string")
+    for (const report of reports)
+      if (!out.some((r) => r.roomId === report.roomId)) out.push({ roomId: report.roomId, label: `Reported room · ${report.roomId}` });
+  return out;
+}
+
+function NudgeSection({
+  client,
+  revealed,
+  rooms,
+  selected,
+  onSelect,
+}: {
+  client: ReturnType<typeof getCycleClient>;
+  revealed: boolean;
+  rooms: { roomId: string; label: string }[];
+  selected: string;
+  onSelect: (roomId: string) => void;
+}) {
+  const roomId = rooms.some((r) => r.roomId === selected) ? selected : (rooms[0]?.roomId ?? "");
+  return (
+    <section className="card cst-panel" aria-labelledby="cst-op-nudge" data-testid="cst-op-nudge">
+      <h2 id="cst-op-nudge" className="cst-card-title">
+        <MapPin size={18} aria-hidden="true" /> Nudge a room
+      </h2>
+      {!revealed ? (
+        <p className="cst-hint">Nudges go to a constellation's chat room, so they open after Sunday's reveal.</p>
+      ) : rooms.length === 0 ? (
+        <p className="cst-hint">No room found yet. Join the week as a player to get a room to nudge.</p>
+      ) : (
+        <>
+          <label className="cst-op-field">
+            <span>Room</span>
+            <select value={roomId} onChange={(event) => onSelect(event.target.value)}>
+              {rooms.map((room) => (
+                <option key={room.roomId} value={room.roomId}>
+                  {room.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <OperatorNudgePanel roomId={roomId} request={client.nudge} />
+          {client.mode === "fixture" && (
+            <p className="cst-hint">Fixture mode: the nudge is a saved result, labeled as a replay. Nothing is posted.</p>
+          )}
+        </>
+      )}
+    </section>
   );
 }

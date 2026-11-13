@@ -94,6 +94,7 @@ Decision and rationale: Product direction from Will (human): a constellation sho
 3. Scope: stays community-scoped for 2.0.x (sessions D007, `CyclePort.current(communityId)`). The UI is already general (`/constellations`) and plays in one community. Cross-Group play is a post-hackathon change and is not part of this entry.
 Owner and affected: producer Rishi (closeness in formation); Kai (room members carry the band, reveal view draws it); consumer Will (UI). Patrik: no shape change; asked to confirm the band leaks nothing under the privacy rules.
 Status: proposed; needs ACK from `@rishibagri`, `@beatopia`, `@patrikliska13`. Until then the UI shows a labeled Example only.
+ACK `@beatopia` 2026-11-13T05:30Z (conditional): will carry the optional band and render the approved view once D009 has the producer/consumer ACKs, privacy sign-off and 2.1.0 runtime validators/fixtures; Kai composition stays exact 2.0.0 until then; no raw score or shared-Group flag; `isSelf` omits brightness (https://github.com/Meta-Hackathon-SF/Meta-Hackathon/pull/31). Still needed: `@rishibagri` (producer), `@patrikliska13` (privacy).
 Contract version / migration: 2.1.0 (additive, optional); no data to migrate; fixture `chat-room` gains the band on non-self members.
 Verification: none yet (proposal).
 
