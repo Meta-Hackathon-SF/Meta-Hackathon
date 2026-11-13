@@ -6,7 +6,7 @@ import { currentUser } from "../../../data/demo";
 import { getPrivacyClient, PrivacyGate } from "../privacy";
 import type { CycleClient, CycleDay, WeeklyCycle } from "./client";
 import { getCycleClient } from "./clientContext";
-import { JOIN_SCOPE_LABEL, OPERATOR_PATH, PLAY_COMMUNITY } from "./communities";
+import { FEATURE_NAME, JOIN_SCOPE_LABEL, OPERATOR_PATH, PLAY_COMMUNITY } from "./communities";
 import ConstellationPreview from "./ConstellationPreview";
 import ConstellationsMark from "./ConstellationsMark";
 import EventHeat from "./EventHeat";
@@ -200,7 +200,7 @@ function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "con
           </h2>
           <p className="muted">
             {cycle.status === "locked" || cycle.status === "forming"
-              ? `You answered ${data.answers.length} of 5. Constellations are revealed ${when(cycle.revealsAt)}.`
+              ? `You answered ${data.answers.length} of 5. Your constellation is revealed ${when(cycle.revealsAt)}.`
               : cycle.status === "revealed"
                 ? `You answered ${data.answers.length} of 5. Your anonymous chat stays open until ${when(cycle.chatExpiresAt)}.`
                 : "Thanks for playing. A new week opens Monday morning."}
@@ -214,7 +214,7 @@ function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "con
 
 function About({ operator }: { operator: boolean }) {
   return (
-    <aside className="cst-side" aria-label="About Constellations">
+    <aside className="cst-side" aria-label={`About ${FEATURE_NAME}`}>
       <section className="card cst-panel">
         <h2 className="cst-side-title">About</h2>
         <ol className="cst-steps-list">
@@ -303,7 +303,7 @@ export default function DailyPage() {
             <div className="cst-title-row">
               <ConstellationsMark size={56} />
               <div>
-                <h1>Constellations</h1>
+                <h1>{FEATURE_NAME}</h1>
                 <p className="muted">A weekly game across Facebook · Private answers · Anonymous matching</p>
               </div>
             </div>
@@ -316,7 +316,7 @@ export default function DailyPage() {
               )}
             </p>
           </div>
-          <div className="cst-tabs" role="tablist" aria-label="Constellations sections">
+          <div className="cst-tabs" role="tablist" aria-label={`${FEATURE_NAME} sections`}>
             <button
               type="button"
               role="tab"

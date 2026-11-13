@@ -7,7 +7,7 @@ export const MAX_CHARS = 400;
 export function message(error: unknown): string {
   if (error instanceof ClientError) {
     if (error.code === "CYCLE_LOCKED") return "This week is locked. Answers can no longer change.";
-    if (error.code === "UNAUTHENTICATED") return "Join the group's Constellations game to answer.";
+    if (error.code === "UNAUTHENTICATED") return "Join Facebook Space to answer.";
     if (error.code === "CONSENT_REQUIRED") return "Turn on all three consents to keep playing.";
     return error.message;
   }

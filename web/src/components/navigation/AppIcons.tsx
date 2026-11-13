@@ -105,7 +105,7 @@ export function GroupsIcon(props: AppIconProps) {
   );
 }
 
-export function ConstellationsIcon(props: AppIconProps) {
+export function SpaceIcon(props: AppIconProps) {
   const [a] = useGrad(1);
   return (
     <Svg {...props}>

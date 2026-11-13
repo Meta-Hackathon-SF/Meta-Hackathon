@@ -11,7 +11,7 @@ import {
   type WeeklyCycle,
 } from "../daily/client";
 import { getCycleClient } from "../daily/clientContext";
-import { CONSTELLATIONS_PATH, PLAY_COMMUNITY } from "../daily/communities";
+import { CONSTELLATIONS_PATH, FEATURE_NAME, PLAY_COMMUNITY } from "../daily/communities";
 import { FormationDebug } from "../formation";
 import "../daily/daily.css";
 
@@ -54,7 +54,7 @@ function stepOf(cycle: WeeklyCycle): number {
 
 function text(error: unknown): string {
   if (error instanceof ClientError) {
-    if (error.code === "UNAUTHENTICATED") return "Sign in from the Constellations page first.";
+    if (error.code === "UNAUTHENTICATED") return `Sign in from the ${FEATURE_NAME} page first.`;
     if (error.code === "FORBIDDEN") return "This account isn't an operator for this Group.";
     return `${error.code}: ${error.message}`;
   }
@@ -155,7 +155,7 @@ export default function OperatorConsole() {
       <header className="card cst-group-header">
         <div className="cst-group-id">
           <p className="cst-crumb">
-            <Link to={CONSTELLATIONS_PATH}>Constellations</Link>
+            <Link to={CONSTELLATIONS_PATH}>{FEATURE_NAME}</Link>
           </p>
           <h1>Operator console</h1>
           <p className="muted">Run the week by hand for the demo. Same rules as real time: forward only, one step at a time.</p>

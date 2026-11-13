@@ -1,4 +1,4 @@
-/** Circular Constellations badge: a feature identity, like Facebook's Memories or Marketplace circles. */
+/** Circular Facebook Space badge: a feature identity, like Facebook's Memories or Marketplace circles. */
 export default function ConstellationsMark({ size = 40 }: { size?: number }) {
   return (
     <span className="cst-mark" style={{ width: size, height: size }} aria-hidden="true">

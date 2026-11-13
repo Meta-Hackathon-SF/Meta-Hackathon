@@ -10,7 +10,7 @@ import Modal from "../../../components/common/Modal";
 import { allOn, getPrivacyClient, JoinScreen, usePrivacySession } from "../privacy";
 import type { CycleClient } from "./client";
 import { getCycleClient } from "./clientContext";
-import { CONSTELLATIONS_PATH, JOIN_SCOPE_LABEL, PLAY_COMMUNITY } from "./communities";
+import { CONSTELLATIONS_PATH, FEATURE_NAME, JOIN_SCOPE_LABEL, PLAY_COMMUNITY } from "./communities";
 import ConstellationsMark from "./ConstellationsMark";
 import QuestionPost from "./QuestionPost";
 import { computeRewards, nextReward } from "./rewards";
@@ -27,7 +27,7 @@ function Header({ streak, meta }: { streak: number | null; meta: string }) {
       <ConstellationsMark />
       <div className="cst-post-who">
         <Link to={PAGE} className="cst-post-title">
-          Constellations
+          {FEATURE_NAME}
         </Link>
         <span className="post-meta">
           {meta} <span aria-hidden="true">·</span> <Lock size={12} aria-label="Private answers" />
@@ -46,19 +46,19 @@ function JoinedCard({ client }: { client: CycleClient }) {
   const { data, error, refresh } = useDaily(client);
   if (error)
     return (
-      <section className="card cst-feed" aria-label="Constellations" data-testid="cst-feed-card">
+      <section className="card cst-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
         <Header streak={null} meta="Weekly game" />
         <p className="cst-error cst-pad" role="alert">
           {error}
         </p>
       </section>
     );
-  if (!data) return <section className="card cst-feed cst-feed-loading" aria-label="Constellations" data-testid="cst-feed-card" aria-busy="true" />;
+  if (!data) return <section className="card cst-feed cst-feed-loading" aria-label={FEATURE_NAME} data-testid="cst-feed-card" aria-busy="true" />;
 
   const current = data.current;
   if (!current)
     return (
-      <section className="card cst-feed" aria-label="Constellations" data-testid="cst-feed-card">
+      <section className="card cst-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
         <Header streak={null} meta="Weekly game" />
         <p className="cst-pad muted">No week is running yet. The first question arrives Monday morning.</p>
       </section>
@@ -68,7 +68,7 @@ function JoinedCard({ client }: { client: CycleClient }) {
   const open = cycle.status === "open" && question;
   const next = nextReward(computeRewards(streak, data.answers));
   return (
-    <section className="card cst-feed" aria-label="Constellations" data-testid="cst-feed-card">
+    <section className="card cst-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
       <Header
         streak={streak.current}
         meta={open ? `${DAY_NAMES[cycle.currentDay - 1]}'s question` : cycle.status === "revealed" ? "Revealed" : "Locked"}
@@ -95,7 +95,7 @@ function JoinedCard({ client }: { client: CycleClient }) {
           <p>
             {cycle.status === "revealed"
               ? "Your constellation is out. Meet them anonymously."
-              : `Answers are locked. Constellations are revealed ${when(cycle.revealsAt)}.`}
+              : `Answers are locked. Your constellation is revealed ${when(cycle.revealsAt)}.`}
           </p>
         </div>
       )}
@@ -122,44 +122,24 @@ export default function ConstellationsFeedCard() {
   const { state, set } = usePrivacySession(privacy, COMMUNITY);
   const [joining, setJoining] = useState(false);
 
-  if (state.status === "loading") return <section className="card cst-feed cst-feed-loading" aria-label="Constellations" data-testid="cst-feed-card" aria-busy="true" />;
+  if (state.status === "loading") return <section className="card cst-feed cst-feed-loading" aria-label={FEATURE_NAME} data-testid="cst-feed-card" aria-busy="true" />;
 
   if (state.status === "ready" && allOn(state.view.consent)) return <JoinedCard client={client} />;
 
   const paused = state.status === "ready";
+  // Compact feature card, like Facebook's Memories or Marketplace promos: icon, one line, one button.
   return (
-    <section className="card cst-feed" aria-label="Constellations" data-testid="cst-feed-card">
-      <Header streak={null} meta="Weekly game" />
-      <div className="cst-feed-promo">
-        <div className="cst-bg-post">
-        <div className="cst-bg-backdrop" aria-hidden="true">
-          <svg viewBox="0 0 600 220" className="cst-graph cst-graph-dark">
-            <g className="cst-edges">
-              <line className="cst-edge is-spoke-on" x1="300" y1="110" x2="170" y2="70" />
-              <line className="cst-edge is-spoke-on" x1="300" y1="110" x2="230" y2="175" />
-              <line className="cst-edge is-spoke" x1="300" y1="110" x2="370" y2="45" />
-              <line className="cst-edge is-spoke" x1="300" y1="110" x2="430" y2="150" />
-              <line className="cst-edge is-streak" x1="170" y1="70" x2="230" y2="175" />
-              <line className="cst-edge is-chain" x1="370" y1="45" x2="430" y2="150" />
-            </g>
-            {[
-              [300, 110, 14],
-              [170, 70, 9],
-              [230, 175, 9],
-              [370, 45, 7],
-              [430, 150, 7],
-            ].map(([x, y, r]) => (
-              <circle key={`${x}-${y}`} cx={x} cy={y} r={r} className="cst-promo-node" />
-            ))}
-          </svg>
+    <section className="card cst-feed cst-promo" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
+      <div className="cst-promo-row">
+        <ConstellationsMark size={48} />
+        <div className="cst-promo-text">
+          <strong>{paused ? `${FEATURE_NAME} is paused` : "Feel like nobody quite gets you?"}</strong>
+          <p className="muted">
+            {paused
+              ? "Turn it back on any time. Your answers stay private."
+              : "Answer one easy question a day. On Sunday, meet the 3–5 people who answered like you."}
+          </p>
         </div>
-          <h2>Feel like nobody quite gets you? Answer one question a day. On Sunday, meet the 3–5 people who answered like you.</h2>
-        </div>
-      </div>
-      <div className="cst-feed-actions">
-        <p className="muted">
-          {paused ? "You paused Constellations. Turn it back on any time." : "A minute a day, resets every Monday. Answers stay private and you stay anonymous until you both choose to reveal."}
-        </p>
         {paused ? (
           <Link to={PAGE} className="button-primary">
             Manage
@@ -170,8 +150,13 @@ export default function ConstellationsFeedCard() {
           </button>
         )}
       </div>
+      {!paused && (
+        <p className="cst-promo-foot">
+          <Lock size={12} aria-hidden="true" /> {FEATURE_NAME} · A minute a day · Anonymous until you both reveal
+        </p>
+      )}
       {joining && (
-        <Modal title="Join Constellations" onClose={() => setJoining(false)} className="cst-join-modal">
+        <Modal title={`Join ${FEATURE_NAME}`} onClose={() => setJoining(false)} className="cst-join-modal">
           <JoinScreen
             client={privacy}
             communityId={COMMUNITY}

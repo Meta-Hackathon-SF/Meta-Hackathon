@@ -1667,3 +1667,53 @@ a.cst-post-title:hover {
   align-items: center;
   gap: 2px;
 }
+
+/* ---- Compact feature promo (not joined) ------------------------------------------------ */
+.cst-promo {
+  padding: 12px 16px;
+}
+.cst-promo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cst-promo-text {
+  flex: 1;
+  min-width: 0;
+}
+.cst-promo-text strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+.cst-promo-text p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.cst-promo .button-primary {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.cst-promo-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 520px) {
+  .cst-promo-row {
+    flex-wrap: wrap;
+  }
+  .cst-promo-text {
+    flex-basis: calc(100% - 60px);
+  }
+  .cst-promo .button-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}

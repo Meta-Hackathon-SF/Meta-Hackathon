@@ -15,7 +15,12 @@ export default function LeftSidebar() {
           <span>{currentUser.name}</span>
         </Link>
         {sidebarNavigation.map(({ to, label, icon: Icon, color }) => (
-          <NavLink to={to} key={to} className="sidebar-row" end>
+          <NavLink
+            to={to}
+            key={to}
+            className={({ isActive }) => `sidebar-row${isActive && to !== "/" ? " active" : ""}`}
+            end
+          >
             <span className={`sidebar-icon nav-color-${color}`}>
               <Icon size={36} />
             </span>

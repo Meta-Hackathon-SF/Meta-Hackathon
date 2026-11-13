@@ -8,6 +8,7 @@ import { Lock, Mic, Send, Sparkles, Square } from "lucide-react";
 import Avatar from "../../../components/common/Avatar";
 import Modal from "../../../components/common/Modal";
 import { currentUser } from "../../../data/demo";
+import { FEATURE_NAME } from "./communities";
 import ConstellationsMark from "./ConstellationsMark";
 import { SupportCard } from "../privacy";
 import type { CycleClient, DailyAnswer, DailyQuestion, FollowUp } from "./client";
@@ -271,9 +272,7 @@ export default function QuestionPost({
         <header className="cst-post-head">
           <ConstellationsMark />
           <div className="cst-post-who">
-            <span className="cst-post-title">
-              Constellations
-            </span>
+            <span className="cst-post-title">{FEATURE_NAME}</span>
             <span className="post-meta">
               <span>
                 {eyebrow} · {DAY_NAMES[day - 1]}
