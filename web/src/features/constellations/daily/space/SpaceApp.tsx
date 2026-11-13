@@ -5,12 +5,12 @@
  * chat, reveal and events are labeled previews until contract 3.0.0 producers land.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { SpaceIcon } from "../../../../components/navigation/AppIcons";
 import type { MutualReveal } from "../../../../../../contracts/protocol";
 import { currentUser } from "../../../../data/demo";
 import { getPrivacyClient, usePrivacySession, type SessionView } from "../../privacy";
-import { ClientError, type AnswerResult, type CycleClient, type CycleDay, type FollowUp, type WeeklyCycle } from "../client";
+import type { AnswerResult, CycleClient, CycleDay, FollowUp } from "../client";
 import { getCycleClient } from "../clientContext";
 import { PLAY_COMMUNITY } from "../communities";
 import { MAX_CHARS, message, useDaily } from "../useDaily";
@@ -57,122 +57,6 @@ function useSpaceNav() {
     [navigate],
   );
   return { screen, dayParam: Number.isInteger(dayParam) && dayParam >= 1 && dayParam <= 5 ? dayParam : null, go, wantsJoin: raw === "join" };
-}
-
-/** Demo-only answers used by "Skip to Sunday". Clearly labeled; never real player content. */
-const DEMO_ANSWERS = [
-  "Demo answer: the dining hall, usually with my floor.",
-  "Demo answer: that it's fine to change your major late.",
-  "Demo answer: the late-night robotics lab.",
-  "Demo answer: forgetting a birthday, if they own it.",
-  "Demo answer: midterms and missing home.",
-];
-
-function nextLabel(status: string | undefined, day: number | undefined): string {
-  if (status === "open") return day && day < 5 ? "Next day" : "Lock week (Saturday)";
-  if (status === "locked") return "Find people (forming)";
-  if (status === "forming") return "Reveal (Sunday)";
-  return "Close week";
-}
-
-function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleClient; cycleId: string | null; status?: string; day?: number; refresh: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [note, setNote] = useState<string | null>(null);
-  const topUp = async (id: string) => {
-    const r = await client.topUp(id);
-    setNote(`${r.syntheticPlayers} players added, each labeled "${r.label}". ${r.answersAdded} answers added.`);
-  };
-  /**
-   * After the lock the server starts matching on its own (about 20 s live). Asking for the
-   * reveal before it finishes returns 503; wait and retry instead of showing an error.
-   */
-  const advanceWhenReady = async (id: string): Promise<WeeklyCycle> => {
-    const started = Date.now();
-    for (;;) {
-      try {
-        const next = await client.advance(id);
-        setNote(null);
-        return next;
-      } catch (err) {
-        const waiting = err instanceof ClientError && err.code === "PROVIDER_UNAVAILABLE" && Date.now() - started < 180_000;
-        if (!waiting) throw err;
-        setNote(`Muse is finding everyone's constellation… ${Math.round((Date.now() - started) / 1000)}s`);
-        await new Promise((r) => setTimeout(r, 4000));
-      }
-    }
-  };
-  const skipToSunday = async () => {
-    let cycle = cycleId ? (await client.current())?.cycle ?? null : null;
-    if (!cycle || cycle.status === "closed") cycle = cycle ? await client.reset(cycle.cycleId) : await client.createCycle();
-    const id = cycle.cycleId;
-    while (cycle.status === "open") {
-      // Any account on a demo week. Fills each released day with labeled synthetic players.
-      await client.topUp(id);
-      const mine = await client.myAnswers(id);
-      for (let d = 1; d <= cycle.currentDay; d++)
-        if (!mine.some((a) => a.day === d)) await client.submit(id, { day: d as CycleDay, text: DEMO_ANSWERS[d - 1], source: "text" });
-      cycle = await client.advance(id);
-    }
-    while (cycle.status === "locked" || cycle.status === "forming") cycle = await advanceWhenReady(id);
-  };
-  const act = async (work: () => Promise<unknown>) => {
-    setBusy(true);
-    setError(null);
-    setNote(null);
-    try {
-      await work();
-      refresh();
-    } catch (err) {
-      setError(message(err));
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <aside className="spc-demo" aria-label="Demo week controls">
-      <div className="spc-demo-head">
-        <strong>Demo week</strong>
-        <span className="spc-preview">Demo timing</span>
-      </div>
-      <p className="spc-fine">Any account can run the demo week. Every step uses the real cycle rules, for everyone in the demo.</p>
-      <div className="spc-row is-wrap">
-        {cycleId && status !== "closed" ? (
-          <button type="button" className="spc-btn spc-btn-gray spc-btn-sm" disabled={busy} onClick={() => void act(() => (status === "open" ? client.advance(cycleId) : advanceWhenReady(cycleId)))} data-testid="spc-demo-next">
-            {nextLabel(status, day)}
-          </button>
-        ) : (
-          <button type="button" className="spc-btn spc-btn-primary spc-btn-sm" disabled={busy} onClick={() => void act(() => (cycleId ? client.reset(cycleId) : client.createCycle()))}>
-            {cycleId ? "Restart week" : "Start demo week"}
-          </button>
-        )}
-        {cycleId && status === "open" && (
-          <button type="button" className="spc-btn spc-btn-gray spc-btn-sm" disabled={busy} onClick={() => void act(() => topUp(cycleId))} data-testid="spc-demo-topup">
-            Add synthetic players
-          </button>
-        )}
-        {status !== "revealed" && (
-          <button type="button" className="spc-btn spc-btn-primary spc-btn-sm" disabled={busy} onClick={() => void act(skipToSunday)} data-testid="spc-demo-skip">
-            Skip to Sunday (synthetic players)
-          </button>
-        )}
-        <Link className="spc-btn spc-btn-gray spc-btn-sm" to="/space/stage">
-          Stage view
-        </Link>
-      </div>
-      {error && (
-        <p className="spc-error" role="alert">
-          {error}
-        </p>
-      )}
-      {note && (
-        <p className="spc-fine" role="status" data-testid="spc-demo-note">
-          {note}
-        </p>
-      )}
-      <p className="spc-fine">"Skip to Sunday" answers each weekday with a labeled demo answer, then locks, matches and reveals. Answer with "SYNTHETIC SAFETY TEST" to see the support card.</p>
-    </aside>
-  );
 }
 
 function Joined({ client, view, setView, onDeleted }: { client: CycleClient; view: SessionView; setView: (v: SessionView) => void; onDeleted: () => void }) {
@@ -259,11 +143,7 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
       </div>
     );
 
-  // The server decides who is an operator; the in-browser fixture is always one.
-  // Every account can run a demo-timing week (server: server/cycle/api.py); real-calendar weeks stay operator-only.
-  const isOperator = client.mode === "fixture" ? client.isOperator : view.isOperator;
-  const canDemo = isOperator || !current || current.cycle.demoTiming === true || current.cycle.status === "closed";
-  const demo = canDemo ? <DemoPanel client={client} cycleId={cycleId} status={current?.cycle.status} day={current?.cycle.currentDay} refresh={() => void refresh()} /> : null;
+  // Week controls (next day, synthetic players, skip to Sunday) live on the Stage dashboard (/space/stage).
 
   if (!current || !week)
     return (
@@ -276,7 +156,6 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
             <p className="spc-sub">The next week opens Monday morning with its first question.</p>
           </section>
         </div>
-        {demo}
       </div>
     );
 
@@ -453,7 +332,6 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
           chatOn={view.consent.anonymousChat && view.consent.matchAnswers}
           eventsOn={prefs.events}
           demoTiming={cycle.demoTiming}
-          demo={demo}
         />
       );
   }

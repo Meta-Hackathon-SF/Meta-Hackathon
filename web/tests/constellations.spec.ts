@@ -92,13 +92,6 @@ async function answer(page: Page, day: number, text: string) {
   await expect(page).toHaveURL(/s=(daily|followup|distress)/);
 }
 
-test("fixture demo host can skip to Sunday", async ({ page }) => {
-  await openSpace(page);
-  await page.getByTestId("spc-demo-skip").click();
-  await expect(page.getByTestId("spc-demo-skip")).toHaveCount(0, { timeout: 30000 });
-  await expect(page.getByTestId("cst-mode")).toContainText("Fixture");
-});
-
 test("Space tab: truth labels, join is gated by the required consents, old links redirect", async ({ page }) => {
   await page.goto("/groups/hackathon-builders/constellations");
   await expect(page).toHaveURL(new RegExp(`${DAILY}$`));
@@ -298,13 +291,6 @@ test("reveal thread in Messenger: @muse finds a catalog event and drafts one; no
   await expect.poll(() => sent.map((r) => r.kind)).toEqual(["hangout", "create", "hangout"]);
   // The revealed name never reaches Muse.
   for (const r of sent) for (const sender of r.senders) expect(sender).toMatch(/^(You|Muse|Member [1-9])$/);
-});
-
-test("operator adds synthetic players from the Space demo panel and sees the label", async ({ page }) => {
-  await newCycle(page);
-  await openSpace(page);
-  await page.getByTestId("spc-demo-topup").click();
-  await expect(page.getByTestId("spc-demo-note")).toContainText('each labeled "Synthetic player"');
 });
 
 test("privacy: turning matching off shows it on Sunday; delete my data returns to Join", async ({ page }) => {

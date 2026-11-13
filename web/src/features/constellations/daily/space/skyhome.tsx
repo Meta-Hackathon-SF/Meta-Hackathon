@@ -1,9 +1,9 @@
 /*
  * Space home, laid out like a Facebook Group page: a sky cover with the day
  * tracker, tabs, then separate cards (today's question, catch up, weekend) and a
- * side column (today's stats, about, demo controls).
+ * side column (today's stats, about).
  */
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 import { CalendarDays, ChevronRight, Clock, Flame, Lock, MessageCircle, Users } from "lucide-react";
 import Avatar from "../../../../components/common/Avatar";
 import { currentUser } from "../../../../data/demo";
@@ -384,7 +384,6 @@ export function SkyHome({
   chatOn,
   eventsOn,
   demoTiming,
-  demo,
 }: {
   client: CycleClient;
   week: WeekModel;
@@ -398,7 +397,6 @@ export function SkyHome({
   chatOn: boolean;
   eventsOn: boolean;
   demoTiming: boolean;
-  demo: ReactNode;
 }) {
   const today = week.today;
   const q = today ? question(today) : undefined;
@@ -564,7 +562,6 @@ export function SkyHome({
         <aside className="spc-col-side" aria-label="About this week">
           {week.day <= 5 && <StatsCard day={statsDay} answered={answeredToday} count={count} took={took} />}
           <AboutCard />
-          {demo}
         </aside>
       </div>
     </div>
