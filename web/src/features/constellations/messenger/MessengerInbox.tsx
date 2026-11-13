@@ -2,22 +2,22 @@ import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { Users } from "lucide-react";
 import Avatar from "../../../components/common/Avatar";
-import { currentUser, people } from "../../../data/demo";
+import { people } from "../../../data/demo";
 import { sendInboxMessage, useInbox, type InboxThread } from "./inbox";
 
 function person(name: string) {
-  return people.find((entry) => entry.name === name) ?? currentUser;
+  return people.find((entry) => entry.name === name);
 }
 
-function ThreadMark({ thread }: { thread: InboxThread }) {
-  if (thread.kind === "group") {
-    return (
-      <span className="avatar group-chip" aria-hidden="true">
-        <Users size={18} />
-      </span>
-    );
-  }
-  return <Avatar person={person(thread.title)} online />;
+function ThreadMark({ thread, size }: { thread: InboxThread; size?: number }) {
+  const known = thread.kind === "direct" ? person(thread.title) : undefined;
+  if (known) return <Avatar person={known} online size={size} />;
+  // No stock photo for a group or for someone who is not a shell demo person.
+  return (
+    <span className="avatar group-chip" aria-hidden="true">
+      {thread.kind === "group" ? <Users size={18} /> : thread.title.slice(0, 1).toUpperCase()}
+    </span>
+  );
 }
 
 export default function MessengerInbox() {
@@ -52,16 +52,20 @@ export default function MessengerInbox() {
             <small>
               {selected.kind === "group"
                 ? `${selected.memberNames.join(", ")} · names visible`
-                : "Demo conversation"}
+                : selected.id.startsWith("reveal-") ? "Simulated Facebook" : "Demo conversation"}
             </small>
           </span>
         </header>
         <div className="conversation-body">
           {selected.kind === "direct" && (
             <>
-              <Avatar person={person(selected.title)} size={56} />
+              <ThreadMark thread={selected} size={56} />
               <h2>{selected.title}</h2>
-              <p className="muted">You're connected in the hackathon community.</p>
+              <p className="muted">
+                {selected.id.startsWith("reveal-")
+                  ? "Simulated Facebook. You both chose to reveal in Space. Messages here stay in this browser."
+                  : "You're connected in the hackathon community."}
+              </p>
             </>
           )}
           {selected.messages.map((message) => (

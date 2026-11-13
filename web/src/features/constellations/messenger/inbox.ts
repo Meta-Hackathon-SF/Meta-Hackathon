@@ -105,6 +105,19 @@ export function useInbox(): InboxThread[] {
   return useSyncExternalStore(subscribe, () => threads, () => serverThreads);
 }
 
+/**
+ * Simulated Facebook: opens an empty direct thread for a person named by a real server
+ * mutual reveal. Nothing is sent to that person; the thread lives in this browser session.
+ */
+export function openRevealThread(playerId: string, displayName: string): string {
+  const id = `reveal-${playerId}`;
+  if (!threads.some((thread) => thread.id === id)) {
+    threads = [{ id, kind: "direct", title: displayName, memberNames: [displayName], messages: [], preview: "" }, ...threads];
+    emit();
+  }
+  return id;
+}
+
 export function addMuseMessage(
   threadId: string,
   text: string,

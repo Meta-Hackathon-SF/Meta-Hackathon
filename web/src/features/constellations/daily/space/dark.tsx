@@ -1,5 +1,6 @@
 /* Dark Space screens: the animated sky (daily / week / forming / main), the anonymous chat and mutual reveal. */
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import { ArrowUp, ChevronLeft } from "lucide-react";
 import type { MutualReveal } from "../../../../../../contracts/protocol";
 import { DAY_LONG, DAY_SHORT, dayHex, type Screen } from "./model";
@@ -8,6 +9,7 @@ import "./reveal.css";
 import SkyCanvas from "./SkyCanvas";
 import Telescope from "./Telescope";
 import { ChatHttpError } from "../../chat/client";
+import { openRevealThread } from "../../messenger/inbox";
 import { SUPPORT_RESOURCES } from "./preview";
 import { useRoom } from "./useRoom";
 
@@ -450,7 +452,10 @@ export function ChatScreen({
 
 /** Names come only from a server `reveal.mutual` event for this pair. */
 export function RevealedScreen({ reveal, viewerPlayerId, onBack }: { reveal: MutualReveal; viewerPlayerId: string; onBack: () => void }) {
+  const navigate = useNavigate();
   const other = reveal.players.find((p) => p.playerId !== viewerPlayerId);
+  // Simulated Facebook: the request is not sent anywhere; it only marks this screen.
+  const [requested, setRequested] = useState(false);
   return (
     <div className="spc-screen spc-night spc-revealed">
       <StarField dense />
@@ -471,6 +476,21 @@ export function RevealedScreen({ reveal, viewerPlayerId, onBack }: { reveal: Mut
       <p className="spc-reveal-note">Only you two can see this.</p>
       <div className="spc-flex" />
       <div className="spc-col spc-reveal-actions">
+        {other && (
+          <div className="spc-reveal-pair" data-testid="spc-reveal-actions">
+            <button type="button" className="spc-btn spc-btn-primary spc-btn-lg" disabled={requested} onClick={() => setRequested(true)}>
+              {requested ? "Request sent" : "Add friend"}
+            </button>
+            <button
+              type="button"
+              className="spc-btn spc-btn-primary spc-btn-lg"
+              onClick={() => navigate(`/messages?chat=${openRevealThread(other.playerId, other.displayName)}`)}
+            >
+              Message
+            </button>
+            <p className="spc-reveal-sim">Simulated Facebook</p>
+          </div>
+        )}
         <button type="button" className="spc-btn spc-btn-glass spc-btn-lg" onClick={onBack}>
           Back to chat
         </button>
