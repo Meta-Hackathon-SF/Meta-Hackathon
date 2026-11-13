@@ -27,6 +27,12 @@ export const sidebarNavigation = [
   { to: "/memories", label: "Memories", icon: History, color: "cyan" },
   { to: "/saved", label: "Saved", icon: Bookmark, color: "purple" },
   { to: "/groups", label: "Groups", icon: UsersRound, color: "blue" },
+  {
+    to: "/groups/hackathon-builders/constellations",
+    label: "Constellations",
+    icon: Sparkles,
+    color: "purple",
+  },
   { to: "/watch", label: "Video", icon: Clapperboard, color: "pink" },
   { to: "/marketplace", label: "Marketplace", icon: Store, color: "cyan" },
   { to: "/events", label: "Events", icon: CalendarDays, color: "red" },
