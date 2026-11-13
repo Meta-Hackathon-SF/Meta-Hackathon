@@ -2,7 +2,7 @@
 Current step: 7 (question generation) done offline. All six tasks in docs/roles/adam.md are implemented offline; what remains is live verification and integration with other owners
 Status: Muse adapter restored for 2.0.0; question bank, weekly selection, M2 follow-up, M7 event nudges, the nudge card and M6 question generation implemented. Offline-verified only.
 Branch + commit: `role/adam-planning`; PRs #12 and #17 merged to main; question generation in the follow-up PR. PR #12 merged to main (655903a); nudges in the follow-up PR.
-Updated: 2026-11-13T02:35Z
+Updated: 2026-11-13T03:05Z
 
 ## Completed tasks
 1. `server/providers/` restored from `archive/group-quests-before-pivot`, renamed, extended to the 2.0.0 `MuseTask` list (M1-M8), retested. **Live call re-verified 2026-11-13T02:25Z**: `python3 -m server.providers.smoke` -> ok, `clarify` (M2), provider echoed `muse-spark-1.3`, 16.2 s, attempt 1, `reasoning_effort=low`.
@@ -44,12 +44,17 @@ One live Muse call exists: the M2 smoke call above, on a synthetic answer. Every
 
 ## Blocked on
 Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
-- `@patrikliska13`: real `OutputGuard.check`; operator session check for my routes.
+- `@patrikliska13`: nothing. Real `OutputGuard` delivered in PR #24 and verified with my services (tests/planning/test_real_guard.py + 4 live calls).
 - `@beatopia`: router registry for my routes; durable `SelectionStore`/`ClarifyStore`; `ChatPort.postSystem`; the `ConstellationContext` lookup for nudges; mid-week job + operator button calling `NudgeService.propose_and_post`; placing `NudgeCard` in chat.
 - `@willapat`: nothing further; his cycle service overwrites dates, so the weekStart lookup is only needed for the operator select-week route on a cycle that was not created through his service.
 
+## Real OutputGuard and card check (2026-11-13T03:05Z)
+- `python -m pytest tests/planning tests/providers`: 106 passed; `python -m pytest tests`: 560 passed on merged main. All 32 curated questions and hints pass the real guard.
+- `python -m tests.planning.live_check` with the real guard: M2 x2, M7, M6 all passed (4 paid calls, 4.6-18.4 s).
+- Nudge card viewed in Chrome at 360 px and 900 px via a temporary, uncommitted preview page; no overflow; replay label shown. No committed browser test.
+
 ## API budget
-Adam's Muse key has a $100 cap for the whole event including the demo. Six live calls so far (1 smoke + 5 live check). Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
+Adam's Muse key has a $100 cap for the whole event including the demo. About 44 live calls so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
 
 ## Next action
 - Me: no unblocked build task left in my role file; then verify the router inside Kai's composed app once #13 lands.

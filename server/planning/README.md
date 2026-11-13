@@ -99,10 +99,10 @@ Routes (paths without `/api/v1`): `GET /operator/questions` (`active`, `category
 
 ## Not done / needs other owners
 - The router is tested on a bare FastAPI app with a test-only session stand-in. It has not run inside Kai's composed app or behind Patrik's real session.
-- `OutputGuardPort`, `WeekStartLookup`, `ConstellationContext`, `ChatPostPort` and the selection/clarify/nudge stores and the pending-question queue are satisfied in tests by `tests/planning/doubles.py` (TEST ONLY) and the in-memory stores. Durable stores belong to orchestration.
+- `OutputGuardPort` is now satisfied by the real `server.privacy.OutputGuard` (drop-in; verified offline and in 4 live calls). `WeekStartLookup`, `ConstellationContext`, `ChatPostPort` and the selection/clarify/nudge stores and the pending-question queue are satisfied in tests by `tests/planning/doubles.py` (TEST ONLY) and the in-memory stores. Durable stores belong to orchestration.
 
 ## Live check (manual, paid)
-`python3 -m tests.planning.live_check [m2-vague m2-specific m7 m6]` runs the real prompts once each on synthetic fixture input through the live adapter, with a hard cap of 6 provider calls. It uses the TEST-ONLY guard double. Results from 2026-11-13 (5 calls, all `muse-spark-1.3`, `reasoning_effort=low`):
+`python3 -m tests.planning.live_check [m2-vague m2-specific m7 m6]` runs the real prompts once each on synthetic fixture input through the live adapter, with a hard cap of 6 provider calls. It uses the real `OutputGuard` when `server.privacy` is importable and names the guard in its output. First pass 2026-11-13, with the test-only double (5 calls, all `muse-spark-1.3`, `reasoning_effort=low`):
 
 | Call | Prompt | Result | Latency |
 | --- | --- | --- | --- |
@@ -112,7 +112,9 @@ Routes (paths without `/api/v1`): `GET /operator/questions` (`active`, `category
 | M7 | `event_nudge.v1` | picked the fixture board-game event at an allowlisted venue inside the window; title, why and chat line passed | 23.9 s |
 | M6, count 3 | `question_generation.v1` | 3 of 3 proposals valid and pending, 0 rejected | 19.8 s |
 
-Five single calls: enough to show the prompts and validators work with live output, not a benchmark of quality or latency. A follow-up takes 10-25 s, so the answer flow must not wait on it.
+Second pass 2026-11-13T03:00Z with **Patrik's real `server.privacy.OutputGuard`** (4 calls): M2 vague gave one specific open follow-up (13.1 s), M2 specific gave none (4.6 s), M7 picked the fixture board-game event and its chat line passed (18.4 s), M6 kept 3 of 3 (11.7 s). `tests/planning/test_real_guard.py` runs the same services against the real guard offline, including the 32 curated questions and their hints.
+
+Nine single calls: enough to show the prompts and validators work with live output, not a benchmark of quality or latency. A follow-up takes 10-25 s, so the answer flow must not wait on it.
 
 ## Tests
 ```sh

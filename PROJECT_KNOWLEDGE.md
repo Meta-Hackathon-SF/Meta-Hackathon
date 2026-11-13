@@ -40,7 +40,7 @@ Role-branch work from teammates is not claimed integrated here; inspect their la
 | Safety screening + OutputGuard | Patrik | Planned | Seeded distress never appears; no-quote fuzz; red-team 30 |
 | Weekly cycle, daily answers, catch-up, streaks | Will | Planned | Lock test; catch-up rules; streak fixture |
 | Voice boundary (`server/voice/`) | Will | Planned (restore from archive) | Transcription or typed fallback on a phone |
-| Question bank + selection, M2 follow-up | Adam | Implemented; offline tests pass against fixtures and test-only guard/cycle doubles; operator router not mounted | Run inside the composed app with the real session and OutputGuard; live M2 call |
+| Question bank + selection, M2 follow-up | Adam | Implemented; offline tests pass, including against the real OutputGuard; live M2 calls pass the real guard (synthetic input, 2026-11-13); operator router not mounted | Run inside the composed app with the real session |
 | Semantic formation + validation | Rishi | Planned | week-sample constraints; baseline split example; 30 players timed |
 | Prevalence + SkyStats | Rishi | Planned | Threshold test; numbers equal server counts |
 | Anonymous chat, moderation, report/block | Kai (+Patrik) | Planned | Contact-info rejection; report hides; block |
@@ -48,6 +48,6 @@ Role-branch work from teammates is not claimed integrated here; inspect their la
 | Realtime SSE | Kai | Planned | Reconnect replay by seq; per-player filtering |
 | Sky UI | Kai | Planned | Threshold respected; synthetic labels |
 | Operator console | Will | Planned | Full demo week in under 3 minutes; model chip per call |
-| Event nudges (step 6, cuttable) | Adam | Implemented server side + card; allowlist and guard tests pass offline; nothing posted to a real room; card not mounted | Kai's ChatPort and constellation lookup; a nudge seen in a room |
+| Event nudges (step 6, cuttable) | Adam | Implemented server side + card; allowlist and guard tests pass offline with the real OutputGuard; one live M7 nudge passed it; card viewed in a temporary preview only; nothing posted to a real room | Kai's ChatPort and constellation lookup; a nudge seen in a room |
 | Question generation + synthetic signals (step 7, cuttable) | Adam, Rishi | Generation with operator approval implemented, offline tests pass; approval routes proposed, not in API.md; synthetic signals not started here | ACK of approval routes; aggregate signals from Rishi; live M6 call |
 | User impact | all | Unknown | Actual observations only |
