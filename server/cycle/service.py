@@ -444,8 +444,8 @@ class CycleService:
             cycle = record.cycle
             if cycle.status != "open":
                 raise CycleError("CYCLE_LOCKED")
-            # Patrik's 30-player demo cast (server/privacy/demo_population.py) on top
-            # of the 8 fixture players, so formation has real groups to find.
+            # The synthetic demo cast (server/privacy/demo_population.py, about 100
+            # people) on top of the 8 fixture players, so formation has real groups to find.
             from server.privacy import demo_population
 
             players = fixture["players"] + demo_population.players()
@@ -466,7 +466,10 @@ class CycleService:
                 day = row["day"]
                 if day > cycle.currentDay or self._answers.get(cycle_id, row["playerId"], day):
                     continue
-                is_catch_up = bool(row.get("isCatchUp", False)) or day < cycle.currentDay
+                # Fixture rows count as late once their day has passed. Cast rows carry
+                # their own timing (``ownTiming``): most people answered on the day.
+                passed = day < cycle.currentDay and not row.get("ownTiming")
+                is_catch_up = bool(row.get("isCatchUp", False)) or passed
                 answer = DailyAnswer(
                     answerId=f"answer-{uuid.uuid4().hex}",
                     cycleId=cycle_id,
@@ -487,7 +490,7 @@ class CycleService:
                     record.flagged.add(answer.answerId)
                 self._mark_answered(record, day, row["playerId"], flag == "none")
                 added += 1
-            for guess in fixture["guesses"]:
+            for guess in fixture["guesses"] + demo_population.guesses():
                 self._answers.save_guess(
                     PrevalenceGuess(cycleId=cycle_id, playerId=guess["playerId"], percent=guess["percent"])
                 )

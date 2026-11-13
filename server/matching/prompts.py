@@ -27,7 +27,7 @@ from server.matching.models import (
 # v2: voice rules (labels are public in Sky) + D014 question context
 PROMPT_VERSION_M3 = "theme_discovery.v2"
 # v2: D014 question context, affinity tie-break hints, prefer fuller groups (live evals E2/E3b)
-PROMPT_VERSION_M4 = "constellation_formation.v2"
+PROMPT_VERSION_M4 = "constellation_formation.v3"
 PROMPT_VERSION_M5 = "constellation_naming.v1"
 MAX_THEMES = 12
 
@@ -57,9 +57,14 @@ AFFINITY_HINTS = (
     "groupings that are equally good by meaning. Never mention affinity, interests, Groups or "
     "Events in sharedMeaning."
 )
-# Over-splitting (many size-3 groups) appeared in 6/17 live runs.
-FULLER_GROUPS = ("Prefer fewer, fuller groups: let a group grow as large as meaning allows; use "
-                 "size 5 only when needed.")
+# v2 said "prefer fewer, fuller groups" (over-splitting into size-3 groups appeared in 6/17 live
+# runs when the size was 3-5). With D016 (5 or more, no maximum) that sentence produced one
+# constellation of 79 out of 107 players on the 100-person synthetic cast (live, 2026-11-13).
+# v3 asks for specific groups; the same cast then formed 13 groups of 7 to 10.
+FULLER_GROUPS = ("Make many specific groups, not a few broad ones: aim for 5 to 10 people each. A "
+                 "feeling that most people share is too general to be a constellation; group by the "
+                 "more specific feeling or situation underneath. If a group would pass 12 people, it "
+                 "almost certainly holds two or more different meanings: split it. Never go below 5.")
 
 M3_INSTRUCTIONS = (
     "You are Muse. Read this week's private answers from one community. Find the underlying "
