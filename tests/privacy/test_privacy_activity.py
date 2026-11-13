@@ -11,7 +11,8 @@ from fastapi.testclient import TestClient
 
 from privacy_helpers import COMMUNITY, consent_body, join_body
 from server.privacy import build_router, install_error_handlers
-from server.privacy.activity import SAFE_TOPICS, ActivityStore, derive_topics
+from server.privacy import activity as activity_module
+from server.privacy.activity import SAFE_TOPICS, ActivityStore, catalog_event_ids, derive_topics
 from server.privacy.answers import AnswerStore
 from server.privacy.formation import PrivacyFormation
 from server.privacy.moderation import ModerationStore
@@ -19,13 +20,14 @@ from server.privacy.moderation import ModerationStore
 JOIN = f"/api/v1/communities/{COMMUNITY}/join"
 CYCLE = "cycle-demo-w1"
 SECRET = "my private post about the dining hall and board games"
+APPROVED_EVENTS = frozenset({"e-boardgames", "e-openmic"})  # synthetic approved catalog for tests
 
 
 @pytest.fixture
 def parts(store, service):
     answers = AnswerStore(store, service)
     moderation = ModerationStore(store, service)
-    activity = ActivityStore(store)
+    activity = ActivityStore(store, approved_event_ids=lambda: APPROVED_EVENTS)
     return answers, moderation, activity
 
 
@@ -146,3 +148,72 @@ def test_global_pool_is_seeded_and_joinable(service):
     from privacy_helpers import join_req
     result = service.join("facebook-space", join_req("Global (synthetic)"))
     assert result.created and result.view.consent.community_id == "facebook-space"
+
+
+# ------------------------------------------------- approved event catalog only
+def _stored_event_ids(store):
+    with store.tx() as conn:
+        return [json.loads(r["event_ids"]) for r in conn.execute("SELECT event_ids FROM activity_signals")]
+
+
+def test_unapproved_event_ids_are_dropped_not_stored(app, store):
+    c = joined(app)
+    r = c.put("/api/v1/me/activity", json=body(eventIds=["e-boardgames", "e-made-up", "ev-attacker-party", "e-openmic"]))
+    assert r.status_code == 200
+    assert _stored_event_ids(store) == [["e-boardgames", "e-openmic"]]
+    with store.tx() as conn:
+        dump = json.dumps([dict(row) for row in conn.execute("SELECT * FROM activity_signals")])
+    assert "e-made-up" not in dump and "ev-attacker-party" not in dump
+
+
+def test_only_unapproved_event_ids_store_an_empty_list(app, store):
+    c = joined(app)
+    assert c.put("/api/v1/me/activity", json=body(eventIds=["e-made-up"])).status_code == 200
+    assert _stored_event_ids(store) == [[]]
+
+
+def test_approved_set_is_read_per_request(store, service):
+    current = {"ids": frozenset({"e-a"})}
+    activity = ActivityStore(store, approved_event_ids=lambda: current["ids"])
+    app = FastAPI()
+    install_error_handlers(app)
+    app.include_router(build_router(service, AnswerStore(store, service), activity=activity), prefix="/api/v1")
+    first, second = joined(app, "First (synthetic)"), joined(app, "Second (synthetic)")
+    first.put("/api/v1/me/activity", json=body(eventIds=["e-a", "e-b"]))
+    current["ids"] = frozenset({"e-b"})  # catalog changed between requests
+    second.put("/api/v1/me/activity", json=body(eventIds=["e-a", "e-b"]))
+    assert sorted(_stored_event_ids(store)) == [["e-a"], ["e-b"]]
+
+
+def test_default_catalog_source_uses_venue_catalog_event_ids(monkeypatch):
+    import server.planning as planning
+
+    class FakeCatalog:
+        @classmethod
+        def load(cls):
+            return cls()
+
+        def event_ids(self):
+            return frozenset({"ev-board-games"})
+
+    monkeypatch.setattr(planning, "VenueCatalog", FakeCatalog)
+    assert catalog_event_ids() == frozenset({"ev-board-games"})
+
+
+@pytest.mark.parametrize("broken", ["no_method", "load_fails"])
+def test_default_catalog_source_fails_closed(monkeypatch, broken):
+    import server.planning as planning
+
+    class NoMethod:
+        @classmethod
+        def load(cls):
+            return cls()
+
+    class LoadFails:
+        @classmethod
+        def load(cls):
+            raise RuntimeError("venue file is missing")
+
+    monkeypatch.setattr(planning, "VenueCatalog", NoMethod if broken == "no_method" else LoadFails)
+    assert catalog_event_ids() == frozenset()
+    assert activity_module.ActivityStore.__init__.__kwdefaults__["approved_event_ids"] is catalog_event_ids
