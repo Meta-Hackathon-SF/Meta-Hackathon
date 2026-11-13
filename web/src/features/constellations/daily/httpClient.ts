@@ -21,6 +21,7 @@ import {
   parseTranscript,
   type CycleClient,
 } from "./client";
+import { toWav } from "./wav";
 
 function key(): string {
   return crypto.randomUUID();
@@ -99,7 +100,16 @@ export function createHttpClient(
       mutate(call("DELETE", `${c(id)}/answers/${day}`, () => undefined, { emptyOk: true })),
     followUp: (id, day, signal) => call("GET", `${c(id)}/answers/${day}/followup`, parseFollowUp, { signal }),
     guess: (id, percent) => call("PUT", `${c(id)}/guess`, parseGuess, { body: { percent } }),
-    transcribe: (audio, signal) => call("POST", "/voice/transcribe", parseTranscript, { raw: audio, signal }),
+    async transcribe(audio, signal) {
+      // The speech-to-text provider takes WAV only; convert in memory first.
+      let wav: Blob;
+      try {
+        wav = await toWav(audio);
+      } catch {
+        throw new ClientError("INVALID_INPUT", "That recording could not be prepared.");
+      }
+      return call("POST", "/voice/transcribe", parseTranscript, { raw: wav, signal });
+    },
     createCycle: () =>
       mutate(
         call("POST", "/operator/cycles", parseCycle, {
