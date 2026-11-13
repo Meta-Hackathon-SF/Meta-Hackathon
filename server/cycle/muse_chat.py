@@ -38,7 +38,7 @@ CATALOG_PATH = Path(__file__).resolve().parent / "data" / "catalog.json"
 KINDS = ("hangout", "supplies", "barter", "create")
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 _SENDER = re.compile(r"^(You|Muse|Member [1-9])$")
-_TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+_CLOCK = re.compile(r"^(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?$")
 _CONTACT = re.compile(r"(\d[\s.()-]?){7,}|@|https?:|www\.|\.(com|net|org|edu)\b", re.I)
 
 INSTRUCTIONS = " ".join(
@@ -49,7 +49,7 @@ INSTRUCTIONS = " ".join(
         "task=hangout: pick 1 or 2 eventIds that best fit the chat. Mention the event title. Do not mention items.",
         "task=supplies: pick 1 or 2 itemIds that best fit the chat. Say they are demo listings, not purchases.",
         "task=barter: tell the group to ask Campus Cafe, and say nothing is booked until the cafe agrees. You may pick the coffee set itemId.",
-        "task=create: propose one new event as draft {title (3-60 chars), placeId from venues, day (a weekday name), time (24h HH:MM between 08:00 and 22:00), description (under 160 chars)} from what the group wants. Say it is a draft they can create. Do not invent venues.",
+        "task=create: you must include draft {title (3-60 chars), placeId (exactly one of the venue ids, e.g. v-quad), day (full weekday name, e.g. Saturday), time (24h HH:MM between 08:00 and 22:00, e.g. 14:00), description (under 160 chars)} built from what the group wants. If they name no place, pick the best venue. Say it is a draft they can create. Do not invent venues.",
     ]
 )
 
@@ -149,6 +149,7 @@ class MuseChat:
         self._item_ids = {i["itemId"] for i in data["items"]}
         self._event_ids = {e["eventId"] for e in data["events"]}
         venues = {v["placeId"]: v["name"] for v in data["venues"]}
+        self._venue_names = venues
         self._facts = {
             "events": [
                 {
@@ -224,7 +225,43 @@ class MuseChat:
                 out.append(v)
         return out[:2]
 
+    def _venue(self, value: str) -> str:
+        """An approved placeId, given the id or the venue's name ("Main Quad", "the quad")."""
+        v = value.strip()
+        if v in self._venue_ids:
+            return v
+        key = re.sub(r"^the\s+", "", v.lower())
+        for place_id, name in self._venue_names.items():
+            if key in (name.lower(), place_id.lower()):
+                return place_id
+        return ""
+
+    @staticmethod
+    def _hhmm(value: str) -> str:
+        """24-hour HH:MM from "14:00", "14:00:00", "2:00 PM", "2pm"; "" if unreadable."""
+        m = _CLOCK.match(value.strip().lower())
+        if not m:
+            return ""
+        hour, minute, half = int(m.group(1)), int(m.group(2) or 0), m.group(3)
+        if half:
+            if not 1 <= hour <= 12:
+                return ""
+            hour = hour % 12 + (12 if half.startswith("p") else 0)
+        if hour > 23 or minute > 59:
+            return ""
+        return f"{hour:02d}:{minute:02d}"
+
+    @staticmethod
+    def _weekday(value: str) -> str:
+        v = value.strip().lower()
+        for day in WEEKDAYS:
+            if len(v) >= 3 and day.startswith(v):
+                return day.capitalize()
+        return ""
+
     def clean_draft(self, value: Any) -> dict[str, str] | None:
+        """Normalizes common variants, then applies the same hard limits: approved
+        venue, a weekday, 08:00-22:00, title 3-60 chars, no contact details."""
         if not isinstance(value, dict):
             return None
 
@@ -234,15 +271,15 @@ class MuseChat:
 
         draft = {
             "title": s("title", 60),
-            "placeId": s("placeId", 40),
-            "day": s("day", 12),
-            "time": s("time", 5),
+            "placeId": self._venue(s("placeId", 60) or s("venue", 60)),
+            "day": self._weekday(s("day", 12)),
+            "time": self._hhmm(s("time", 12)),
             "description": s("description", 160),
         }
-        hour = int(draft["time"][:2]) if _TIME.match(draft["time"]) else -1
-        if len(draft["title"]) < 3 or draft["placeId"] not in self._venue_ids:
+        hour = int(draft["time"][:2]) if draft["time"] else -1
+        if len(draft["title"]) < 3 or not draft["placeId"] or not draft["day"]:
             return None
-        if draft["day"].lower() not in WEEKDAYS or not 8 <= hour <= 22:
+        if not 8 <= hour <= 22:
             return None
         if _CONTACT.search(draft["title"]) or _CONTACT.search(draft["description"]):
             return None

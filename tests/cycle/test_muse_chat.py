@@ -185,3 +185,26 @@ def test_mounted_in_the_composed_backend_behind_session_and_idempotency(monkeypa
         response = call(client, player, "POST", "/muse-chat", json=body)
         assert response.status_code == 503  # mounted; no Muse key in this test environment
         assert response.json()["error"]["code"] == "PROVIDER_UNAVAILABLE"
+
+
+def test_common_draft_variants_are_normalized_within_the_same_limits():
+    chat = MuseChat(CONFIG, send=FakeMuse())
+    base = {
+        "title": "Saturday Picnic on the Quad",
+        "day": "Saturday",
+        "description": "Bring snacks.",
+    }
+    expected = {**base, "placeId": "v-quad", "time": "14:00"}
+    for variant in (
+        {**base, "placeId": "Main Quad", "time": "2:00 PM"},
+        {**base, "venue": "the main quad", "time": "2pm"},
+        {**base, "placeId": "v-quad", "time": "14:00:00", "day": "sat"},
+    ):
+        assert chat.clean_draft(variant) == expected
+    for bad in (
+        {**base, "placeId": "Beach House", "time": "14:00"},  # still only approved venues
+        {**base, "placeId": "v-quad", "time": "11 PM"},  # still 08:00-22:00
+        {**base, "placeId": "v-quad", "time": "13pm"},
+        {**base, "placeId": "v-quad", "time": "14:00", "day": "sa"},
+    ):
+        assert chat.clean_draft(bad) is None

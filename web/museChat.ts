@@ -22,6 +22,7 @@ const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "satur
 function prepare(catalog: Catalog) {
   return {
     venueIds: new Set(catalog.venues.map((v) => v.placeId)),
+    venueNames: new Map(catalog.venues.flatMap((v) => [[v.name.toLowerCase(), v.placeId], [v.placeId.toLowerCase(), v.placeId]] as [string, string][])),
     itemIds: new Set(catalog.items.map((i) => i.itemId)),
     eventIds: new Set(catalog.events.map((e) => e.eventId)),
     facts: {
@@ -46,7 +47,7 @@ const INSTRUCTIONS = [
   "task=hangout: pick 1 or 2 eventIds that best fit the chat. Mention the event title. Do not mention items.",
   "task=supplies: pick 1 or 2 itemIds that best fit the chat. Say they are demo listings, not purchases.",
   "task=barter: tell the group to ask Campus Cafe, and say nothing is booked until the cafe agrees. You may pick the coffee set itemId.",
-  "task=create: propose one new event as draft {title (3-60 chars), placeId from venues, day (a weekday name), time (24h HH:MM between 08:00 and 22:00), description (under 160 chars)} from what the group wants. Say it is a draft they can create. Do not invent venues.",
+  "task=create: you must include draft {title (3-60 chars), placeId (exactly one of the venue ids, e.g. v-quad), day (full weekday name, e.g. Saturday), time (24h HH:MM between 08:00 and 22:00, e.g. 14:00), description (under 160 chars)} built from what the group wants. If they name no place, pick the best venue. Say it is a draft they can create. Do not invent venues.",
 ].join(" ");
 
 export interface MuseConfig {
@@ -79,14 +80,27 @@ function ids(value: unknown, allowed: Set<string>): string[] {
   return Array.isArray(value) ? [...new Set(value.filter((v): v is string => typeof v === "string" && allowed.has(v)))].slice(0, 2) : [];
 }
 
-/** Server-side check; the browser checks again before showing a Create button. */
-function cleanDraft(value: unknown, venueIds: Set<string>): MuseDraft | null {
+/** Normalizes common variants (venue name, "2 PM", "Sat"), then applies the same limits as server/cycle/muse_chat.py. */
+function cleanDraft(value: unknown, venueIds: Set<string>, venueNames: Map<string, string>): MuseDraft | null {
   if (!value || typeof value !== "object") return null;
   const d = value as Record<string, unknown>;
   const str = (k: string, max: number) => (typeof d[k] === "string" ? (d[k] as string).trim().slice(0, max) : "");
-  const draft = { title: str("title", 60), placeId: str("placeId", 40), day: str("day", 12), time: str("time", 5), description: str("description", 160) };
-  const hour = /^([01]\d|2[0-3]):[0-5]\d$/.test(draft.time) ? Number(draft.time.slice(0, 2)) : -1;
-  if (draft.title.length < 3 || !venueIds.has(draft.placeId) || !WEEKDAYS.includes(draft.day.toLowerCase()) || hour < 8 || hour > 22) return null;
+  const rawVenue = str("placeId", 60) || str("venue", 60);
+  const venueKey = rawVenue.toLowerCase().replace(/^the\s+/, "");
+  const placeId = venueIds.has(rawVenue) ? rawVenue : (venueNames.get(venueKey) ?? "");
+  const day = WEEKDAYS.find((w) => str("day", 12).length >= 3 && w.startsWith(str("day", 12).toLowerCase())) ?? "";
+  const m = /^(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?$/.exec(str("time", 12).toLowerCase());
+  let hour = m ? Number(m[1]) : -1;
+  const minute = m ? Number(m[2] ?? 0) : 0;
+  if (m?.[3]) hour = hour >= 1 && hour <= 12 ? (hour % 12) + (m[3].startsWith("p") ? 12 : 0) : -1;
+  const draft = {
+    title: str("title", 60),
+    placeId,
+    day: day ? day[0].toUpperCase() + day.slice(1) : "",
+    time: hour >= 0 && minute <= 59 ? `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}` : "",
+    description: str("description", 160),
+  };
+  if (draft.title.length < 3 || !draft.placeId || !draft.day || hour < 8 || hour > 22) return null;
   return draft;
 }
 
@@ -125,7 +139,7 @@ function cleanContext(value: unknown): { sender: string; text: string }[] {
 
 /** Validates the request, calls Muse once, and returns a JSON response shape. Never echoes the request. */
 export async function handleMuseChat(body: unknown, config: MuseConfig | null, catalog: Catalog, client = "local"): Promise<MuseResult> {
-  const { venueIds, itemIds, eventIds, facts } = prepare(catalog);
+  const { venueIds, venueNames, itemIds, eventIds, facts } = prepare(catalog);
   const record = body && typeof body === "object" ? (body as { kind?: unknown; context?: unknown }) : {};
   const kind = record.kind;
   const context = cleanContext(record.context);
@@ -189,7 +203,7 @@ export async function handleMuseChat(body: unknown, config: MuseConfig | null, c
         source: "live",
         itemIds: kind === "supplies" || kind === "barter" ? ids(parsed.itemIds, itemIds) : [],
         eventIds: kind === "hangout" ? ids(parsed.eventIds, eventIds) : [],
-        draft: kind === "create" ? cleanDraft(parsed.draft, venueIds) : null,
+        draft: kind === "create" ? cleanDraft(parsed.draft, venueIds, venueNames) : null,
       },
     };
   } catch (error) {
