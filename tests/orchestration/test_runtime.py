@@ -878,3 +878,24 @@ def test_stage_never_reads_privacy_inside_a_workflow_transaction():
         assert call(client, laptop, "GET", "/operator/stage").status_code == 200
         assert call(client, laptop, "POST", "/operator/stage/phones/reset").status_code == 200
         assert inside["violations"] == 0
+
+
+def test_phone_sunday_view_matches_the_opened_room_for_groups_over_five():
+    # The phone's /main read a separate in-memory grouping; it now answers from the room
+    # opened at reveal, so phone, chat and stage agree, and groups over five are allowed.
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        players, cycle_id, _job = formed(env, client, count=7)
+        response = call(
+            client,
+            players[0],
+            "POST",
+            f"/operator/cycles/{cycle_id}/advance",
+            json={"to": "revealed"},
+        )
+        assert response.status_code == 200, response.json()
+        room = call(client, players[3], "GET", f"/cycles/{cycle_id}/room").json()
+        main = call(client, players[3], "GET", f"/cycles/{cycle_id}/main").json()["main"]
+        assert main["roomId"] == room["roomId"]
+        assert len(main["roomIndices"]) == 7 and main["myRoomIndex"] in main["roomIndices"]
+        assert main["revealedAt"].endswith("Z") and main["roomExpiresAt"].endswith("Z")
+        assert players[3].player_id not in str(main)

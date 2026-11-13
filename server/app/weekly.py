@@ -347,6 +347,17 @@ def build_weekly_app(
     from server.app.v3_routes import build_v3_router
 
     # Re-register the v3 handlers as plain routes: the registry accepts only direct HTTP routes.
+    def sunday_room(cycle_id, player_id):
+        """The room opened at reveal for this player: the stage's constellation."""
+        with repository.transaction() as state:
+            for room in state.chat.rooms.values():
+                if room.wire.cycleId == cycle_id and player_id in room.members:
+                    expires = room.wire.expiresAt
+                    if not isinstance(expires, str):
+                        expires = expires.isoformat()
+                    return room.wire.roomId, list(room.members), expires.replace("+00:00", "Z")
+        return None
+
     for route in build_v3_router(
         answers=answers,
         cycles=cycles,
@@ -354,6 +365,7 @@ def build_weekly_app(
         muse=KeywordMusePort(muse),
         guard=guard,
         store=v3_store,
+        sunday_room=sunday_room,
     ).routes:
         matching.routes.append(route)
 

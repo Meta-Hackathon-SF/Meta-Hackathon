@@ -7,11 +7,13 @@ Views return star and room indices only; no player ids, no answer text."""
 
 from __future__ import annotations
 
+import random
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Request
+from starlette.concurrency import run_in_threadpool
 
 from server.matching.models import MatchingError
 from server.matching.v3 import FormationV3, InMemoryDayStore, QuietSignals
@@ -44,9 +46,46 @@ class AnswersDaySource:
         }
 
 
+def _z(moment: datetime) -> str:
+    """UTC ISO time with a trailing Z, the only form the web parser accepts."""
+    return moment.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def main_from_room(members: list[str], player: str, room_id: str, expires_at: str) -> dict:
+    """MainConstellationResponse for the room opened at reveal (indices only, never ids)."""
+    order = list(range(len(members)))
+    random.Random(f"room:{room_id}").shuffle(order)
+    idx = dict(zip(members, order, strict=True))
+    n = max(len(members) - 1, 1)
+    return {
+        "main": {
+            "constellationId": "c-" + room_id[-12:],
+            "roomId": room_id,
+            "myRoomIndex": idx[player],
+            "roomIndices": sorted(idx.values()),
+            "anchors": [{"index": idx[m], "t": round(idx[m] / n, 3)} for m in members],
+            "brightness": {idx[m]: "mid" for m in members if m != player},
+            "sharedMeaning": None,
+            "revealedAt": _z(datetime.now(UTC)),
+            "roomExpiresAt": expires_at,
+        },
+        "reason": None,
+    }
+
+
 def build_v3_router(
-    *, answers, cycles, privacy_actor, muse, guard, store: InMemoryDayStore | None = None
+    *,
+    answers,
+    cycles,
+    privacy_actor,
+    muse,
+    guard,
+    store: InMemoryDayStore | None = None,
+    sunday_room=None,
 ) -> APIRouter:
+    """sunday_room(cycle_id, player_id) -> (room_id, member_ids, expires_at) or None: the
+    room the server opened at reveal. When given, /main answers from it, so the phone shows
+    the same constellation as the chat room and the stage."""
     router = APIRouter()
     store = store or InMemoryDayStore()
     ports: dict[str, FormationV3] = {}
@@ -126,13 +165,18 @@ def build_v3_router(
     async def main(cycleId: str, request: Request):
         try:
             v3, actor = port(request, cycleId)
+            if sunday_room is not None:
+                found = await run_in_threadpool(sunday_room, cycleId, actor.player_id)
+                if found is not None:
+                    room_id, members, expires_at = found
+                    return main_from_room(list(members), actor.player_id, room_id, expires_at)
             now = datetime.now(UTC)
             return v3.main_view(
                 cycleId,
                 actor.player_id,
                 f"room-{cycleId}",
-                now.isoformat(),
-                (now + timedelta(hours=CHAT_HOURS)).isoformat(),
+                _z(now),
+                _z(now + timedelta(hours=CHAT_HOURS)),
             )
         except MatchingError as exc:
             return deny(exc)
