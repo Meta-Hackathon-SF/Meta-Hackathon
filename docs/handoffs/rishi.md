@@ -20,6 +20,13 @@ Fixture versus live evidence: fixture only. FakeMuse is scripted, so tests prove
 - Contract fix (PR #16): isFallback internal only, fallback via guarded name "(Fallback grouping)" + isLooseMatch; M3/M4/M5 payloads exactly M3In/M4In/M5In; form(cycleId) requestId optional.
 - Checks: `python -m pytest tests/matching -q` -> 43 passed; ruff clean. Fixture only; no live Muse call.
 
+## Muse wiring (task 9, added 2026-11-13)
+- server/matching/muse_specs.py registers M3/M4/M5/M8 with Adam's TaskRegistry via `contract_spec` (schemas from server/providers/contract.py); names and headlines also carry MUSE_VOICE.
+- server/matching/live_eval.py: `python -m server.matching.live_eval --players 30 [--live]`. Offline run through Adam's FixtureMuse: 30 synthetic players -> 6 constellations of 5, no fallback, evidence M3/M4/M5/M8 all `replay`.
+- Live timing pending: no MUSE_API_KEY in this environment. Run `python -m server.matching.live_eval --players 30 --live` with MUSE env set and record formationTimingsMs here.
+- Kai: compose with `register_formation_specs(registry)` when building the shared adapter.
+- Checks: pytest tests/matching -> 46 passed; ruff clean.
+
 ## Interface assumptions (need ACK, not blocking)
 - Patrik `@patrikliska13`: `formationSnapshot` returns `answers[].id` as one random ref per PLAYER (shared by all that player's answers), `weight` per answer, `idMap` ref->playerId, `blockedPairs` as playerIds. Players with any distress/harm flag this cycle are excluded entirely. Prevalence guesses will be needed for computeSky (shape TBD).
 - Adam `@adamzhang06`: Python MusePort is `async run(*, task, requestId, promptVersion, payload, signal=None) -> {"output", "evidence"}` with evidence in MuseCallEvidence wire shape. Formation sends `instructions` inside payload; tell me if the adapter owns system prompts instead.
@@ -32,4 +39,4 @@ Fixture versus live evidence: fixture only. FakeMuse is scripted, so tests prove
 (none)
 
 ## Next action
-Register M3/M4/M5/M8 task specs with Adam's adapter (server/providers on main), then live_eval CLI and 30-player live timing.
+Run live 30-player timing once a Muse key is available; swap FixtureGuard/_AllowAll for Patrik's OutputGuard when it lands on main.
