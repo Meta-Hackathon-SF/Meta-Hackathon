@@ -62,13 +62,14 @@ Muse adapter, event data, copy jobs.
 
 ### Will (`@willapat`, branch `role/will-voice-ui`)
 Daily experience, screens, operator controls.
-- [ ] `answeredToday` count. Owns the daily-answer UI. Accepts: shown after answering as the only number on screen.
-- [ ] Remove the guess UI and route. Accepts: no guess screen, route or copy remains; feed tests still green.
-- [ ] Day colors. Accepts: each weekday has one color used consistently across screens.
-- [ ] Daily constellation reveal screen. Accepts: after answering, shows all your constellations that day, unnamed, in that day's color.
-- [ ] Your-week screen. Accepts: lists the week's daily constellations without names or percentages.
-- [ ] Close-day operator control. Accepts: operator can close a day, labeled "Demo timing".
-- [ ] Custom-event approval UI. Accepts: operator sees Muse proposals, approves or rejects, and the decision is logged.
+UI below is verified in fixture mode (TEST-ONLY adapter, labeled in the UI); live data waits on contract 3.0.0 and the producer routes in docs/PRD-v3.md.
+- [x] `answeredToday` count. Owns the daily-answer UI. Accepts: shown after answering as the only number on screen. (`CycleService.answered_today` + `tests/cycle` 3 tests; Playwright "v3 daily reveal". Wire field waits on 3.0.0.)
+- [ ] Remove the guess UI and route. Accepts: no guess screen, route or copy remains; feed tests still green. (UI, client and CSS removed, Playwright "no prevalence guess". Held: `PUT /cycles/:id/guess` stays until 3.0.0 (2.1.0 in force); guess wording in Patrik's privacy copy.)
+- [x] Day colors. Accepts: each weekday has one color used consistently across screens. (`daily/v3.ts` `DAY_COLORS`; week graph, week strip, posts, reveal, close-day; Playwright "v3 your week" checks strip = post color.)
+- [x] Daily constellation reveal screen. Accepts: after answering, shows all your constellations that day, unnamed, in that day's color. (`daily/DailyReveal.tsx`; Playwright "v3 daily reveal".)
+- [x] Your-week screen. Accepts: lists the week's daily constellations without names or percentages. (`daily/WeekDays.tsx`; Playwright "v3 your week".)
+- [x] Close-day operator control. Accepts: operator can close a day, labeled "Demo timing". (`operator/V3Panels.tsx`; Playwright "v3 operator: close day". Live needs Kai's job + Rishi's day close.)
+- [x] Custom-event approval UI. Accepts: operator sees Muse proposals, approves or rejects, and the decision is logged. (`operator/V3Panels.tsx`; Playwright "v3 operator: custom-event". Server audit log is Adam's route.)
 
 ### Patrik (`@patrikliska13`, branch `role/patrik-privacy`)
 Consent, private storage, retention, guards.

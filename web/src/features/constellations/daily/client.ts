@@ -13,7 +13,6 @@ import type {
   ErrorCode,
   M2Out,
   MuseCallEvidence,
-  PrevalenceGuess,
   Report,
   Streak,
   WeeklyCycle,
@@ -26,7 +25,6 @@ export type {
   DailyQuestion,
   ErrorCode,
   MuseCallEvidence,
-  PrevalenceGuess,
   Report,
   Streak,
   WeeklyCycle,
@@ -34,6 +32,7 @@ export type {
 
 import { parseFormationDebug, type FormationDebugProps } from "../formation";
 import type { NudgeRequester } from "../nudges";
+import type { V3Client } from "./v3";
 
 export type { FormationDebugProps };
 
@@ -105,7 +104,6 @@ export interface CycleClient {
   current(signal?: AbortSignal): Promise<CurrentCycle | null>;
   questions(cycleId: string, signal?: AbortSignal): Promise<DailyQuestion[]>;
   myAnswers(cycleId: string, signal?: AbortSignal): Promise<DailyAnswer[]>;
-  myGuess(cycleId: string, signal?: AbortSignal): Promise<number | null>;
   submit(
     cycleId: string,
     body: { day: CycleDay; text: string; source: "voice" | "text" },
@@ -117,7 +115,6 @@ export interface CycleClient {
   ): Promise<AnswerResult>;
   remove(cycleId: string, day: CycleDay): Promise<void>;
   followUp(cycleId: string, day: CycleDay, signal?: AbortSignal): Promise<FollowUp>;
-  guess(cycleId: string, percent: number): Promise<PrevalenceGuess>;
   transcribe(audio: Blob, signal?: AbortSignal): Promise<Transcript>;
   /** PROPOSED (D012): WebSocket URL for live speech-to-text, or null when this
    *  client has none (fixture mode). The server may still lack the route; the
@@ -140,7 +137,12 @@ export interface CycleClient {
   myRoomId(cycleId: string, signal?: AbortSignal): Promise<string | null>;
   /** Adam's M7 nudge call: live `POST /operator/rooms/:id/nudge`; fixture returns a labeled replay. */
   readonly nudge: NudgeRequester;
-  /** Fixture only: forget this tab's answers and guess after "delete my data". */
+  /**
+   * v3 calls (PENDING contract 3.0.0, D012): daily reveal, week view, close day,
+   * custom-event approval. Absent when this client has none.
+   */
+  readonly v3?: V3Client;
+  /** Fixture only: forget this tab's answers after "delete my data". */
   clearLocalData?(): void;
   /** Fires when cycle state may have changed (operator action, SSE later). */
   subscribe(listener: () => void): () => void;
@@ -285,11 +287,6 @@ export function parseFollowUp(v: unknown): FollowUp {
     question,
     ...(o.evidence === undefined ? {} : { evidence: parseEvidence(o.evidence) }),
   };
-}
-
-export function parseGuess(v: unknown): PrevalenceGuess {
-  const o = rec(v);
-  return { cycleId: str(o.cycleId), playerId: str(o.playerId), percent: int(o.percent, 0, 100) };
 }
 
 export function parseTranscript(v: unknown): Transcript {

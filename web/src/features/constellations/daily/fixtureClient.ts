@@ -19,8 +19,9 @@ import {
   type WeeklyCycle,
 } from "./client";
 import type { EventNudge } from "../../../../../contracts/protocol.ts";
+import { DAY_COLORS, type CustomEventProposal, type DailyConstellation, type DailyConstellationsView, type V3Client, type WeekView } from "./v3";
 
-const STORE_KEY = "cst-fixture-v1";
+const STORE_KEY = "cst-fixture-v2";
 const PLAYER = "p-fixture-you";
 const COMMUNITY = "community-demo";
 const WEEK_START = "2026-11-09";
@@ -36,7 +37,9 @@ const QUESTIONS: [string, string, DailyQuestion["question"]["category"], string 
 interface State {
   cycle: WeeklyCycle | null;
   answers: DailyAnswer[];
-  guess: number | null;
+  /** Days the operator closed (v3 day-close). */
+  closedDays: number[];
+  proposals: CustomEventProposal[];
   followUps: Record<string, { needsFollowup: boolean; question: string }>;
   seq: number;
 }
@@ -48,7 +51,7 @@ function load(): State {
   } catch {
     /* storage unavailable: stay in memory */
   }
-  return { cycle: null, answers: [], guess: null, followUps: {}, seq: 0 };
+  return { cycle: null, answers: [], closedDays: [], proposals: seedProposals(), followUps: {}, seq: 0 };
 }
 
 function dateFor(day: number): string {
@@ -77,6 +80,87 @@ function question(cycleId: string, day: CycleDay): DailyQuestion {
 }
 
 const STEPS = ["open", "locked", "forming", "revealed", "closed"] as const;
+
+// ---- v3 synthetic placement (TEST-ONLY) -----------------------------------------
+// Deterministic stand-ins for Rishi's instant placement and day close. The other
+// stars are Synthetic players; the UI labels them so. No answer text leaves this tab.
+const SKY_SIZE = 10_000;
+/** Synthetic players who answered each weekday before you. Shown as the only number. */
+const SYNTHETIC_ANSWERED = [37, 42, 29, 51, 33];
+
+function hash(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+function rng(seed: number) {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+/** Week-randomized: a new index every cycle, never a player id. */
+const myStar = (cycleId: string) => hash(`star:${cycleId}`) % SKY_SIZE;
+
+function placeDay(cycleId: string, day: number, answer: DailyAnswer): DailyConstellation[] {
+  const rand = rng(hash(`${cycleId}:${day}:${answer.text.trim().toLowerCase()}`));
+  const me = myStar(cycleId);
+  const count = 1 + Math.floor(rand() * 3); // 1..3, MAX_DAILY_CONSTELLATIONS
+  const bands = ["bright", "mid", "faint"] as const;
+  return Array.from({ length: count }, (_, i) => {
+    const size = 3 + Math.floor(rand() * 5); // 3..7 stars, you included
+    const cx = 0.2 + rand() * 0.6;
+    const cy = 0.25 + rand() * 0.5;
+    const indices = [me];
+    while (indices.length < size) {
+      const index = Math.floor(rand() * SKY_SIZE);
+      if (!indices.includes(index)) indices.push(index);
+    }
+    const anchors = indices.map((index, k) => {
+      const angle = (k / size) * Math.PI * 2 + rand() * 0.6;
+      const reach = k === 0 ? 0 : 0.12 + rand() * 0.16;
+      return {
+        index,
+        x: Math.min(0.95, Math.max(0.05, cx + Math.cos(angle) * reach)),
+        y: Math.min(0.92, Math.max(0.08, cy + Math.sin(angle) * reach * 0.8)),
+      };
+    });
+    return { constellationId: `c-fixture-${day}-${i + 1}`, starIndices: indices, brightness: bands[i], anchors };
+  });
+}
+
+function seedProposals(): CustomEventProposal[] {
+  const at = (days: number, hour: number) => {
+    const d = new Date(Date.UTC(2026, 10, 14 + days, hour + 8));
+    return d.toISOString().replace(/\.\d+Z$/, "Z");
+  };
+  const evidence = { model: "muse-spark-1.3", source: "replay" as const, generatedAt: "2026-11-13T07:00:00Z", latencyMs: 0, callType: "M7" as const };
+  return [
+    {
+      proposalId: "proposal-fixture-1",
+      clusterSize: 4,
+      title: "Saturday dumpling night",
+      why: "routine · meals · new here",
+      placeId: "v-cafe",
+      timeWindow: { startsAt: at(0, 18), endsAt: at(0, 20) },
+      evidence,
+      status: "pending",
+    },
+    {
+      proposalId: "proposal-fixture-2",
+      clusterSize: 3,
+      title: "Sunday morning walk and coffee",
+      why: "small joys · outdoors",
+      placeId: "v-park",
+      timeWindow: { startsAt: at(1, 10), endsAt: at(1, 12) },
+      evidence,
+      status: "pending",
+    },
+  ];
+}
 
 const FIXTURE_ROOM_ID = "room-orion";
 
@@ -171,6 +255,74 @@ export function createFixtureClient(): CycleClient {
   // Fixture stand-in for the M1 safety screen: only the synthetic marker is flagged.
   const flagged = (text: string) => text.includes("SYNTHETIC SAFETY TEST");
 
+  function v3(): V3Client {
+    const answeredToday = (cycle: WeeklyCycle, day: number) =>
+      cycle.status === "open" && day === cycle.currentDay
+        ? SYNTHETIC_ANSWERED[day - 1] + (find(day) && !flagged(find(day)!.text) ? 1 : 0)
+        : 0;
+    const placed = (cycleId: string, day: number) => {
+      const answer = find(day);
+      return answer && !flagged(answer.text) ? placeDay(cycleId, day, answer) : [];
+    };
+    return {
+      async dailyConstellations(cycleId, day): Promise<DailyConstellationsView> {
+        await wait();
+        const cycle = cycleOf(cycleId);
+        if (!find(day)) fail("NOT_FOUND", "Resource not found."); // only days you answered
+        return {
+          day,
+          colorId: DAY_COLORS[day].id,
+          answeredToday: answeredToday(cycle, day),
+          placement: state.closedDays.includes(day) ? "final" : "ready",
+          myStarIndex: myStar(cycleId),
+          constellations: placed(cycleId, day),
+        };
+      },
+      async week(cycleId): Promise<WeekView> {
+        await wait();
+        const cycle = cycleOf(cycleId);
+        const through = cycle.status === "open" ? cycle.currentDay : 5;
+        return {
+          cycleId,
+          days: ([1, 2, 3, 4, 5] as CycleDay[]).map((day) => {
+            const answer = find(day);
+            return {
+              day,
+              colorId: DAY_COLORS[day].id,
+              released: day <= through,
+              answered: !!answer,
+              isCatchUp: !!answer?.isCatchUp,
+              constellationCount: placed(cycleId, day).length,
+            };
+          }),
+        };
+      },
+      async closeDay(cycleId, day) {
+        await wait();
+        const cycle = cycleOf(cycleId);
+        const through = cycle.status === "open" ? cycle.currentDay : 5;
+        if (day > through) fail("INVALID_INPUT", "That day has not been released yet.");
+        if (state.closedDays.includes(day)) fail("STALE_REVISION", "That day is already closed.");
+        state.closedDays = [...state.closedDays, day].sort();
+        save();
+        return { jobId: `job-fixture-close-${day}` };
+      },
+      async customEvents() {
+        await wait();
+        return state.proposals.filter((p) => p.status === "pending");
+      },
+      async decideCustomEvent(proposalId, decision) {
+        await wait();
+        const proposal = state.proposals.find((p) => p.proposalId === proposalId) ?? fail("NOT_FOUND", "Resource not found.");
+        if (proposal.status !== "pending") fail("STALE_REVISION", "Someone already decided this proposal.");
+        const decided: CustomEventProposal = { ...proposal, status: decision === "approve" ? "approved" : "rejected" };
+        state.proposals = state.proposals.map((p) => (p.proposalId === proposalId ? decided : p));
+        save();
+        return decided;
+      },
+    };
+  }
+
   return {
     mode: "fixture",
     isOperator: true,
@@ -186,10 +338,6 @@ export function createFixtureClient(): CycleClient {
     async myAnswers(cycleId) {
       cycleOf(cycleId);
       return [...state.answers].sort((a, b) => a.day - b.day);
-    },
-    async myGuess(cycleId) {
-      cycleOf(cycleId);
-      return state.guess;
     },
     async submit(cycleId, body): Promise<AnswerResult> {
       await wait();
@@ -256,15 +404,6 @@ export function createFixtureClient(): CycleClient {
       save();
       return result;
     },
-    async guess(cycleId, percent) {
-      await wait();
-      openCycle(cycleId);
-      if (!Number.isInteger(percent) || percent < 0 || percent > 100)
-        fail("INVALID_INPUT", "Request does not match the API requirements.");
-      state.guess = percent;
-      save();
-      return { cycleId, playerId: PLAYER, percent };
-    },
     async transcribe(audio) {
       await wait();
       if (!audio.size) fail("INVALID_INPUT", "The recording is empty.");
@@ -287,7 +426,8 @@ export function createFixtureClient(): CycleClient {
           demoTiming: true,
         },
         answers: [],
-        guess: null,
+        closedDays: [],
+        proposals: seedProposals(),
         followUps: {},
         seq: state.seq,
       };
@@ -311,7 +451,7 @@ export function createFixtureClient(): CycleClient {
     },
     async reset(cycleId) {
       const cycle = cycleOf(cycleId);
-      state = { ...state, cycle: { ...cycle, status: "open", currentDay: 1 }, answers: [], guess: null, followUps: {} };
+      state = { ...state, cycle: { ...cycle, status: "open", currentDay: 1 }, answers: [], closedDays: [], proposals: seedProposals(), followUps: {} };
       save();
       return state.cycle!;
     },
@@ -330,8 +470,9 @@ export function createFixtureClient(): CycleClient {
       return cycle && cycle.cycleId === cycleId && cycle.status === "revealed" ? FIXTURE_ROOM_ID : null;
     },
     nudge: replayNudge,
+    v3: v3(),
     clearLocalData() {
-      state = { ...state, answers: [], guess: null, followUps: {} };
+      state = { ...state, answers: [], followUps: {} };
       save();
     },
     subscribe(listener) {

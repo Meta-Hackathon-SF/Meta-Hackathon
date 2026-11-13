@@ -558,3 +558,53 @@ def test_lock_tells_the_answer_store_once_with_the_lock_time():
     for _ in range(7):
         env.service.advance(cycle.cycleId)
     assert env.store.locked == [(cycle.cycleId, "2026-11-09T17:00:00Z")]
+
+
+def test_answered_today_counts_distinct_unflagged_players_for_the_current_day():
+    env = Env()
+    cycle = env.new()
+    assert env.service.answered_today(cycle.cycleId) == 0
+    env.submit(MAYA, cycle, 1)
+    env.submit(DEV, cycle, 1)
+    assert env.service.answered_today(cycle.cycleId) == 2
+    # editing never double counts; a flagged edit drops out, an unflagged one returns
+    env.service.edit_answer(MAYA, cycle.cycleId, 1, EditAnswerRequest(text="SYNTHETIC SAFETY TEST"))
+    assert env.service.answered_today(cycle.cycleId) == 1
+    env.service.edit_answer(MAYA, cycle.cycleId, 1, EditAnswerRequest(text="dining hall again"))
+    assert env.service.answered_today(cycle.cycleId) == 2
+    env.service.delete_answer(DEV, cycle.cycleId, 1)
+    assert env.service.answered_today(cycle.cycleId) == 1
+    # a new day starts at zero; a catch-up answer counts for its own day, not today
+    env.service.advance(cycle.cycleId)
+    assert env.service.answered_today(cycle.cycleId) == 0
+    env.submit(DEV, cycle, 1)
+    assert (env.service.answered_today(cycle.cycleId), env.service.answered_today(cycle.cycleId, 1)) == (0, 2)
+
+
+def test_answered_today_excludes_flagged_answers_and_resets_with_the_cycle():
+    env = Env()
+    cycle = env.new()
+    env.submit(MAYA, cycle, 1, text="SYNTHETIC SAFETY TEST")
+    assert env.service.answered_today(cycle.cycleId) == 0
+    env.service.synthetic_topup(cycle.cycleId)
+    seeded = env.service.answered_today(cycle.cycleId)
+    assert seeded > 0
+    env.service.reset(cycle.cycleId)
+    assert env.service.answered_today(cycle.cycleId) == 0
+    with pytest.raises(CycleError) as excinfo:
+        env.service.answered_today("cycle-missing")
+    assert code(excinfo) == "NOT_FOUND"
+    with pytest.raises(CycleError) as excinfo:
+        env.service.answered_today(cycle.cycleId, 6)
+    assert code(excinfo) == "INVALID_INPUT"
+
+
+def test_answered_today_is_zero_once_the_week_locks():
+    env = Env()
+    cycle = env.new()
+    env.submit(MAYA, cycle, 1)
+    for _ in range(5):
+        env.service.advance(cycle.cycleId)
+    assert env.service.current(COMMUNITY).status != "open"
+    assert env.service.answered_today(cycle.cycleId) == 0
+    assert env.service.answered_today(cycle.cycleId, 1) == 1

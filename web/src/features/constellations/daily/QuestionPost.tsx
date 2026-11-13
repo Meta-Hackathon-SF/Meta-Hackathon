@@ -13,6 +13,7 @@ import ConstellationsMark from "./ConstellationsMark";
 import { SupportCard } from "../privacy";
 import type { CycleClient, DailyAnswer, DailyQuestion, FollowUp } from "./client";
 import { DAY_NAMES, MAX_CHARS, message } from "./useDaily";
+import { dayStyle } from "./v3";
 import { isLiveSupported, useLiveTranscription } from "./useLiveTranscription";
 import { MAX_RECORDING_SECONDS, useVoiceRecorder } from "./useVoiceRecorder";
 
@@ -307,7 +308,7 @@ export default function QuestionPost({
             <span className="cst-post-title">{FEATURE_NAME}</span>
             <span className="post-meta">
               <span>
-                {eyebrow} · {DAY_NAMES[day - 1]}
+                {eyebrow} · <span className="cst-day-chip">{DAY_NAMES[day - 1]}</span>
               </span>
               <span aria-hidden="true">·</span>
               <Lock size={12} aria-label="Private" />
@@ -473,6 +474,7 @@ export default function QuestionPost({
   return framed ? (
     <article
       className={`card cst-post is-${kind}`}
+      style={dayStyle(day)}
       id={`cst-day-${day}`}
       data-testid={`cst-day-${day}`}
       aria-labelledby={`cst-q-${day}`}
@@ -480,7 +482,7 @@ export default function QuestionPost({
       {body}
     </article>
   ) : (
-    <div className={`cst-post-inner is-${kind}`} id={`cst-feed-day-${day}`} data-testid={`cst-day-${day}`}>
+    <div className={`cst-post-inner is-${kind}`} style={dayStyle(day)} id={`cst-feed-day-${day}`} data-testid={`cst-day-${day}`}>
       {body}
     </div>
   );

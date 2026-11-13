@@ -8,6 +8,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { DailyAnswer, WeeklyCycle } from "./client";
 import { DAY_NAMES } from "./useDaily";
+import { dayStyle } from "./v3";
 
 export type DayState = "answered" | "caught-up" | "today" | "missed" | "upcoming";
 const STATE_LABEL: Record<DayState, string> = {
@@ -317,6 +318,7 @@ export default function WeekGraph({
             key={n.id}
             className={`cst-node is-${n.kind}${n.state ? ` is-${n.state}` : ""}${dim(n.id) ? " is-dim" : ""}${hover === n.id ? " is-hover" : ""}`}
             transform={`translate(${n.x} ${n.y})`}
+            style={n.kind === "day" && n.day ? dayStyle(n.day as 1 | 2 | 3 | 4 | 5) : undefined}
             tabIndex={focusable ? 0 : undefined}
             role={focusable ? "button" : undefined}
             aria-label={focusable ? `${name}. Open this question.` : undefined}

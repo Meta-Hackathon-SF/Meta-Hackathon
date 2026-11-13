@@ -124,10 +124,25 @@ a.cst-post-title:hover {
   height: 40px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: var(--cst-blue-soft);
-  color: var(--blue);
+  background: var(--day-soft, var(--cst-blue-soft));
+  color: var(--day-ink, var(--blue));
   font-size: 13px;
   font-weight: 700;
+}
+/* Day color chip: a colored dot plus the day's name, so color is never the only cue. */
+.cst-day-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--day-ink, inherit);
+  font-weight: 600;
+}
+.cst-day-chip::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--day, var(--blue));
 }
 .cst-post-text {
   margin: 0;
@@ -494,26 +509,26 @@ a.cst-post-title:hover {
   stroke-width: 3;
 }
 .cst-node.is-answered .cst-node-core {
-  fill: var(--blue);
+  fill: var(--day, var(--blue));
   stroke: none;
 }
 .cst-node-halo {
-  fill: var(--blue);
-  opacity: 0.14;
+  fill: var(--day, var(--blue));
+  opacity: 0.18;
 }
 .cst-node.is-caught-up .cst-node-core {
   fill: #fff;
-  stroke: var(--blue);
+  stroke: var(--day, var(--blue));
   stroke-width: 2.5;
 }
 .cst-node.is-today .cst-node-core {
   fill: #fff;
-  stroke: var(--blue);
+  stroke: var(--day, var(--blue));
   stroke-width: 3;
 }
 .cst-node-pulse {
   fill: none;
-  stroke: var(--blue);
+  stroke: var(--day, var(--blue));
   stroke-width: 1.5;
   transform-box: fill-box;
   transform-origin: center;
@@ -559,7 +574,7 @@ a.cst-post-title:hover {
 }
 .cst-node.is-answered .cst-node-sub,
 .cst-node.is-today .cst-node-sub {
-  fill: var(--blue);
+  fill: var(--day-ink, var(--blue));
   font-weight: 600;
 }
 @keyframes cst-pulse {
@@ -941,17 +956,6 @@ a.cst-post-title:hover {
 }
 .cst-group-head {
   padding: 4px 4px 0;
-}
-.cst-guess {
-  margin-top: 14px;
-}
-.cst-guess-value {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 34px;
-  font-weight: 700;
-  color: var(--blue);
-  font-variant-numeric: tabular-nums;
 }
 .cst-slider {
   --cst-fill: 50%;
@@ -1764,4 +1768,297 @@ a.cst-post-title:hover {
   font: inherit;
   font-weight: 400;
   color: #050505;
+}
+
+/* ---- v3: daily reveal (S5), night sky sub-theme from docs/DESIGN.md --------------- */
+.cst-reveal {
+  --sky-bg: #0b1026;
+  --sky-bg-2: #141b3d;
+  --star: #fff;
+  --text-on-sky: #e8ecf8;
+  --text-on-sky-muted: #9aa4c2;
+  padding: 16px;
+}
+.cst-reveal-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.cst-reveal-head h2 {
+  font-size: 20px;
+}
+.cst-reveal-head .muted {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.cst-reveal-final {
+  background: var(--day-soft);
+  color: var(--day-ink);
+}
+.cst-reveal-count {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 15px;
+}
+.cst-reveal-count strong {
+  color: var(--day-ink, #050505);
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cst-reveal-sky {
+  position: relative;
+  margin: 12px 0 10px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: radial-gradient(ellipse at 50% 45%, var(--sky-bg-2) 0%, var(--sky-bg) 72%);
+}
+.cst-reveal-sky svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.cst-reveal-bg-star {
+  fill: var(--star);
+}
+.cst-reveal-line {
+  stroke: var(--day);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: cst-draw 900ms ease-out forwards;
+  animation-delay: inherit;
+}
+.cst-reveal-line.is-spoke {
+  stroke-width: 1.2;
+  stroke-opacity: 0.55;
+}
+.cst-reveal-star {
+  fill: var(--day);
+  stroke: var(--star);
+  stroke-width: 1;
+  filter: drop-shadow(0 0 4px var(--day));
+}
+.cst-reveal-shape {
+  animation: cst-fade-in 500ms ease-out both;
+}
+.cst-reveal-me {
+  fill: var(--star);
+  filter: drop-shadow(0 0 6px rgba(173, 205, 255, 0.8));
+}
+.cst-reveal-me-ring {
+  fill: none;
+  stroke: var(--day);
+  stroke-width: 2;
+  opacity: 0.8;
+}
+.cst-reveal-me-label {
+  fill: var(--text-on-sky);
+  font-size: 13px;
+  font-weight: 600;
+}
+.cst-reveal-overlay {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(20, 27, 61, 0.85);
+  color: var(--text-on-sky);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  animation: cst-blink 1.6s ease-in-out infinite;
+}
+.cst-reveal-note {
+  color: var(--muted);
+  font-size: 14px;
+}
+.cst-reveal-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+@keyframes cst-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes cst-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---- v3: your week strip (S6) ---------------------------------------------------- */
+.cst-weekdays {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.cst-weekday {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border-top: 3px solid var(--day);
+  border-radius: 8px;
+  background: var(--surface);
+  text-align: center;
+}
+.cst-weekday.is-answered {
+  background: var(--day-soft);
+}
+.cst-weekday.is-locked {
+  border-top-color: #ccd0d5;
+}
+.cst-weekday-name {
+  color: var(--day-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.cst-weekday.is-locked .cst-weekday-name {
+  color: var(--muted);
+}
+.cst-weekday-dots {
+  display: flex;
+  gap: 4px;
+  min-height: 10px;
+}
+.cst-weekday-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--day);
+}
+.cst-weekday-dots i.is-empty {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px #bcc0c4;
+}
+.cst-weekday-status {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+/* ---- v3: operator close day + custom events (S15) -------------------------------- */
+.cst-op-close {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.cst-op-close .cst-op-status,
+.cst-op-close .cst-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+.cst-op-close-pick select {
+  min-height: 36px;
+  padding: 0 28px 0 12px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--day);
+  border-radius: 6px;
+  background: #fff;
+  font-weight: 600;
+}
+.cst-proposals {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.cst-proposal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.cst-proposal-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cst-proposal-main strong {
+  font-size: 16px;
+}
+.cst-proposal-tags {
+  font-size: 13px;
+  color: #050505;
+}
+.cst-proposal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.cst-proposal-note input {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface);
+}
+.cst-proposal-actions {
+  display: flex;
+  gap: 8px;
+}
+.cst-proposal-log {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.cst-proposal-log h3 {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.cst-proposal-log ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+@media (min-width: 700px) {
+  .cst-proposal {
+    grid-template-columns: minmax(0, 1fr) 200px auto;
+    align-items: center;
+  }
+}
+@media (max-width: 420px) {
+  .cst-weekday-status {
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cst-reveal-line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .cst-reveal-shape,
+  .cst-reveal-overlay {
+    animation: none;
+  }
 }

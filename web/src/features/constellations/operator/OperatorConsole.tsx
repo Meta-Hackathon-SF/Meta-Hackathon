@@ -14,6 +14,7 @@ import { getCycleClient } from "../daily/clientContext";
 import { CONSTELLATIONS_PATH, FEATURE_NAME, PLAY_COMMUNITY } from "../daily/communities";
 import { FormationDebug } from "../formation";
 import { OperatorNudgePanel } from "../nudges";
+import { CloseDayControl, CustomEventQueue } from "./V3Panels";
 import "../daily/daily.css";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -23,7 +24,7 @@ const STATUS_STEP: Record<string, number> = { locked: 5, forming: 6, revealed: 7
 const NEXT: Record<string, { label: string; effect: string }> = {
   open: {
     label: "Lock the week (Saturday 12:00)",
-    effect: "Freezes every answer and guess. Catch-up closes.",
+    effect: "Freezes every answer. Catch-up closes.",
   },
   locked: { label: "Start formation", effect: "Muse groups everyone by meaning; code checks every rule." },
   forming: {
@@ -246,6 +247,8 @@ export default function OperatorConsole() {
           </div>
         )}
 
+        {cycle && <CloseDayControl client={client} cycle={cycle} onDone={() => void refresh()} />}
+
         <p className="cst-op-status" role="status" data-testid="cst-op-status">
           {status}
         </p>
@@ -268,7 +271,7 @@ export default function OperatorConsole() {
             </div>
           ) : confirm === "reset" && cycle ? (
             <div className="cst-confirm" role="group" aria-label="Confirm reset">
-              <span>Reset this demo week to Monday? Answers and guesses are cleared.</span>
+              <span>Reset this demo week to Monday? Answers are cleared.</span>
               <button
                 type="button"
                 className="cst-danger"
@@ -429,6 +432,8 @@ export default function OperatorConsole() {
         selected={nudgeRoom}
         onSelect={setNudgeRoom}
       />
+
+      <CustomEventQueue client={client} />
 
       <section className="card cst-panel" aria-labelledby="cst-op-formation">
         <h2 id="cst-op-formation" className="cst-card-title">
