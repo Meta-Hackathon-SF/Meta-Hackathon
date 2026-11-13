@@ -5,7 +5,7 @@ Will's human ahead of the owners' ACKs, see docs/DECISIONS.md D010).
   stored row; ``DELETE /me/data`` deletes it too.
 * Groups, Events and friends are stored as opaque ids (no names).
 * ``eventIds`` not in the approved venue catalog are dropped, never stored
-  (D013: only approved events may count as signals or event heat). The
+  (D015: only approved events may count as signals or event heat). The
   approved set comes from ``approved_event_ids``; the default reads
   ``server.planning.VenueCatalog.load().event_ids()`` and fails closed (keeps
   no event ids) when the catalog or that method is unavailable.

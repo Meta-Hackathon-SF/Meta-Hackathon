@@ -1,4 +1,4 @@
-"""Runtime validators match contracts/protocol.ts 2.0.0 and reject hostile input."""
+"""Runtime validators match contracts/protocol.ts 3.0.0 and reject hostile input."""
 
 from __future__ import annotations
 
@@ -38,9 +38,8 @@ def py_fields(model) -> set[str]:
     return {f.alias or n for n, f in model.model_fields.items()}
 
 
-# Fields agreed in D012 (v3, contract 3.0.0) that Rishi's 3.0.0 draft has not yet
-# added to contracts/protocol.ts. Remove an entry once protocol.ts carries it.
-PENDING_3_0_0 = {"Consent": {"eventSignals"}}
+# Fields agreed in D012 that protocol.ts does not carry yet (none left: 3.0.0 has eventSignals).
+PENDING_3_0_0: dict[str, set[str]] = {}  # eventSignals landed in protocol.ts 3.0.0
 
 
 @pytest.mark.parametrize("ts_name,model", [
