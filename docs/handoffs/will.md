@@ -1,6 +1,16 @@
 # will handoff
-Current step: v3 (D012) Will tasks on `will/v3-daily-ui`; UI fixture-verified, live data blocked on contract 3.0.0 + producer routes.
-Updated: 2026-11-13T08:40Z
+Current step: Facebook Space V4 redesign (home feed card + Space tab), fixture-verified on `role/will-voice-ui`.
+Updated: 2026-11-13T09:50Z
+
+## Space V4 redesign, 2026-11-13
+Source: the V4 phone design ("Artifact sharing request" folder, SpaceV4Phone). Facebook shell unchanged (header, left sidebar, mobile tabs).
+- Home feed card (`daily/FeedCard.tsx`): night-sky question block, streak + answered-today row, answer like a comment (Enter posts), your answer shows as your own private comment. "Open Space" is the only way in.
+- Space tab (`daily/DailyPage.tsx` -> `daily/space/`): Facebook Group-style page. Sky cover with the day tracker (canvas, `space/sky.ts`), tabs (Today, Week sky, Privacy; Constellation + Events on Sunday), question post card, catch up, side column with Today in the sky stats, About and the operator demo panel.
+- Real data paths: join/consent/activity/delete (Patrik's privacy client), week/questions/answers/streak/catch-up/follow-up/voice (cycle client), answeredToday (v3 port, only after you answer).
+- Labeled previews (no producer yet, contract 3.0.0): week sky totals, formation, chat, mutual reveal, events/invite, typical thinking time. "You took Xm" is measured locally and stays in the browser.
+- Events only appear on Sunday ("Where your people are going").
+- Old Space components (QuestionPost, WeekGraph, DailyReveal, WeekDays, StreakRewards, MatchReasons, EventHeat, ConstellationPreview) are no longer mounted; left in place for now.
+- Verification: `npx tsc -b` ok, lint 0 errors, build ok, Playwright 51 passed 1 skipped (Space tests rewritten for the new UI; operator tests unchanged). Fixture mode only.
 
 ## v3 (D012) status, 2026-11-13
 Branch `will/v3-daily-ui` (from main after #55). Verification: `pytest tests` 885 passed, 2 skipped; web `npm run lint` 0 errors, `npm run build` ok, `npx playwright test` 67 passed, 1 skipped. Fixture mode only; nothing live, nothing deployed.
