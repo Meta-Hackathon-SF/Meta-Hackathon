@@ -2,12 +2,13 @@
 
 Contract: `contracts/protocol.ts` 2.0.0 (`MusePort`, `MuseTask`, `MuseCallEvidence`, M1-M8 I/O).
 
-Status (2026-11-13): **restored from the archive, renamed to 2.0.0, offline-tested, and live-verified with one `clarify` (M2) call.** One call proves the wire path, the key and the schema round trip. It is not a latency or quality benchmark, and M1 and M3-M8 have not been called live through this adapter.
+Status (2026-11-13): **restored from the archive, renamed to 2.0.0, offline-tested, and live-verified.** Live calls through this adapter so far: M2, M6 and M7 (planning live checks), M3/M4/M5/M8 (Rishi's formation timing runs on Adam's key; see docs/updates/adam.md), and one M7 inside Kai's composed app. M1 has not been called live through this adapter by Adam. These are small synthetic runs, not latency or quality benchmarks.
 
 ## Live evidence (2.0.0 adapter, synthetic input)
 | Date (UTC) | Task | Settings | Outcome | Provider-reported model | Latency |
 | --- | --- | --- | --- | --- | --- |
 | 2026-11-13T02:25Z | `clarify` (M2), prompt `clarify.smoke.v1` | `reasoning_effort=low`, 60 s x 2 attempts | ok on attempt 1; output passed the M2Out schema | `muse-spark-1.3` | 16.2 s |
+| 2026-11-13T05:56Z | `event_nudge` (M7), prompt `event_nudge.v1`, inside Kai's composed app (role/kai-orchestration cad28cb) via `POST /api/v1/operator/rooms/{id}/nudge`; all other tasks scripted | `reasoning_effort=low`, live calls capped at 1 | 200; allowlisted `v-cafe`, `minAttendees` 3, posted once as `muse_nudge`; M1 on the nudge text was scripted, not live | `muse-spark-1.3` | 8.0 s |
 
 Run with `python3 -m server.providers.smoke`. Evidence record: `{model: "muse-spark-1.3", source: "live", callType: "M2", latencyMs: 16237}`.
 

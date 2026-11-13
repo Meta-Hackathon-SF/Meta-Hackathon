@@ -1717,3 +1717,23 @@ a.cst-post-title:hover {
     justify-content: center;
   }
 }
+
+/* Operator: room picker for the event nudge */
+.cst-op-field {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.cst-op-field select {
+  max-width: 360px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-weight: 400;
+  color: #050505;
+}
