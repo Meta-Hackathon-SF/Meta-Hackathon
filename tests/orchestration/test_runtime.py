@@ -153,6 +153,32 @@ def revealed(env, client):
     return players, cycle_id, job_id, response.json()["roomId"]
 
 
+def test_formation_uses_released_question_context_and_approved_catalog(monkeypatch):
+    import server.app.weekly as weekly
+    from server.planning import VenueCatalog
+
+    actual_factory = weekly.build_matching_port
+    seen_catalogs = []
+
+    def recording_factory(**kwargs):
+        seen_catalogs.append(kwargs["approved_event_ids"])
+        return actual_factory(**kwargs)
+
+    monkeypatch.setattr(weekly, "build_matching_port", recording_factory)
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        formed(env, client)
+        payloads = [
+            decode_user_message(request.user)["input"]
+            for request in env.transport.calls
+            if decode_user_message(request.user)["task"] == "constellation_formation"
+        ]
+        assert payloads and payloads[0]["questions"]
+        question_ids = {q["questionId"] for q in payloads[0]["questions"]}
+        assert all(answer["questionId"] in question_ids for answer in payloads[0]["answers"])
+        approved = VenueCatalog.load().event_ids()
+        assert seen_catalogs and all(ids == approved for ids in seen_catalogs)
+
+
 def test_composed_daily_loop_formation_reveal_chat_sky_and_expiry():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, job_id = formed(env, client)

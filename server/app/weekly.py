@@ -37,6 +37,7 @@ from server.planning import (
     CycleQuestionPort,
     QuestionService,
     SyncClarify,
+    VenueCatalog,
     load_default_bank,
     register_planning_tasks,
 )
@@ -126,9 +127,16 @@ def build_weekly_app(
         privacy_store, privacy, answer_model=DailyAnswer, guess_model=PrevalenceGuess
     )
     moderation = ModerationStore(privacy_store, privacy)
-    formation = PrivacyFormation(privacy_store, answers, moderation)
-    guard, safety = OutputGuard(), SafetyScreener(muse)
     holder = {}
+    formation = PrivacyFormation(
+        privacy_store,
+        answers,
+        moderation,
+        question_texts=lambda cycle_id, community_id: holder["cycles"].question_texts(
+            cycle_id, community_id
+        ),
+    )
+    guard, safety = OutputGuard(), SafetyScreener(muse)
 
     async def week_start(cycle_id):
         cycle = holder["cycles"].gate(cycle_id).cycle
@@ -194,6 +202,7 @@ def build_weekly_app(
             guesses=LeaseGuesses(lease, answers),
             guard=guard,
             themes=themes,
+            approved_event_ids=VenueCatalog.load().event_ids(),
         )
 
     runtime = holder["runtime"] = WeeklyRuntime(
