@@ -58,6 +58,7 @@ async function advance(page: Page, times: number) {
 /** Join screen (fixture privacy client): Select all, then Join this week. */
 async function join(page: Page) {
   await expect(page.getByTestId("cstp-join")).toBeVisible();
+  await page.getByTestId("cstp-name").fill("Synthetic player");
   await page.getByTestId("spc-join-all").click();
   await page.getByTestId("cstp-join-submit").click();
   await expect(page.getByTestId("cstp-join")).toHaveCount(0);
@@ -81,11 +82,19 @@ async function answer(page: Page, day: number, text: string) {
   await expect(page).toHaveURL(/s=(daily|followup|distress)/);
 }
 
+test("fixture demo host can skip to Sunday", async ({ page }) => {
+  await openSpace(page);
+  await page.getByTestId("spc-demo-skip").click();
+  await expect(page.getByTestId("spc-demo-skip")).toHaveCount(0, { timeout: 30000 });
+  await expect(page.getByTestId("cst-mode")).toContainText("Fixture");
+});
+
 test("Space tab: truth labels, join is gated by the required consents, old links redirect", async ({ page }) => {
   await page.goto("/groups/hackathon-builders/constellations");
   await expect(page).toHaveURL(new RegExp(`${DAILY}$`));
   const joinForm = page.getByTestId("cstp-join");
   await expect(joinForm.getByRole("heading", { name: "Before you play" })).toBeVisible();
+  await page.getByTestId("cstp-name").fill("Synthetic player");
   await expect(page.getByTestId("cstp-join-submit")).toBeDisabled();
   await page.getByTestId("cstp-toggle-matchAnswers").click();
   await page.getByTestId("cstp-toggle-anonymousChat").click();

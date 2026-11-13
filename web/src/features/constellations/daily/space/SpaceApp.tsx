@@ -10,6 +10,7 @@ import { MoonStar } from "lucide-react";
 import { currentUser } from "../../../../data/demo";
 import { getPrivacyClient, usePrivacySession, type SessionView } from "../../privacy";
 import type { AnswerResult, CycleClient, CycleDay, FollowUp } from "../client";
+import { ClientError } from "../client";
 import { getCycleClient } from "../clientContext";
 import { OPERATOR_PATH, PLAY_COMMUNITY } from "../communities";
 import { MAX_CHARS, message, useDaily } from "../useDaily";
@@ -80,14 +81,26 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
     let cycle = cycleId ? (await client.current())?.cycle ?? null : null;
     if (!cycle || cycle.status === "closed") cycle = cycle ? await client.reset(cycle.cycleId) : await client.createCycle();
     const id = cycle.cycleId;
-    if (client.mode === "fixture" && cycle.status === "open") await client.topUp(id);
+    if (cycle.demoTiming && cycle.status === "open") await client.topUp(id);
     while (cycle.status === "open") {
       const mine = await client.myAnswers(id);
       for (let d = 1; d <= cycle.currentDay; d++)
         if (!mine.some((a) => a.day === d)) await client.submit(id, { day: d as CycleDay, text: DEMO_ANSWERS[d - 1], source: "text" });
       cycle = await client.advance(id);
     }
-    while (cycle.status === "locked" || cycle.status === "forming") cycle = await client.advance(id);
+    if (cycle.status === "locked") cycle = await client.advance(id);
+    if (cycle.status === "forming") {
+      const deadline = Date.now() + 120_000;
+      for (;;) {
+        try {
+          cycle = await client.advance(id);
+          break;
+        } catch (err) {
+          if (!(err instanceof ClientError) || err.code !== "PROVIDER_UNAVAILABLE" || Date.now() >= deadline) throw err;
+          await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        }
+      }
+    }
   };
   const act = async (work: () => Promise<unknown>) => {
     setBusy(true);
@@ -125,7 +138,7 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
         )}
         {status !== "revealed" && (
           <button type="button" className="spc-btn spc-btn-primary spc-btn-sm" disabled={busy} onClick={() => void act(skipToSunday)} data-testid="spc-demo-skip">
-            Skip to Sunday (filled week)
+            Skip to Sunday (synthetic players)
           </button>
         )}
         <Link className="spc-btn spc-btn-gray spc-btn-sm" to={OPERATOR_PATH}>
@@ -137,7 +150,7 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
           {error}
         </p>
       )}
-      <p className="spc-fine">"Skip to Sunday" answers each weekday with a labeled demo answer, then locks, matches and reveals. Answer with "SYNTHETIC SAFETY TEST" to see the support card.</p>
+      <p className="spc-fine">"Skip to Sunday" adds Synthetic players from a Replay of a saved cycle for demo timing, fills the host's week with demo answers, then locks, matches and reveals. Answer with "SYNTHETIC SAFETY TEST" to see the support card.</p>
     </aside>
   );
 }
@@ -197,7 +210,7 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
       </div>
     );
 
-  const demo = client.isOperator ? <DemoPanel client={client} cycleId={cycleId} status={current?.cycle.status} day={current?.cycle.currentDay} refresh={() => void refresh()} /> : null;
+  const demo = (client.mode === "fixture" ? client.isOperator : view.isOperator) ? <DemoPanel client={client} cycleId={cycleId} status={current?.cycle.status} day={current?.cycle.currentDay} refresh={() => void refresh()} /> : <Link to={OPERATOR_PATH}>Demo host sign in</Link>;
 
   if (!current || !week)
     return (

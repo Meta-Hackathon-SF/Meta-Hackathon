@@ -376,6 +376,9 @@ export function SettingsScreen({
           </p>
         )}
         <div className="spc-card spc-rounded spc-pad-md spc-col is-tight">
+          <button type="button" className="spc-btn spc-btn-gray" disabled={busy} onClick={() => void run(async () => { await privacy.signOut(); onDeleted(); })}>
+            Sign out
+          </button>
           {step === 0 && (
             <button type="button" className="spc-link-danger" onClick={() => setStep(1)}>
               Delete all my data
@@ -446,16 +449,17 @@ export function JoinScreen({
   onBack?: () => void;
 }) {
   const [on, setOn] = useState<Record<string, boolean>>({ matchAnswers: false, anonymousChat: false, events: false, voice: false, isAdult: false });
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const all = JOIN_ROWS.every((r) => on[r.key]);
-  const ready = JOIN_ROWS.filter((r) => r.required).every((r) => on[r.key]);
+  const ready = name.trim().length > 0 && JOIN_ROWS.filter((r) => r.required).every((r) => on[r.key]);
   const join = async () => {
     if (!ready || busy) return;
     setBusy(true);
     setError(null);
     try {
-      const view = await privacy.join(communityId, displayName, { matchAnswers: on.matchAnswers, anonymousChat: on.anonymousChat, isAdult: on.isAdult });
+      const view = await privacy.join(communityId, name.trim(), { matchAnswers: on.matchAnswers, anonymousChat: on.anonymousChat, isAdult: on.isAdult });
       onJoined(view, { events: on.events, voice: on.voice });
     } catch (err) {
       setError((err as Error).message || "Couldn't join. Try again.");
@@ -469,6 +473,9 @@ export function JoinScreen({
         <div>
           <h3 className="spc-h1">Before you play</h3>
           <p className="spc-sub is-lg">Nothing is saved until you join.</p>
+          <p className="spc-sub">Simulated Facebook profile: {displayName} is not a verified identity.</p>
+          <label htmlFor="spc-display-name">Display name</label>
+          <input id="spc-display-name" maxLength={40} autoComplete="nickname" value={name} onChange={(e) => setName(e.target.value)} data-testid="cstp-name" />
         </div>
         <div className="spc-selectall">
           <span className="spc-strong">Select all</span>
@@ -495,8 +502,9 @@ export function JoinScreen({
         )}
         <div className="spc-flex" />
         <button type="button" className="spc-btn spc-btn-primary spc-btn-lg" disabled={!ready || busy} onClick={() => void join()} data-testid="cstp-join-submit">
-          {busy ? "Joining…" : "Join this week"}
+          {busy ? "Joining…" : "Join Facebook Space"}
         </button>
+        <a href="/space/operator">Demo host sign in</a>
         <p className="spc-from">
           from <b>Meta</b>
         </p>

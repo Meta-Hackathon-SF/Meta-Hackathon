@@ -368,6 +368,12 @@ class PrivacyService:
                 (actor.player_id, actor.community_id, req.expected_version + 1, int(req.match_answers),
                  int(req.anonymous_chat), int(req.is_adult), revoked_at, now),
             )
+            if withdrawn:
+                conn.execute(
+                    "DELETE FROM demo_host_sessions WHERE session_id IN "
+                    "(SELECT session_id FROM sessions WHERE player_id = ? AND community_id = ?)",
+                    (actor.player_id, actor.community_id),
+                )
             if event_change and req.event_signals:
                 conn.execute(
                     "INSERT OR IGNORE INTO event_signal_optins (player_id, community_id, updated_at) VALUES (?, ?, ?)",
