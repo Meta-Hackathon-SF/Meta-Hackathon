@@ -59,6 +59,38 @@ def authenticated_headers(*, key="test-command-1") -> dict[str, str]:
     return {"Authorization": "Bearer synthetic-test-session", "Idempotency-Key": key}
 
 
+def test_operator_login_bootstrap_is_explicit_and_privacy_only():
+    router = APIRouter()
+
+    @router.post("/operator/login")
+    async def synthetic_login():
+        return {"mode": "test-only"}
+
+    @router.post("/operator/other")
+    async def protected():
+        return {"mode": "test-only"}
+
+    def app(enabled):
+        return create_app(
+            settings=Settings(environment="test"),
+            registrations=[ServiceRegistration("privacy", router, synthetic_guard, ready, enabled)],
+        )
+
+    with TestClient(app(False)) as client:
+        response = client.post("/api/v1/operator/login", headers={"Idempotency-Key": "a"})
+        assert response.status_code == 401
+    with TestClient(app(True)) as client:
+        assert client.post("/api/v1/operator/login").status_code == 400
+        response = client.post("/api/v1/operator/login", headers={"Idempotency-Key": "a"})
+        assert response.status_code == 200
+        response = client.post("/api/v1/operator/other", headers={"Idempotency-Key": "b"})
+        assert response.status_code == 401
+    with pytest.raises(ValueError, match="Only privacy"):
+        create_app(settings=Settings(environment="test"), registrations=[
+            ServiceRegistration("planning", router, synthetic_guard, ready, True)
+        ])
+
+
 def assert_api_error(response, status: int, code: ErrorCode) -> ApiError:
     assert response.status_code == status
     error = ApiError.model_validate(response.json())
