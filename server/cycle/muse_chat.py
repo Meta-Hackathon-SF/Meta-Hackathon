@@ -362,16 +362,22 @@ class MuseChat:
             "content-type": "application/json",
             "accept": "application/json",
         }
-        try:
-            status, raw = self._send(
-                f"{config.base_url}/chat/completions",
-                headers,
-                json.dumps(payload).encode(),
-                config.timeout_s,
-            )
-        except Exception as exc:  # noqa: BLE001 - network failures become one code
-            log.warning("muse-chat transport failed: %s", type(exc).__name__)
-            raise MuseChatError("PROVIDER_UNAVAILABLE") from None
+        status, raw = 0, b""
+        for attempt in range(2):  # one retry on a transient failure, like the providers default
+            try:
+                status, raw = self._send(
+                    f"{config.base_url}/chat/completions",
+                    headers,
+                    json.dumps(payload).encode(),
+                    config.timeout_s,
+                )
+            except Exception as exc:  # noqa: BLE001 - network failures become one code
+                log.warning("muse-chat transport failed: %s", type(exc).__name__)
+                status = 0
+            if status == 200 or (status and status < 500 and status != 429):
+                break
+            if attempt == 0:
+                time.sleep(0.4)
         if status != 200:
             log.warning("muse-chat provider status %s", status)
             raise MuseChatError("PROVIDER_UNAVAILABLE")
