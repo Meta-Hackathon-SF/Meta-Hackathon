@@ -169,6 +169,7 @@ Owner and affected: Adam (server `server/app/stage.py`, web `web/src/features/co
 Contract version / migration: additive routes outside `contracts/protocol.ts`: `GET /me/stage`, `POST /me/stage`, `GET /operator/stage`. No change to existing wire types. Slots live in the workflow store (`stageSlots`, `stageStarted`).
 ACK: not waited for (three owners offline; see the 2026-11-13 ownership note in Adam's handoff).
 Verification: `tests/orchestration/test_runtime.py` (two stage tests: operator-only, opt-in and opt-out, no other player's text or ids in the response); full `pytest tests` 1362 passed; web `tsc -b` and `oxlint` clean; layout checked at 1600x900 with mocked data.
+Amendment (2026-11-13, Will, on human direction): `GET /operator/stage` is open to any signed-in member of the community, not only operators, so every demo account can present (same as the demo buttons). Still session-only (401 without one) and community-scoped; the two-slot opt-in, eligible-answers-only and guard rules are unchanged. Consequence: any member, not only an operator, can read the answer text of the at most two players who put themselves on stage. Adam and Patrik: revert by restoring `privacy.require_operator(actor)` in `server/app/stage.py` if this is not acceptable after the demo.
 
 ## D018: 100-person synthetic cast, and formation prompt v3 (proposed by Adam, at the human's direction)
 ID / UTC timestamp: D018 / 2026-11-13T19:30Z
