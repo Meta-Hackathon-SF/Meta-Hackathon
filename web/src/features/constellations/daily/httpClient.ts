@@ -162,6 +162,11 @@ export function createHttpClient(
       dailyConstellations: (id, day, signal) =>
         call("GET", `${c(id)}/days/${day}/constellations`, parseDailyConstellations, { signal }),
       week: (id, signal) => call("GET", `${c(id)}/week`, parseWeekView, { signal }),
+      sendQuietSignal: (id, constellationId) =>
+        call("POST", `${c(id)}/constellations/${encodeURIComponent(constellationId)}/quiet-signal`, (v) => {
+          const r = v as { sent?: unknown; pulses?: unknown } | null;
+          return { sent: r?.sent === true, pulses: typeof r?.pulses === "number" ? r.pulses : 0 };
+        }, { body: {} }),
       closeDay: (id, day) =>
         mutate(
           call("POST", `${op(id)}/close-day`, (v) => {

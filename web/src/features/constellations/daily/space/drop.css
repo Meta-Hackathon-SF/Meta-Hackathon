@@ -1,0 +1,58 @@
+/* Constellation Drop. Slow and intentional: transform/opacity only, ease-out, no particle bursts. */
+.spc-drop {
+  --drop-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  position: fixed; inset: 0; z-index: 200; display: grid; grid-template-rows: 1fr auto;
+  background: radial-gradient(120% 90% at 50% 38%, #1b1f4d 0%, #0d1033 55%, #070920 100%);
+  color: #e9ebff; animation: spc-drop-in 400ms var(--drop-ease) both;
+}
+.spc-drop-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.spc-drop-sky { width: min(92vw, 62vh); height: min(92vw, 62vh); margin: auto; align-self: center; justify-self: center; overflow: visible; }
+.spc-drop-copy { display: grid; gap: 12px; justify-items: center; text-align: center; padding: 0 24px 40px; max-width: 520px; margin: 0 auto; }
+.spc-drop-copy h2 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 650; letter-spacing: -0.01em; outline: none; }
+.spc-drop-quiet { opacity: 0.8; font-weight: 500; }
+.spc-drop-count { margin: 0; color: #aab0ff; font-size: 15px; }
+.spc-drop-meaning { margin: 0; font-style: italic; font-size: 18px; line-height: 1.45; color: #f3f4ff; text-wrap: balance; }
+.spc-drop-note { margin: 0; font-size: 14px; color: #c3c7ff; }
+.spc-drop-chip { margin: 0; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(170, 176, 255, 0.35); color: #b9beff; }
+.spc-drop-chip.is-fallback { border-style: dashed; color: #d6d8ff; }
+.spc-drop-you { margin: 0; display: flex; gap: 12px; align-items: center; text-align: left; max-width: 100%; }
+.spc-drop-you img { border-radius: 50%; flex: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5), 0 0 18px rgba(160, 170, 255, 0.6); }
+.spc-drop-you span { display: block; font-size: 12px; color: #aab0ff; }
+.spc-drop-you q { font-size: 15px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.spc-drop-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.spc-drop-btn {
+  min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.28);
+  background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer;
+  transition: transform 160ms var(--drop-ease), background-color 160ms var(--drop-ease);
+}
+.spc-drop-btn.is-primary { background: #e9ebff; color: #14173f; border-color: transparent; }
+.spc-drop-btn:active { transform: scale(0.97); }
+.spc-drop-btn:focus-visible, .spc-drop-sound:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .spc-drop-btn:hover { background-color: rgba(255, 255, 255, 0.12); } .spc-drop-btn.is-primary:hover { background-color: #fff; } }
+.spc-drop-sound { position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.08); color: #dfe1ff; cursor: pointer; display: grid; place-items: center; }
+
+.spc-drop-me { fill: #fff; filter: drop-shadow(0 0 2.4px #b9c0ff); }
+.spc-drop-me-halo { fill: none; stroke: rgba(185, 192, 255, 0.45); stroke-width: 0.3; transform-box: fill-box; transform-origin: center; animation: spc-drop-breathe 3.2s ease-in-out infinite; }
+.spc-drop-me.is-signal { animation: spc-drop-signal 900ms var(--drop-ease) both; transform-box: fill-box; transform-origin: center; }
+.spc-drop-star { fill: #cfd4ff; filter: drop-shadow(0 0 1.4px #aab0ff); opacity: 0; transform-box: fill-box; transform-origin: center; animation: spc-drop-arrive 1500ms var(--drop-ease) both; }
+.spc-drop-line { fill: none; stroke: #aab4ff; stroke-width: 0.28; stroke-linecap: round; opacity: 0.75; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 0.8px #8e98ff); animation: spc-drop-draw 1100ms var(--drop-ease) both; }
+.spc-drop-line.is-rim { opacity: 0.4; }
+.spc-drop-pulse { fill: none; stroke: #fff; stroke-width: 0.5; stroke-linecap: round; stroke-dasharray: 0.06 1; stroke-dashoffset: 0.06; opacity: 0; animation: spc-drop-travel 1500ms ease-in-out 1500ms both; }
+
+@keyframes spc-drop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spc-drop-arrive {
+  from { opacity: 0; transform: translate(var(--fx), var(--fy)); }
+  30% { opacity: 1; }
+  to { opacity: 1; transform: translate(0, 0); }
+}
+@keyframes spc-drop-draw { to { stroke-dashoffset: 0; } }
+@keyframes spc-drop-travel { 0% { opacity: 1; stroke-dashoffset: 0.06; } 100% { opacity: 0; stroke-dashoffset: -1; } }
+@keyframes spc-drop-breathe { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.12); } }
+@keyframes spc-drop-signal { 0% { transform: scale(1); } 40% { transform: scale(1.9); } 100% { transform: scale(1.15); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .spc-drop, .spc-drop-star, .spc-drop-line, .spc-drop-me-halo, .spc-drop-me.is-signal { animation: none; }
+  .spc-drop-star { opacity: 1; }
+  .spc-drop-line { stroke-dashoffset: 0; }
+  .spc-drop-pulse { display: none; }
+}

@@ -145,6 +145,8 @@ export interface MainConstellationResponse {
 export interface V3Client {
   dailyConstellations(cycleId: string, day: CycleDay, signal?: AbortSignal): Promise<DailyConstellationsView>;
   week(cycleId: string, signal?: AbortSignal): Promise<WeekView>;
+  /** One anonymous pulse per member per constellation. Others only ever see a pulse count. */
+  sendQuietSignal(cycleId: string, constellationId: string): Promise<{ sent: boolean; pulses: number }>;
   /** Operator: run day-close formation for a released day ("Demo timing"). */
   closeDay(cycleId: string, day: CycleDay): Promise<{ jobId: string }>;
   skyStars(cycleId: string, signal?: AbortSignal): Promise<SkyStarsView>;

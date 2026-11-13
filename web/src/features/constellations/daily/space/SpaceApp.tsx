@@ -17,6 +17,7 @@ import { CANVAS_SCREENS, DARK_SCREENS, SCREENS, weekModel, type Screen } from ".
 import { CanvasScreen, ChatScreen, RevealedScreen } from "./dark";
 import { AnswerScreen, DistressScreen, EventsScreen, FollowUpScreen, HomeBar, InviteScreen, JoinScreen, SettingsScreen, type LocalPrefs } from "./screens";
 import { SkyHome } from "./skyhome";
+import { DropGate } from "./ConstellationDrop";
 import "./space.css";
 
 const PREFS_KEY = "spc-prefs";
@@ -409,10 +410,15 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
       );
   }
 
+  // Newest answered day that has already closed: the Drop reveals its constellation once.
+  const closedDay = [...week.answers.keys()].filter((d) => (week.today === null ? true : d < week.today)).sort((a, b) => b - a)[0] as CycleDay | undefined;
   return (
-    <div key={screen} className={`spc-with-demo spc-enter${DARK_SCREENS.includes(screen) ? " is-dark" : ""}`}>
-      {body}
-    </div>
+    <>
+      <div key={screen} className={`spc-with-demo spc-enter${DARK_SCREENS.includes(screen) ? " is-dark" : ""}`}>
+        {body}
+      </div>
+      <DropGate client={client} cycleId={cycleId} day={closedDay ?? null} answerText={closedDay ? week.answers.get(closedDay)?.text ?? "" : ""} onEnter={() => go("main")} />
+    </>
   );
 }
 
