@@ -18,6 +18,7 @@ GET /cycles/{id}/answers (own answers only) and POST /voice/transcribe.
 
 from __future__ import annotations
 
+import json
 import uuid
 from collections.abc import Callable
 from typing import Any, TypeVar
@@ -32,6 +33,7 @@ from server.voice.live import default_connect, origin_allowed
 from server.voice.live import relay as live_relay
 from server.voice.muse_stt import MuseSttConfig
 
+from .muse_chat import MuseChat, MuseChatError
 from .ports import Session
 from .service import ERRORS, CycleError, CycleService
 from .wire import (
@@ -117,8 +119,11 @@ def build_router(
     live_stt: MuseSttConfig | None = None,
     live_origins: tuple[str, ...] = (),
     live_connect: Callable[[str], Any] | None = None,
+    muse_chat: MuseChat | None = None,
 ) -> APIRouter:
     router = APIRouter()
+    # Configures itself from MUSE_API_KEY on the API host when not injected (503 without a key).
+    group_muse = muse_chat or MuseChat.from_env()
     stt: Transcriber = transcriber or UnconfiguredTranscriber()
     actor_dependency = session_dependency
 
@@ -174,6 +179,21 @@ def build_router(
     async def guess(cycle_id: str, request: Request, session: Session = Depends(consenting)):
         body = await _body(request, GuessRequest)
         return _json(await call(service.put_guess, session, cycle_id, body))
+
+    @router.post("/muse-chat")
+    async def muse_chat_line(request: Request, session: Session = Depends(session_dependency)):
+        """Sunday Messenger group: one checked Muse suggestion (server/cycle/muse_chat.py)."""
+        raw = await request.body()
+        if len(raw) > MAX_BODY_BYTES:
+            raise CycleError("INVALID_INPUT")
+        try:
+            body = json.loads(raw or b"{}")
+        except ValueError:
+            raise CycleError("INVALID_INPUT") from None  # never echo the input
+        try:
+            return _json(await call(group_muse.reply, body, session.playerId))
+        except MuseChatError as error:
+            raise CycleError(error.code) from None
 
     @router.post("/voice/transcribe")
     async def transcribe(request: Request, session: Session = Depends(session_dependency)):

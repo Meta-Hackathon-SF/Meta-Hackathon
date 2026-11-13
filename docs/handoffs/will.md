@@ -11,8 +11,7 @@ Updated: 2026-11-13T11:18Z
 
 ## Messenger follow-up, 2026-11-13
 - Product decision (Will): keeping the Sunday chat is the consent to show names. The button reads "Keep & show names"; names show only once all five keep it. @patrikliska13 please confirm the privacy copy.
-- Muse in the Sunday group: `api/muse-chat.ts` at the repo root is the Vercel Function (the Vercel project builds from the repo root, so `web/api` was never deployed); the dev server mounts the same handler via `web/museChatPlugin.ts`. Root `vercel.json` (Kai's file): SPA rewrite now skips `/api/`, and `functions` ships `web/src/data/catalog.json` with the route. Facts are fixed server-side; only "You / Member N / Muse" labels reach Muse; best-effort rate limit.
-- Needs from whoever owns the Vercel project: set `MUSE_API_KEY` (and optionally `MUSE_MODEL`) in Vercel env. Without it the route returns 503 and the UI shows the labeled catalog line.
+- Muse in the Sunday group: hosted app calls `POST /api/v1/muse-chat` on the Railway backend (`server/cycle/muse_chat.py`, mounted by the cycle router, session + Idempotency-Key, 12/min per player), so the Muse key stays on Railway. Fixture/local mode uses the dev twin `web/museChat.ts` via `web/museChatPlugin.ts`. Catalog lives at `server/cycle/data/catalog.json` (the API image ships `server/`, not `web/`). No Vercel function and no Vercel key needed.
 - Messenger UX: mention @muse in the normal composer (code picks hangout/supplies/vendor), chips only fill the box; Preview labels on the group and "Same vibe"; in-app links; unique message ids; member names come from the constellation.
 
 ## Space V4 redesign, 2026-11-13

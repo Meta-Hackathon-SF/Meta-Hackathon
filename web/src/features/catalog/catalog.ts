@@ -3,7 +3,8 @@
  * Marketplace and Events pages, Space, Messenger cards and the Muse route, so
  * every surface shows the same exact item or event.
  */
-import data from "../../data/catalog.json";
+// Canonical copy lives with the backend so the API image ships it (Dockerfile copies server/, not web/).
+import data from "../../../../server/cycle/data/catalog.json";
 import { photo } from "../../data/demo";
 
 export interface Venue {

@@ -15,10 +15,6 @@
     }
   ],
   "functions": {
-    "api/muse-chat.ts": {
-      "includeFiles": "web/src/data/catalog.json",
-      "maxDuration": 30
-    },
     "api/muse/**/*.js": {
       "maxDuration": 60
     }
