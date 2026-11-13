@@ -19,7 +19,7 @@ import {
   type WeeklyCycle,
 } from "./client";
 import type { EventNudge } from "../../../../../contracts/protocol.ts";
-import { DAY_COLORS, type CustomEventProposal, type DailyConstellation, type DailyConstellationsView, type V3Client, type WeekView } from "./v3";
+import { DAY_COLORS, type CustomEventProposal, type DailyConstellation, type DailyConstellationsView, type ProgressEvent, type V3Client, type WeekView } from "./v3";
 
 const STORE_KEY = "cst-fixture-v2";
 const PLAYER = "p-fixture-you";
@@ -295,6 +295,31 @@ export function createFixtureClient(): CycleClient {
               constellationCount: placed(cycleId, day).length,
             };
           }),
+        };
+      },
+      // No fixture sky or main: the UI keeps its labeled preview until the real producers answer.
+      async skyStars() {
+        await wait();
+        return fail("NOT_FOUND", "Resource not found.");
+      },
+      async skyMine() {
+        await wait();
+        return fail("NOT_FOUND", "Resource not found.");
+      },
+      async main() {
+        await wait();
+        return fail("NOT_FOUND", "Resource not found.");
+      },
+      // Honest stand-in: a labeled visualization, never presented as the matcher's trace.
+      async formationProgress(): Promise<ProgressEvent> {
+        await wait();
+        return {
+          phase: "done",
+          step: 1,
+          totalSteps: 1,
+          attempts: [{ seq: 0, fromStarIndex: 0, toStarIndex: 1, outcome: "tried" }],
+          source: "visualization",
+          isVisualization: true,
         };
       },
       async closeDay(cycleId, day) {

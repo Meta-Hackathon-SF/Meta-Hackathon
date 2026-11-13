@@ -124,6 +124,22 @@ export function GroupsIcon(props: AppIconProps) {
   );
 }
 
+/** The one Facebook Space constellation. SpaceIcon (sidebar), SpaceTabIcon (top and bottom tabs) and
+ *  ConstellationsMark (post header) all draw from these points so the logo is identical everywhere. */
+export const SPACE_STARS: ReadonlyArray<readonly [number, number, number]> = [
+  [9.5, 22.5, 2.2],
+  [15.5, 12, 2.8],
+  [24, 15.5, 2.2],
+  [27, 25, 1.9],
+  [18, 26.5, 1.9],
+];
+export const SPACE_LINES: ReadonlyArray<readonly [number, number]> = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [0, 4],
+];
+
 export function SpaceIcon(props: AppIconProps) {
   const [a] = useGrad(1);
   return (
@@ -133,17 +149,14 @@ export function SpaceIcon(props: AppIconProps) {
       </defs>
       <circle cx="18" cy="18" r="17" fill={`url(#${a})`} />
       <g stroke="#fff" strokeWidth="1.5" strokeLinecap="round" opacity="0.85">
-        <line x1="9.5" y1="22.5" x2="15.5" y2="12" />
-        <line x1="15.5" y1="12" x2="24" y2="15.5" />
-        <line x1="24" y1="15.5" x2="27" y2="25" />
-        <line x1="9.5" y1="22.5" x2="18" y2="26.5" />
+        {SPACE_LINES.map(([a, b]) => (
+          <line key={`${a}-${b}`} x1={SPACE_STARS[a][0]} y1={SPACE_STARS[a][1]} x2={SPACE_STARS[b][0]} y2={SPACE_STARS[b][1]} />
+        ))}
       </g>
       <g fill="#fff">
-        <circle cx="9.5" cy="22.5" r="2.2" />
-        <circle cx="15.5" cy="12" r="2.8" />
-        <circle cx="24" cy="15.5" r="2.2" />
-        <circle cx="27" cy="25" r="1.9" />
-        <circle cx="18" cy="26.5" r="1.9" />
+        {SPACE_STARS.map(([x, y, r]) => (
+          <circle key={`${x}-${y}`} cx={x} cy={y} r={r} />
+        ))}
       </g>
     </Svg>
   );
@@ -274,6 +287,20 @@ function Tab({ size = 28, children }: { size?: number; children: ReactNode }) {
     <svg viewBox="0 0 28 28" width={size} height={size} aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       {children}
     </svg>
+  );
+}
+
+export function SpaceTabIcon({ size, active }: TabIconProps) {
+  const k = 28 / 36; // SPACE_STARS are drawn on a 36 grid
+  return (
+    <Tab size={size}>
+      {SPACE_LINES.map(([a, b]) => (
+        <line key={`${a}-${b}`} x1={SPACE_STARS[a][0] * k} y1={SPACE_STARS[a][1] * k} x2={SPACE_STARS[b][0] * k} y2={SPACE_STARS[b][1] * k} strokeWidth={active ? 2.2 : 1.8} />
+      ))}
+      {SPACE_STARS.map(([x, y, r]) => (
+        <circle key={`${x}-${y}`} cx={x * k} cy={y * k} r={r * k * 1.45} fill={active ? "currentColor" : "none"} />
+      ))}
+    </Tab>
   );
 }
 

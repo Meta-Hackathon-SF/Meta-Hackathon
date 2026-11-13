@@ -130,6 +130,8 @@ class KeywordMusePort:
     rejected the previous answer (e.g. "2 unknown member ids; group 3 has 6
     members"). It must be code-generated: never player or model text. The
     adapter bounds its length.
+    ``deadline_s`` (optional) is the caller's remaining time budget for this call; it overrides the
+    adapter default so the router can budget its fallback inside it.
     """
 
     def __init__(self, muse: MusePort, *, deadline_s: float | None = None) -> None:
@@ -137,7 +139,8 @@ class KeywordMusePort:
         self._deadline_s = deadline_s
 
     async def run(self, *, task: str, requestId: str, promptVersion: str,
-                  payload: Any, signal: Any = None, correction: str | None = None) -> dict[str, Any]:
+                  payload: Any, signal: Any = None, correction: str | None = None,
+                  deadline_s: float | None = None) -> dict[str, Any]:
         if correction is not None and not isinstance(correction, str):
             raise TypeError("correction must be a string")
         result = await self._muse.run(MuseRequest(
@@ -145,7 +148,7 @@ class KeywordMusePort:
             request_id=requestId,
             prompt_version=promptVersion,
             payload=payload,
-            deadline_s=self._deadline_s,
+            deadline_s=deadline_s if deadline_s is not None else self._deadline_s,
             correction=correction or None,
         ))
         return {"output": result.output, "evidence": dict(result.evidence)}

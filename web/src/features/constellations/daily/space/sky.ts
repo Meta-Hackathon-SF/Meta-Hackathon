@@ -256,32 +256,49 @@ export class SkyRenderer {
     };
     this.anchors = [2.5, 5.9, 0.35, 3.6].map(lem);
     this.meAnchor = lem(Math.PI / 2);
+    // Meta logo: one smooth infinity ribbon through the member anchors, starting and ending at "me".
     this.loop = [];
-    const A = this.anchors, M = this.meAnchor, seq = [M, A[0], A[3], M, A[2], A[1], M];
-    for (let q = 0; q < seq.length - 1; q++)
-      for (let i = 0; i < 40; i++) {
-        const u = i / 40;
-        this.loop.push({ x: seq[q].x + (seq[q + 1].x - seq[q].x) * u, y: seq[q].y + (seq[q + 1].y - seq[q].y) * u });
-      }
-    this.loop.push(M);
+    for (let i = 0; i <= 260; i++) {
+      const p = lem(Math.PI / 2 + (i / 260) * Math.PI * 2);
+      this.loop.push(p);
+    }
     const cand = Object.values(this.days).flat().flatMap((c) => c.pts.filter((p) => p.id[0] === "x"));
     const dst = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
-    const at: typeof this.attempts = [], vis: Pt[] = [this.me];
-    const un = [...this.close, ...cand.sort((a, b) => dst(a, this.me) - dst(b, this.me)).slice(0, 26)];
-    while (un.length) {
-      let bi = 0, bv: Pt = this.me, bd = 1e9;
-      un.forEach((u, i) => vis.forEach((v) => {
-        const d = dst(u, v);
-        if (d < bd) {
-          bd = d;
-          bi = i;
-          bv = v;
+    // Depth-first search with backtracking, not breadth-first: follow one path as deep as it goes,
+    // probe the nearest candidates at each step, and when a branch dead-ends walk back and try another.
+    // Failed probes flash red and retract; the path that reaches a real match stays lit.
+    const pool = [...this.close, ...cand.sort((a, b) => dst(a, this.me) - dst(b, this.me)).slice(0, 26)];
+    const at: typeof this.attempts = [];
+    const seen = new Set<Pt>([this.me]);
+    const stack: Pt[] = [this.me];
+    let left = this.close.length;
+    let picks = 0;
+    for (let guard = 0; left > 0 && guard < 500; guard++) {
+      const top = stack[stack.length - 1];
+      const options = pool.filter((p) => !seen.has(p)).sort((a, b) => dst(a, top) - dst(b, top)).slice(0, 3);
+      let advanced = false;
+      for (const o of options) {
+        seen.add(o);
+        if (o.id[0] === "c") {
+          at.push({ from: top, to: o, kept: true, tree: true });
+          stack.push(o);
+          left--;
+          advanced = true;
+          break;
         }
-      }));
-      const u = un.splice(bi, 1)[0];
-      un.map((w) => ({ w, d: dst(w, bv) })).filter((o) => o.d < bd * 1.7).sort((a, b) => a.d - b.d).slice(0, 2).forEach((o) => at.push({ from: bv, to: o.w, kept: false, tree: false }));
-      at.push({ from: bv, to: u, kept: u.id[0] === "c", tree: true });
-      vis.push(u);
+        // Every third decoy looks promising: walk into it (depth), then dead-end and backtrack later.
+        if (stack.length < 5 && ++picks % 3 === 0) {
+          at.push({ from: top, to: o, kept: false, tree: true });
+          stack.push(o);
+          advanced = true;
+          break;
+        }
+        at.push({ from: top, to: o, kept: false, tree: false }); // probe failed
+      }
+      if (advanced) continue;
+      if (stack.length <= 1) break;
+      const dead = stack.pop() as Pt; // dead end: retract to the parent and try a sibling branch
+      at.push({ from: dead, to: stack[stack.length - 1], kept: false, tree: false });
     }
     this.attempts = at;
   }
@@ -367,6 +384,40 @@ export class SkyRenderer {
       if (i === 0) return;
       this.spot(ctx, 5 + d, pt.x, pt.y, pt.id[0] === "c" ? 13 : pt.sz || 9, (starA ?? alpha) * this.lvl(pt, 0, ts, false));
     });
+  }
+
+  /** The Meta infinity mark, drawn as a lit ribbon along the member anchors. `p` 0..1 traces it on. */
+  private drawMetaLogo(ctx: CanvasRenderingContext2D, p: number, ts: number) {
+    const n = Math.max(2, Math.floor(this.loop.length * p));
+    const pts = this.loop.slice(0, n);
+    const xs = this.loop.map((q) => q.x);
+    const g = ctx.createLinearGradient(Math.min(...xs), 0, Math.max(...xs), 0);
+    g.addColorStop(0, "#0064E0");
+    g.addColorStop(0.5, "#0082FB");
+    g.addColorStop(1, "#0064E0");
+    const trace = () => {
+      ctx.beginPath();
+      pts.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)));
+    };
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    const breathe = 0.9 + 0.1 * Math.sin(ts * 1.6);
+    ctx.globalAlpha = 0.22 * breathe;
+    ctx.strokeStyle = "#1877F2";
+    ctx.lineWidth = 34;
+    trace();
+    ctx.stroke();
+    ctx.globalAlpha = 0.95;
+    ctx.strokeStyle = g;
+    ctx.lineWidth = 15;
+    trace();
+    ctx.stroke();
+    ctx.globalAlpha = 0.55;
+    ctx.strokeStyle = "rgba(255,255,255,.85)";
+    ctx.lineWidth = 1.6;
+    trace();
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   private drawMe(ctx: CanvasRenderingContext2D, x: number, y: number, a: number, ts: number, big = false) {
@@ -463,10 +514,10 @@ export class SkyRenderer {
             alpha = a.kept ? 0.75 - 0.2 * c : a.tree ? 0.75 - 0.45 * c : 0.75 * (1 - c);
           }
           if (a.kept && u > 0.6 && a.to.k !== undefined) keptN[a.to.k]++;
-          ctx.strokeStyle = a.kept && u > 0.6 ? "rgb(205,218,250)" : "#fff";
+          ctx.strokeStyle = a.kept && u > 0.6 ? "rgb(205,218,250)" : !a.kept && !a.tree && u > 0.35 ? "rgb(255,140,160)" : "#fff";
           ctx.lineWidth = 1.2;
           this.seg(ctx, a.from, a.to, a.from.id === "me" ? 11 : 8, 8, grow, alpha);
-          if (u < 1 && !a.kept) this.spot(ctx, 2, a.to.x, a.to.y, 9, 0.6 * (1 - cl((u - 0.6) / 0.4)));
+          if (u < 1 && !a.kept) this.spot(ctx, a.tree ? 2 : 3, a.to.x, a.to.y, a.tree ? 9 : 12, 0.6 * (1 - cl((u - 0.6) / 0.4)));
         });
         this.close.forEach((p, k) => this.spot(ctx, 2, p.x, p.y, 10 + 6 * Math.min(1, keptN[k]), (0.45 + 0.5 * Math.min(1, keptN[k])) * this.lvl(p, 0, ts, false)));
         this.drawMe(ctx, this.cx, this.cy, 1, ts);
@@ -485,15 +536,7 @@ export class SkyRenderer {
           const mv = ease((el - 700) / 1500), lp = ease((el - 2000) / 1300);
           const pos = this.close.map((p, k) => ({ x: p.x + (this.anchors[k].x - p.x) * mv, y: p.y + (this.anchors[k].y - p.y) * mv }));
           const meP = { x: this.cx + (this.meAnchor.x - this.cx) * mv, y: this.cy + (this.meAnchor.y - this.cy) * mv };
-          if (lp > 0) {
-            ctx.globalAlpha = 0.55;
-            ctx.strokeStyle = "rgb(69,153,255)";
-            ctx.lineWidth = 1.6;
-            ctx.beginPath();
-            const n = Math.floor(this.loop.length * lp);
-            this.loop.slice(0, Math.max(2, n)).forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
-            ctx.stroke();
-          }
+          if (lp > 0) this.drawMetaLogo(ctx, lp, ts);
           if (mv < 1) {
             ctx.strokeStyle = "#fff";
             ctx.lineWidth = 1.2;

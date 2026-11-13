@@ -14,6 +14,7 @@ import {
   MessengerIcon,
   SavedIcon,
   SpaceIcon,
+  SpaceTabIcon,
   VideoIcon,
 } from "./AppIcons";
 import type { ComponentType } from "react";
@@ -30,6 +31,7 @@ export const tabIcons = {
   video: asTab(VideoTabIcon),
   marketplace: asTab(MarketplaceTabIcon),
   gaming: asTab(GamingTabIcon),
+  space: asTab(SpaceTabIcon),
 };
 
 export const primaryNavigation = [
@@ -38,6 +40,7 @@ export const primaryNavigation = [
   { to: "/watch", label: "Video", icon: tabIcons.video },
   { to: "/marketplace", label: "Marketplace", icon: tabIcons.marketplace },
   { to: "/gaming", label: "Gaming", icon: tabIcons.gaming },
+  { to: "/space", label: "Facebook Space", icon: tabIcons.space },
 ];
 
 /** Left sidebar, in Facebook's order. Feeds ("/") never shows as active, like Facebook. */

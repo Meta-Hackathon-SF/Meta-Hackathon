@@ -217,7 +217,7 @@ test("weekend: lock closes answers, week sky and formation are labeled previews,
   await expect(sky.getByText("Preview · synthetic")).toBeVisible();
   await expect(sky.getByText(/answers this week/)).toBeVisible();
   await sky.getByRole("button", { name: "Find my people" }).click();
-  await expect(page.getByTestId("spc-canvas-forming").getByRole("status")).toHaveText(/Trying connections|Ready/);
+  await expect(page.getByTestId("spc-canvas-forming").getByRole("status")).toHaveText(/Following one path|Ready/);
   await page.goto(`${DAILY}?s=main`);
   await expect(page.getByText("Not revealed yet")).toBeVisible();
   await expect(page.getByRole("button", { name: "Open chat" })).toHaveCount(0);
@@ -442,4 +442,55 @@ test("operator reasoning panel: Muse proposes, code enforces (fixture shows none
   const panel = page.getByTestId("cst-op-reasoning");
   await expect(panel.getByRole("heading", { name: "Muse proposes, code enforces" })).toBeVisible();
   await expect(panel.getByText("None. Fixture mode never calls Muse.")).toBeVisible();
+});
+
+async function toSundayChat(page: Page) {
+  await newCycle(page);
+  await openSpace(page);
+  await answer(page, 1, LONG);
+  await advance(page, 7); // Tue..Fri, lock, forming, revealed
+  await page.goto(`${DAILY}?s=main`);
+  await page.getByRole("button", { name: "Open chat" }).click();
+  return page.getByTestId("spc-chat");
+}
+
+test("v3 sky: entering the sky plays the telescope zoom; Sunday draws the Meta logo ribbon", async ({ page }) => {
+  await newCycle(page);
+  await openSpace(page);
+  await answer(page, 1, LONG);
+  await advance(page, 5);
+  await page.goto(DAILY);
+  await page.getByRole("button", { name: "View sky" }).click();
+  await expect(page.getByTestId("spc-telescope")).toBeVisible(); // iris + streaks on entry
+  await expect(page.getByTestId("spc-telescope")).toHaveCount(0, { timeout: 5000 }); // removes itself
+  await advance(page, 2);
+  await page.goto(`${DAILY}?s=main`);
+  await expect(page.getByTestId("spc-canvas-main")).toBeVisible();
+});
+
+test("v3 chat: minimise to the dock, reopen, and a room not everyone kept disappears", async ({ page }) => {
+  const chat = await toSundayChat(page);
+  await chat.getByRole("button", { name: "Minimise chat" }).click();
+  const dock = page.getByTestId("spc-chat-dock");
+  await expect(dock).toBeVisible();
+  await page.evaluate(() => { window.history.pushState({}, "", "/messages"); window.dispatchEvent(new PopStateEvent("popstate")); });
+  await expect(dock).toBeVisible(); // follows the player around the shell
+  await expect(page.getByTestId("messenger-constellation")).toHaveCount(0); // not kept: not in Messenger
+  await dock.click();
+  await expect(page.getByTestId("spc-chat")).toBeVisible();
+  await page.getByTestId("spc-chat-expire").click(); // demo: run out the 24 h without everyone keeping
+  await expect(page.getByTestId("spc-chat-expired")).toContainText("This room has closed");
+  await page.evaluate(() => { window.history.pushState({}, "", "/messages"); window.dispatchEvent(new PopStateEvent("popstate")); });
+  await expect(page.getByTestId("messenger-constellation")).toHaveCount(0);
+  await expect(page.getByTestId("spc-chat-dock")).toHaveCount(0);
+});
+
+test("v3 chat: if everyone keeps it, it moves into Messenger", async ({ page }) => {
+  const chat = await toSundayChat(page);
+  await chat.getByRole("button", { name: "Keep", exact: true }).click(); // the others follow
+  await expect(chat.getByText("Everyone kept it. It moved to Messenger.")).toBeVisible({ timeout: 6000 });
+  await chat.getByTestId("spc-open-messenger").click();
+  await expect(page).toHaveURL(/\/messages/);
+  await expect(page.getByTestId("messenger-constellation-thread")).toContainText("Your constellation");
+  await expect(page.getByTestId("messenger-constellation-thread")).toContainText("same. tuesday's question got me");
 });

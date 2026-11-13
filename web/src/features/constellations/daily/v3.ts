@@ -89,12 +89,60 @@ export interface CustomEventProposal {
 }
 export type ProposalDecision = "approve" | "reject";
 
+
+// ---- S9 sky, S10 progress, S11 main (contract 3.0.0; mirrors protocol.ts exactly) ----
+export interface SkyStarsView {
+  weekSeed: string;
+  count: number;
+  /** base64 Int16Array [x0,y0,x1,y1,...] on a 0..32767 grid. */
+  positions: string;
+}
+export interface MySkyView {
+  myStarIndex: number;
+  mine: { constellationId: string; day: CycleDay; colorId: DayColorId; starIndices: number[] }[];
+  secondDegree: { constellationId: string; viaStarIndex: number; starIndices: number[] }[];
+}
+export interface FormationAttempt {
+  seq: number;
+  fromStarIndex: number;
+  toStarIndex: number;
+  outcome: "tried" | "kept" | "dropped";
+}
+export interface ProgressEvent {
+  phase: "queued" | "running" | "done";
+  step: number;
+  totalSteps: number;
+  attempts: FormationAttempt[];
+  source: "trace" | "visualization";
+  isVisualization: boolean;
+}
+export type MainReason = "no_match" | "opted_out" | "no_answers";
+export interface MainConstellationView {
+  constellationId: string;
+  roomId: string;
+  /** R1: room-local. Never equals the sky star index. */
+  myRoomIndex: number;
+  roomIndices: number[];
+  anchors: { index: number; t: number }[];
+  brightness: Record<number, Brightness>;
+  revealedAt: string;
+  roomExpiresAt: string;
+}
+export interface MainConstellationResponse {
+  main: MainConstellationView | null;
+  reason: MainReason | null;
+}
+
 /** v3 calls. Optional on CycleClient until contract 3.0.0 and the producer routes land. */
 export interface V3Client {
   dailyConstellations(cycleId: string, day: CycleDay, signal?: AbortSignal): Promise<DailyConstellationsView>;
   week(cycleId: string, signal?: AbortSignal): Promise<WeekView>;
   /** Operator: run day-close formation for a released day ("Demo timing"). */
   closeDay(cycleId: string, day: CycleDay): Promise<{ jobId: string }>;
+  skyStars(cycleId: string, signal?: AbortSignal): Promise<SkyStarsView>;
+  skyMine(cycleId: string, signal?: AbortSignal): Promise<MySkyView>;
+  formationProgress(cycleId: string, signal?: AbortSignal): Promise<ProgressEvent>;
+  main(cycleId: string, signal?: AbortSignal): Promise<MainConstellationResponse>;
   customEvents(signal?: AbortSignal): Promise<CustomEventProposal[]>;
   decideCustomEvent(proposalId: string, decision: ProposalDecision, note?: string): Promise<CustomEventProposal>;
 }
@@ -152,6 +200,90 @@ export function parseDailyConstellations(v: unknown): DailyConstellationsView {
     placement: oneOf(o.placement, ["pending", "ready", "final"] as const),
     myStarIndex,
     constellations,
+  };
+}
+
+export function parseSkyStars(v: unknown): SkyStarsView {
+  const o = rec(v);
+  const count = int(o.count, 0, 20_000);
+  const positions = str(o.positions);
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(positions) || positions.length > 100_000) bad();
+  return { weekSeed: str(o.weekSeed), count, positions };
+}
+
+export function parseMySky(v: unknown): MySkyView {
+  const o = rec(v);
+  const stars = (x: unknown) => list(x, (i) => int(i, 0, STAR_MAX), 3000);
+  return {
+    myStarIndex: int(o.myStarIndex, 0, STAR_MAX),
+    mine: list(o.mine, (x) => {
+      const c = rec(x);
+      return { constellationId: str(c.constellationId), day: day(c.day), colorId: oneOf(c.colorId, COLOR_IDS), starIndices: stars(c.starIndices) };
+    }, 15),
+    secondDegree: list(o.secondDegree, (x) => {
+      const c = rec(x);
+      return { constellationId: str(c.constellationId), viaStarIndex: int(c.viaStarIndex, 0, STAR_MAX), starIndices: stars(c.starIndices) };
+    }, 40),
+  };
+}
+
+export function parseProgress(v: unknown): ProgressEvent {
+  const o = rec(v);
+  const source = oneOf(o.source, ["trace", "visualization"] as const);
+  const isVisualization = bool(o.isVisualization);
+  if (isVisualization !== (source === "visualization")) bad(); // contract: always equal
+  return {
+    phase: oneOf(o.phase, ["queued", "running", "done"] as const),
+    step: int(o.step, 0, 100_000),
+    totalSteps: int(o.totalSteps, 0, 100_000),
+    attempts: list(o.attempts, (x) => {
+      const a = rec(x);
+      return {
+        seq: int(a.seq, 0, 1_000_000),
+        fromStarIndex: int(a.fromStarIndex, 0, STAR_MAX),
+        toStarIndex: int(a.toStarIndex, 0, STAR_MAX),
+        outcome: oneOf(a.outcome, ["tried", "kept", "dropped"] as const),
+      };
+    }, 200),
+    source,
+    isVisualization,
+  };
+}
+
+export function parseMain(v: unknown): MainConstellationResponse {
+  const o = rec(v);
+  const reason = o.reason === null ? null : oneOf(o.reason, ["no_match", "opted_out", "no_answers"] as const);
+  if (o.main === null) {
+    if (reason === null) bad();
+    return { main: null, reason };
+  }
+  if (reason !== null) bad();
+  const m = rec(o.main);
+  const roomIndices = list(m.roomIndices, (i) => int(i, 0, 99), 5);
+  const myRoomIndex = int(m.myRoomIndex, 0, 99);
+  if (roomIndices.length < 3 || !roomIndices.includes(myRoomIndex)) bad();
+  const brightnessRaw = rec(m.brightness);
+  const brightness: Record<number, Brightness> = {};
+  for (const [k, val] of Object.entries(brightnessRaw)) {
+    const idx = Number(k);
+    if (!roomIndices.includes(idx)) bad();
+    brightness[idx] = oneOf(val, ["bright", "mid", "faint"] as const);
+  }
+  return {
+    main: {
+      constellationId: str(m.constellationId),
+      roomId: str(m.roomId),
+      myRoomIndex,
+      roomIndices,
+      anchors: list(m.anchors, (x) => {
+        const a = rec(x);
+        return { index: int(a.index, 0, 99), t: unit(a.t) };
+      }, 5),
+      brightness,
+      revealedAt: isoTime(m.revealedAt),
+      roomExpiresAt: isoTime(m.roomExpiresAt),
+    },
+    reason: null,
   };
 }
 

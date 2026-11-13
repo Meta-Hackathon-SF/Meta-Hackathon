@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router";
+import ChatDock from "../features/constellations/daily/space/ChatDock";
 import { SquarePen } from "lucide-react";
 import Header from "../components/navigation/Header";
 import MobileNavigation from "../components/navigation/MobileNavigation";
@@ -24,6 +25,7 @@ export default function AppLayout() {
       </a>
       <Header />
       <Outlet />
+      <ChatDock />
       <MobileNavigation />
       {pathname !== "/messages" && (
         <Link to="/messages" className="new-message-fab" aria-label="New message" title="New message">

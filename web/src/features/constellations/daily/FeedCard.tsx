@@ -21,6 +21,8 @@ import { MAX_CHARS, message, useDaily } from "./useDaily";
 import "./space/space.css";
 
 const COMMUNITY = PLAY_COMMUNITY;
+/** Sentence openers that fill the box; the player finishes them. Not answers, not stored. */
+const STARTERS = ["Honestly, ", "Mostly ", "I usually "];
 const PAGE = CONSTELLATIONS_PATH;
 
 function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
@@ -78,7 +80,7 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
   return (
     <section className="card spc-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
       <div className="spc-feed-head">
-        <SpaceAvatar />
+        <SpaceAvatar size={48} />
         <div className="spc-grow">
           <Link to={PAGE} className="spc-feed-name">
             {FEATURE_NAME}
@@ -112,7 +114,6 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
             <div className="spc-comment-box">
               <textarea
                 aria-label="Your answer"
-                rows={1}
                 value={draft}
                 maxLength={MAX_CHARS}
                 onChange={(e) => {
@@ -126,7 +127,8 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
                     void send();
                   }
                 }}
-                placeholder={voice.recording ? "Listening…" : joined ? "Answer privately…" : "Join to answer…"}
+                placeholder={voice.recording ? "Listening…" : joined ? "Tap and answer, only you see it" : "Join to answer…"}
+                rows={2}
               />
               <div className="spc-comment-tools">
                 <button
@@ -145,6 +147,15 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
               </div>
             </div>
           </div>
+          {!draft && !voice.recording && joined && (
+            <div className="spc-starters" role="group" aria-label="Ways to start">
+              {STARTERS.map((t) => (
+                <button key={t} type="button" className="spc-starter" onClick={() => setDraft(t)}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
           <p className="spc-comment-note" aria-live="polite">
             <Lock size={11} aria-hidden="true" /> {voice.recording || voice.hint !== "or just talk" ? voice.hint : "Only you can see your answer"}
           </p>

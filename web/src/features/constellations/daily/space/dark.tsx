@@ -1,10 +1,13 @@
 /* Dark Space screens: the animated sky (daily / week / forming / main), the anonymous chat and mutual reveal. */
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, ChevronLeft } from "lucide-react";
+import { Link } from "react-router";
+import { ArrowUp, ChevronLeft, Minimize2 } from "lucide-react";
 import { DAY_LONG, DAY_SHORT, dayHex, type Screen } from "./model";
 import { PreviewTag, StarField } from "./parts";
-import { CONTACT_PATTERN, PREVIEW_DAY_COUNTS, PREVIEW_MEMBERS, PREVIEW_MESSAGES } from "./preview";
+import { CONTACT_PATTERN, PREVIEW_DAY_COUNTS, PREVIEW_MEMBERS } from "./preview";
 import SkyCanvas from "./SkyCanvas";
+import Telescope from "./Telescope";
+import { chat, KEEP_KEYS, useChat } from "./chatStore";
 
 type CanvasMode = "daily" | "sky" | "forming" | "main";
 
@@ -44,6 +47,7 @@ export function CanvasScreen(p: CanvasProps) {
 
   return (
     <div className="spc-stage" data-testid={`spc-canvas-${p.mode}`}>
+      <Telescope />
       <SkyCanvas
         input={{ mode: p.mode, answered: p.answered, viewDay: p.viewDay, emptyDay: p.dailyEmpty, noMatch, focusDay: p.mode === "sky" ? focus : null }}
         interactive={p.mode === "sky" || p.mode === "daily" || (p.mode === "main" && settled)}
@@ -146,7 +150,7 @@ export function CanvasScreen(p: CanvasProps) {
               <div ref={barRef} />
             </div>
             <div className="spc-stage-sub" role="status">
-              {settled ? (p.revealed ? "Ready." : `Ready. It opens ${new Date(p.revealsAt).toLocaleString(undefined, { weekday: "long", hour: "numeric", minute: "2-digit" })}.`) : "Trying connections…"}
+              {settled ? (p.revealed ? "Ready." : `Ready. It opens ${new Date(p.revealsAt).toLocaleString(undefined, { weekday: "long", hour: "numeric", minute: "2-digit" })}.`) : "Following one path, backing up when it dead-ends…"}
             </div>
             {settled && (
               <button type="button" className="spc-btn spc-btn-white spc-btn-lg spc-stretch" onClick={() => (p.revealed ? p.go("main") : p.onBack())}>
@@ -188,10 +192,11 @@ export function CanvasScreen(p: CanvasProps) {
 }
 
 // ---------------------------------------------------------------- chat (preview)
-type Msg = { member?: number; mine?: boolean; text: string };
 
 export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevealed: () => void }) {
-  const [msgs, setMsgs] = useState<Msg[]>(PREVIEW_MESSAGES);
+  const store = useChat();
+  const msgs = store.msgs;
+  const keep = store.keep;
   const [draft, setDraft] = useState("");
   const [rejected, setRejected] = useState(false);
   const [typing, setTyping] = useState(false);
@@ -200,34 +205,51 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
   const [asked, setAsked] = useState<Record<number, boolean>>({});
   const [reported, setReported] = useState<Record<number, boolean>>({});
   const [blocked, setBlocked] = useState<Record<number, boolean>>({});
-  const [keep, setKeep] = useState<Record<string, boolean>>({});
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const later = (ms: number, fn: () => void) => timers.current.push(window.setTimeout(fn, ms));
-  const kept = ["me", "0", "1", "2", "3"].every((k) => keep[k]);
+  const kept = store.status === "kept";
+  useEffect(() => {
+    chat.start();
+    chat.minimize(false);
+  }, []);
 
   const send = () => {
     const t = draft.trim();
     if (!t) return;
     if (CONTACT_PATTERN.test(t)) return setRejected(true);
-    setMsgs((m) => [...m, { mine: true, text: t }]);
+    chat.send(t);
     setDraft("");
     setRejected(false);
     later(700, () => setTyping(true));
     later(2400, () => {
       setTyping(false);
-      setMsgs((m) => [...m, { member: 1, text: "wait that's exactly how i felt" }]);
+      chat.receive({ member: 1, text: "wait that's exactly how i felt" });
     });
   };
-  const vote = (k: string) => setKeep((x) => ({ ...x, [k]: true }));
+  const vote = (k: string) => chat.vote(k, true);
   const toggleKeep = () => {
-    if (keep.me) return setKeep((x) => ({ ...x, me: false }));
+    if (keep.me) return chat.vote("me", false);
     vote("me");
     later(700, () => vote("0"));
     later(1500, () => vote("1"));
-    later(2400, () => vote("3"));
+    later(2400, () => vote("2"));
+    later(3200, () => vote("3"));
   };
   const member = sheet >= 0 ? PREVIEW_MEMBERS[sheet] : null;
+  if (store.status === "expired")
+    return (
+      <div className="spc-screen spc-night" data-testid="spc-chat-expired">
+        <StarField dense />
+        <div className="spc-expired">
+          <h2>This room has closed</h2>
+          <p className="spc-sub">Not everyone kept it, so it's gone. Nothing was saved.</p>
+          <button type="button" className="spc-btn spc-btn-glass spc-btn-lg" onClick={() => { chat.reset(); onBack(); }}>
+            Back to Space
+          </button>
+        </div>
+      </div>
+    );
   const shown = msgs.filter((m) => m.mine || !(blocked[m.member!] || reported[m.member!]));
 
   return (
@@ -258,19 +280,32 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
           ))}
         </div>
         <PreviewTag dark>Preview</PreviewTag>
-        <span className="spc-chat-left">{kept ? "Kept" : "23 h left"}</span>
+        <span className="spc-chat-left">{kept ? "Kept" : `${store.hoursLeft} h left`}</span>
+        <button type="button" className="spc-round is-glass spc-chat-min" onClick={() => { chat.minimize(true); onBack(); }} aria-label="Minimise chat">
+          <Minimize2 size={18} />
+        </button>
       </div>
       <div className="spc-keep">
-        <span className="spc-grow">{kept ? "Everyone kept it. It stays open." : "Gone in 23 h unless everyone keeps it"}</span>
+        <span className="spc-grow">{kept ? "Everyone kept it. It moved to Messenger." : `Gone in ${store.hoursLeft} h unless everyone keeps it`}</span>
         <span className="spc-keep-dots" aria-hidden="true">
-          {["me", "0", "1", "2", "3"].map((k) => (
+          {KEEP_KEYS.map((k) => (
             <i key={k} className={keep[k] ? "is-on" : ""} />
           ))}
         </span>
+        {!kept && (
+          <button type="button" className="spc-keep-btn" onClick={() => chat.expireNow()} data-testid="spc-chat-expire">
+            Demo: run out 24 h
+          </button>
+        )}
         <button type="button" className={`spc-keep-btn${keep.me ? " is-kept" : ""}`} onClick={toggleKeep} aria-pressed={Boolean(keep.me)}>
           {keep.me ? "Kept" : "Keep"}
         </button>
       </div>
+      {kept && (
+        <div className="spc-keep-note">
+          <Link to="/messages" data-testid="spc-open-messenger">Open in Messenger</Link>
+        </div>
+      )}
       <div className="spc-msgs" aria-live="polite">
         <div className="spc-msgs-time">Sunday 10:00 AM</div>
         {shown.map((m, i) =>

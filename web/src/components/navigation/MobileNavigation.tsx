@@ -12,7 +12,7 @@ export default function MobileNavigation() {
         { to: "/", label: "Home", icon: tabIcons.home },
         { to: "/watch", label: "Reels", icon: tabIcons.video },
         { to: "/friends", label: "Friends", icon: tabIcons.friends },
-        { to: "/marketplace", label: "Marketplace", icon: tabIcons.marketplace },
+        { to: "/space", label: "Facebook Space", icon: tabIcons.space },
         { to: "/notifications", label: "Notifications", icon: Bell },
         { to: "/profile", label: "Profile", icon: CircleUserRound },
       ].map(({ to, label, icon }) => (
