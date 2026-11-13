@@ -13,5 +13,10 @@
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/muse/**/*.js": {
+      "maxDuration": 60
+    }
+  }
 }
