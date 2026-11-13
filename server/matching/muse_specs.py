@@ -9,7 +9,8 @@ from server.matching import prompts, sky
 from server.providers import MUSE_VOICE, TaskRegistry, contract_spec
 
 FORMATION_TASKS = (
-    ("theme_discovery", prompts.PROMPT_VERSION_M3, prompts.M3_INSTRUCTIONS, False),
+    # M3 labels are shown in the public Sky, so M3 gets the voice rules too.
+    ("theme_discovery", prompts.PROMPT_VERSION_M3, prompts.M3_INSTRUCTIONS, True),
     ("constellation_formation", prompts.PROMPT_VERSION_M4, prompts.M4_INSTRUCTIONS, False),
     ("constellation_naming", prompts.PROMPT_VERSION_M5, prompts.M5_INSTRUCTIONS, True),
     ("sky_narration", sky.PROMPT_VERSION_M8, sky.M8_INSTRUCTIONS, True),
