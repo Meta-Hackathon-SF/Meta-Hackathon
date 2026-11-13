@@ -299,6 +299,21 @@ class MuseAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertAlmostEqual(rec["estCostUsd"], 0.0042, places=6)
         self.assertEqual(a.reasoning_trace.list()[0]["inputTokens"], 2000)
 
+    async def test_keyword_port_forwards_a_per_call_deadline(self):
+        from server.providers import KeywordMusePort
+
+        seen = []
+
+        class Capture:
+            async def run(self, request):
+                seen.append(request.deadline_s)
+                return type("R", (), {"output": {}, "evidence": {}})()
+
+        port = KeywordMusePort(Capture(), deadline_s=90.0)
+        await port.run(task="clarify", requestId="r", promptVersion="v", payload={})
+        await port.run(task="clarify", requestId="r", promptVersion="v", payload={}, deadline_s=20.0)
+        self.assertEqual(seen, [90.0, 20.0])
+
     async def test_keyword_port_returns_wire_shape(self):
         a, _, _ = adapter(Recorder(['{"answer":"ok"}']))
         out = await KeywordMusePort(a).run(task="clarify", requestId="req-9", promptVersion="t.v1", payload={"x": 1})
