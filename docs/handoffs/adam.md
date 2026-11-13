@@ -71,8 +71,14 @@ Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
 ## Deploy defaults (2026-11-13T07:00Z)
 - `load_muse_config` now defaults to `MUSE_TIMEOUT_S=60` and `MUSE_REASONING_EFFORT=low` (validated: low, medium, high), the settings every live run used. docs/DEPLOYMENT.md lists only key/model/base URL, so before this a key-only deploy would have used 30 s with the provider's "high" effort, which timed out live. `python -m pytest tests` 837 passed, 2 skipped on main + this change.
 
+## Reasoning audit + trace (2026-11-13T07:30Z)
+- Shared-file claim: new `docs/audits/2026-11-13-reasoning-audit.md` (findings for all owners; each marked verified or reported).
+- Mine, offline-tested: schema-path retry feedback; `KeywordMusePort.run(correction=)`; `ReasoningTrace` on every adapter (`adapter.reasoning_trace`, codes/counts only, replay-labeled for fixtures); M6 `question_generation.v2` + near-duplicate, category quota, reason counts, `basis.matchedSignals`, yes/no generated hints removed; `signals.aggregate_signals` (k>=5, n>=10, 0.05 rounding); trace notes in M2/M6/M7; PROPOSED `GET /operator/reasoning` (mounted only when `PlanningRuntime.trace` is set; needs Kai ACK + API.md).
+- Live: 2 M6 calls (v2 draft 15.5 s; final v2 12.5 s; 3/3 kept and grounded each time).
+- `python -m pytest tests` 858 passed, 2 skipped.
+
 ## API budget
-Adam's Muse key has a $100 cap for the whole event including the demo. About 45 live calls so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
+Adam's Muse key has a $100 cap for the whole event including the demo. About 47 live calls so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
 
 ## Next action
 - DONE (Will, #38 f88311f): `OperatorNudgePanel` mounted in the operator console; verified on main 6d7dc62: Playwright 55 passed incl. the nudge test on desktop+mobile, pytest 565 passed 1 skipped.

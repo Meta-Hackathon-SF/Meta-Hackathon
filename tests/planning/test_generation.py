@@ -125,6 +125,59 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual([q["text"] for q in res.pending], [PROPOSALS[0]["text"]])
         self.assertEqual(res.rejected, 6)
 
+    def test_refusals_are_counted_by_reason(self):
+        existing = load_default_bank().questions[0]["text"]
+        proposals = [
+            PROPOSALS[0],
+            proposal("Do you eat alone in the dining hall most days?"),
+            proposal(existing),
+            proposal("What part of the walk across campus do you look forward to most?"),  # near duplicate
+            proposal("Which song would you add to a playlist for this group?", category="interests"),
+            proposal("What small thing went right for you this week?", category="hopes"),     # weight 0
+        ]
+        g, _, _ = make({"questions": proposals})
+        res = gen(g, count=6, category_mix={"routine": 2, "interests": 1})
+        self.assertEqual(res.rejections, {"invalid_question": 1, "duplicate": 1, "near_duplicate": 1,
+                                          "category_not_requested": 1})
+        self.assertEqual(res.rejected, 4)
+        self.assertEqual([q["category"] for q in res.pending], ["routine", "interests"])
+
+    def test_category_quota_follows_the_requested_mix(self):
+        proposals = [proposal("Where on campus do you like to sit when it is quiet?"),
+                     proposal("What part of your morning sets the tone for the day?"),
+                     proposal("Which errand do you always end up putting off?")]
+        g, _, _ = make({"questions": proposals})
+        res = gen(g, count=3, category_mix={"routine": 2, "interests": 1})  # routine may take 2 of 3
+        self.assertEqual(len(res.pending), 2)
+        self.assertEqual(res.rejections, {"over_category_quota": 1})
+
+    def test_basis_records_which_input_signals_grounded_each_question(self):
+        g, _, _ = make({"questions": [proposal("What do you usually eat when you are on your own?",
+                                               signalTags=["meals", "solitude", "made_up"])]})
+        res = gen(g, count=1)
+        self.assertEqual(res.basis, [{"matchedSignals": ["meals", "solitude"]}])
+        self.assertEqual(g.pending()[0]["basis"], {"matchedSignals": ["meals", "solitude"]})
+
+    def test_yes_no_generated_hint_is_removed_but_question_kept(self):
+        g, _, _ = make({"questions": [proposal("What does your usual morning look like lately?",
+                                               followUpHint="Has that changed lately?")]})
+        res = gen(g, count=1)
+        self.assertEqual(len(res.pending), 1)
+        self.assertIsNone(res.pending[0]["followUpHint"])
+        self.assertEqual(res.rejected, 0)
+
+    def test_generation_verdicts_are_traced(self):
+        transport = ScriptedTransport().queue("question_generation", {"questions": [PROPOSALS[0], PROPOSALS[0]]})
+        muse = FixtureMuse(register_planning_tasks(TaskRegistry()), transport)
+        questions = QuestionService(load_default_bank(), InMemorySelectionStore(), TestOnlyWeekStart())
+        g = QuestionGenerator(muse, TestOnlyOutputGuard(), questions, trace=muse.reasoning_trace)
+        run(g.generate(count=2, request_id="req-gen-trace", aggregate_signals=SIGNALS))
+        entry = muse.reasoning_trace.list()[0]
+        self.assertEqual((entry["callType"], entry["source"]), ("M6", "replay"))
+        self.assertEqual([(c["stage"], c["code"], c["count"]) for c in entry["checks"]], [
+            ("proposed", "questions", 2), ("refused", "duplicate", 1),
+            ("kept", "pending_questions", 1), ("grounded", "questions_with_signal", 0)])
+
     def test_extra_proposals_beyond_count_are_ignored(self):
         g, _, _ = make({"questions": PROPOSALS})
         res = gen(g, count=1)

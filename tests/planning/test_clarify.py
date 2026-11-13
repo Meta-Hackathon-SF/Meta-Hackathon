@@ -172,3 +172,24 @@ class ClarifyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ClarifyTraceTests(unittest.TestCase):
+    def _svc(self, *steps):
+        transport = ScriptedTransport().queue("clarify", *steps)
+        muse = FixtureMuse(register_planning_tasks(TaskRegistry()), transport)
+        return ClarifyService(muse, TestOnlyOutputGuard(), trace=muse.reasoning_trace), muse.reasoning_trace
+
+    def checks(self, trace):
+        return [(c["stage"], c["code"]) for c in trace.list()[0]["checks"]]
+
+    def test_shown_follow_up_is_traced(self):
+        svc, trace = self._svc(ASK)
+        ask(svc)
+        self.assertEqual(self.checks(trace), [("decision", "followup_shown")])
+        self.assertNotIn(ANSWER, json.dumps(trace.list()))
+
+    def test_yes_no_proposal_traced_as_validation_then_fallback(self):
+        svc, trace = self._svc({"needsFollowup": True, "question": "Do you eat there every day?"})
+        ask(svc)
+        self.assertEqual(self.checks(trace), [("validate", "yes_no"), ("fallback", "curated_hint")])

@@ -21,6 +21,7 @@ import asyncio
 import json
 import logging
 import random
+import re
 import time
 from datetime import datetime, timezone
 from collections import deque
@@ -29,6 +30,7 @@ from typing import Any, Callable
 from .config import MuseConfig
 from .errors import ProviderError
 from .port import CALL_TYPES, MuseCallEvidence, MuseRequest, MuseResult, TaskRegistry
+from .trace import ReasoningTrace
 from .schema import SchemaViolation, validate
 from .transport import ChatRequest, ChatTransport, MetaChatCompletionsTransport
 
@@ -72,6 +74,14 @@ class EvidenceLog:
         return [dict(r) for r in self._records]
 
 
+_REASON_UNSAFE = re.compile(r"[^A-Za-z0-9_$.\[\] -]")
+
+
+def _safe_reason(message: str) -> str:
+    """Validator message reduced to a short, character-restricted string."""
+    return _REASON_UNSAFE.sub("", message)[:120] + ". Reply again with JSON that matches the schema exactly."
+
+
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
@@ -99,6 +109,7 @@ class MuseAdapter:
         now_iso: Callable[[], str] = utc_now_iso,
         jitter: Callable[[], float] = random.random,
         evidence_log: EvidenceLog | None = None,
+        reasoning_trace: ReasoningTrace | None = None,
     ) -> None:
         self._registry = registry
         self._config = config
@@ -111,6 +122,8 @@ class MuseAdapter:
         self._now_iso = now_iso
         self._jitter = jitter
         self.evidence_log = evidence_log if evidence_log is not None else EvidenceLog()
+        # Operator/demo view of every call and the code verdicts on it (no payloads).
+        self.reasoning_trace = reasoning_trace if reasoning_trace is not None else ReasoningTrace()
 
     # Fixture subclasses override these two so labels can never say "live".
     _evidence_source: str = "live"
@@ -129,6 +142,10 @@ class MuseAdapter:
             self._telemetry(record)
         except Exception:  # telemetry must never break generation
             log.warning("telemetry sink failed")
+        try:
+            self.reasoning_trace.record_call(record)
+        except Exception:
+            log.warning("reasoning trace failed")
 
     async def run(self, request: MuseRequest) -> MuseResult:
         started = self._clock()
@@ -138,6 +155,7 @@ class MuseAdapter:
             "callType": CALL_TYPES.get(request.task),
             "promptVersion": request.prompt_version,
             "model": self._config.model if self._config else None,
+            "source": self._evidence_source,
             "attempts": 0,
         }
         try:
@@ -184,13 +202,14 @@ class MuseAdapter:
 
         last: ProviderError | None = None
         malformed = 0
+        retry_note = ""
         for attempt in range(1, max_attempts + 1):
             record["attempts"] = attempt
             remaining = deadline_s - (self._clock() - started)
             if remaining <= 0:
                 raise ProviderError("timeout", "provider deadline exceeded", attempts=attempt - 1)
             chat = ChatRequest(
-                developer=developer,
+                developer=developer + retry_note,
                 user=user,
                 schema_name=spec.schema_name,
                 schema=spec.output_schema,
@@ -212,6 +231,9 @@ class MuseAdapter:
                     malformed += 1
                     if malformed > MAX_MALFORMED_RETRIES:
                         raise
+                    # Tell the retry what failed. Code-generated and sanitized:
+                    # never model text or player text, only a schema location.
+                    retry_note = "\n\nYOUR PREVIOUS ANSWER WAS REJECTED BY SERVER VALIDATION: " + _safe_reason(exc.message)
                 if not exc.retryable or attempt == max_attempts:
                     raise
                 delay = exc.retry_after_s if exc.retry_after_s is not None else 0.5 * (2 ** (attempt - 1)) + 0.25 * self._jitter()
