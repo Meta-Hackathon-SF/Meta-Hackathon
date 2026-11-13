@@ -1,1 +1,3 @@
-module.exports = require("../../../_museRelay")("POST", "/chat/completions");
+import relay from "../../../_museRelay.js";
+
+export default relay("POST", "/chat/completions");

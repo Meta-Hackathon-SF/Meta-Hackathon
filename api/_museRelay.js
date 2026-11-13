@@ -8,12 +8,12 @@
  *   relay holds no key and is useless without ours.
  * - Logs nothing: no bodies, headers or tokens.
  */
-const crypto = require("node:crypto");
+import crypto from "node:crypto";
 
 const UPSTREAM = "https://api.meta.ai/v1";
 const KEY_SHA256 = "8f3d0f75dd9e32f54da09f2adffa7e4d394b5282bb8be956594eec1d74614413";
 
-module.exports = function relay(method, path) {
+export default function relay(method, path) {
   return async (req, res) => {
     const fail = (status, code) => res.status(status).json({ error: { code } });
     if (req.method !== method) return fail(405, "relay_method_not_allowed");
@@ -36,4 +36,4 @@ module.exports = function relay(method, path) {
       return fail(502, "relay_upstream_unreachable");
     }
   };
-};
+}
