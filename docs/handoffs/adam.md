@@ -1,8 +1,15 @@
 # adam handoff
-Current step: 7 (question generation) done offline. All six tasks in docs/roles/adam.md are implemented offline; what remains is live verification and integration with other owners
-Status: Muse adapter restored for 2.0.0; question bank, weekly selection, M2 follow-up, M7 event nudges, the nudge card and M6 question generation implemented. Offline-verified only.
-Branch + commit: `role/adam-planning`; PRs #12 and #17 merged to main; question generation in the follow-up PR. PR #12 merged to main (655903a); nudges in the follow-up PR.
-Updated: 2026-11-13T03:05Z
+Current step: integration + deployment. Ownership relaxed 2026-11-13 ~11:40Z: Adam and Rishi own the whole repo (Will, Kai, Patrik offline); contract ACKs no longer gate merges
+Status: v3 events (#76), per-task Muse router in the app (#87), Dockerfile (#89) merged; Railway now auto-deploys main from GitHub and runs ff68afc (verified 12:05Z)
+Branch + commit: `role/adam-planning` synced with main ff68afc+; merged today: #76, #87, #88, #89
+Updated: 2026-11-13T12:10Z
+
+## Deployment (Railway, verified 2026-11-13T12:05Z)
+- Project `constellations-demo` (workspace "kai's Projects"), env `production`, service `constellations-api` + `Postgres`; domain constellations-api-production.up.railway.app.
+- Source: GitHub `Meta-Hackathon-SF/Meta-Hackathon` branch `main` (connected 12:05Z); every merge to main deploys. Builder: repo `Dockerfile` (reconstructed from the old build log in #89); start command in service settings. Before this, deploys were Kai's local `railway up` snapshot, so #80/#76/#87 were not live.
+- Verified: deployment 2d149f2b = ff68afc, `/health/ready` 200 with all 7 services ready, `/api/v1/session` 401, clean startup log.
+- Still off: v3 per-viewer routes (`/events`, `/me/nudges`, custom events) are not composed in `server/app/weekly.py` (404). The demo's Sunday nudge uses the v2 room nudge, which is live. Privacy `InterestBucket` uses `6-10`/`11+` while contract + matching use `6-9`/`10+`; align when composing.
+- Pending: `railway ssh --service constellations-api -- python -m server.providers.route_check --live` (~$0.01) to confirm each task is served on its measured model.
 
 ## Completed tasks
 1. `server/providers/` restored from `archive/group-quests-before-pivot`, renamed, extended to the 2.0.0 `MuseTask` list (M1-M8), retested. **Live call re-verified 2026-11-13T02:25Z**: `python3 -m server.providers.smoke` -> ok, `clarify` (M2), provider echoed `muse-spark-1.3`, 16.2 s, attempt 1, `reasoning_effort=low`.
