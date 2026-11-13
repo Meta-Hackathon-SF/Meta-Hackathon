@@ -4,10 +4,10 @@
  * it, a labeled EXAMPLE. Counts only: never which star shares what.
  * The signal list reflects the player's own "use my activity" switch.
  */
-import { CalendarDays, Check, MessageSquareText, UserCheck, UsersRound } from "lucide-react";
+import { CalendarDays, Check, MessageSquareText, UsersRound } from "lucide-react";
 import type { ConstellationContext } from "../../../../../contracts/protocol.ts";
 
-const EXAMPLE: ConstellationContext = { sharedGroupStars: 2, alreadyFriends: 0, sameEventStars: 2 };
+const EXAMPLE: ConstellationContext = { sharedGroupStars: 2, alreadyFriends: 0, sameEventStars: 2 } /* alreadyFriends is never displayed */;
 
 function count(n: number, total: number) {
   return n === 0 ? "None" : n === total ? `All ${total}` : `${n} of your ${total} stars`;
@@ -50,7 +50,7 @@ export default function MatchReasons({
       <h3 className="cst-subhead">Connections</h3>
       {real && !activityOn ? (
         <p className="cst-panel-note muted" data-testid="cst-why-off">
-          Turn on "use my activity" in Privacy and data to see shared Groups, friends and events.
+          Turn on "use my activity" in Privacy and data to see shared Groups and events.
         </p>
       ) : (
         <ul className="cst-why-list">
@@ -60,15 +60,6 @@ export default function MatchReasons({
             </span>
             <span>
               <strong>{count(c.sharedGroupStars, members)}</strong> {c.sharedGroupStars === 1 ? "is" : "are"} in a Group you're in
-            </span>
-          </li>
-          <li>
-            <span className="cst-icon-circle is-small" aria-hidden="true">
-              <UserCheck size={14} />
-            </span>
-            <span>
-              <strong>{count(c.alreadyFriends, members)}</strong>{" "}
-              {c.alreadyFriends === 0 ? "are already your friends, so these are new people" : "already your friends"}
             </span>
           </li>
           <li>

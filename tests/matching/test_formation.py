@@ -16,7 +16,7 @@ from server.matching.models import FormationSnapshot, MatchingError, ValidationE
 from server.matching.validation import violations
 from tests.matching.adapters import FakeMuse, FixtureGuard, FixtureSnapshotSource, load_week
 
-GOOD = [["p-maya", "p-dev", "p-omar", "p-lee"], ["p-jordan", "p-sam", "p-ren"]]
+GOOD = [["p-maya", "p-dev", "p-omar", "p-lee", "p-x1"], ["p-jordan", "p-sam", "p-ren", "p-x2", "p-x3"]]
 CONTRACT_PAYLOAD_KEYS = {  # M3In / M4In / M5In in contracts/protocol.ts 2.0.0
     "theme_discovery": {"answers", "questions"},
     "constellation_formation": {"themes", "answers", "blockedPairs"},
@@ -26,7 +26,7 @@ CONSTELLATION_WIRE_KEYS = {"constellationId", "cycleId", "memberIds", "sharedMea
                            "confidence", "isLooseMatch", "name", "shapeId", "colorId",
                            "baselineAgrees"}
 OPTIONAL_WIRE_KEYS = {"closeness", "memberContext"}  # D009/D010, private, present when computed
-BLOCKED = [["p-maya", "p-dev", "p-jordan", "p-lee"], ["p-omar", "p-sam", "p-ren"]]
+BLOCKED = [["p-maya", "p-dev", "p-jordan", "p-lee", "p-x1"], ["p-omar", "p-sam", "p-ren", "p-x2", "p-x3"]]
 
 
 def run(coro):
@@ -48,15 +48,15 @@ def groups_by_player(result):
 
 # ---------------------------------------------------------------- baseline
 
-def test_group_sizes_cover_three_to_five():
-    for n in range(3, 40):
+def test_group_sizes_at_least_five_no_maximum():
+    for n in range(5, 40):
         sizes = group_sizes(n)
-        assert sum(sizes) == n and all(3 <= s <= 5 for s in sizes)
+        assert sum(sizes) == n and all(s >= 5 for s in sizes)
 
 
-def test_group_sizes_rejects_fewer_than_three():
+def test_group_sizes_rejects_fewer_than_five():
     with pytest.raises(MatchingError):
-        group_sizes(2)
+        group_sizes(4)
 
 
 def test_keyword_baseline_splits_maya_and_dev():
@@ -69,7 +69,7 @@ def test_keyword_baseline_splits_maya_and_dev():
 
 
 def test_partition_respects_blocks_and_is_deterministic():
-    refs = [f"r{i}" for i in range(9)]
+    refs = [f"r{i}" for i in range(10)]
     sim = {("r0", "r1"): 0.9, ("r0", "r2"): 0.9, ("r1", "r2"): 0.9}
     blocked = [("r0", "r1")]
     first = partition(refs, sim, blocked)
@@ -130,7 +130,7 @@ def test_meaning_formation_meets_fixture_constraints():
         assert not any(set(apart) <= g for g in groups)
     placed = set().union(*groups)
     assert not placed & set(expected["excluded"])
-    assert all(3 <= len(g) <= 5 for g in groups)
+    assert all(len(g) >= 5 for g in groups)
     maya_c = next(c for c in result.constellations if "p-maya" in c.member_ids)
     assert maya_c.baseline_agrees is False  # keywords split Maya and Dev; meaning joins them
     assert [e.call_type for e in result.evidence].count("M5") == len(result.constellations)

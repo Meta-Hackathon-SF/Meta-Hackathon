@@ -9,8 +9,18 @@ const DAILY = "/space";
 const OPERATOR = `${DAILY}/operator`;
 const LONG = "Mostly the dining hall with my floor, loud but good";
 
+// The Constellation Drop is a modal over Space. Specs that test other flows dismiss it when it appears.
+test.beforeEach(async ({ page }) => {
+  await page.addLocatorHandler(page.getByTestId("spc-drop"), async () => {
+    await page.getByTestId("spc-drop-later").click();
+  });
+});
+
 async function fakeMicrophone(page: Page, behavior: "allow" | "deny") {
   await page.addInitScript((mode) => {
+    // Force the recorder path: the demo-only browser speech engine would bypass the fixture transcript.
+    Object.defineProperty(window, "SpeechRecognition", { configurable: true, value: undefined });
+    Object.defineProperty(window, "webkitSpeechRecognition", { configurable: true, value: undefined });
     const stream = { getTracks: () => [{ stop() {} }] };
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true,
@@ -175,10 +185,10 @@ test("streak: Mon and Tue on the day -> 2-day streak; a missed Wednesday shows i
   await advance(page, 1);
   await answer(page, 2, LONG);
   await page.goto(DAILY);
-  await expect(page.getByTestId("spc-today")).toContainText("2-day streak");
+  await expect(page.locator(".spc-streak-chip")).toContainText("2-day streak");
   await advance(page, 2); // Wednesday, then Wednesday ends
   await page.goto(DAILY);
-  await expect(page.getByTestId("spc-today")).not.toContainText("streak");
+  await expect(page.locator(".spc-streak-chip")).toHaveCount(0);
   await expect(page.getByTestId("spc-catchup-3")).toHaveAccessibleName("Catch up: Wednesday's question");
   await expect(page.getByTestId("spc-week-5").getByRole("button")).toHaveCount(0); // future days not answerable
   await page.getByTestId("spc-catchup-3").click();
@@ -189,7 +199,7 @@ test("streak: Mon and Tue on the day -> 2-day streak; a missed Wednesday shows i
   await page.goto(DAILY);
   await expect(page.getByTestId("spc-catchup-3")).toHaveCount(0);
   await expect(page.getByTestId("spc-week-3").getByRole("button", { name: "Wednesday: Caught up" })).toBeVisible();
-  await expect(page.getByTestId("spc-today")).toContainText("2-day streak"); // catch-up never extends it
+  await expect(page.locator(".spc-streak-chip")).toContainText("2-day streak"); // catch-up never extends it
 });
 
 test("no prevalence guess (D012); a flagged answer shows the private support card", async ({ page }) => {
@@ -214,37 +224,29 @@ test("weekend: lock closes answers, week sky and formation are labeled previews,
   await expect(page.locator("#main-content").getByRole("textbox")).toHaveCount(0);
   await page.getByRole("button", { name: "View sky" }).click();
   const sky = page.getByTestId("spc-canvas-sky");
-  await expect(sky.getByText("Preview · synthetic")).toBeVisible();
-  await expect(sky.getByText(/answers this week/)).toBeVisible();
+  await expect(sky.getByText(/stars in the sky this week|sky count not available yet/)).toBeVisible();
   await sky.getByRole("button", { name: "Find my people" }).click();
-  await expect(page.getByTestId("spc-canvas-forming").getByRole("status")).toHaveText(/Trying connections|Ready/);
+  await expect(page.getByTestId("spc-canvas-forming").getByRole("status")).toHaveText(/Finding your people|Ready/);
   await page.goto(`${DAILY}?s=main`);
   await expect(page.getByText("Not revealed yet")).toBeVisible();
   await expect(page.getByRole("button", { name: "Open chat" })).toHaveCount(0);
   await advance(page, 2); // forming, revealed
   await page.goto(DAILY);
-  await expect(page.getByTestId("spc-weekend-sun")).toContainText("Your constellation is ready");
+  await expect(page.getByTestId("spc-weekend-sun")).toContainText("Sunday's reveal is open");
   await page.getByRole("button", { name: "View constellation" }).click();
-  await page.getByRole("button", { name: "Open chat" }).click();
-  const chat = page.getByTestId("spc-chat");
-  await expect(chat.getByText("Preview", { exact: true })).toBeVisible();
-  await chat.getByRole("textbox", { name: "Message" }).fill("text me 765 555 0142");
-  await chat.getByRole("button", { name: "Send", exact: true }).click();
-  await expect(chat.getByRole("alert")).toContainText("couldn't be sent");
-  await expect(chat.getByText("765 555 0142")).toHaveCount(0); // never posted, stays in the box only
-  await chat.getByRole("button", { name: "Star 3" }).click();
-  await expect(page.getByRole("dialog", { name: "Star 3" }).getByText("Names only show if you both ask.")).toBeVisible();
+  // Fixture mode has no formation data: the canvas says so, shows no member count and offers no chat.
+  await expect(page.getByTestId("spc-main-unavailable")).toBeVisible();
+  await expect(page.getByTestId("spc-main-count")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open chat" })).toHaveCount(0);
 });
 
-test("everyone keeping the Sunday chat moves it to Messenger with real names", async ({ page }) => {
+test("reveal thread in Messenger: @muse finds a catalog event and drafts one; no vendor action", async ({ page }) => {
   const sent: { kind: string; senders: string[] }[] = [];
   await page.route("**/api/muse-chat", async (route) => {
     const body = route.request().postDataJSON();
     sent.push({ kind: body?.kind, senders: (body?.context ?? []).map((n: { sender: string }) => n.sender) });
     const replies: Record<string, object> = {
-      hangout: { text: "Board game night fits this group.", eventIds: ["ev-board-games", "not-a-real-event"] },
-      supplies: { text: "The coffee set is a demo listing, not a purchase.", itemIds: ["mk-coffee-set"] },
-      barter: { text: "Ask Campus Cafe for a table and bring the coffee set. Nothing is booked until the cafe agrees.", itemIds: ["mk-coffee-set"] },
+      hangout: { text: "Board game night fits you two.", eventIds: ["ev-board-games", "not-a-real-event"] },
       create: {
         text: "Here's a draft you can create.",
         draft: { title: "Thursday study session", placeId: "v-library-commons", day: "Thursday", time: "19:00", description: "Bring notes." },
@@ -252,66 +254,48 @@ test("everyone keeping the Sunday chat moves it to Messenger with real names", a
     };
     await route.fulfill({ json: { source: "live", itemIds: [], eventIds: [], draft: null, ...replies[body?.kind] } });
   });
-  await newCycle(page);
-  await openSpace(page);
-  await answer(page, 1, LONG);
-  await advance(page, 7);
-  await page.goto(DAILY);
-  await expect(page.getByTestId("spc-weekend-sun")).toContainText("Your constellation is ready");
-  await page.getByRole("button", { name: "View constellation" }).click();
-  await page.getByRole("button", { name: "Open chat" }).click();
-  const chat = page.getByTestId("spc-chat");
-  await expect(chat.getByText(/If everyone keeps it, names are shown/)).toBeVisible(); // consent is explicit
-  await chat.getByRole("button", { name: "Keep and show my name" }).click();
-  await expect(chat.getByText("Everyone agreed. Names are visible, and this chat is in Messenger.")).toBeVisible();
-  await expect(chat.getByRole("button", { name: "Maya Chen" })).toBeVisible();
-  await chat.getByRole("link", { name: "Open in Messenger" }).click();
-  await expect(page).toHaveURL(/\/messages\?chat=sunday-constellation/);
-  await expect(page.getByRole("heading", { level: 1, name: "Messenger" })).toBeVisible();
-  const convo = page.getByRole("region", { name: "Sunday constellation" });
-  await expect(convo.getByText(/Maya Chen, Jordan Davis, Sofia Patel, Daniel Kim/)).toBeVisible();
-  await expect(convo.getByText("Same vibe")).toBeVisible();
-  await convo.getByRole("button", { name: "Close shared vibe" }).click();
-  await expect(convo.getByText("Same vibe")).toHaveCount(0);
-  await expect(convo.getByText("i really thought i was the only one who felt that way")).toBeVisible();
+  // Test double for a thread that a real mutual reveal would have opened.
+  const name = "Test Player (synthetic)";
+  await page.addInitScript((title) => {
+    const thread = { id: "reveal-test-player", kind: "direct", title, memberNames: [title], messages: [], preview: "", synthetic: true };
+    sessionStorage.setItem("fb-space-messenger-demo", JSON.stringify([thread]));
+  }, name);
+  await page.goto("/messages?chat=reveal-test-player");
+  const convo = page.getByRole("region", { name });
+  await expect(convo.getByText("Synthetic player · Simulated Facebook")).toBeVisible();
+  const actions = convo.getByRole("group", { name: "Ask Muse" });
+  await expect(actions.getByRole("button")).toHaveText(["Find an event", "Create an event"]);
+  await expect(page.getByText("Ask a vendor")).toHaveCount(0);
+
   const box = convo.getByRole("textbox", { name: "Message" });
-  // A suggestion chip only fills the box; nothing is sent until you press Send.
-  await convo.getByRole("button", { name: "Find an event" }).click();
+  await actions.getByRole("button", { name: "Find an event" }).click();
   await expect(box).toHaveValue(/@muse/);
-  expect(sent).toHaveLength(0);
-  await box.fill("we should get together this week @muse");
+  expect(sent).toHaveLength(0); // a chip only fills the box
   await box.press("Enter");
-  await expect(convo.getByText("we should get together this week @muse")).toBeVisible();
-  await expect(convo.getByText("Board game night fits this group.")).toBeVisible();
-  // The exact catalog event shows as a card; unknown ids are dropped. Register from the chat.
-  const eventCard = convo.getByTestId("cat-event-ev-board-games");
-  await expect(eventCard).toContainText("Library Commons");
-  await expect(convo.getByTestId(/cat-event-not-a-real/)).toHaveCount(0);
-  await eventCard.getByRole("button", { name: "Register for Board game night" }).click();
-  await expect(eventCard.getByRole("button", { name: /Registered for Board game night/ })).toBeVisible();
-  await box.fill("we will need drinks @muse");
-  await box.press("Enter");
-  await expect(convo.getByText("The coffee set is a demo listing, not a purchase.")).toBeVisible();
-  await expect(convo.getByTestId("cat-item-mk-coffee-set").last()).toHaveAttribute("href", "/marketplace/mk-coffee-set");
-  await box.fill("can the cafe hold a table @muse");
-  await box.press("Enter");
-  await expect(convo.getByText("Ask Campus Cafe for a table and bring the coffee set. Nothing is booked until the cafe agrees.")).toBeVisible();
-  // Muse drafts an event; nothing is posted until someone taps Create.
-  await box.fill("@muse create a study session on thursday at 7pm");
+  await expect(convo.getByText("Board game night fits you two.")).toBeVisible();
+  await expect(convo.getByTestId("cat-event-ev-board-games")).toBeVisible();
+  await expect(convo.getByTestId(/cat-event-not-a-real/)).toHaveCount(0); // off-catalog ids are dropped
+
+  await actions.getByRole("button", { name: "Create an event" }).click();
   await box.press("Enter");
   const draft = convo.getByTestId("cat-draft");
-  await expect(draft).toContainText("Thursday study session");
-  await expect(draft).toContainText("Library Commons");
+  await expect(draft).toContainText("Library Commons"); // approved venue from the catalog
   await draft.getByRole("button", { name: "Create event" }).click();
   await expect(draft.getByRole("link", { name: /Created · View event/ })).toBeVisible();
-  await expect(convo.getByText("Created Thursday study session. Register here:")).toBeVisible();
-  // A message without @muse stays between people.
-  await box.fill("see you all thursday");
+
+  // A cafe or table request is no longer a vendor errand: it is answered as an event lookup.
+  await box.fill("can the cafe hold a table for us @muse");
   await box.press("Enter");
-  await expect(convo.getByText("see you all thursday")).toBeVisible();
-  expect(sent.map((r) => r.kind)).toEqual(["hangout", "supplies", "barter", "create"]);
-  // Real names never reach Muse.
-  for (const r of sent) for (const name of r.senders) expect(name).toMatch(/^(You|Muse|Member [1-9])$/);
+  await expect.poll(() => sent.map((r) => r.kind)).toEqual(["hangout", "create", "hangout"]);
+  // The revealed name never reaches Muse.
+  for (const r of sent) for (const sender of r.senders) expect(sender).toMatch(/^(You|Muse|Member [1-9])$/);
+});
+
+test("operator adds synthetic players from the Space demo panel and sees the label", async ({ page }) => {
+  await newCycle(page);
+  await openSpace(page);
+  await page.getByTestId("spc-demo-topup").click();
+  await expect(page.getByTestId("spc-demo-note")).toContainText('each labeled "Synthetic player"');
 });
 
 test("privacy: turning matching off shows it on Sunday; delete my data returns to Join", async ({ page }) => {
@@ -498,28 +482,34 @@ test("operator posts an event nudge to the revealed room (fixture replay, approv
   await expect(nudge).toContainText("Fixture mode");
 });
 
-test("v3 operator: custom-event proposals are approved or rejected and the decision is logged", async ({ page }) => {
+async function toSundayChat(page: Page) {
   await newCycle(page);
-  const queue = page.getByTestId("cst-op-custom-events");
-  await expect(queue.locator(".cst-proposal")).toHaveCount(2);
-  await expect(queue.getByText("Replay of a saved round").first()).toBeVisible();
-  await expect(queue.getByText(/muse-spark-1\.3 · M7/).first()).toBeVisible();
-  await queue.locator(".cst-proposal").first().getByRole("button", { name: "Approve" }).click();
-  await expect(queue.locator(".cst-proposal")).toHaveCount(1);
-  await queue.locator(".cst-proposal").first().getByRole("textbox").fill("Venue too far");
-  await queue.locator(".cst-proposal").first().getByRole("button", { name: "Reject" }).click();
-  await expect(queue.getByText("No proposals waiting.")).toBeVisible();
-  const log = page.getByTestId("cst-op-decision-log");
-  await expect(log.locator("li")).toHaveCount(2);
-  await expect(log).toContainText("Approved “Saturday dumpling night”");
-  await expect(log).toContainText("Rejected “Sunday morning walk and coffee”");
+  await openSpace(page);
+  await answer(page, 1, LONG);
+  await advance(page, 7); // Tue..Fri, lock, forming, revealed
+  await page.goto(`${DAILY}?s=chat`);
+  return page.getByTestId("spc-chat");
+}
+
+test("v3 sky: entering the sky plays the telescope zoom; Sunday draws the Meta logo ribbon", async ({ page }) => {
+  await newCycle(page);
+  await openSpace(page);
+  await answer(page, 1, LONG);
+  await advance(page, 5);
+  await page.goto(DAILY);
+  await page.getByRole("button", { name: "View sky" }).click();
+  await expect(page.getByTestId("spc-telescope")).toBeVisible(); // iris + streaks on entry
+  await expect(page.getByTestId("spc-telescope")).toHaveCount(0, { timeout: 5000 }); // removes itself
+  await advance(page, 2);
+  await page.goto(`${DAILY}?s=main`);
+  await expect(page.getByTestId("spc-canvas-main")).toBeVisible();
 });
 
-test("operator reasoning panel: Muse proposes, code enforces (fixture shows none)", async ({ page }) => {
-  await newCycle(page);
-  const panel = page.getByTestId("cst-op-reasoning");
-  await expect(panel.getByRole("heading", { name: "Muse proposes, code enforces" })).toBeVisible();
-  await expect(panel.getByText("None. Fixture mode never calls Muse.")).toBeVisible();
+test("v3 chat: without the live server the room is honestly unavailable", async ({ page }) => {
+  const chat = await toSundayChat(page);
+  await expect(chat).toHaveCount(0);
+  await expect(page.getByTestId("spc-chat-unavailable")).toContainText("Chat needs the live server");
+  await expect(page.getByTestId("spc-chat-dock")).toHaveCount(0);
 });
 
 test("Marketplace and Events use one demo catalog: item pages, register, and a Muse-created event", async ({ page }) => {
@@ -559,7 +549,8 @@ test("Marketplace and Events use one demo catalog: item pages, register, and a M
   expect(fallback.create).toMatchObject({ title: "Picnic", placeId: "v-quad", day: "Saturday", time: "14:00" });
   expect(fallback.supplies[0]).toBe("mk-speaker");
   expect(fallback.hangout[0]).toBe("ev-film-club");
-  expect(fallback.kinds).toEqual(["create", "create", "supplies", "barter", "hangout"]);
+  // A cafe or table request is an event lookup now; no vendor is contacted.
+  expect(fallback.kinds).toEqual(["create", "create", "supplies", "hangout", "hangout"]);
   // Catalog events that share an id with Adam's approved campus events use the same venue and start.
   const drift = await page.evaluate(async () => {
     const { BASE_EVENTS } = await import("/src/features/catalog/catalog.ts");

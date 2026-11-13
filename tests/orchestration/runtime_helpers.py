@@ -38,9 +38,9 @@ def _refs(payload):
 def _groups(ids, blocks):
     if not ids:
         return []
-    if len(ids) < 3:
+    if len(ids) < 5:
         return None
-    for size in (3, 4, 5):
+    for size in (5, 6, 7, 8, 9):
         if size > len(ids):
             continue
         for rest in combinations(ids[1:], size - 1):
@@ -89,7 +89,7 @@ def scripted_transport():
         "constellation_naming",
         lambda payload: {
             "name": "Quiet Orbit",
-            "shapeId": {3: "triangle", 4: "kite", 5: "w-cass"}[payload["size"]],
+            "shapeId": "w-cass",
             "colorId": "tide",
         },
     )

@@ -66,7 +66,7 @@ def assert_private_fields_absent(value):
 
 
 def prepare_locked(env, client):
-    players = [join(client, f"player {index}") for index in range(3)]
+    players = [join(client, f"player {index}") for index in range(5)]
     grant_operator(env.privacy_store, players[0].player_id, COMMUNITY)
     response = call(
         client,
@@ -127,7 +127,7 @@ def revealed(env, client):
 def test_composed_daily_loop_formation_reveal_chat_sky_and_expiry():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, job_id = formed(env, client)
-        a, b, c = players
+        a, b, c, *_ = players
         before = call(client, b, "GET", f"/cycles/{cycle_id}/room")
         assert before.status_code == 404
         response = call(
@@ -238,7 +238,7 @@ def test_http_auth_cross_community_forged_fields_and_scoped_metadata():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         assert client.get("/api/v1/session").status_code == 401
         players, cycle_id, job_id, room_id = revealed(env, client)
-        a, b, _ = players
+        a, b, _, *__ = players
         assert call(client, b, "GET", "/operator/calls").status_code == 403
         assert call(client, b, "GET", "/operator/reports").status_code == 403
         assert call(client, b, "GET", f"/jobs/{job_id}").status_code == 403
@@ -285,7 +285,7 @@ def test_http_auth_cross_community_forged_fields_and_scoped_metadata():
 def test_privacy_delete_and_revocation_clear_chat_replay_and_cached_sky():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, _job_id, room_id = revealed(env, client)
-        a, b, c = players
+        a, b, c, *_ = players
         response = call(
             client,
             a,
@@ -353,7 +353,7 @@ def test_stale_private_snapshot_cannot_commit_formation(monkeypatch):
 def test_sse_seq_replay_and_session_revocation_use_real_current_checks():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, _cycle_id, _job_id, room_id = revealed(env, client)
-        a, b, _c = players
+        a, b, _c, *_rest = players
         actor_b = env.app.state.privacy.require_session(b.token)
         with env.repository.transaction() as state:
             previous = state.chat.seq
@@ -408,7 +408,7 @@ def test_sse_seq_replay_and_session_revocation_use_real_current_checks():
 def test_http_reports_and_blocks_use_real_canonical_privacy_stores():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, _cycle_id, _job_id, room_id = revealed(env, client)
-        a, b, c = players
+        a, b, c, *_ = players
         message = call(
             client, a, "POST", f"/rooms/{room_id}/messages", json={"text": "First synthetic hello"}
         ).json()
@@ -471,7 +471,7 @@ def test_real_m1_outage_cannot_accept_chat_or_persist_a_message():
 def test_mutual_reveal_updates_sky_count_without_duplicate_narration():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, _job_id, room_id = revealed(env, client)
-        a, b, _c = players
+        a, b, _c, *_rest = players
 
         def m8_calls():
             return sum(
@@ -547,7 +547,7 @@ ANSWER = "Synthetic private submission number {} for this week"
 def test_stage_shows_only_opted_in_players_answers_to_operators():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, _job = formed(env, client)
-        operator, on_stage, private_player = players
+        operator, on_stage, private_player = players[:3]
         assert call(client, on_stage, "GET", "/operator/stage").status_code == 403
         assert call(client, on_stage, "GET", "/me/stage").json() == {"slot": None}
         bad = call(client, on_stage, "POST", "/me/stage", json={"slot": "C"})
@@ -563,8 +563,9 @@ def test_stage_shows_only_opted_in_players_answers_to_operators():
         assert (a["slot"], a["joined"], b["joined"]) == ("A", True, False)
         assert [x["text"] for x in a["answers"]] == [ANSWER.format(1)]
         assert b["answers"] == [] and b["constellation"] is None
-        assert a["constellation"]["size"] == 3
-        assert body["population"]["players"] == 3 and body["population"]["answersByDay"][0] == 3
+        assert a["constellation"]["size"] == len(players)
+        assert body["population"]["players"] == len(players)
+        assert body["population"]["answersByDay"][0] == len(players)
         assert body["formation"]["formed"] is True and body["cycle"]["cycleId"] == cycle_id
         assert body["calls"] and all("callType" in c for c in body["calls"])
         # Nobody else's text, ids or private meaning leaves the server.
@@ -592,3 +593,98 @@ def test_stage_without_a_week_is_empty_not_an_error():
         body = call(client, player, "GET", "/operator/stage").json()
         assert body["cycle"] is None and body["constellations"] == []
         assert body["population"]["answersByDay"] == [0, 0, 0, 0, 0]
+
+
+def test_topup_needs_a_session_is_labeled_and_seeds_the_maya_dev_pair():
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        operator = join(client, "operator")
+        grant_operator(env.privacy_store, operator.player_id, COMMUNITY)
+        player = join(client, "player")
+        created = call(
+            client,
+            operator,
+            "POST",
+            "/operator/cycles",
+            json={"communityId": COMMUNITY, "weekStart": "2026-11-09", "demoTiming": True},
+        )
+        cycle_id = created.json()["cycleId"]
+        path = f"/operator/cycles/{cycle_id}/synthetic-topup"
+
+        # #103: on a demo-timed week every signed-in account may run the demo controls,
+        # so the gate here is the session, not the operator role.
+        client.cookies.clear()
+        denied = client.post("/api/v1" + path, headers={"Idempotency-Key": "no-session"})
+        assert denied.status_code == 401
+        with env.privacy_store.tx() as conn:
+            assert (
+                conn.execute("SELECT count(*) FROM players WHERE is_synthetic = 1").fetchone()[0]
+                == 0
+            )
+
+        topped = call(client, operator, "POST", path)
+        assert topped.status_code == 200
+        assert (
+            topped.json()["label"] == "Synthetic player" and topped.json()["syntheticPlayers"] == 38
+        )
+        with env.privacy_store.tx() as conn:
+            rows = conn.execute(
+                "SELECT player_id, display_name, is_synthetic FROM players"
+            ).fetchall()
+            seeded = {r[0]: r for r in rows if r[0] not in (operator.player_id, player.player_id)}
+            # Every generated account carries the synthetic flag and says so in its name.
+            assert len(seeded) == 38
+            assert all(r[2] == 1 and "(synthetic)" in r[1] for r in seeded.values())
+            assert {"p-maya", "p-dev"} <= set(seeded)
+            day_one = dict(
+                conn.execute(
+                    "SELECT player_id, text FROM answers WHERE cycle_id = ? AND day = 1"
+                    " AND player_id IN ('p-maya', 'p-dev')",
+                    (cycle_id,),
+                ).fetchall()
+            )
+        # The semantic pair: no shared keywords, same meaning.
+        assert "alone" in day_one["p-maya"] and "cooking for one" in day_one["p-dev"]
+        # A normal player may repeat it on a demo week; it stays labeled and adds nobody new.
+        again = call(client, player, "POST", path)
+        assert again.status_code == 200 and again.json()["label"] == "Synthetic player"
+        with env.privacy_store.tx() as conn:
+            count = conn.execute("SELECT count(*) FROM players WHERE is_synthetic = 1").fetchone()
+        assert count[0] == 38
+
+
+def test_v3_live_routes_serve_indices_only_from_the_verified_session():
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        players, cycle_id, _job = formed(env, client)
+        a = players[0]
+        close = call(
+            client,
+            a,
+            "POST",
+            f"/operator/cycles/{cycle_id}/close-day",
+            key="close-1",
+            json={"day": 1},
+        )
+        assert close.status_code == 200 and close.json()["status"] == "ok"
+        view = call(client, a, "GET", f"/cycles/{cycle_id}/days/1/constellations")
+        assert view.status_code == 200
+        body = view.json()
+        assert "myStarIndex" in body and all("starIndices" in c for c in body["constellations"])
+        assert "player" not in str(body).lower().replace("placement", "")
+        sky = call(client, a, "GET", f"/cycles/{cycle_id}/sky/stars")
+        assert sky.status_code == 200 and sky.json()["stars"]["count"] == 10000
+
+
+def test_v3_scheduler_closes_days_and_forms_main_from_cycle_hooks():
+    import time
+
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        _players, cycle_id = prepare_locked(env, client)  # advance to locked fires the publish hook
+        store = env.app.state.v3_store
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and not (
+            store.load_days(cycle_id).get(1) and store.load_main(cycle_id) is not None
+        ):
+            time.sleep(0.02)
+        day = store.load_days(cycle_id).get(1)
+        assert day is not None and day.final  # closed by the hook, no operator close-day call
+        assert store.load_main(cycle_id) is not None

@@ -153,8 +153,11 @@ class ActivityStore:
                 " group_ids = excluded.group_ids,"
                 " event_ids = excluded.event_ids, friend_ids = excluded.friend_ids,"
                 " topics = excluded.topics, updated_at = excluded.updated_at",
-                (player_id, community_id, req.profile_id, json.dumps(_ids(req.group_ids)), json.dumps(event_ids),
-                 json.dumps(_ids(req.friend_ids)), json.dumps(topics), now),
+                # Audit P1: friend ids and profile id are client-asserted and cannot be verified
+                # here, so they are never stored. A player could otherwise list a specific person
+                # as a friend and read back whether that person shares their anonymous room.
+                (player_id, community_id, None, json.dumps(_ids(req.group_ids)), json.dumps(event_ids),
+                 json.dumps([]), json.dumps(topics), now),
             )
             return ActivityResult(use_activity=True, topics=topics)
 

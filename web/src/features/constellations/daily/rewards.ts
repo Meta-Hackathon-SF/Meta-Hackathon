@@ -1,6 +1,6 @@
 /*
  * Streak rewards. Computed in code from the server's Streak and this week's
- * answers (isCatchUp is server-set). Rewards are cosmetic badges only: they
+ * answers (isCatchUp is server-set). Streaks reward showing up, never disclosure. Rewards are cosmetic badges only: they
  * never change matching, weights or what anyone else can see.
  */
 import type { DailyAnswer, Streak } from "./client";

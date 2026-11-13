@@ -7,7 +7,7 @@
  */
 import { BASE_EVENTS, ITEMS, WEEKDAYS, checkDraft, findItem, rank, type EventDraft } from "../../catalog/catalog";
 
-export type MuseKind = "hangout" | "supplies" | "barter" | "create";
+export type MuseKind = "hangout" | "supplies" | "create";
 
 export interface MuseHelp {
   text: string;
@@ -26,7 +26,6 @@ export interface MuseNote {
 export function inferKind(text: string): MuseKind {
   const t = text.toLowerCase();
   if (/\b(create|organi[sz]e|host|set up|throw)\b/.test(t) || /\b(make|start|plan)\b.*\b(an? |our own |new )(event|meetup|hangout)\b/.test(t)) return "create";
-  if (/\b(cafe|café|vendor|reserve|reservation|book a|booking|a table)\b/.test(t)) return "barter";
   if (/\b(buy|bring|need|supplies|snacks?|drinks?|coffee|books?|textbooks?|stuff|gear|marketplace|speaker|tent)\b/.test(t)) return "supplies";
   return "hangout";
 }
@@ -88,15 +87,6 @@ export function catalogReply(kind: MuseKind, notes: MuseNote[]): MuseHelp {
       draft: null,
     };
   }
-  if (kind === "barter") {
-    return {
-      text: "Ask Campus Cafe for a table, bring the coffee set, and split the check. Nothing is booked until the cafe agrees.",
-      source: "catalog",
-      itemIds: ["mk-coffee-set"],
-      eventIds: [],
-      draft: null,
-    };
-  }
   return {
     text: "Here's a draft event. Tap Create to post it for the group.",
     source: "catalog",
@@ -137,12 +127,11 @@ function parseLive(kind: MuseKind, body: unknown): MuseHelp | null {
   const draft = kind === "create" ? checkDraft(b.draft) : null;
   if (kind === "hangout" && !eventIds.length) return null;
   if (kind === "supplies" && !itemIds.length) return null;
-  if (kind === "barter" && !(text.toLowerCase().includes("campus cafe") && text.toLowerCase().includes("nothing is booked"))) return null;
   if (kind === "create" && !draft) return null;
   return {
     text,
     source: "live",
-    itemIds: kind === "supplies" || kind === "barter" ? itemIds : [],
+    itemIds: kind === "supplies" ? itemIds : [],
     eventIds: kind === "hangout" ? eventIds : [],
     draft,
   };

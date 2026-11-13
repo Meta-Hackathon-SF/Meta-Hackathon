@@ -6,7 +6,7 @@
  * until contract 3.0.0 delivers real DailyConstellationsView anchors.
  */
 
-export type SkyMode = "home" | "daily" | "sky" | "forming" | "main";
+export type SkyMode = "home" | "daily" | "sky" | "forming" | "main" | "drop";
 
 export const SKY_COLORS = ["#4599FF", "#2CC7C0", "#5BD27A", "#F5B841", "#F07196"] as const;
 const RGB = ["69,153,255", "44,199,192", "91,210,122", "245,184,65", "240,113,150"];
@@ -24,6 +24,8 @@ export interface SkyInput {
   still: boolean;
   /** Week sky: highlight one day's lines (1-5); others dim. */
   focusDay?: number | null;
+  /** Main: how many people the server put in the constellation, the viewer included. */
+  members?: number;
 }
 
 export interface SkyHooks {
@@ -42,6 +44,8 @@ const ease = (p: number) => {
   p = cl(p);
   return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
 };
+/** Matched stars grow toward this fraction of full energy; the viewer's own star always stays brightest. */
+const MATCH_CAP = 0.7;
 const easeOut = (p: number) => 1 - Math.pow(1 - cl(p), 3);
 
 let spriteCache: HTMLCanvasElement[] | null = null;
@@ -77,15 +81,17 @@ export class SkyRenderer {
   private cy = 0;
   private me!: Pt;
   private close: Pt[] = [];
+  private closeBase: { x: number; y: number }[] = [];
   private days: Record<number, Con[]> = {};
   private second: { d: number; pts: Pt[]; bend: number }[] = [];
+  private reachCache = new WeakMap<Con, number[]>();
   private emap: Record<string, { a: Pt; b: Pt; bend: number; days: number[] }> = {};
   private amb: { pts: { x: number; y: number }[]; edges: Edge[]; per: number; ph: number }[] = [];
   private nb: { x: number; y: number; a: number; col: number; sz: number; f1: number; f2: number; p1: number; p2: number }[] = [];
   private anchors: { x: number; y: number }[] = [];
   private meAnchor = { x: 0, y: 0 };
   private loop: { x: number; y: number }[] = [];
-  private attempts: { from: Pt; to: Pt; kept: boolean; tree: boolean }[] = [];
+  private attempts: { from: Pt; to: Pt; kept: boolean; tree: boolean; back?: boolean }[] = [];
   private spr: HTMLCanvasElement[] = [];
 
   build(W: number, H: number) {
@@ -109,7 +115,7 @@ export class SkyRenderer {
       return v < 0.12 ? 0 : v < 0.35 ? 1 : v < 0.75 ? 2 : v < 0.93 ? 3 : 4;
     };
     const tw = (lo: number, hi: number): Twinkle => ({
-      amp: lo + (hi - lo) * r(), f1: 2 + 5 * r(), f2: 7 + 10 * r(), f3: 0.25 + 0.6 * r(),
+      amp: lo + (hi - lo) * r(), f1: 1.6 + 3.4 * r(), f2: 5 + 7 * r(), f3: 0.25 + 0.6 * r(),
       p1: r() * 6.283, p2: r() * 6.283, p3: r() * 6.283, fp: r() * 6.283, d: r() * 1200, a: 1,
     });
     const gauss = () => (r() + r() + r() + r() - 2) * 0.9;
@@ -154,6 +160,7 @@ export class SkyRenderer {
     const sc = Math.min(1.25, Math.max(0.8, Math.min(W / 390, H / 700)));
     this.me = { x: cx, y: cy, id: "me" };
     this.close = ([[-74, -104], [92, -66], [70, 96], [-100, 60]] as const).map(([dx, dy], k) => ({ x: cx + dx * sc, y: cy + dy * sc, id: "c" + k, k, ...tw(0.2, 0.45), a: 1 }));
+    this.closeBase = this.close.map((c) => ({ x: c.x, y: c.y }));
     const ok = (x: number, y: number) => x > 14 && x < W - 14 && y > 96 && y < H - 130;
     const shuffle = <T,>(a: T[]) => {
       for (let i = a.length - 1; i > 0; i--) {
@@ -256,32 +263,49 @@ export class SkyRenderer {
     };
     this.anchors = [2.5, 5.9, 0.35, 3.6].map(lem);
     this.meAnchor = lem(Math.PI / 2);
+    // Meta logo: one smooth infinity ribbon through the member anchors, starting and ending at "me".
     this.loop = [];
-    const A = this.anchors, M = this.meAnchor, seq = [M, A[0], A[3], M, A[2], A[1], M];
-    for (let q = 0; q < seq.length - 1; q++)
-      for (let i = 0; i < 40; i++) {
-        const u = i / 40;
-        this.loop.push({ x: seq[q].x + (seq[q + 1].x - seq[q].x) * u, y: seq[q].y + (seq[q + 1].y - seq[q].y) * u });
-      }
-    this.loop.push(M);
+    for (let i = 0; i <= 260; i++) {
+      const p = lem(Math.PI / 2 + (i / 260) * Math.PI * 2);
+      this.loop.push(p);
+    }
     const cand = Object.values(this.days).flat().flatMap((c) => c.pts.filter((p) => p.id[0] === "x"));
     const dst = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
-    const at: typeof this.attempts = [], vis: Pt[] = [this.me];
-    const un = [...this.close, ...cand.sort((a, b) => dst(a, this.me) - dst(b, this.me)).slice(0, 26)];
-    while (un.length) {
-      let bi = 0, bv: Pt = this.me, bd = 1e9;
-      un.forEach((u, i) => vis.forEach((v) => {
-        const d = dst(u, v);
-        if (d < bd) {
-          bd = d;
-          bi = i;
-          bv = v;
+    // Depth-first search with backtracking, not breadth-first: follow one path as deep as it goes,
+    // probe the nearest candidates at each step, and when a branch dead-ends walk back and try another.
+    // Failed probes flash red and retract; the path that reaches a real match stays lit.
+    const pool = [...this.close, ...cand.sort((a, b) => dst(a, this.me) - dst(b, this.me)).slice(0, 26)];
+    const at: typeof this.attempts = [];
+    const seen = new Set<Pt>([this.me]);
+    const stack: Pt[] = [this.me];
+    let left = this.close.length;
+    let picks = 0;
+    for (let guard = 0; left > 0 && guard < 500; guard++) {
+      const top = stack[stack.length - 1];
+      const options = pool.filter((p) => !seen.has(p)).sort((a, b) => dst(a, top) - dst(b, top)).slice(0, 3);
+      let advanced = false;
+      for (const o of options) {
+        seen.add(o);
+        if (o.id[0] === "c") {
+          at.push({ from: top, to: o, kept: true, tree: true });
+          stack.push(o);
+          left--;
+          advanced = true;
+          break;
         }
-      }));
-      const u = un.splice(bi, 1)[0];
-      un.map((w) => ({ w, d: dst(w, bv) })).filter((o) => o.d < bd * 1.7).sort((a, b) => a.d - b.d).slice(0, 2).forEach((o) => at.push({ from: bv, to: o.w, kept: false, tree: false }));
-      at.push({ from: bv, to: u, kept: u.id[0] === "c", tree: true });
-      vis.push(u);
+        // Every third decoy looks promising: walk into it (depth), then dead-end and backtrack later.
+        if (stack.length < 5 && ++picks % 3 === 0) {
+          at.push({ from: top, to: o, kept: false, tree: true });
+          stack.push(o);
+          advanced = true;
+          break;
+        }
+        at.push({ from: top, to: o, kept: false, tree: false }); // probe failed
+      }
+      if (advanced) continue;
+      if (stack.length <= 1) break;
+      const dead = stack.pop() as Pt; // dead end: retract to the parent and try a sibling branch
+      at.push({ from: dead, to: stack[stack.length - 1], kept: false, tree: false, back: true });
     }
     this.attempts = at;
   }
@@ -311,6 +335,25 @@ export class SkyRenderer {
     ctx.beginPath();
     ctx.arc(x, y, Math.max(0.7, R * 0.1), 0, 6.283);
     ctx.fill();
+    if (R >= 11) this.spikes(ctx, x, y, R, a);
+  }
+
+  /** Faint four-point diffraction cross, like a real bright star through optics. Fades at the tips. */
+  private spikes(ctx: CanvasRenderingContext2D, x: number, y: number, R: number, a: number) {
+    const L = R * 1.25;
+    for (const [dx, dy] of [[1, 0], [0, 1]]) {
+      const g = ctx.createLinearGradient(x - dx * L, y - dy * L, x + dx * L, y + dy * L);
+      g.addColorStop(0, "rgba(255,255,255,0)");
+      g.addColorStop(0.5, "rgba(255,255,255,.75)");
+      g.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 0.6;
+      ctx.globalAlpha = Math.min(1, a * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(x - dx * L, y - dy * L);
+      ctx.lineTo(x + dx * L, y + dy * L);
+      ctx.stroke();
+    }
   }
 
   private seg(ctx: CanvasRenderingContext2D, a: { x: number; y: number }, b: { x: number; y: number }, ra: number, rb: number, p: number, alpha: number) {
@@ -358,15 +401,89 @@ export class SkyRenderer {
     }
   }
 
+  /** Dijkstra from the viewer's star (pts[0]) along a constellation's lines; edge cost is its drawn length. */
+  private reach(con: Con): number[] {
+    const cached = this.reachCache.get(con);
+    if (cached) return cached;
+    const n = con.pts.length;
+    const dist = new Array<number>(n).fill(Infinity);
+    const done = new Array<boolean>(n).fill(false);
+    dist[0] = 0;
+    for (let step = 0; step < n; step++) {
+      let u = -1;
+      for (let i = 0; i < n; i++) if (!done[i] && (u < 0 || dist[i] < dist[u])) u = i;
+      if (u < 0 || dist[u] === Infinity) break;
+      done[u] = true;
+      for (const [i, j] of con.edges) {
+        if (i !== u && j !== u) continue;
+        const v = i === u ? j : i;
+        const cost = Math.hypot(con.pts[i].x - con.pts[j].x, con.pts[i].y - con.pts[j].y);
+        if (dist[u] + cost < dist[v]) dist[v] = dist[u] + cost;
+      }
+    }
+    this.reachCache.set(con, dist);
+    return dist;
+  }
+
   private drawCon(ctx: CanvasRenderingContext2D, con: Con, d: number, p: number, alpha: number, ts: number, starA?: number) {
     ctx.strokeStyle = `rgb(${RGB[d - 1]})`;
-    ctx.lineWidth = 1.1;
+    ctx.lineWidth = 0.6;
     const n = con.edges.length;
     con.edges.forEach(([i, j], k) => this.seg(ctx, con.pts[i], con.pts[j], i === 0 ? 11 : 7, j === 0 ? 11 : 7, cl(p * n - k), alpha * 0.6));
     con.pts.forEach((pt, i) => {
       if (i === 0) return;
-      this.spot(ctx, 5 + d, pt.x, pt.y, pt.id[0] === "c" ? 13 : pt.sz || 9, (starA ?? alpha) * this.lvl(pt, 0, ts, false));
+      this.spot(ctx, 5 + d, pt.x, pt.y, pt.id[0] === "c" ? 18 : Math.min(8, pt.sz || 7), (starA ?? alpha) * this.lvl(pt, 0, ts, false));
     });
+  }
+
+  /** The Meta infinity mark: a thick gradient ribbon that crosses over itself, like the real logo.
+   *  `p` 0..1 traces it on. Half B is drawn over half A with a dark edge to fake the over/under. */
+  private drawMetaLogo(ctx: CanvasRenderingContext2D, p: number, ts: number) {
+    const total = this.loop.length;
+    const n = Math.max(2, Math.floor(total * p));
+    const mid = Math.floor(total / 2);
+    const xs = this.loop.map((q) => q.x);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const g = ctx.createLinearGradient(x0, 0, x1, 0);
+    g.addColorStop(0, "#0A5BD6");
+    g.addColorStop(0.5, "#1E7CF2");
+    g.addColorStop(1, "#4796FF");
+    const path = (pts: { x: number; y: number }[]) => {
+      ctx.beginPath();
+      pts.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)));
+    };
+    const A = this.loop.slice(0, Math.min(n, mid + 1));
+    const B = n > mid ? this.loop.slice(mid, n) : [];
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.globalAlpha = 0.2 * (0.92 + 0.08 * Math.sin(ts * 1.6));
+    ctx.strokeStyle = "#1877F2";
+    ctx.lineWidth = 46;
+    path(this.loop.slice(0, n));
+    ctx.stroke();
+    const ribbon = (pts: { x: number; y: number }[], edge: boolean) => {
+      if (pts.length < 2) return;
+      if (edge) {
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = "#03081A";
+        ctx.lineWidth = 31;
+        path(pts);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 24;
+      path(pts);
+      ctx.stroke();
+      ctx.globalAlpha = 0.22;
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 3;
+      path(pts);
+      ctx.stroke();
+    };
+    ribbon(A, false);
+    ribbon(B, true);
+    ctx.globalAlpha = 1;
   }
 
   private drawMe(ctx: CanvasRenderingContext2D, x: number, y: number, a: number, ts: number, big = false) {
@@ -403,6 +520,41 @@ export class SkyRenderer {
         this.drawMe(ctx, this.cx, this.cy, easeOut((el - 300) / 700), ts);
         hooks.onCount?.(easeOut((el - 300) / 1800));
         settled = el > 1500 + cons.length * 700 + 800;
+        break;
+      }
+      case "drop": {
+        // The day's constellation is found outward from the viewer: each star lights when the
+        // shortest path from "me" reaches it, and each line grows from its nearer end.
+        const vd = input.viewDay, cons = input.emptyDay ? [] : this.days[vd] ?? [];
+        this.drawBg(ctx, 1e6, ts, false, 1);
+        this.drawNb(ctx, ts, 1);
+        this.drawAmbient(ctx, ts, 1);
+        const START = 200, DUR = 3400, FLASH = 650;
+        const far = Math.max(1, ...cons.flatMap((cn) => this.reach(cn).filter((v) => v < Infinity)));
+        const at = (dist: number) => START + (DUR * dist) / far;
+        ctx.strokeStyle = `rgb(${RGB[vd - 1]})`;
+        ctx.lineWidth = 0.8;
+        for (const cn of cons) {
+          const dist = this.reach(cn);
+          for (const [i, j] of cn.edges) {
+            const [a, b] = dist[i] <= dist[j] ? [i, j] : [j, i];
+            if (dist[b] === Infinity) continue;
+            const span = Math.max(1, at(dist[b]) - at(dist[a]));
+            this.seg(ctx, cn.pts[a], cn.pts[b], a === 0 ? 11 : 7, b === 0 ? 11 : 7, easeOut((el - at(dist[a])) / span), 0.6);
+          }
+          cn.pts.forEach((pt, i) => {
+            if (i === 0 || dist[i] === Infinity) return;
+            const since = el - at(dist[i]);
+            if (since <= 0) return;
+            const lit = cl(since / 260), flash = 1 - cl(since / FLASH);
+            const size = pt.id[0] === "c" ? 18 : Math.min(8, pt.sz || 7);
+            if (flash > 0) this.spot(ctx, 2, pt.x, pt.y, size + 10 * flash, 0.55 * flash);
+            this.spot(ctx, 5 + vd, pt.x, pt.y, size, lit * this.lvl(pt, 0, ts, false));
+          });
+        }
+        this.drawMe(ctx, this.cx, this.cy, 1, ts);
+        hooks.onProgress?.(cons.length ? cl((el - START) / DUR) : 0);
+        settled = cons.length > 0 && el > START + DUR + FLASH;
         break;
       }
       case "sky": {
@@ -452,23 +604,39 @@ export class SkyRenderer {
         this.drawBg(ctx, 1e6, ts, false, 0.8);
         this.drawAmbient(ctx, ts, 0.8);
         for (let d = 1; d <= 5; d++) if (ans.has(d)) this.days[d].forEach((cn) => this.drawCon(ctx, cn, d, 1, 0.16, ts, 0.3));
-        const N = this.attempts.length, w = 3 / N, keptN = [0, 0, 0, 0];
+        // Matches gather around "me": the close stars drift inward as the search settles.
+        const pull = 0.4 * easeOut(fp);
+        this.close.forEach((c, k) => {
+          const base = this.closeBase[k];
+          c.x = this.cx + (base.x - this.cx) * (1 - pull);
+          c.y = this.cy + (base.y - this.cy) * (1 - pull);
+        });
+        const N = this.attempts.length, w = 3 / N;
+        // Each star's energy follows the search: a probe flashes it, a path that survives brightens and
+        // grows it, a dead end drains it again. Capped well below the viewer's own star.
+        const energy = new Map<Pt, number>();
+        const flash = new Map<Pt, number>();
         this.attempts.forEach((a, i) => {
           const u = (fp - (i / N) * (1 - w)) / w;
           if (u <= 0) return;
           const grow = cl(u / 0.35);
+          const g = easeOut(u / 0.55);
           let alpha = 0.75;
           if (u > 0.6) {
             const c = cl((u - 0.6) / 0.4);
             alpha = a.kept ? 0.75 - 0.2 * c : a.tree ? 0.75 - 0.45 * c : 0.75 * (1 - c);
           }
-          if (a.kept && u > 0.6 && a.to.k !== undefined) keptN[a.to.k]++;
-          ctx.strokeStyle = a.kept && u > 0.6 ? "rgb(205,218,250)" : "#fff";
-          ctx.lineWidth = 1.2;
+          if (a.back) energy.set(a.from, (energy.get(a.from) ?? 0) * (1 - g));
+          else if (a.kept) energy.set(a.to, Math.max(energy.get(a.to) ?? 0, MATCH_CAP * g));
+          else if (a.tree) energy.set(a.to, Math.max(energy.get(a.to) ?? 0, 0.7 * MATCH_CAP * g));
+          else flash.set(a.to, Math.max(flash.get(a.to) ?? 0, Math.sin(Math.PI * cl(u)) * 0.6));
+          ctx.strokeStyle = a.kept && u > 0.6 ? "rgb(205,218,250)" : !a.kept && !a.tree && u > 0.35 ? "rgb(255,140,160)" : "#fff";
+          ctx.lineWidth = 0.7;
           this.seg(ctx, a.from, a.to, a.from.id === "me" ? 11 : 8, 8, grow, alpha);
-          if (u < 1 && !a.kept) this.spot(ctx, 2, a.to.x, a.to.y, 9, 0.6 * (1 - cl((u - 0.6) / 0.4)));
         });
-        this.close.forEach((p, k) => this.spot(ctx, 2, p.x, p.y, 10 + 6 * Math.min(1, keptN[k]), (0.45 + 0.5 * Math.min(1, keptN[k])) * this.lvl(p, 0, ts, false)));
+        this.close.forEach((p) => this.spot(ctx, 2, p.x, p.y, 8, 0.4 * this.lvl(p, 0, ts, false)));
+        energy.forEach((e, p) => e > 0.02 && this.spot(ctx, p.id[0] === "c" ? 2 : 1, p.x, p.y, 8 + 9 * e, (0.4 + 0.5 * e) * this.lvl(p, 0, ts, false)));
+        flash.forEach((f, p) => f > 0.02 && this.spot(ctx, 3, p.x, p.y, 7 + 5 * f, f));
         this.drawMe(ctx, this.cx, this.cy, 1, ts);
         hooks.onProgress?.(fp);
         settled = fp >= 1;
@@ -483,17 +651,11 @@ export class SkyRenderer {
         if (input.noMatch) this.drawMe(ctx, this.cx, this.cy, 1, ts);
         else {
           const mv = ease((el - 700) / 1500), lp = ease((el - 2000) / 1300);
-          const pos = this.close.map((p, k) => ({ x: p.x + (this.anchors[k].x - p.x) * mv, y: p.y + (this.anchors[k].y - p.y) * mv }));
+          // One star per real member besides the viewer; never more than the server reported.
+          const others = Math.max(0, Math.min(this.close.length, (input.members ?? 1) - 1));
+          const pos = this.close.slice(0, others).map((p, k) => ({ x: p.x + (this.anchors[k].x - p.x) * mv, y: p.y + (this.anchors[k].y - p.y) * mv }));
           const meP = { x: this.cx + (this.meAnchor.x - this.cx) * mv, y: this.cy + (this.meAnchor.y - this.cy) * mv };
-          if (lp > 0) {
-            ctx.globalAlpha = 0.55;
-            ctx.strokeStyle = "rgb(69,153,255)";
-            ctx.lineWidth = 1.6;
-            ctx.beginPath();
-            const n = Math.floor(this.loop.length * lp);
-            this.loop.slice(0, Math.max(2, n)).forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
-            ctx.stroke();
-          }
+          if (lp > 0) this.drawMetaLogo(ctx, lp, ts);
           if (mv < 1) {
             ctx.strokeStyle = "#fff";
             ctx.lineWidth = 1.2;

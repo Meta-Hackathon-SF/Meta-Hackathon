@@ -12,8 +12,9 @@ const SUGGESTIONS: [MuseKind, string, string][] = [
   ["hangout", "Find an event", "@muse what's happening this week that we'd like?"],
   ["create", "Create an event", "@muse create a study session on Thursday at 7pm"],
   ["supplies", "Find supplies", "@muse what should we bring?"],
-  ["barter", "Ask a vendor", "@muse can we get a table at the cafe?"],
 ];
+/** A thread opened from a mutual reveal offers the two catalog actions only. */
+const REVEAL_KINDS: MuseKind[] = ["hangout", "create"];
 
 import "../daily/space/space.css";
 
@@ -27,6 +28,9 @@ function vibeClosed(): boolean {
   }
 }
 
+/** Threads opened from a real mutual reveal: the person is not one of the demo profiles. */
+const isReveal = (thread: InboxThread) => thread.id.startsWith("reveal-");
+
 function person(name: string) {
   return people.find((entry) => entry.name === name) ?? currentUser;
 }
@@ -36,6 +40,13 @@ function ThreadMark({ thread }: { thread: InboxThread }) {
     return (
       <span className="avatar group-chip" aria-hidden="true">
         <Users size={18} />
+      </span>
+    );
+  }
+  if (isReveal(thread)) {
+    return (
+      <span className="avatar group-chip" aria-hidden="true">
+        {thread.title.slice(0, 1).toUpperCase()}
       </span>
     );
   }
@@ -75,13 +86,16 @@ export default function MessengerInbox() {
   }, [count, asking, selected?.id]);
   if (!selected) return null;
   const isSunday = selected.id === SUNDAY_THREAD_ID;
+  const fromReveal = isReveal(selected);
+  const museOn = isSunday || fromReveal;
+  const suggestions = fromReveal ? SUGGESTIONS.filter(([kind]) => REVEAL_KINDS.includes(kind)) : SUGGESTIONS;
 
-  /** Sends the draft. In the Sunday group, a message that mentions @muse also asks Muse. */
+  /** Sends the draft. Where Muse is on, a message that mentions @muse also asks Muse. */
   const submit = (forced?: MuseKind) => {
     const note = draft.trim();
     if (!note || asking) return;
     const threadId = selected.id;
-    const wantsMuse = isSunday && (forced !== undefined || /@muse\b/i.test(note));
+    const wantsMuse = museOn && (forced !== undefined || /@muse\b/i.test(note));
     const spoken = wantsMuse && !/@muse\b/i.test(note) ? `${note} @muse` : note;
     sendInboxMessage(threadId, spoken);
     setDraft("");
@@ -123,14 +137,16 @@ export default function MessengerInbox() {
             <small>
               {selected.kind === "group"
                 ? `${selected.memberNames.join(", ")} · names visible · Preview`
-                : "Demo conversation"}
+                : isReveal(selected)
+                  ? `${selected.synthetic ? "Synthetic player · " : ""}Simulated Facebook`
+                  : "Demo conversation"}
             </small>
           </span>
         </header>
         <div className="conversation-body">
           {selected.kind === "direct" && (
             <>
-              <Avatar person={person(selected.title)} size={56} />
+              {!isReveal(selected) && <Avatar person={person(selected.title)} size={56} />}
               <h2>{selected.title}</h2>
               <p className="muted">You're connected in the hackathon community.</p>
             </>
@@ -181,10 +197,10 @@ export default function MessengerInbox() {
           {asking && <p className="muted">Muse is writing…</p>}
           <div ref={end} />
         </div>
-        {isSunday && (
+        {museOn && (
           <div className="muse-actions" role="group" aria-label="Ask Muse">
             <span className="muse-hint">Mention @muse to get a suggestion, or tap one:</span>
-            {SUGGESTIONS.map(([kind, label, text]) => (
+            {suggestions.map(([kind, label, text]) => (
               <button
                 key={kind}
                 type="button"
@@ -210,7 +226,7 @@ export default function MessengerInbox() {
             aria-label="Message"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder={isSunday ? "Aa · mention @muse for ideas" : "Aa"}
+            placeholder={museOn ? "Aa · mention @muse for ideas" : "Aa"}
             maxLength={2000}
           />
           <button type="submit" aria-label="Send message" disabled={!draft.trim() || asking !== null}>

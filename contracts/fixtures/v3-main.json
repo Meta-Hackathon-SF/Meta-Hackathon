@@ -1,6 +1,6 @@
 {
   "contractVersion": "3.0.0",
-  "_note": "S11. Room-local indices (R1): none of these equal the viewer's sky star index. 3-5 members. main is null with an enum reason when no group.",
+  "_note": "S11. Room-local indices (R1): none of these equal the viewer's sky star index. 5+ members. main is null with an enum reason when no group.",
   "response": {
     "main": {
       "constellationId": "mc-01",
@@ -36,7 +36,8 @@
         "3": "faint"
       },
       "revealedAt": "2026-11-15T18:00:00Z",
-      "roomExpiresAt": "2026-11-16T18:00:00Z"
+      "roomExpiresAt": "2026-11-16T18:00:00Z",
+      "sharedMeaning": "People who feel most themselves outside the crowd."
     },
     "reason": null
   },
