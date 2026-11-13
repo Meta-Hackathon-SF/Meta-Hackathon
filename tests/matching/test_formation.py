@@ -252,7 +252,8 @@ def test_constellation_wire_keys_match_contract(m4_script):
     result = run(service.form("cycle-demo-w1"))  # request id optional per FormationPort
     assert result.status == "ok"
     for c in result.constellations:
-        assert CONSTELLATION_WIRE_KEYS <= set(c.to_wire()) <= CONSTELLATION_WIRE_KEYS | OPTIONAL_WIRE_KEYS
+        keys = set(c.to_wire())
+        assert CONSTELLATION_WIRE_KEYS <= keys <= CONSTELLATION_WIRE_KEYS | OPTIONAL_WIRE_KEYS
     wire = result.to_wire("r")
     assert set(wire) == {"status", "constellations", "evidence"}
 
