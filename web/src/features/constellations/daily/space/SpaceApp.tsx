@@ -154,6 +154,8 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [followUp, setFollowUp] = useState<{ day: CycleDay; fu: FollowUp } | null>(null);
+  const [skyCount, setSkyCount] = useState<number | null>(null);
+  const [room, setRoom] = useState<{ indices: number[]; expiresAt: string } | null>(null);
   const [daily, setDaily] = useState<{ key: string; count: number | null; empty: boolean; preview: boolean } | null>(null);
 
   const current = data?.current ?? null;
@@ -174,6 +176,22 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
     );
     return () => controller.abort();
   }, [screen, cycleId, viewDay, dailyKey, daily?.key, client]);
+
+  // Live sky size and room roster (room-local indices) from the v3 client; null when unavailable.
+  useEffect(() => {
+    if (!cycleId || !client.v3) return;
+    const controller = new AbortController();
+    const v3 = client.v3;
+    v3.skyStars(cycleId, controller.signal).then(
+      (v) => !controller.signal.aborted && setSkyCount(v.count),
+      () => !controller.signal.aborted && setSkyCount(null),
+    );
+    v3.main(cycleId, controller.signal).then(
+      (r) => !controller.signal.aborted && setRoom(r.main ? { indices: r.main.roomIndices.filter((i) => i !== r.main!.myRoomIndex), expiresAt: r.main.roomExpiresAt } : null),
+      () => !controller.signal.aborted && setRoom(null),
+    );
+    return () => controller.abort();
+  }, [cycleId, client, screen]);
 
   if (error)
     return (
@@ -263,7 +281,8 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
         go={go}
         dailyCount={prevPreview?.count ?? null}
         dailyEmpty={prevPreview?.empty ?? false}
-        dailyPreview={!prevPreview || prevPreview.preview}
+        skyCount={skyCount}
+        demo={client.mode === "fixture"}
         revealed={cycle.status === "revealed" || cycle.status === "closed"}
         matchOn={view.consent.matchAnswers}
         chatOn={view.consent.anonymousChat}
@@ -349,7 +368,7 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
       body = canvasFor();
       break;
     case "chat":
-      body = view.consent.anonymousChat && cycle.status === "revealed" ? <ChatScreen onBack={() => go("main")} onRevealed={() => go("revealed")} /> : canvasFor("main");
+      body = view.consent.anonymousChat && cycle.status === "revealed" ? <ChatScreen onBack={() => go("main")} onRevealed={() => go("revealed")} memberIndices={room?.indices} expiresAt={room?.expiresAt} demo={client.mode === "fixture"} /> : canvasFor("main");
       break;
     case "revealed":
       body = <RevealedScreen onBack={() => go("chat")} />;

@@ -4,14 +4,13 @@
  * side column (today's stats, about, demo controls).
  */
 import { useRef, useState, type ReactNode } from "react";
-import { CalendarDays, ChevronRight, Clock, Flame, Lock, MessageCircle, Users } from "lucide-react";
+import { CalendarDays, ChevronRight, Flame, Lock, MessageCircle, Users } from "lucide-react";
 import Avatar from "../../../../components/common/Avatar";
 import { currentUser } from "../../../../data/demo";
 import type { CycleClient, CycleDay, DailyQuestion } from "../client";
 import { MAX_CHARS } from "../useDaily";
 import { DAY_LONG, DAY_SHORT, dayHex, type Screen, type WeekModel } from "./model";
-import { MicIcon, PreviewTag, SpaceAvatar, StarField, Waveform } from "./parts";
-import { PREVIEW_INVITE, PREVIEW_THINK } from "./preview";
+import { MicIcon, SpaceAvatar, StarField, Waveform } from "./parts";
 import SkyCanvas from "./SkyCanvas";
 import { useVoiceInput } from "./useVoiceInput";
 import { fmtDuration, readTook, useAnsweredToday, writeTook } from "./stats";
@@ -235,10 +234,6 @@ function QuestionPost({
 
 // ---------------------------------------------------------------- stats
 function StatsCard({ day, answered, count, took }: { day: CycleDay; answered: boolean; count: number | null; took: number | null }) {
-  const think = PREVIEW_THINK[day - 1];
-  const max = Math.max(...think.buckets);
-  const deep = think.buckets[2] + think.buckets[3];
-  const verdict = deep >= 45 ? "People really thought about this one." : deep >= 30 ? "A good mix of quick and careful answers." : "Most people knew right away.";
   return (
     <section className="spc-card spc-side-card spc-stats" aria-labelledby="spc-stats-title" data-testid="spc-stats">
       <header className="spc-row spc-between">
@@ -263,27 +258,12 @@ function StatsCard({ day, answered, count, took }: { day: CycleDay; answered: bo
             </>
           )}
         </div>
-        <div className="spc-tile">
-          <Clock size={18} aria-hidden="true" />
-          <b>{fmtDuration(think.median)}</b>
-          <span>typical time thinking</span>
-        </div>
       </div>
-      <div className="spc-think" aria-label="How long people took">
-        {think.buckets.map((v, i) => (
-          <div className="spc-think-col" key={i}>
-            <div className="spc-think-bar">
-              <i style={{ height: `${(v / max) * 100}%`, background: dayHex(day) }} />
-            </div>
-            <span>{["< 1m", "1–3m", "3–5m", "5m+"][i]}</span>
-            <small>{v}%</small>
-          </div>
-        ))}
-      </div>
-      <p className="spc-stats-verdict">
-        {verdict} {answered && took ? <b>You took {fmtDuration(took)}.</b> : null}
-      </p>
-      <PreviewTag>Time stats: preview</PreviewTag>
+      {answered && took ? (
+        <p className="spc-stats-verdict">
+          <b>You took {fmtDuration(took)}.</b>
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -514,7 +494,7 @@ export function SkyHome({
                       </span>
                       <span className="spc-list-main">
                         Chat
-                        <small>23 h left · Preview</small>
+                        <small>Open for 24 hours</small>
                       </span>
                       <ChevronRight size={20} className="spc-chev" aria-hidden="true" />
                     </button>
@@ -537,7 +517,7 @@ export function SkyHome({
                         </span>
                         <span className="spc-list-main">
                           You're invited
-                          <small>{PREVIEW_INVITE.title}</small>
+                          <small>Invites from your constellation</small>
                         </span>
                         <span className="spc-unread" aria-label="New" />
                         <ChevronRight size={20} className="spc-chev" aria-hidden="true" />

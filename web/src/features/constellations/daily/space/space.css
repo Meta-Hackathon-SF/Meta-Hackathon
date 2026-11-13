@@ -1,3 +1,13 @@
+/* Shared motion tokens: one easing family and a short duration ladder for every Space transition. */
+:root {
+  --spc-ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --spc-ease-in-out: cubic-bezier(0.45, 0, 0.2, 1);
+  --spc-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spc-dur-fast: 150ms;
+  --spc-dur-base: 280ms;
+  --spc-dur-slow: 560ms;
+  --spc-dur-scene: 1400ms;
+}
 /* Facebook Space tab, V4 design. Scoped under .spc-* (Will). Tokens from docs/DESIGN.md. */
 .spc-page,
 .spc-feed {
@@ -1043,7 +1053,7 @@
   opacity: 0;
   transform: translateY(30px);
   pointer-events: none;
-  transition: opacity 700ms ease, transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity var(--spc-dur-slow) var(--spc-ease-out), transform var(--spc-dur-slow) var(--spc-ease-out);
 }
 .spc-stage-ui.is-in {
   opacity: 1;
@@ -1307,7 +1317,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px 20px 0 0;
   background: #0e1c40;
-  animation: spc-sheet-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: spc-sheet-in var(--spc-dur-base) var(--spc-ease-out);
 }
 @keyframes spc-sheet-in {
   from {
@@ -1484,6 +1494,9 @@
   }
   .spc-stage-ui {
     transition: none;
+  }
+  .spc-msgsend {
+    display: none;
   }
 }
 
@@ -2317,7 +2330,7 @@
   background: #02030a;
   -webkit-mask: radial-gradient(circle at 50% 50%, transparent var(--r, 6%), #000 calc(var(--r, 6%) + 2%));
   mask: radial-gradient(circle at 50% 50%, transparent var(--r, 6%), #000 calc(var(--r, 6%) + 2%));
-  animation: spc-aperture 1600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: spc-aperture var(--spc-dur-scene) var(--spc-ease-out) forwards;
 }
 .spc-telescope-ring {
   position: absolute;
@@ -2330,7 +2343,7 @@
   border: 1px solid rgba(170, 200, 255, 0.55);
   box-shadow: 0 0 18px rgba(80, 150, 255, 0.45);
   transform: scale(0.06);
-  animation: spc-lens 1600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: spc-lens var(--spc-dur-scene) var(--spc-ease-out) forwards;
 }
 .spc-telescope-ring.is-inner {
   border-color: rgba(170, 200, 255, 0.25);
@@ -2358,12 +2371,12 @@
   }
 }
 .spc-stage .spc-canvas {
-  animation: spc-zoom-settle 1600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: spc-zoom-settle var(--spc-dur-scene) var(--spc-ease-out) both;
 }
 @keyframes spc-zoom-settle {
   from {
-    transform: scale(2.4);
-    filter: blur(5px);
+    transform: scale(1.9);
+    filter: blur(3px);
   }
   to {
     transform: scale(1);
@@ -2531,7 +2544,7 @@
   background: linear-gradient(135deg, #00b2ff 0%, #006aff 55%, #a033ff 100%);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 120, 255, 0.45);
   color: #fff;
-  will-change: transform;
+  will-change: transform, opacity;
 }
 .spc-msgsend-body {
   display: grid;

@@ -1,14 +1,13 @@
 /*
  * Shared state for the 24-hour anonymous room, so it survives navigation: minimise to a
- * floating dock, and if everyone keeps it, move into Messenger. PREVIEW data until the
- * 3.0.0 chat routes are mounted. Nothing here is real player content.
+ * floating dock, and if everyone keeps it, move into Messenger. Starts empty; no
+ * messages exist until a live chat source delivers them.
  *
  * open     -> room is live (24 h clock)
  * kept     -> everyone chose Keep before expiry; lives in Messenger
  * expired  -> clock ran out without everyone keeping it; the room is gone
  */
 import { useSyncExternalStore } from "react";
-import { PREVIEW_MESSAGES } from "./preview";
 
 export type ChatStatus = "none" | "open" | "kept" | "expired";
 export interface ChatMsg {
@@ -27,7 +26,7 @@ export interface ChatState {
 export const KEEP_KEYS = ["me", "0", "1", "2", "3"] as const;
 const KEY = "spc-chat-v1";
 
-const fresh = (): ChatState => ({ status: "open", minimized: false, msgs: PREVIEW_MESSAGES, keep: {}, hoursLeft: 23 });
+const fresh = (): ChatState => ({ status: "open", minimized: false, msgs: [], keep: {}, hoursLeft: 23 });
 const idle: ChatState = { status: "none", minimized: false, msgs: [], keep: {}, hoursLeft: 0 };
 
 function load(): ChatState {

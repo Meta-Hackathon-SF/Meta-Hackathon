@@ -42,6 +42,8 @@ const ease = (p: number) => {
   p = cl(p);
   return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
 };
+/** Matched stars grow toward this fraction of full energy; the viewer's own star always stays brightest. */
+const MATCH_CAP = 0.7;
 const easeOut = (p: number) => 1 - Math.pow(1 - cl(p), 3);
 
 let spriteCache: HTMLCanvasElement[] | null = null;
@@ -110,7 +112,7 @@ export class SkyRenderer {
       return v < 0.12 ? 0 : v < 0.35 ? 1 : v < 0.75 ? 2 : v < 0.93 ? 3 : 4;
     };
     const tw = (lo: number, hi: number): Twinkle => ({
-      amp: lo + (hi - lo) * r(), f1: 2 + 5 * r(), f2: 7 + 10 * r(), f3: 0.25 + 0.6 * r(),
+      amp: lo + (hi - lo) * r(), f1: 1.6 + 3.4 * r(), f2: 5 + 7 * r(), f3: 0.25 + 0.6 * r(),
       p1: r() * 6.283, p2: r() * 6.283, p3: r() * 6.283, fp: r() * 6.283, d: r() * 1200, a: 1,
     });
     const gauss = () => (r() + r() + r() + r() - 2) * 0.9;
@@ -563,15 +565,15 @@ export class SkyRenderer {
             alpha = a.kept ? 0.75 - 0.2 * c : a.tree ? 0.75 - 0.45 * c : 0.75 * (1 - c);
           }
           if (a.back) energy.set(a.from, (energy.get(a.from) ?? 0) * (1 - g));
-          else if (a.kept) energy.set(a.to, Math.max(energy.get(a.to) ?? 0, g));
-          else if (a.tree) energy.set(a.to, Math.max(energy.get(a.to) ?? 0, 0.7 * g));
+          else if (a.kept) energy.set(a.to, Math.max(energy.get(a.to) ?? 0, MATCH_CAP * g));
+          else if (a.tree) energy.set(a.to, Math.max(energy.get(a.to) ?? 0, 0.7 * MATCH_CAP * g));
           else flash.set(a.to, Math.max(flash.get(a.to) ?? 0, Math.sin(Math.PI * cl(u)) * 0.6));
           ctx.strokeStyle = a.kept && u > 0.6 ? "rgb(205,218,250)" : !a.kept && !a.tree && u > 0.35 ? "rgb(255,140,160)" : "#fff";
           ctx.lineWidth = 0.7;
           this.seg(ctx, a.from, a.to, a.from.id === "me" ? 11 : 8, 8, grow, alpha);
         });
         this.close.forEach((p) => this.spot(ctx, 2, p.x, p.y, 8, 0.4 * this.lvl(p, 0, ts, false)));
-        energy.forEach((e, p) => e > 0.02 && this.spot(ctx, p.id[0] === "c" ? 2 : 1, p.x, p.y, 8 + 10 * e, (0.4 + 0.6 * e) * this.lvl(p, 0, ts, false)));
+        energy.forEach((e, p) => e > 0.02 && this.spot(ctx, p.id[0] === "c" ? 2 : 1, p.x, p.y, 8 + 9 * e, (0.4 + 0.5 * e) * this.lvl(p, 0, ts, false)));
         flash.forEach((f, p) => f > 0.02 && this.spot(ctx, 3, p.x, p.y, 7 + 5 * f, f));
         this.drawMe(ctx, this.cx, this.cy, 1, ts);
         hooks.onProgress?.(fp);

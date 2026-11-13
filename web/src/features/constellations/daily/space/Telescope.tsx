@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from "react";
 
-const DURATION_MS = 1600;
+const DURATION_MS = 1400; // keep in sync with --spc-dur-scene
 const reduced = () =>
   typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 

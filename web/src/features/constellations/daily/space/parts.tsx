@@ -56,9 +56,9 @@ export function TopBar({ title, onBack, dark, children, dot }: { title: ReactNod
   );
 }
 
-/** Marks content that is not from a producer yet (contract 3.0.0 pending). */
-export function PreviewTag({ children = "Preview · synthetic", dark }: { children?: ReactNode; dark?: boolean }) {
-  return <span className={`spc-preview${dark ? " is-dark" : ""}`}>{children}</span>;
+/** Small honesty note shown only when the client is the in-browser fixture. */
+export function DemoNote({ dark }: { dark?: boolean }) {
+  return <span className={`spc-preview${dark ? " is-dark" : ""}`}>Demo data</span>;
 }
 
 export function StarField({ dense }: { dense?: boolean }) {

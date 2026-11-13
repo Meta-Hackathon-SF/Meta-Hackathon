@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { ArrowUp, ChevronLeft, Minimize2 } from "lucide-react";
 import { DAY_LONG, DAY_SHORT, dayHex, type Screen } from "./model";
-import { PreviewTag, StarField } from "./parts";
-import { CONTACT_PATTERN, PREVIEW_DAY_COUNTS, PREVIEW_MEMBERS } from "./preview";
+import { DemoNote, StarField } from "./parts";
+import { CONTACT_PATTERN } from "./preview";
 import SkyCanvas from "./SkyCanvas";
 import Telescope from "./Telescope";
-import { chat, KEEP_KEYS, useChat } from "./chatStore";
+import { chat, useChat } from "./chatStore";
 import MessengerSend from "./MessengerSend";
 
 type CanvasMode = "daily" | "sky" | "forming" | "main";
@@ -21,7 +21,12 @@ export interface CanvasProps {
   /** Daily: real count from the server when available. */
   dailyCount: number | null;
   dailyEmpty: boolean;
-  dailyPreview: boolean;
+  /** Kept for prop stability; no longer drives any label. */
+  dailyPreview?: boolean;
+  /** Live sky star count from the server, or null while unknown. */
+  skyCount?: number | null;
+  /** True when the client is the in-browser fixture. */
+  demo?: boolean;
   revealed: boolean;
   matchOn: boolean;
   chatOn: boolean;
@@ -40,7 +45,7 @@ export function CanvasScreen(p: CanvasProps) {
   const countRef = useRef<HTMLDivElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
 
-  const skyTotal = [1, 2, 3, 4, 5].reduce((n, d) => n + (p.answered.has(d) ? PREVIEW_DAY_COUNTS[d - 1] + 1 : 0), 0);
+  const skyTotal = p.skyCount ?? 0;
   const target = p.mode === "daily" ? (p.dailyCount ?? 0) : skyTotal;
   const noMatch = !p.matchOn || (p.mode === "main" && !p.revealed);
   const title =
@@ -76,7 +81,7 @@ export function CanvasScreen(p: CanvasProps) {
             <h2>{title}</h2>
           )}
         </div>
-        {(p.mode !== "daily" || p.dailyPreview) && <PreviewTag dark />}
+        {p.demo && <DemoNote dark />}
       </div>
 
       <div className={`spc-stage-ui${settled || p.mode === "forming" ? " is-in" : ""}`}>
@@ -101,7 +106,7 @@ export function CanvasScreen(p: CanvasProps) {
                 0
               </div>
               <div className="spc-stage-sub">
-                <span className="sr-only">{fmt(skyTotal)} </span>answers this week
+                <span className="sr-only">{p.skyCount != null ? fmt(skyTotal) : "No"} </span>{p.skyCount != null ? "stars in the sky this week" : "sky count not available yet"}
               </div>
             </div>
             {focus !== null && (
@@ -125,7 +130,6 @@ export function CanvasScreen(p: CanvasProps) {
                     className={focus === d ? "is-on" : focus !== null ? "is-dim" : ""}
                     onClick={() => setFocus(focus === d ? null : d)}
                   >
-                    <b>{(PREVIEW_DAY_COUNTS[d - 1] / 1000).toFixed(1)}k</b>
                     <i style={{ background: dayHex(d), boxShadow: `0 0 8px ${dayHex(d)}` }} />
                     <small>{DAY_SHORT[d - 1]}</small>
                   </button>
@@ -192,23 +196,35 @@ export function CanvasScreen(p: CanvasProps) {
   );
 }
 
-// ---------------------------------------------------------------- chat (preview)
+// ---------------------------------------------------------------- chat
 
-export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevealed: () => void }) {
+const MEMBER_HEX = ["#F5B841", "#2CC7C0", "#F07196", "#5BD27A", "#8E8CF5"];
+
+export function ChatScreen({
+  onBack,
+  memberIndices = [],
+  expiresAt,
+  demo,
+}: {
+  onBack: () => void;
+  onRevealed: () => void;
+  /** Room-local star indices of the other members, from the main constellation. */
+  memberIndices?: number[];
+  expiresAt?: string;
+  demo?: boolean;
+}) {
+  const members = memberIndices.map((idx, i) => ({ name: `Star ${idx + 1}`, hex: MEMBER_HEX[i % MEMBER_HEX.length] }));
+  const hoursLeft = expiresAt ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 3_600_000)) : null;
   const store = useChat();
   const msgs = store.msgs;
   const keep = store.keep;
   const [draft, setDraft] = useState("");
   const [rejected, setRejected] = useState(false);
-  const [typing, setTyping] = useState(false);
   const [sheet, setSheet] = useState(-1);
   const [reporting, setReporting] = useState(false);
   const [asked, setAsked] = useState<Record<number, boolean>>({});
   const [reported, setReported] = useState<Record<number, boolean>>({});
   const [blocked, setBlocked] = useState<Record<number, boolean>>({});
-  const timers = useRef<number[]>([]);
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
-  const later = (ms: number, fn: () => void) => timers.current.push(window.setTimeout(fn, ms));
   const kept = store.status === "kept";
   useEffect(() => {
     chat.start();
@@ -229,22 +245,14 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
     chat.send(t);
     setDraft("");
     setRejected(false);
-    later(700, () => setTyping(true));
-    later(2400, () => {
-      setTyping(false);
-      chat.receive({ member: 1, text: "wait that's exactly how i felt" });
-    });
   };
   const vote = (k: string) => chat.vote(k, true);
   const toggleKeep = () => {
     if (keep.me) return chat.vote("me", false);
     vote("me");
-    later(700, () => vote("0"));
-    later(1500, () => vote("1"));
-    later(2400, () => vote("2"));
-    later(3200, () => vote("3"));
   };
-  const member = sheet >= 0 ? PREVIEW_MEMBERS[sheet] : null;
+  const member = sheet >= 0 ? (members[sheet] ?? null) : null;
+  const hoursShown = hoursLeft ?? store.hoursLeft;
   const sendOverlay = sending ? <MessengerSend onDone={() => setSending(false)} /> : null;
   if (store.status === "expired")
     return (
@@ -260,6 +268,7 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
       </div>
     );
   const shown = msgs.filter((m) => m.mine || !(blocked[m.member!] || reported[m.member!]));
+  const memberOf = (i?: number) => (i !== undefined ? members[i] : undefined) ?? { name: "Star", hex: "#9aa4b2" };
 
   return (
     <div className="spc-screen spc-night" data-testid="spc-chat">
@@ -273,7 +282,7 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
           <span className="spc-star-btn" aria-label="You">
             <i style={{ background: "#fff", boxShadow: "0 0 8px #fff" }} />
           </span>
-          {PREVIEW_MEMBERS.map((m, i) => (
+          {members.map((m, i) => (
             <button
               type="button"
               key={m.name}
@@ -289,16 +298,16 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
             </button>
           ))}
         </div>
-        <PreviewTag dark>Preview</PreviewTag>
-        <span className="spc-chat-left">{kept ? "Kept" : `${store.hoursLeft} h left`}</span>
+        {demo && <DemoNote dark />}
+        <span className="spc-chat-left">{kept ? "Kept" : `${hoursShown} h left`}</span>
         <button type="button" className="spc-round is-glass spc-chat-min" onClick={() => { chat.minimize(true); onBack(); }} aria-label="Minimise chat">
           <Minimize2 size={18} />
         </button>
       </div>
       <div className="spc-keep">
-        <span className="spc-grow">{kept ? "Everyone kept it. It moved to Messenger." : `Gone in ${store.hoursLeft} h unless everyone keeps it`}</span>
+        <span className="spc-grow">{kept ? "Everyone kept it. It moved to Messenger." : `Gone in ${hoursShown} h unless everyone keeps it`}</span>
         <span className="spc-keep-dots" aria-hidden="true">
-          {KEEP_KEYS.map((k) => (
+          {["me", ...members.map((_, i) => String(i))].map((k) => (
             <i key={k} className={keep[k] ? "is-on" : ""} />
           ))}
         </span>
@@ -325,17 +334,17 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
             </div>
           ) : (
             <div key={i} className="spc-msg-row">
-              <span className="spc-msg-star" style={{ background: `radial-gradient(circle, ${PREVIEW_MEMBERS[m.member!].hex} 0 20%, transparent 62%)` }} />
+              <span className="spc-msg-star" style={{ background: `radial-gradient(circle, ${memberOf(m.member).hex} 0 20%, transparent 62%)` }} />
               <div>
-                <div className="spc-msg-name" style={{ color: PREVIEW_MEMBERS[m.member!].hex }}>
-                  {PREVIEW_MEMBERS[m.member!].name}
+                <div className="spc-msg-name" style={{ color: memberOf(m.member).hex }}>
+                  {memberOf(m.member).name}
                 </div>
                 <div className="spc-msg">{m.text}</div>
               </div>
             </div>
           ),
         )}
-        {typing && <div className="spc-typing">Star 3 is typing…</div>}
+        {shown.length === 0 && <div className="spc-msgs-time">No messages yet. Say hi.</div>}
       </div>
       <div className="spc-chat-foot">
         {rejected && (
@@ -382,7 +391,6 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
                   onClick={() => {
                     if (asked[sheet]) return;
                     setAsked({ ...asked, [sheet]: true });
-                    if (sheet === 1) later(1600, onRevealed);
                   }}
                 >
                   {asked[sheet] ? "Asked" : "Ask to reveal"}
@@ -440,7 +448,6 @@ export function RevealedScreen({ onBack }: { onBack: () => void }) {
           <ChevronLeft size={22} />
         </button>
         <span className="spc-grow" />
-        <PreviewTag dark />
       </div>
       <div className="spc-reveal-link" aria-hidden="true">
         <i className="is-me" />

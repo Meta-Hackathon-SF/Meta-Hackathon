@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef } from "react";
 
-const FLIGHT_MS = 1900;
+const FLIGHT_MS = 1700;
 const reduced = () =>
   typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -30,31 +30,31 @@ export default function MessengerSend({ onDone }: { onDone: () => void }) {
     const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
     const dx = t.x - cx, dy = t.y - cy;
     const lift = -Math.min(160, window.innerHeight * 0.2); // arc: rise first, then dive to the icon
+    const EASE = "cubic-bezier(0.32, 0.72, 0, 1)"; // matches --spc-ease-out
     const anim = el.animate(
       [
-        { transform: "translate(0,0) scale(1) rotate(0deg)", borderRadius: "22px", opacity: 1, offset: 0 },
-        { transform: "translate(0,0) scale(0.26) rotate(0deg)", borderRadius: "50%", opacity: 1, offset: 0.28 },
-        { transform: "translate(0,0) scale(0.26) rotate(-18deg)", borderRadius: "50%", opacity: 1, offset: 0.4 },
-        { transform: `translate(${dx * 0.45}px, ${dy * 0.45 + lift}px) scale(0.2) rotate(-32deg)`, borderRadius: "50%", opacity: 1, offset: 0.68 },
-        { transform: `translate(${dx}px, ${dy}px) scale(0.05) rotate(-40deg)`, borderRadius: "50%", opacity: 0.9, offset: 1 },
+        { transform: "translate3d(0,0,0) scale(1) rotate(0deg)", borderRadius: "22px", opacity: 1, offset: 0, easing: EASE },
+        { transform: "translate3d(0,0,0) scale(0.26) rotate(0deg)", borderRadius: "50%", opacity: 1, offset: 0.3, easing: "ease-in-out" },
+        { transform: `translate3d(${dx * 0.45}px, ${dy * 0.45 + lift}px, 0) scale(0.2) rotate(-30deg)`, borderRadius: "50%", opacity: 1, offset: 0.65, easing: "cubic-bezier(0.5, 0, 0.75, 0.4)" },
+        { transform: `translate3d(${dx}px, ${dy}px, 0) scale(0.05) rotate(-40deg)`, borderRadius: "50%", opacity: 0, offset: 1 },
       ],
-      { duration: FLIGHT_MS, easing: "cubic-bezier(0.45, 0, 0.25, 1)", fill: "forwards" },
+      { duration: FLIGHT_MS, easing: "linear", fill: "forwards" },
     );
     // Fold: the panel's contents fade as it becomes a bubble; the plane glyph takes over.
-    el.querySelector<HTMLElement>(".spc-msgsend-body")?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 380, fill: "forwards" });
+    el.querySelector<HTMLElement>(".spc-msgsend-body")?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: "ease-out", fill: "forwards" });
     plane.current?.animate(
       [
-        { opacity: 0, transform: "scale(0.4) rotate(0deg)", offset: 0.15 },
-        { opacity: 1, transform: "scale(1) rotate(0deg)", offset: 0.38 },
+        { opacity: 0, transform: "scale(0.4) rotate(0deg)", offset: 0.18 },
+        { opacity: 1, transform: "scale(1) rotate(0deg)", offset: 0.36 },
         { opacity: 1, transform: "scale(1) rotate(8deg)", offset: 1 },
       ],
-      { duration: FLIGHT_MS, fill: "forwards" },
+      { duration: FLIGHT_MS, easing: "linear", fill: "forwards" },
     );
     anim.onfinish = () => {
       const icon = document.querySelector<HTMLElement>('[aria-label="Messenger"]');
       icon?.animate(
         [{ transform: "scale(1)" }, { transform: "scale(1.45)" }, { transform: "scale(0.92)" }, { transform: "scale(1)" }],
-        { duration: 600, easing: "ease-out" },
+        { duration: 520, easing: "cubic-bezier(0.34, 1.56, 0.64, 1)" },
       );
       onDone();
     };
