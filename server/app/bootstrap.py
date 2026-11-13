@@ -11,6 +11,7 @@ from server.app.main import create_app
 from server.app.weekly import build_weekly_app
 from server.orchestration.storage import PostgresWorkflowRepository
 from server.privacy import PrivacyStore
+from server.voice import build_transcriber, load_muse_stt_config
 
 
 def create_configured_app():
@@ -26,7 +27,8 @@ def create_configured_app():
         return create_app()
     store = PrivacyStore(privacy_path)
     try:
-        app = build_weekly_app(repository=repository, privacy_store=store)
+        transcriber = build_transcriber() if load_muse_stt_config() is not None else None
+        app = build_weekly_app(repository=repository, privacy_store=store, transcriber=transcriber)
     except Exception:
         store.close()
         repository.close()
