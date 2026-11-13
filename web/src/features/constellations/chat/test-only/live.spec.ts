@@ -141,7 +141,7 @@ test("real HTTP adapter sends scoped bodies and keys; pending reveal has no iden
     .fill("Synthetic sent text");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(
-    page.getByText("Synthetic sent text", { exact: true }),
+    page.getByRole("list", { name: "Messages" }).getByText("Synthetic sent text", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Reveal with Star 2" }).click();
   await expect(page.locator(".cst-mutual")).toHaveCount(0);
