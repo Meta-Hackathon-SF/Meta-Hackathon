@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .activity import ActivityStore
 from .answers import AnswerStore
 from .api import actor_dependency, build_router, install_privacy_error_handler
 from .moderation import HandleResolver, ModerationStore
@@ -37,6 +38,7 @@ def privacy_registration(
     answers: AnswerStore | None = None,
     moderation: ModerationStore | None = None,
     resolve_handle: HandleResolver | None = None,
+    activity: ActivityStore | None = None,
 ) -> "ServiceRegistration":
     from server.app.registry import ServiceRegistration
 
@@ -47,7 +49,7 @@ def privacy_registration(
 
     return ServiceRegistration(
         owner="privacy",
-        router=build_router(service, answers, moderation, resolve_handle),
+        router=build_router(service, answers, moderation, resolve_handle, activity),
         authorize=actor_dependency(service),
         ready=ready,
     )

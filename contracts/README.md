@@ -1,8 +1,8 @@
-# Shared contracts: Constellations 2.0.0 (weekly game, pending D006 ACK)
+# Shared contracts: Constellations 2.1.0 (weekly game; 2.1.0 adds D009 brightness + D010 activity, additive)
 Common interface agreement for all five workstreams. Normative design plus TypeScript wire declarations and JSON fixtures. Not a running backend.
 
 ## Files
-- [protocol.ts](protocol.ts): `CONTRACT_VERSION = "2.0.0"`. Typechecks with `npx -p typescript@5.6.3 tsc --noEmit --strict --target es2020 --lib es2020,dom contracts/protocol.ts`.
+- [protocol.ts](protocol.ts): `CONTRACT_VERSION = "2.1.0"`. Typechecks with `npx -p typescript@5.6.3 tsc --noEmit --strict --target es2020 --lib es2020,dom contracts/protocol.ts`.
 - [API.md](API.md) routes, [WORKFLOW.md](WORKFLOW.md) weekly state machine and jobs, [PRIVACY.md](PRIVACY.md) access matrix and required tests.
 - [fixtures/](fixtures): shared synthetic test data every owner builds against: `question-bank.json`, `week-sample.json` (8 synthetic players, answers, blocks, distress and injection cases, expected formation constraints), `sky-stats.json`, `chat-room.json`, `venues.json`. Fixtures are synthetic and must stay labeled as such.
 

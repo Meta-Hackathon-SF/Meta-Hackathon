@@ -36,7 +36,7 @@ def ts_interface_keys(name: str) -> set[str]:
 
 class ProtocolDriftTests(unittest.TestCase):
     def test_contract_version_is_2_0_0(self):
-        self.assertIn('CONTRACT_VERSION = "2.0.0"', PROTOCOL)
+        self.assertIn('CONTRACT_VERSION = "2.1.0"', PROTOCOL)
 
     def test_task_list_and_call_types_match_protocol(self):
         tasks = ts_union("MuseTask")

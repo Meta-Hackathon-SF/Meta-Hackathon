@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { Link } from "react-router";
 import { Flame, Lock, MessageCircle, MoonStar, Settings2, Sparkles, Users } from "lucide-react";
 import LeftSidebar from "../../../components/layout/LeftSidebar";
 import { currentUser } from "../../../data/demo";
-import { getPrivacyClient, PrivacyGate } from "../privacy";
+import { ACTIVITY_EVENT, getPrivacyClient, PrivacyGate, readFixtureActivity } from "../privacy";
+import { collectDemoActivity } from "./activity";
+import { syntheticConstellation, syntheticEventCounts } from "./synthetic";
 import type { CycleClient, CycleDay, WeeklyCycle } from "./client";
 import { getCycleClient } from "./clientContext";
 import { FEATURE_NAME, JOIN_SCOPE_LABEL, OPERATOR_PATH, PLAY_COMMUNITY } from "./communities";
@@ -47,6 +49,11 @@ function openDay(day: number) {
 
 function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "constellation" }) {
   const { data, error, refresh } = useDaily(client);
+  const [, recompute] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => {
+    window.addEventListener(ACTIVITY_EVENT, recompute);
+    return () => window.removeEventListener(ACTIVITY_EVENT, recompute);
+  }, []);
 
   if (error)
     return (
@@ -84,14 +91,35 @@ function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "con
     );
 
   const { cycle, catchUp, streak } = current;
-  if (tab === "constellation")
+  if (tab === "constellation") {
+    // Fixture mode: computed from your real answers (+ activity if on) against labeled Synthetic players.
+    // Live mode: Kai's room view supplies bands/context when it exists; until then the Examples show.
+    const fixture = client.mode === "fixture";
+    const texts = data.answers.map((a) => a.text);
+    const mine = fixture ? readFixtureActivity() : null;
+    const synthetic = fixture ? syntheticConstellation(texts, mine) : null;
+    const counts = fixture && texts.length ? syntheticEventCounts(texts, mine) : null;
+    const label = cycle.status === "revealed" ? "Synthetic players" : "Synthetic players · preview";
     return (
       <>
-        <ConstellationPreview revealsAt={cycle.status === "open" || cycle.status === "locked" || cycle.status === "forming" ? cycle.revealsAt : null} />
-        <MatchReasons />
-        <EventHeat />
+        <ConstellationPreview
+          revealsAt={cycle.status === "open" || cycle.status === "locked" || cycle.status === "forming" ? cycle.revealsAt : null}
+          stars={synthetic?.stars}
+          label={label}
+        />
+        <MatchReasons context={synthetic?.context} members={synthetic?.stars.length ?? 4} activityOn={Boolean(mine)} label={label} />
+        <EventHeat
+          counts={counts}
+          label={label}
+          onInterestChange={() => {
+            const privacy = getPrivacyClient();
+            if (mine) void privacy.setActivity(true, collectDemoActivity()).catch(() => {});
+            else recompute();
+          }}
+        />
       </>
     );
+  }
   const answerFor = (day: number) => data.answers.find((a) => a.day === day);
   const questionFor = (day: number) => data.questions.find((q) => q.day === day as CycleDay);
   const past = cycle.status === "open" ? [1, 2, 3, 4, 5].filter((day) => day < cycle.currentDay) : [];
@@ -352,6 +380,7 @@ export default function DailyPage() {
                 client.clearLocalData?.(); // fixture only; the server deletes in live mode
                 setEpoch((value) => value + 1);
               }}
+              collectActivity={collectDemoActivity}
             >
               <DailyContent key={epoch} client={client} tab={tab} />
             </PrivacyGate>
