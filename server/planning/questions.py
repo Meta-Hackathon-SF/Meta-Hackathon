@@ -40,7 +40,7 @@ _ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _TAG = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 # The contract asks for open-ended questions. A question that opens with an
 # auxiliary verb invites a yes/no answer.
-_YES_NO = re.compile(
+YES_NO_OPENING = re.compile(
     r"^(do|does|did|is|are|was|were|am|have|has|had|can|could|will|would|should|shall|may|might)\b",
     re.IGNORECASE,
 )
@@ -58,7 +58,7 @@ def question_problems(row: Any) -> list[str]:
         problems.append("text has surrounding whitespace or a line break")
     if not text.endswith("?"):
         problems.append("text must end with a question mark")
-    if _YES_NO.match(text):
+    if YES_NO_OPENING.match(text):
         problems.append("text reads as a yes/no question")
     if not _ID.match(row["questionId"]):
         problems.append("questionId must be lowercase letters, digits and hyphens")
