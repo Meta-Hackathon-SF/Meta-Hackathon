@@ -263,7 +263,9 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
   // The server decides who is an operator; the in-browser fixture is always one.
   // Every account can run a demo-timing week (server: server/cycle/api.py); real-calendar weeks stay operator-only.
   const isOperator = client.mode === "fixture" ? client.isOperator : view.isOperator;
-  const canDemo = isOperator || !current || current.cycle.demoTiming === true || current.cycle.status === "closed";
+  // Live site: the week is driven only from the presenter screen (/space/stage, D019),
+  // so players never see demo controls. The offline fixture keeps them for local use and tests.
+  const canDemo = client.mode === "fixture" && (isOperator || !current || current.cycle.demoTiming === true || current.cycle.status === "closed");
   const demo = canDemo ? <DemoPanel client={client} cycleId={cycleId} status={current?.cycle.status} day={current?.cycle.currentDay} refresh={() => void refresh()} /> : null;
 
   if (!current || !week)

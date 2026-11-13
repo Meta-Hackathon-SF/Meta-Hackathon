@@ -612,48 +612,105 @@ ANSWER = "Synthetic private submission number {} for this week"
 CAST_SIZE = 8 + len(demo_population.players())  # fixture players + the synthetic demo cast
 
 
-def test_stage_shows_only_opted_in_players_answers():
+def test_stage_puts_the_newest_joiners_on_as_phones_and_shows_only_their_text():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, _job = formed(env, client)
-        operator, on_stage, private_player = players[:3]
+        operator, older, third, phone_a, phone_b = players
         # Any signed-in member may open the stage (demo); without a session it is refused.
-        assert call(client, on_stage, "GET", "/operator/stage").status_code == 200
         assert client.get("/api/v1/operator/stage").status_code == 401
-        assert call(client, on_stage, "GET", "/me/stage").json() == {"slot": None}
-        bad = call(client, on_stage, "POST", "/me/stage", json={"slot": "C"})
-        assert bad.status_code in (400, 422)
-        chosen = call(client, on_stage, "POST", "/me/stage", json={"slot": "A"})
-        assert chosen.json() == {"slot": "A"}
-        assert call(client, on_stage, "GET", "/me/stage").json() == {"slot": "A"}
-
         stage = call(client, operator, "GET", "/operator/stage")
         assert stage.status_code == 200, stage.json()
         body = stage.json()
         a, b = body["panels"]
-        assert (a["slot"], a["joined"], b["joined"]) == ("A", True, False)
-        assert [x["text"] for x in a["answers"]] == [ANSWER.format(1)]
-        assert b["answers"] == [] and b["constellation"] is None
-        assert a["constellation"]["size"] == len(players)
-        assert body["population"]["players"] == len(players)
-        assert body["population"]["answersByDay"][0] == len(players)
+        # Always on: the two newest real joiners, the older of them as A, with their names.
+        assert (a["joined"], a["displayName"]) == (True, phone_a.name)
+        assert (b["joined"], b["displayName"]) == (True, phone_b.name)
+        assert [x["text"] for x in a["answers"]] == [ANSWER.format(3)]
+        assert [x["text"] for x in b["answers"]] == [ANSWER.format(4)]
+        assert a["constellation"]["size"] == len(players) and a["constellation"]["mapSeed"]
         assert body["formation"]["formed"] is True and body["cycle"]["cycleId"] == cycle_id
         assert body["calls"] and all("callType" in c for c in body["calls"])
         # Nobody else's text, ids or private meaning leaves the server.
-        assert "submission number 0" not in stage.text
-        assert "submission number 2" not in stage.text
-        assert private_player.player_id not in stage.text
-        assert on_stage.player_id not in stage.text
+        for index in (0, 1, 2):
+            assert f"submission number {index} " not in stage.text
+        for player in players:
+            assert player.player_id not in stage.text
         assert "memberIds" not in stage.text and "sharedMeaning" not in stage.text
+        assert older.name not in stage.text and third.name not in stage.text
 
-        # Opting out removes the text again; a second player can take the slot.
-        left = call(client, on_stage, "POST", "/me/stage", json={"slot": None})
-        assert left.json() == {"slot": None}
+        # The viewing account is never a phone, even when it is the newest joiner.
+        assert (
+            phone_b.name
+            not in call(client, phone_b, "GET", "/operator/stage").text.split('"displayName"')[2]
+        )
+        # A player can take themselves off; the next newest fills in.
+        assert call(client, phone_b, "POST", "/me/stage", json={"slot": "off"}).json() == {
+            "slot": "off"
+        }
         panels = call(client, operator, "GET", "/operator/stage").json()["panels"]
-        assert panels[0]["answers"] == []
-        call(client, on_stage, "POST", "/me/stage", json={"slot": "B"})
-        call(client, private_player, "POST", "/me/stage", json={"slot": "B"})
+        assert [p["displayName"] for p in panels] == [third.name, phone_a.name]
+        assert ANSWER.format(4) not in str(panels)
+        # ... or pin a slot.
+        call(client, older, "POST", "/me/stage", json={"slot": "B"})
+        assert call(client, older, "GET", "/me/stage").json() == {"slot": "B"}
         panels = call(client, operator, "GET", "/operator/stage").json()["panels"]
-        assert [x["text"] for x in panels[1]["answers"]] == [ANSWER.format(2)]
+        assert panels[1]["displayName"] == older.name
+        assert call(client, older, "POST", "/me/stage", json={"slot": "C"}).status_code in (
+            400,
+            422,
+        )
+
+
+def test_stage_controls_run_the_demo_week_with_phones_typing_only_friday():
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        laptop = join(client, "laptop")
+        phone_a, phone_b = join(client, "phone a"), join(client, "phone b")
+        body = call(client, laptop, "POST", "/operator/stage/start").json()
+        assert (body["cycle"]["status"], body["cycle"]["currentDay"]) == ("open", 1)
+        assert body["cycle"]["demoTiming"] is True
+        a, b = body["panels"]
+        assert (a["displayName"], b["displayName"]) == (phone_a.name, phone_b.name)
+        # Monday is filled from the script; nothing to type yet.
+        assert [x["day"] for x in a["answers"]] == [1] and a["answers"][0]["scripted"]
+        assert a["toType"] is None and b["toType"] is None
+        assert body["population"]["syntheticPlayers"] > 50  # the cast arrives with the week
+        for day in (2, 3, 4, 5):
+            body = call(client, laptop, "POST", "/operator/stage/next").json()
+            assert body["cycle"]["currentDay"] == day
+        a, b = body["panels"]
+        assert [x["day"] for x in a["answers"]] == [1, 2, 3, 4]
+        assert a["answers"][0]["text"] != b["answers"][0]["text"]  # two different scripts
+        # Friday: the stage shows what each phone should type, and they type it.
+        assert a["toType"] and b["toType"] and body["today"]["day"] == 5
+        for phone, line in ((phone_a, a["toType"]), (phone_b, b["toType"])):
+            response = call(
+                client,
+                phone,
+                "POST",
+                f"/cycles/{body['cycle']['cycleId']}/answers",
+                json={"day": 5, "text": line, "source": "text"},
+            )
+            assert response.status_code == 202, response.json()
+        body = call(client, laptop, "GET", "/operator/stage").json()
+        assert body["panels"][0]["toType"] is None and len(body["panels"][0]["answers"]) == 5
+        # Lock and matching in one step; reveal waits until Muse has formed the groups.
+        cycle_id = body["cycle"]["cycleId"]
+        body = call(client, laptop, "POST", "/operator/stage/next").json()
+        assert body["cycle"]["status"] == "forming" and body["formation"]["formed"] is False
+        body = call(client, laptop, "POST", "/operator/stage/next").json()
+        assert body["cycle"]["status"] == "forming"  # not formed yet: no reveal
+        # The app's worker runs the formation job in production; this test runs it by hand.
+        grant_operator(env.privacy_store, laptop.player_id, COMMUNITY)
+        job = call(client, laptop, "POST", f"/operator/cycles/{cycle_id}/form", json={})
+        assert job.status_code == 202
+        body = call(client, laptop, "POST", "/operator/stage/next").json()
+        assert body["cycle"]["status"] == "revealed"
+        assert all(p["constellation"] for p in body["panels"])
+        assert len(body["constellations"]) >= 2
+        # Starting again gives a fresh Monday for the same phones.
+        body = call(client, laptop, "POST", "/operator/stage/start").json()
+        assert (body["cycle"]["status"], body["cycle"]["currentDay"]) == ("open", 1)
+        assert [x["day"] for x in body["panels"][1]["answers"]] == [1]
 
 
 def test_stage_without_a_week_is_empty_not_an_error():
