@@ -3,7 +3,7 @@
  * Railway's datacenter IPs, so the Railway API sets MUSE_BASE_URL to
  * https://<this site>/api/muse/v1 and calls Meta through here.
  *
- * - Forwards only GET /v1/models and POST /v1/chat/completions to api.meta.ai.
+ * - Forwards only the explicit models, chat completions and transcription routes.
  * - Forwards only when the caller's bearer token hashes to KEY_SHA256, so the
  *   relay holds no key and is useless without ours.
  * - Logs nothing: no bodies, headers or tokens.
@@ -13,14 +13,18 @@ import crypto from "node:crypto";
 const UPSTREAM = "https://api.meta.ai/v1";
 const KEY_SHA256 = "8f3d0f75dd9e32f54da09f2adffa7e4d394b5282bb8be956594eec1d74614413";
 
+export function isRelayAuthorized(auth, expectedDigest = KEY_SHA256) {
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const digest = crypto.createHash("sha256").update(token).digest();
+  return Boolean(token) && crypto.timingSafeEqual(digest, Buffer.from(expectedDigest, "hex"));
+}
+
 export default function relay(method, path) {
   return async (req, res) => {
     const fail = (status, code) => res.status(status).json({ error: { code } });
     if (req.method !== method) return fail(405, "relay_method_not_allowed");
     const auth = req.headers.authorization || "";
-    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    const digest = crypto.createHash("sha256").update(token).digest();
-    if (!token || !crypto.timingSafeEqual(digest, Buffer.from(KEY_SHA256, "hex"))) return fail(401, "relay_unauthorized");
+    if (!isRelayAuthorized(auth)) return fail(401, "relay_unauthorized");
     try {
       const upstream = await fetch(UPSTREAM + path, {
         method,
