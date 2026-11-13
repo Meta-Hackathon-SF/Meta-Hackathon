@@ -211,21 +211,14 @@ class ChatService:
                 return message.model_dump()
             policy.reserve_attempt(room, actor_id, effective_now(cycle, self.clock))
             privacy_revision = lease.revision
-        # Attempt metadata commits even when the cheap deterministic guard rejects.
-        self._check_text(
-            text,
-            self._answers(lease),
-            room=room,
-            actor_id=actor_id,
-            eligible=lease.player_ids,
-            kind=kind,
-        )
+        # Safety precedes the publication guard so distress still receives the
+        # private support cue when the same message also contains contact info.
         try:
             flag = await self.safety.screen(text, "chat_message")
             if flag not in {"none", "distress", "harm"}:
                 raise ServiceError("PROVIDER_UNAVAILABLE")
             if flag != "none":
-                raise ServiceError("MESSAGE_REJECTED")
+                raise ServiceError("MESSAGE_REJECTED", message_key="support_card")
         except ServiceError:
             raise
         except Exception as error:
@@ -399,7 +392,8 @@ class ChatService:
     def expire(self, cycle_id):
         with self._scope(cycle_id) as (state, cycle, _lease, _actor):
             count = policy.expire(state.chat, cycle_id, effective_now(cycle, self.clock))
-            policy.delete_at_ttl(state.chat, cycle, self.clock())
+            # Full data retention follows the runtime's first actual lock time;
+            # it must not run again against this cycle's scheduled calendar time.
             retained = {p for room in state.chat.rooms.values() for p in room.members}
             profiles = state.records.get("chatProfiles", {})
             state.records["chatProfiles"] = {

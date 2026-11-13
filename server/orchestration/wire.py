@@ -106,3 +106,40 @@ class WeeklyCycle(Wire):
         if not times[0] < times[1] < times[2]:
             raise ValueError("invalid cycle timing")
         return self
+
+
+class SkyTheme(Wire):
+    themeId: Text
+    label: Text
+    count: NonNegative
+    actualPercent: Annotated[float, Field(ge=0, le=100)]
+    guessedPercentMedian: Annotated[float, Field(ge=0, le=100)]
+
+
+class SyntheticSignal(Wire):
+    signalId: Text
+    label: Text
+    percent: Annotated[float, Field(ge=0, le=100)]
+    sampleSize: Annotated[int, Field(ge=1)]
+    source: Literal["synthetic"]
+
+
+class SkyStats(Wire):
+    cycleId: Text
+    threshold: Annotated[int, Field(ge=3)]
+    eligiblePlayers: NonNegative
+    constellations: NonNegative
+    mutualReveals: NonNegative
+    themes: list[SkyTheme]
+    suppressedThemes: NonNegative
+    headlines: list[str]
+    syntheticSignals: list[SyntheticSignal]
+    evidence: list[MuseCallEvidence]
+
+    @model_validator(mode="after")
+    def privacy_threshold(self):
+        if any(t.count < self.threshold or t.count > self.eligiblePlayers for t in self.themes):
+            raise ValueError("invalid thresholded theme")
+        if len({t.themeId for t in self.themes}) != len(self.themes):
+            raise ValueError("duplicate theme")
+        return self

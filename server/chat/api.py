@@ -2,7 +2,7 @@
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 from pydantic import Field
 
 from server.app.errors import ServiceError
@@ -32,7 +32,7 @@ def _key(request: Request):
     return keys[0]
 
 
-def build_router(service, session_dependency):
+def build_router(service, session_dependency, sky_refresh=None):
     """Paths omit /api/v1; Kai's registry mounts and guards this router."""
     router = APIRouter()
     Session = Annotated[object, Depends(session_dependency)]
@@ -67,9 +67,16 @@ def build_router(service, session_dependency):
         return Response(status_code=204)
 
     @router.post("/rooms/{roomId}/reveal")
-    def reveal(roomId: str, body: RevealRequest, request: Request, actor: Session):
-        return service.reveal(
+    def reveal(
+        roomId: str, body: RevealRequest, request: Request, tasks: BackgroundTasks, actor: Session
+    ):
+        result = service.reveal(
             actor, roomId, body.toHandle, _key(request), token=session_token(request)
         )
+        if result["result"] == "revealed" and sky_refresh is not None:
+            # The coordinator dedupes against its current aggregate and pending job.
+            # Model work runs after the request, outside chat/privacy transactions.
+            sky_refresh(roomId, tasks)
+        return result
 
     return router

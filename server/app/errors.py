@@ -37,6 +37,18 @@ ERRORS: dict[ErrorCode, tuple[int, str, bool]] = {
 }
 
 
+SUPPORT_CARD_MESSAGE = "This message was held. A private support card is available."
+MessageKey = Literal["support_card"]
+
+
+def _message(code: ErrorCode, message_key: MessageKey | None) -> str:
+    if message_key is not None:
+        if message_key != "support_card" or code != "MESSAGE_REJECTED":
+            raise ValueError("Unknown safe API message key")
+        return SUPPORT_CARD_MESSAGE
+    return ERRORS[code][1]
+
+
 class ErrorDetails(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     code: ErrorCode
@@ -53,15 +65,20 @@ class ApiError(BaseModel):
 class ServiceError(Exception):
     """Owners raise a stable error code, never a public free-form private message."""
 
-    def __init__(self, code: ErrorCode):
+    def __init__(self, code: ErrorCode, *, message_key: MessageKey | None = None):
         if code not in ERRORS:
             raise ValueError("Unknown API error code")
+        _message(code, message_key)
         self.code = code
+        self.message_key = message_key
         super().__init__(code)
 
 
-def error_response(request: Request, code: ErrorCode) -> JSONResponse:
-    status, message, retryable = ERRORS[code]
+def error_response(
+    request: Request, code: ErrorCode, *, message_key: MessageKey | None = None
+) -> JSONResponse:
+    status, _default_message, retryable = ERRORS[code]
+    message = _message(code, message_key)
     body = ApiError(
         error=ErrorDetails(
             code=code,

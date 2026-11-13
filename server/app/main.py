@@ -45,7 +45,7 @@ def create_app(
 
     @app.exception_handler(ServiceError)
     async def service_error(request: Request, error: ServiceError) -> JSONResponse:
-        return error_response(request, error.code)
+        return error_response(request, error.code, message_key=error.message_key)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, _error: RequestValidationError) -> JSONResponse:

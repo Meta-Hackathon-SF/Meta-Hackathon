@@ -18,6 +18,11 @@ from tests.orchestration.storage_adapter import TestWorkflowRepository
 COMMUNITY = "synthetic-community"
 
 
+class SyntheticRuntimeEnvironment(SimpleNamespace):
+    def __repr__(self):
+        return "<SyntheticRuntimeEnvironment>"
+
+
 class SyntheticClock:
     def __init__(self):
         self.now = datetime(2026, 11, 9, 18, tzinfo=UTC)
@@ -109,7 +114,7 @@ def runtime_environment():
             settings=Settings(environment="test"),
             start_worker=False,
         )
-        yield SimpleNamespace(
+        yield SyntheticRuntimeEnvironment(
             app=app,
             repository=repository,
             privacy_store=privacy_store,

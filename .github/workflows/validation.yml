@@ -71,9 +71,10 @@ jobs:
           from pathlib import Path
           import psycopg
           with psycopg.connect(os.environ['CONSTELLATIONS_TEST_ADMIN_DSN']) as connection:
-              connection.execute(Path('db/workflow/001_workflow.sql').read_text())
+              for migration in sorted(Path('db/workflow').glob('[0-9][0-9][0-9]_*.sql')):
+                  connection.execute(migration.read_text())
               count = connection.execute("SELECT count(*) FROM pg_tables WHERE schemaname = 'workflow' AND rowsecurity").fetchone()[0]
-              assert count == 3, 'All weekly tables must enable RLS'
+              assert count == 4, 'All weekly tables must enable RLS'
           PYSQL
 
   frontend:

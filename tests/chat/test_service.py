@@ -308,7 +308,7 @@ def test_current_privacy_state_rechecked_after_async_screen(change):
         asyncio.run(scenario(env))
 
 
-def test_expiry_read_only_ttl_and_private_deletion_remove_replay_text():
+def test_expiry_is_read_only_and_private_deletion_removes_replay_text():
     with setup() as env:
         a = env.actors[0]
         asyncio.run(env.chat.send(a, env.room_id, "Synthetic hello", "hello"))
@@ -323,7 +323,9 @@ def test_expiry_read_only_ttl_and_private_deletion_remove_replay_text():
         env.clock.now = policy.moment(env.cycle.locksAt) + timedelta(days=14)
         env.chat.expire(env.cycle.cycleId)
         with env.repository.transaction() as state:
-            assert not state.chat.rooms and not state.chat.deliveries
+            assert state.chat.rooms
+            assert state.chat.rooms[env.room_id].wire.status == "expired"
+            # The runtime, not ChatService, owns the actual-lock retention deadline.
 
 
 def test_post_system_uses_real_m1_guard_and_deduplicates():
@@ -379,7 +381,7 @@ def test_http_uses_sessions_exact_shapes_and_no_private_input_echo():
             assert response.status_code == 400
 
 
-def test_rejected_attempts_are_rate_limited_before_any_model_budget_is_spent():
+def test_rejected_attempts_are_rate_limited_before_further_model_calls():
     with setup() as env:
         for index in range(6):
             with pytest.raises(ServiceError) as error:
@@ -388,4 +390,4 @@ def test_rejected_attempts_are_rate_limited_before_any_model_budget_is_spent():
         with pytest.raises(ServiceError) as error:
             asyncio.run(env.chat.send(env.actors[0], env.room_id, "hello", "seventh"))
         assert error.value.code == "RATE_LIMITED"
-        assert len(env.transport.calls) == 3  # only setup's three answer calls
+        assert len(env.transport.calls) == 9  # 3 setup answers + 6 bounded M1 screens
