@@ -1,0 +1,115 @@
+{
+ "summary": {
+  "label": "wonder-sub",
+  "model": "muse-wonder-1.0",
+  "subset": "subset",
+  "batchSize": 5,
+  "n": 10,
+  "costUsd": 0.042252,
+  "inputTokens": 1658,
+  "outputTokens": 1781,
+  "batches": [
+   {
+    "batch": 0,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 6518,
+    "wallMs": 6519,
+    "model": "muse-wonder-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 1,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 10865,
+    "wallMs": 10866,
+    "model": "muse-wonder-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   }
+  ]
+ },
+ "results": {
+  "m05": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "sports",
+     "neutral"
+    ]
+   ]
+  },
+  "s01": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "study",
+     "negative"
+    ]
+   ]
+  },
+  "x09": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "gaming",
+     "positive"
+    ]
+   ]
+  },
+  "x05": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "film",
+     "positive"
+    ]
+   ]
+  },
+  "i02": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "outdoors",
+     "positive"
+    ]
+   ]
+  },
+  "x04": {
+   "kept": [],
+   "sensitive": true,
+   "raw": []
+  },
+  "n01": {
+   "kept": [],
+   "sensitive": false,
+   "raw": []
+  },
+  "a01": {
+   "kept": [],
+   "sensitive": false,
+   "raw": []
+  },
+  "l05": {
+   "kept": [],
+   "sensitive": true,
+   "raw": []
+  },
+  "x02": {
+   "kept": [],
+   "sensitive": true,
+   "raw": []
+  }
+ }
+}

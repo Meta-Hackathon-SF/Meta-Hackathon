@@ -135,7 +135,7 @@ Actions
 
 SSE: none.
 
-Jobs: retention sweep (Patrik) deletes raw answers 30 days after week close, chat messages at room expiry + 7 days.
+Jobs: retention sweep (Patrik): answers, follow-ups, event interests, RSVPs/invites, daily placement and co-membership edges are deleted 14 days after the cycle's lock; chat message text 7 days after room expiry, whichever comes first (canonical, Patrik on #54; supersedes "30 days after week close"). Other owners purge their per-cycle data via `AnswerStore.expired_cycles()`.
 
 Muse: none.
 

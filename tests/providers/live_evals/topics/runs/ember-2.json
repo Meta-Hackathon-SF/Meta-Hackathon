@@ -1,0 +1,1113 @@
+{
+ "summary": {
+  "label": "ember-2",
+  "model": "muse-ember-1.0",
+  "subset": "all",
+  "batchSize": 8,
+  "n": 81,
+  "costUsd": 0.004983,
+  "inputTokens": 11772,
+  "outputTokens": 7608,
+  "batches": [
+   {
+    "batch": 0,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 1085,
+    "wallMs": 1086,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 1,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 4345,
+    "wallMs": 4346,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 2,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 2457,
+    "wallMs": 2458,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 3,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 1914,
+    "wallMs": 1915,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 4,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 2697,
+    "wallMs": 2699,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 5,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 2297,
+    "wallMs": 2297,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 6,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 3306,
+    "wallMs": 3307,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 7,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 3220,
+    "wallMs": 3222,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 8,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 2978,
+    "wallMs": 2980,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 9,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 2008,
+    "wallMs": 2010,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 10,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 865,
+    "wallMs": 867,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   }
+  ]
+ },
+ "results": {
+  "l04": {
+   "kept": [
+    "food"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "food",
+     "positive"
+    ]
+   ]
+  },
+  "s01": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "study",
+     "negative"
+    ]
+   ]
+  },
+  "p11": {
+   "kept": [
+    "film"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "film",
+     "positive"
+    ]
+   ]
+  },
+  "e02": {
+   "kept": [
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "positive"
+    ]
+   ]
+  },
+  "x15": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "outdoors",
+     "positive"
+    ]
+   ]
+  },
+  "i01": {
+   "kept": [
+    "food"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "food",
+     "positive"
+    ]
+   ]
+  },
+  "h01": {
+   "kept": [
+    "coding"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "coding",
+     "positive"
+    ]
+   ]
+  },
+  "p05": {
+   "kept": [
+    "books"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "books",
+     "positive"
+    ]
+   ]
+  },
+  "x07": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "food",
+     "positive"
+    ]
+   ]
+  },
+  "p03": {
+   "kept": [
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "neutral"
+    ]
+   ]
+  },
+  "x14": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "sports",
+     "positive"
+    ]
+   ]
+  },
+  "m06": {
+   "kept": [
+    "ai",
+    "coding"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "coding",
+     "neutral"
+    ],
+    [
+     "ai",
+     "neutral"
+    ]
+   ]
+  },
+  "p08": {
+   "kept": [
+    "outdoors"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "outdoors",
+     "positive"
+    ]
+   ]
+  },
+  "L01": {
+   "kept": [
+    "books",
+    "coffee",
+    "film"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "coffee",
+     "positive"
+    ],
+    [
+     "film",
+     "positive"
+    ],
+    [
+     "books",
+     "neutral"
+    ]
+   ]
+  },
+  "p17": {
+   "kept": [
+    "music",
+    "study"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "music",
+     "neutral"
+    ],
+    [
+     "study",
+     "neutral"
+    ]
+   ]
+  },
+  "p01": {
+   "kept": [
+    "coffee"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "coffee",
+     "positive"
+    ]
+   ]
+  },
+  "m04": {
+   "kept": [
+    "music"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "music",
+     "positive"
+    ]
+   ]
+  },
+  "m02": {
+   "kept": [
+    "books"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "books",
+     "positive"
+    ]
+   ]
+  },
+  "h02": {
+   "kept": [
+    "outdoors"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "outdoors",
+     "neutral"
+    ]
+   ]
+  },
+  "x09": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "gaming",
+     "positive"
+    ]
+   ]
+  },
+  "p14": {
+   "kept": [
+    "coding",
+    "food"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "coding",
+     "neutral"
+    ],
+    [
+     "food",
+     "neutral"
+    ]
+   ]
+  },
+  "m05": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "sports",
+     "neutral"
+    ]
+   ]
+  },
+  "o03": {
+   "kept": [],
+   "sensitive": false,
+   "raw": []
+  },
+  "m03": {
+   "kept": [
+    "coffee",
+    "film"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "film",
+     "positive"
+    ],
+    [
+     "coffee",
+     "positive"
+    ]
+   ]
+  },
+  "o01": {
+   "kept": [],
+   "sensitive": false,
+   "raw": []
+  },
+  "a03": {
+   "kept": [
+    "study"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "study",
+     "neutral"
+    ]
+   ]
+  },
+  "h04": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "ai",
+     "negative"
+    ]
+   ]
+  },
+  "p12": {
+   "kept": [
+    "study"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "study",
+     "neutral"
+    ]
+   ]
+  },
+  "p07": {
+   "kept": [
+    "food"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "food",
+     "neutral"
+    ]
+   ]
+  },
+  "n04": {
+   "kept": [
+    "art"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "coding",
+     "negative"
+    ],
+    [
+     "art",
+     "positive"
+    ]
+   ]
+  },
+  "e01": {
+   "kept": [
+    "art",
+    "coffee",
+    "gaming"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "art",
+     "positive"
+    ],
+    [
+     "gaming",
+     "positive"
+    ],
+    [
+     "coffee",
+     "positive"
+    ]
+   ]
+  },
+  "x01": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "study",
+     "neutral"
+    ]
+   ]
+  },
+  "n02": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "coffee",
+     "negative"
+    ]
+   ]
+  },
+  "a01": {
+   "kept": [],
+   "sensitive": false,
+   "raw": []
+  },
+  "a05": {
+   "kept": [
+    "vr"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "vr",
+     "positive"
+    ]
+   ]
+  },
+  "l01": {
+   "kept": [
+    "music"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "music",
+     "positive"
+    ]
+   ]
+  },
+  "x11": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "outdoors",
+     "neutral"
+    ]
+   ]
+  },
+  "l02": {
+   "kept": [
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "positive"
+    ]
+   ]
+  },
+  "p10": {
+   "kept": [
+    "art"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "art",
+     "neutral"
+    ]
+   ]
+  },
+  "s02": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "negative"
+    ]
+   ]
+  },
+  "p06": {
+   "kept": [
+    "gaming"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "gaming",
+     "positive"
+    ]
+   ]
+  },
+  "p18": {
+   "kept": [
+    "film",
+    "food"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "food",
+     "positive"
+    ],
+    [
+     "film",
+     "positive"
+    ]
+   ]
+  },
+  "i04": {
+   "kept": [
+    "food"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "food",
+     "neutral"
+    ]
+   ]
+  },
+  "i02": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "outdoors",
+     "positive"
+    ]
+   ]
+  },
+  "x13": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "music",
+     "positive"
+    ]
+   ]
+  },
+  "m01": {
+   "kept": [
+    "coffee",
+    "outdoors"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "outdoors",
+     "positive"
+    ],
+    [
+     "coffee",
+     "neutral"
+    ]
+   ]
+  },
+  "x08": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "gaming",
+     "neutral"
+    ]
+   ]
+  },
+  "e04": {
+   "kept": [
+    "music"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "music",
+     "positive"
+    ]
+   ]
+  },
+  "x12": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "film",
+     "positive"
+    ]
+   ]
+  },
+  "o02": {
+   "kept": [],
+   "sensitive": false,
+   "raw": []
+  },
+  "p16": {
+   "kept": [
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "positive"
+    ]
+   ]
+  },
+  "h05": {
+   "kept": [
+    "gaming"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "gaming",
+     "positive"
+    ]
+   ]
+  },
+  "p09": {
+   "kept": [
+    "ai"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "ai",
+     "positive"
+    ]
+   ]
+  },
+  "a02": {
+   "kept": [],
+   "sensitive": false,
+   "raw": []
+  },
+  "p13": {
+   "kept": [
+    "vr"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "vr",
+     "positive"
+    ]
+   ]
+  },
+  "l05": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "food",
+     "positive"
+    ]
+   ]
+  },
+  "x06": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "food",
+     "neutral"
+    ]
+   ]
+  },
+  "x16": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "study",
+     "neutral"
+    ],
+    [
+     "art",
+     "positive"
+    ]
+   ]
+  },
+  "n05": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "film",
+     "negative"
+    ]
+   ]
+  },
+  "p04": {
+   "kept": [
+    "music"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "music",
+     "positive"
+    ]
+   ]
+  },
+  "s03": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "food",
+     "negative"
+    ]
+   ]
+  },
+  "e03": {
+   "kept": [
+    "books",
+    "coffee"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "books",
+     "neutral"
+    ],
+    [
+     "coffee",
+     "neutral"
+    ]
+   ]
+  },
+  "i03": {
+   "kept": [
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "positive"
+    ]
+   ]
+  },
+  "h06": {
+   "kept": [
+    "design"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "design",
+     "neutral"
+    ]
+   ]
+  },
+  "h03": {
+   "kept": [
+    "ai"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "ai",
+     "neutral"
+    ]
+   ]
+  },
+  "l03": {
+   "kept": [
+    "design"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "design",
+     "positive"
+    ]
+   ]
+  },
+  "x05": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "film",
+     "positive"
+    ]
+   ]
+  },
+  "x02": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "coffee",
+     "positive"
+    ],
+    [
+     "outdoors",
+     "positive"
+    ]
+   ]
+  },
+  "a06": {
+   "kept": [],
+   "sensitive": false,
+   "raw": []
+  },
+  "n01": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "outdoors",
+     "negative"
+    ]
+   ]
+  },
+  "x10": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "study",
+     "negative"
+    ]
+   ]
+  },
+  "x03": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "gaming",
+     "neutral"
+    ]
+   ]
+  },
+  "a04": {
+   "kept": [
+    "ai",
+    "study"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "ai",
+     "positive"
+    ],
+    [
+     "study",
+     "positive"
+    ]
+   ]
+  },
+  "n03": {
+   "kept": [
+    "food"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "gaming",
+     "negative"
+    ],
+    [
+     "food",
+     "positive"
+    ]
+   ]
+  },
+  "L02": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "gaming",
+     "positive"
+    ],
+    [
+     "music",
+     "positive"
+    ]
+   ]
+  },
+  "a08": {
+   "kept": [
+    "outdoors"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "outdoors",
+     "neutral"
+    ]
+   ]
+  },
+  "a07": {
+   "kept": [
+    "study"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "study",
+     "neutral"
+    ]
+   ]
+  },
+  "p15": {
+   "kept": [
+    "art",
+    "outdoors"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "art",
+     "positive"
+    ],
+    [
+     "outdoors",
+     "positive"
+    ]
+   ]
+  },
+  "n06": {
+   "kept": [
+    "outdoors"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "negative"
+    ],
+    [
+     "outdoors",
+     "positive"
+    ]
+   ]
+  },
+  "x04": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "music",
+     "negative"
+    ]
+   ]
+  },
+  "p02": {
+   "kept": [
+    "design"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "design",
+     "positive"
+    ]
+   ]
+  }
+ }
+}

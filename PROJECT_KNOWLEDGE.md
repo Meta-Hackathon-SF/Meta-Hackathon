@@ -32,14 +32,14 @@ Role-branch work from teammates is not claimed integrated here; inspect their la
 ## Evidence ledger
 | Capability | Owner | Status | Required evidence |
 | --- | --- | --- | --- |
-| Facebook shell (`web/`) | Will | Existing; mock data | Build/lint pass; Playwright rerun outstanding (browser failed to launch) |
+| Facebook shell (`web/`) | Will | Existing; mock data; DESIGN.md tokens + polish merged (#55) | Lint 0 errors, build ok, Playwright 71 passed / 1 skipped (2026-11-13, #61) |
 | Contract 2.0.0 + fixtures | all | Authored; typechecks; pending D006 ACK | ACK from all five owners |
 | API composition (`server/app/`) | Kai | Planned (restore from archive) | Registry, health, every owner's router mounted |
 | Muse adapter (`server/providers/`) | Adam | Implemented for 2.0.0 (M1-M8 validators, one malformed retry, evidence log); offline tests pass; **one live M2 call verified** 2026-11-13T02:25Z (`muse-spark-1.3` echoed, 16.2 s, low effort) | Live calls for M1 and M3-M8; timing under parallel load |
 | Sessions, consent, private storage (`server/privacy/`) | Patrik | Planned (restore from archive) | 403 test; prompt payload test; TTL test |
 | Safety screening + OutputGuard | Patrik | Planned | Seeded distress never appears; no-quote fuzz; red-team 30 |
-| Weekly cycle, daily answers, catch-up, streaks | Will | Planned | Lock test; catch-up rules; streak fixture |
-| Voice boundary (`server/voice/`) | Will | Planned (restore from archive) | Transcription or typed fallback on a phone |
+| Weekly cycle, daily answers, catch-up, streaks | Will | Implemented (`server/cycle`); offline tests pass (lock, catch-up, streak fixture, `answered_today`, `question_texts` #63); not live-verified on phones | A full live week in the composed app |
+| Voice boundary (`server/voice/`) | Will | Implemented (upload + D012 live STT relay); offline tests pass; live STT tried on a local harness in desktop Chrome only | Transcription or typed fallback on a phone |
 | Question bank + selection, M2 follow-up | Adam | Implemented; offline tests pass, including against the real OutputGuard; live M2 calls pass the real guard (synthetic input, 2026-11-13); operator router not mounted | Run inside the composed app with the real session |
 | Semantic formation + validation | Rishi | Planned | week-sample constraints; baseline split example; 30 players timed |
 | Prevalence + SkyStats | Rishi | Planned | Threshold test; numbers equal server counts |
@@ -47,7 +47,8 @@ Role-branch work from teammates is not claimed integrated here; inspect their la
 | Expiry + mutual reveal | Kai | Planned | ROOM_EXPIRED; one-sided reveal leaks nothing |
 | Realtime SSE | Kai | Planned | Reconnect replay by seq; per-player filtering |
 | Sky UI | Kai | Planned | Threshold respected; synthetic labels |
-| Operator console | Will | Planned | Full demo week in under 3 minutes; model chip per call |
+| Operator console | Will | Implemented, fixture-verified: full demo week under 3 min (Playwright), close day, custom-event approval queue, reasoning panel (#61); live routes for v3 panels not yet mounted | Same run against the composed server with live Muse |
 | Event nudges (step 6, cuttable) | Adam | Implemented server side + card; allowlist and guard tests pass offline with the real OutputGuard; one live M7 nudge passed it; card viewed in a temporary preview only; nothing posted to a real room | Kai's ChatPort and constellation lookup; a nudge seen in a room |
 | Question generation + synthetic signals (step 7, cuttable) | Adam, Rishi | Generation with operator approval implemented, offline tests pass; approval routes proposed, not in API.md; synthetic signals not started here | ACK of approval routes; aggregate signals from Rishi; live M6 call |
+| v3 daily UI: day colors, daily reveal (S5), your week (S6), `answeredToday` (D012) | Will | Implemented on main (#61) behind a labeled TEST-ONLY adapter; guess UI removed; guess route held until 3.0.0 | Contract 3.0.0 + Rishi's S5/S6 routes, then a live run |
 | User impact | all | Unknown | Actual observations only |

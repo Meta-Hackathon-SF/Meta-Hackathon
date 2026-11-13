@@ -558,3 +558,79 @@ def test_lock_tells_the_answer_store_once_with_the_lock_time():
     for _ in range(7):
         env.service.advance(cycle.cycleId)
     assert env.store.locked == [(cycle.cycleId, "2026-11-09T17:00:00Z")]
+
+
+def test_answered_today_counts_distinct_unflagged_players_for_the_current_day():
+    env = Env()
+    cycle = env.new()
+    assert env.service.answered_today(cycle.cycleId) == 0
+    env.submit(MAYA, cycle, 1)
+    env.submit(DEV, cycle, 1)
+    assert env.service.answered_today(cycle.cycleId) == 2
+    # editing never double counts; a flagged edit drops out, an unflagged one returns
+    env.service.edit_answer(MAYA, cycle.cycleId, 1, EditAnswerRequest(text="SYNTHETIC SAFETY TEST"))
+    assert env.service.answered_today(cycle.cycleId) == 1
+    env.service.edit_answer(MAYA, cycle.cycleId, 1, EditAnswerRequest(text="dining hall again"))
+    assert env.service.answered_today(cycle.cycleId) == 2
+    env.service.delete_answer(DEV, cycle.cycleId, 1)
+    assert env.service.answered_today(cycle.cycleId) == 1
+    # a new day starts at zero; a catch-up answer counts for its own day, not today
+    env.service.advance(cycle.cycleId)
+    assert env.service.answered_today(cycle.cycleId) == 0
+    env.submit(DEV, cycle, 1)
+    assert (env.service.answered_today(cycle.cycleId), env.service.answered_today(cycle.cycleId, 1)) == (0, 2)
+
+
+def test_answered_today_excludes_flagged_answers_and_resets_with_the_cycle():
+    env = Env()
+    cycle = env.new()
+    env.submit(MAYA, cycle, 1, text="SYNTHETIC SAFETY TEST")
+    assert env.service.answered_today(cycle.cycleId) == 0
+    env.service.synthetic_topup(cycle.cycleId)
+    seeded = env.service.answered_today(cycle.cycleId)
+    assert seeded > 0
+    env.service.reset(cycle.cycleId)
+    assert env.service.answered_today(cycle.cycleId) == 0
+    with pytest.raises(CycleError) as excinfo:
+        env.service.answered_today("cycle-missing")
+    assert code(excinfo) == "NOT_FOUND"
+    with pytest.raises(CycleError) as excinfo:
+        env.service.answered_today(cycle.cycleId, 6)
+    assert code(excinfo) == "INVALID_INPUT"
+
+
+def test_answered_today_is_zero_once_the_week_locks():
+    env = Env()
+    cycle = env.new()
+    env.submit(MAYA, cycle, 1)
+    for _ in range(5):
+        env.service.advance(cycle.cycleId)
+    assert env.service.current(COMMUNITY).status != "open"
+    assert env.service.answered_today(cycle.cycleId) == 0
+    assert env.service.answered_today(cycle.cycleId, 1) == 1
+
+
+def test_question_texts_returns_stored_released_questions_without_a_session():
+    env = Env()
+    cycle = env.new()
+    first = env.service.question_texts(cycle.cycleId, COMMUNITY)
+    released = env.service.released_questions(MAYA, cycle.cycleId)
+    assert first == {q.question.questionId: q.question.text for q in released}
+    assert len(first) == 1  # future days never leak
+    for _ in range(4):
+        env.service.advance(cycle.cycleId)
+    week = env.service.question_texts(cycle.cycleId, COMMUNITY)
+    assert len(week) == 5 and set(first) <= set(week)
+    assert env.service.question_texts(cycle.cycleId, COMMUNITY) == week  # stable: never re-selects
+    hooks_before = list(env.hooks.events)
+    env.service.question_texts(cycle.cycleId, COMMUNITY)
+    assert env.hooks.events == hooks_before  # read-only, fires no hooks
+
+
+def test_question_texts_hides_other_communities_and_missing_cycles():
+    env = Env()
+    cycle = env.new()
+    for cycle_id, community in ((cycle.cycleId, "community-other"), ("cycle-missing", COMMUNITY)):
+        with pytest.raises(CycleError) as excinfo:
+            env.service.question_texts(cycle_id, community)
+        assert code(excinfo) == "NOT_FOUND"

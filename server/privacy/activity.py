@@ -4,10 +4,20 @@ Will's human ahead of the owners' ACKs, see docs/DECISIONS.md D010).
 * Off by default. ``PUT /me/activity`` with ``useActivity: false`` deletes the
   stored row; ``DELETE /me/data`` deletes it too.
 * Groups, Events and friends are stored as opaque ids (no names).
-* Post/comment ``texts`` are reduced by code to labels from ``SAFE_TOPICS`` and
-  then discarded: never stored, logged, sent to Muse or shown to anyone. The
-  allowlist contains no sensitive categories (health, sexuality, religion,
-  finances, family trauma, home location), so those can never become signals.
+* ``eventIds`` not in the approved venue catalog are dropped, never stored
+  (D013: only approved events may count as signals or event heat). The
+  approved set comes from ``approved_event_ids``; the default reads
+  ``server.planning.VenueCatalog.load().event_ids()`` and fails closed (keeps
+  no event ids) when the catalog or that method is unavailable.
+* Post/comment ``texts`` become labels from ``SAFE_TOPICS`` and are then
+  discarded: never stored, logged or shown to anyone. D014 M9 (signed off by
+  Patrik with conditions): when a Muse port is configured, the texts are
+  redacted by code (``redact_for_model``) and sent to Muse transiently for
+  classification (server/privacy/topics.py: random per-call ids, code-validated
+  labels, sensitive texts dropped); otherwise the keyword list below runs as the
+  explicitly labeled offline fallback. The allowlist contains no sensitive
+  categories (health, sexuality, religion, finances, family trauma, home
+  location), so those can never become signals.
 * Formation reads these only through the privacy snapshot, keyed by the
   per-lease random ref, and only for fully consenting players.
 """
@@ -16,7 +26,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import Annotated
 
 from pydantic import Field, StrictBool, StrictStr
@@ -53,7 +63,9 @@ ActivityText = Annotated[StrictStr, Field(max_length=MAX_TEXT_CHARS)]
 
 
 def derive_topics(texts: Iterable[str]) -> list[str]:
-    """Allowlisted topic labels found in the player's own texts. Text is not kept."""
+    """OFFLINE KEYWORD FALLBACK: allowlisted topic labels found in the player's
+    own texts. Used only when no Muse port is configured (topics.ActivityTopics
+    reports ``source="keyword_fallback"``). Text is not kept."""
     found: set[str] = set()
     for text in texts:
         lowered = text.lower()
@@ -91,17 +103,49 @@ def _ids(values: Iterable[str]) -> list[str]:
     return sorted(set(values))
 
 
-class ActivityStore:
-    def __init__(self, store: PrivacyStore):
-        self._store = store
+ApprovedEventIds = Callable[[], Iterable[str]]
 
-    def put(self, player_id: str, community_id: str, req: ActivityRequest, now: str) -> ActivityResult:
+
+def catalog_event_ids() -> frozenset[str]:
+    """Approved event ids from Adam's venue catalog (package-root import only).
+    Fails closed: any load problem, or a catalog without ``event_ids()``,
+    approves nothing."""
+    try:
+        from server.planning import VenueCatalog
+
+        event_ids = getattr(VenueCatalog.load(), "event_ids", None)
+        return frozenset(event_ids()) if callable(event_ids) else frozenset()
+    except Exception:  # noqa: BLE001 - a missing/invalid catalog approves no events
+        return frozenset()
+
+
+class ActivityStore:
+    def __init__(self, store: PrivacyStore, *, approved_event_ids: ApprovedEventIds = catalog_event_ids):
+        self._store = store
+        self._approved_event_ids = approved_event_ids
+
+    def _approved(self, event_ids: Iterable[str]) -> list[str]:
+        wanted = _ids(event_ids)
+        if not wanted:
+            return []
+        approved = frozenset(self._approved_event_ids())
+        return [e for e in wanted if e in approved]
+
+    def put(self, player_id: str, community_id: str, req: ActivityRequest, now: str,
+            topics: Iterable[str] | None = None) -> ActivityResult:
+        """``topics``: labels already derived by ``topics.ActivityTopics`` (Muse or
+        the labeled keyword fallback). ``None`` keeps the legacy keyword path for
+        direct callers. Only allowlisted labels are ever stored; ``req.texts`` is
+        never persisted."""
+        if topics is None:
+            topics = derive_topics(req.texts)
+        topics = sorted({t for t in topics if t in SAFE_TOPICS})  # defense in depth
         with self._store.tx() as conn:
             if not req.use_activity:
                 conn.execute("DELETE FROM activity_signals WHERE player_id = ? AND community_id = ?",
                              (player_id, community_id))
                 return ActivityResult(use_activity=False, topics=[])
-            topics = derive_topics(req.texts)  # req.texts goes out of scope here; never persisted
+            event_ids = self._approved(req.event_ids)  # unapproved ids are dropped, not stored
             conn.execute(
                 "INSERT INTO activity_signals (player_id, community_id, profile_id, group_ids, event_ids,"
                 " friend_ids, topics, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
@@ -109,7 +153,7 @@ class ActivityStore:
                 " group_ids = excluded.group_ids,"
                 " event_ids = excluded.event_ids, friend_ids = excluded.friend_ids,"
                 " topics = excluded.topics, updated_at = excluded.updated_at",
-                (player_id, community_id, req.profile_id, json.dumps(_ids(req.group_ids)), json.dumps(_ids(req.event_ids)),
+                (player_id, community_id, req.profile_id, json.dumps(_ids(req.group_ids)), json.dumps(event_ids),
                  json.dumps(_ids(req.friend_ids)), json.dumps(topics), now),
             )
             return ActivityResult(use_activity=True, topics=topics)
