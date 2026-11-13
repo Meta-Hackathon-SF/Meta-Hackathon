@@ -194,16 +194,27 @@ class AnswerStore:
             conn.execute("INSERT OR IGNORE INTO cycle_locks (cycle_id, locked_at) VALUES (?, ?)",
                          (cycle_id, locked_at))
 
-    def purge_expired(self) -> dict[str, int]:
-        """Delete answers and guesses of cycles locked 14+ days ago."""
+    def expired_cycles(self) -> list[str]:
+        """Cycles locked 14+ days ago. Other owners (daily placement, chat) use
+        this to purge their own per-cycle data on the same clock."""
         cutoff = format_time(self._now() - RETENTION)
         with self._store.tx() as conn:
-            expired = [r["cycle_id"] for r in conn.execute(
-                "SELECT cycle_id FROM cycle_locks WHERE locked_at <= ?", (cutoff,)).fetchall()]
-            counts = {"answers": 0, "guesses": 0}
+            return [r["cycle_id"] for r in conn.execute(
+                "SELECT cycle_id FROM cycle_locks WHERE locked_at <= ? ORDER BY cycle_id", (cutoff,)).fetchall()]
+
+    def purge_expired(self) -> dict[str, int]:
+        """Delete answers, guesses, event interests and invites (with their
+        RSVPs) of cycles locked 14+ days ago."""
+        expired = self.expired_cycles()
+        counts = {"answers": 0, "guesses": 0, "eventInterests": 0, "invites": 0}
+        with self._store.tx() as conn:
             for cycle_id in expired:
                 counts["answers"] += conn.execute("DELETE FROM answers WHERE cycle_id = ?", (cycle_id,)).rowcount
                 counts["guesses"] += conn.execute("DELETE FROM guesses WHERE cycle_id = ?", (cycle_id,)).rowcount
+                counts["eventInterests"] += conn.execute(
+                    "DELETE FROM event_interests WHERE cycle_id = ?", (cycle_id,)).rowcount
+                counts["invites"] += conn.execute(  # recipients/RSVPs cascade
+                    "DELETE FROM event_invites WHERE cycle_id = ?", (cycle_id,)).rowcount
         return counts
 
     def delete_my_data(self, player_id: str) -> dict[str, int]:
