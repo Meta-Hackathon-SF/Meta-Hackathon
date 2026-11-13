@@ -55,6 +55,24 @@ async function advance(page: Page, times: number) {
   }
 }
 
+/** Patrik's join screen (fixture privacy client): name + all three consents. */
+async function join(page: Page, name = "Synthetic tester") {
+  await expect(page.getByTestId("cstp-join")).toBeVisible();
+  await page.getByTestId("cstp-name").fill(name);
+  for (const key of ["matchAnswers", "anonymousChat", "isAdult"]) await page.getByTestId(`cstp-toggle-${key}`).click();
+  await page.getByTestId("cstp-join-submit").click();
+  await expect(page.getByTestId("cstp-join")).toHaveCount(0);
+}
+
+/** Open the daily page, joining first if this tab has no session yet. */
+async function openDaily(page: Page) {
+  await page.goto(DAILY);
+  const joinForm = page.getByTestId("cstp-join");
+  const ready = page.locator(".cst-sky, .cst-empty");
+  await expect(joinForm.or(ready).first()).toBeVisible();
+  if (await joinForm.isVisible()) await join(page);
+}
+
 async function answer(page: Page, day: number, text: string) {
   const card = page.getByTestId(`cst-day-${day}`);
   await card.getByRole("textbox", { name: "Your answer" }).fill(text);
@@ -69,21 +87,25 @@ test("Groups links to the Constellations tab with truth labels", async ({ page }
   await expect(page.getByRole("heading", { level: 1, name: "Constellations" })).toBeVisible();
   await expect(page.getByText("Simulated Facebook", { exact: true })).toBeVisible();
   await expect(page.getByTestId("cst-mode")).toHaveText(/Fixture mode/);
+  // Nothing about the week loads before joining with all three consents.
+  await expect(page.getByTestId("cstp-join-submit")).toBeDisabled();
+  await expect(page.locator(".cst-sky, .cst-empty")).toHaveCount(0);
+  await join(page);
   await expect(page.getByRole("heading", { name: "No week is running yet" })).toBeVisible();
+  await expect(page.getByTestId("cstp-panel")).toBeVisible();
   await page.goto("/groups/not-a-group/constellations");
   await expect(page.getByRole("heading", { name: "Group not found" })).toBeVisible();
 });
 
 test("typed answer, one follow-up, edit and delete, by keyboard", async ({ page }) => {
   await newCycle(page);
-  await page.goto(DAILY);
+  await openDaily(page);
   await expect(page.getByText("Demo timing", { exact: true })).toBeVisible();
   await expect(page.getByTestId("cst-streak")).toHaveText(/Streak 0/);
   const card = page.getByTestId("cst-day-1");
   await expect(card.getByRole("button", { name: "Submit answer" })).toBeDisabled();
   await card.getByRole("textbox", { name: "Your answer" }).fill("alone mostly");
-  await page.keyboard.press("Tab"); // record button
-  await page.keyboard.press("Tab"); // submit
+  await page.keyboard.press("Tab"); // submit comes right after the text field
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("cst-answer-text-1")).toHaveText("alone mostly");
   await expect(page.getByTestId("cst-streak")).toHaveText(/Streak 1/);
@@ -99,6 +121,8 @@ test("typed answer, one follow-up, edit and delete, by keyboard", async ({ page 
   await page.reload();
   await expect(page.getByTestId("cst-answer-text-1")).toHaveText("edited answer text");
   await page.getByTestId("cst-day-1").getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByTestId("cst-answer-text-1")).toBeVisible(); // nothing deleted until confirmed
+  await page.getByTestId("cst-day-1").getByRole("button", { name: "Delete answer" }).click();
   await expect(page.getByTestId("cst-day-1").getByRole("textbox", { name: "Your answer" })).toBeVisible();
   await expect(page.getByTestId("cst-streak")).toHaveText(/Streak 0/);
 });
@@ -106,7 +130,7 @@ test("typed answer, one follow-up, edit and delete, by keyboard", async ({ page 
 test("microphone denied: typing still submits", async ({ page }) => {
   await fakeMicrophone(page, "deny");
   await newCycle(page);
-  await page.goto(DAILY);
+  await openDaily(page);
   const card = page.getByTestId("cst-day-1");
   await card.getByRole("button", { name: "Record answer" }).click();
   await expect(card.getByText("Microphone access is off. Typing works the same.")).toBeVisible();
@@ -118,7 +142,7 @@ test("microphone denied: typing still submits", async ({ page }) => {
 test("voice answer shows a labeled fixture transcript before submit", async ({ page }) => {
   await fakeMicrophone(page, "allow");
   await newCycle(page);
-  await page.goto(DAILY);
+  await openDaily(page);
   const card = page.getByTestId("cst-day-1");
   await card.getByRole("button", { name: "Record answer" }).click();
   await card.getByRole("button", { name: /^Stop/ }).click();
@@ -131,7 +155,7 @@ test("voice answer shows a labeled fixture transcript before submit", async ({ p
 
 test("streak fixture: Mon and Tue on the day, Wed caught up -> streak 2", async ({ page }) => {
   await newCycle(page);
-  await page.goto(DAILY);
+  await openDaily(page);
   await answer(page, 1, LONG);
   await advance(page, 1);
   await page.goto(DAILY);
@@ -151,14 +175,15 @@ test("streak fixture: Mon and Tue on the day, Wed caught up -> streak 2", async 
 
 test("guess slider saves, and a flagged answer shows the private support card", async ({ page }) => {
   await newCycle(page);
-  await page.goto(DAILY);
+  await openDaily(page);
   const slider = page.getByRole("slider", { name: /Your guess/ });
   await slider.focus();
   await page.keyboard.press("ArrowRight");
   await page.getByRole("button", { name: "Save guess" }).click();
   await expect(page.getByText("Saved: 51%")).toBeVisible();
   await answer(page, 1, "SYNTHETIC SAFETY TEST: marker text");
-  await expect(page.getByTestId("cst-support-card")).toContainText("988");
+  await expect(page.getByTestId("cstp-support-card")).toContainText("988");
+  await expect(page.getByTestId("cstp-support-card").getByRole("link", { name: "988" })).toHaveAttribute("href", "tel:988");
   await expect(page.getByTestId("cst-muse-chip")).toHaveCount(0); // flagged text gets no follow-up
 });
 
@@ -180,7 +205,7 @@ test("operator runs a full demo week in under 3 minutes; lock closes answers", a
     await expect(page.getByTestId("cst-op-state")).toHaveText(state);
   }
   await expect(page.getByRole("button", { name: "Synthetic top-up" })).toBeDisabled();
-  await page.goto(DAILY);
+  await openDaily(page);
   await expect(page.getByTestId("cst-locked")).toContainText("This week is locked");
   await expect(page.locator(".cst-page").getByRole("textbox")).toHaveCount(0);
   await expect(page.getByRole("slider")).toHaveCount(0);
@@ -195,6 +220,8 @@ test("operator runs a full demo week in under 3 minutes; lock closes answers", a
   }
   await expect(page.locator(".button-primary")).toHaveCount(0); // nothing after closed
   await page.getByRole("button", { name: "Reset" }).click();
+  await expect(page.getByTestId("cst-op-state")).toHaveText("Closed"); // nothing changes until confirmed
+  await page.getByRole("button", { name: "Reset week" }).click();
   await expect(page.getByTestId("cst-op-state")).toHaveText("Open · Monday");
   expect(Date.now() - started).toBeLessThan(180_000);
 });
@@ -228,4 +255,48 @@ test("recordings are converted to 16 kHz mono 16-bit WAV before upload", async (
   expect(result.samples).toBeLessThan(16100);
   expect(result.peak).toBeGreaterThan(12000); // the tone survived, not silence
   expect(result.peak).toBeLessThan(20000);
+});
+
+test("pausing consent hides the week; delete my data clears answers", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await answer(page, 1, LONG);
+  await page.getByTestId("cstp-panel").locator("summary").click();
+  await page.getByTestId("cstp-toggle-matchAnswers").click();
+  await page.getByTestId("cstp-save").click();
+  await expect(page.locator(".cst-sky")).toHaveCount(0);
+  await expect(page.getByTestId("cst-answer-text-1")).toHaveCount(0);
+  await page.getByTestId("cstp-toggle-matchAnswers").click();
+  await page.getByTestId("cstp-save").click();
+  await expect(page.getByTestId("cst-answer-text-1")).toHaveText(LONG);
+  await page.getByTestId("cstp-panel").locator("summary").click();
+  await page.getByTestId("cstp-delete").click();
+  await page.getByTestId("cstp-delete-confirm").click();
+  await expect(page.getByTestId("cst-day-1").getByRole("textbox", { name: "Your answer" })).toBeVisible();
+  await expect(page.getByTestId("cst-streak")).toHaveText(/Streak 0/);
+});
+
+test("new cycle asks before replacing a running week", async ({ page }) => {
+  await newCycle(page);
+  await page.getByRole("button", { name: "Advance to Tuesday" }).click();
+  await expect(page.getByTestId("cst-op-state")).toHaveText("Open · Tuesday");
+  await page.getByRole("button", { name: "New cycle" }).click();
+  await expect(page.getByRole("group", { name: "Confirm new week" })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByTestId("cst-op-state")).toHaveText("Open · Tuesday");
+  await page.getByRole("button", { name: "New cycle" }).click();
+  await page.getByRole("button", { name: "Start new week" }).click();
+  await expect(page.getByTestId("cst-op-state")).toHaveText("Open · Monday");
+});
+
+test("week view has no horizontal overflow on a small phone", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await newCycle(page);
+  await openDaily(page);
+  await answer(page, 1, LONG);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  await page.goto(OPERATOR);
+  const opOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(opOverflow).toBeLessThanOrEqual(0);
 });
