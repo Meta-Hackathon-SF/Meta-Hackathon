@@ -7,9 +7,9 @@ Branch `role/will-voice-ui` · Handle `@willapat` · Build order steps 2, 3, 8 (
 | `server/cycle/` | WeeklyCycle state machine, day release, Saturday lock, Sunday reveal trigger (calls Kai), catch-up rules, server-side weights, streaks, prevalence guess, CyclePort |
 | `server/voice/` | voice boundary: transcription adapter, typed fallback |
 | `tests/cycle/`, `tests/voice/` | tests |
-| `web/src/features/constellations/daily/` | Constellations tab entry, today's question, answer by voice or text, follow-up, catch-up list, streak chip, guess slider, edit/delete until lock, Muse metadata chip |
+| `web/src/features/constellations/daily/` | Facebook Space tab entry, today's question, answer by voice or text, follow-up, catch-up list, streak chip, guess slider, edit/delete until lock, Muse metadata chip |
 | `web/src/features/constellations/operator/` | operator console: new cycle, advance day, lock, reveal, synthetic top-up, reset, Muse call list, report queue view |
-| shell routing | add the Constellations tab inside Groups in `web/src/App.tsx` and navigation; keep feed tests green |
+| shell routing | add the Facebook Space tab inside Groups in `web/src/App.tsx` and navigation; keep feed tests green |
 
 Not yours: answer storage tables (Patrik owns storage; you call his service), chat/reveal/Sky UI (Kai), questions (Adam).
 
@@ -24,7 +24,7 @@ Consume: `QuestionPort.selectWeek` + M2 (Adam), Patrik's answer store + M1 at su
 4. Streak computation (Mon-Fri on-day only; catch-up never counts).
 5. Daily answer UI (mobile-first, works on phones in the room), catch-up, streak, guess slider; all synthetic items labeled.
 6. Operator console with every control in contracts/API.md "Operator".
-7. Constellations tab in Groups; scoped CSS; existing Playwright feed tests still pass.
+7. Facebook Space tab in Groups; scoped CSS; existing Playwright feed tests still pass.
 
 ## Acceptance checks
 - `pytest tests/cycle tests/voice` green; `npm run lint && npm run build && npm run test:e2e` in `web/` green.

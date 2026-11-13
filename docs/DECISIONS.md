@@ -109,3 +109,11 @@ Owner and affected: Patrik (consent toggle, storage, deletion of the new data, p
 Status: implemented on branch `feat/will-force-d009-d010` at the direction of Will (human), ahead of the owners' ACKs; merging is Will's call. Still needs ACK from `@patrikliska13`, `@rishibagri`, `@adamzhang06`, `@beatopia`. Implementation: optional `useActivity` switch (separate from the three required toggles, off by default); `PUT /me/activity` stores opaque Group/Event/friend ids and allowlisted topics derived from the player's own post/comment text, which is discarded (`server/privacy/activity.py`, `db/privacy/004_activity.sql`); deleted on opt-out and by `DELETE /me/data`; formation snapshot gains `activity` keyed by random ref; `member_context` counts and `event_heat` (threshold 3, bucketed) in `server/matching/closeness.py`. Cross-Group play: one pool `facebook-space` (seeded); Groups are signals, not boundaries. Fixture UI computes the same rules against labeled Synthetic players.
 Contract version / migration: 2.1.0 together with D009 if accepted (additive: `Consent.useActivity?: boolean`, default false); no data to migrate.
 Verification: none yet (proposal). UI: web/tests/constellations.spec.ts "why-this-group" and "event heat" tests prove counts-only and the threshold in the Example.
+
+## D011: Brand rename to Facebook Space
+ID / UTC timestamp: D011 / 2026-11-13T06:00Z
+Decision and rationale: the product brand is **Facebook Space** everywhere players or readers see it (README, docs, contracts, UI copy, server messages). The 3-5 person group stays a **constellation**, and the Sky keeps its name. Code identifiers, wire fields (`constellationId`, `Constellation`), folder paths (`web/src/features/constellations/`, `tests/matching`) and branch names are unchanged, so no owner's code or contract shapes break. Earlier decision entries and append-only update logs keep the old name as history.
+Owner: Rishi (team lead). Affected: all owners (copy only).
+Status: accepted.
+Contract version / migration: 2.0.0 unchanged (comments only).
+Verification: `git grep -w Constellations` matches only history (DECISIONS entries before D011, docs/updates).

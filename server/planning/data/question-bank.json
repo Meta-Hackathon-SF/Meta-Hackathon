@@ -1,6 +1,6 @@
 {
   "contractVersion": "2.0.0",
-  "label": "Curated Constellations question bank. Starts from contracts/fixtures/question-bank.json and adds enough rows for any run of weeks under the four-week no-repeat rule.",
+  "label": "Curated Facebook Space question bank. Starts from contracts/fixtures/question-bank.json and adds enough rows for any run of weeks under the four-week no-repeat rule.",
   "questions": [
     {"questionId": "q-routine-meals", "text": "Where did you eat most of your meals this week, and who was usually around?", "category": "routine", "sensitivity": "low", "signalTags": ["meals", "solitude", "routine"], "followUpHint": "Was that by choice?", "source": "curated", "active": true},
     {"questionId": "q-belonging-pretend", "text": "What's something you pretended to be fine with this week?", "category": "belonging", "sensitivity": "medium", "signalTags": ["masking", "belonging"], "followUpHint": null, "source": "curated", "active": true},

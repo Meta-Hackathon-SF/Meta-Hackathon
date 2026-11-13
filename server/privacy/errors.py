@@ -35,7 +35,7 @@ class PrivacyError(Exception):
 
 
 def unauthenticated() -> PrivacyError:
-    return PrivacyError("UNAUTHENTICATED", "Join this Group's Constellations to continue.")
+    return PrivacyError("UNAUTHENTICATED", "Join Facebook Space to continue.")
 
 
 def consent_required() -> PrivacyError:

@@ -2,4 +2,4 @@
 Read root AGENTS.md, docs/roles/kai.md and contracts/ (2.0.0).
 Assigned branch: `role/kai-orchestration`. Other owners do not edit this directory; request changes via docs/COORDINATION.md.
 Scope: FastAPI app, config, registry, middleware, envelope, idempotency, router mounting, migration order.
-Restore usable pieces from `archive/group-quests-before-pivot` into this directory only, rename to Constellations 2.0.0 terms, and retest. Validate runtime data; import shared shapes, never fork them.
+Restore usable pieces from `archive/group-quests-before-pivot` into this directory only, rename to Facebook Space 2.0.0 terms, and retest. Validate runtime data; import shared shapes, never fork them.

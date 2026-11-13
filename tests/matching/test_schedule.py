@@ -60,6 +60,28 @@ class Guesses:
         return {f"syn-{i}": 20 for i in range(1, 31)}
 
 
+SEQUENTIAL_WAITS = 3  # M4 (critical of M3||M4), naming cap, scheduling hops
+
+
+def timer_slop_s() -> float:
+    """Measured overshoot of a short asyncio sleep on this platform (Windows ~15 ms)."""
+    async def probe() -> float:
+        worst = 0.0
+        for _ in range(5):
+            t = time.monotonic()
+            await asyncio.sleep(0.001)
+            worst = max(worst, time.monotonic() - t - 0.001)
+        return worst
+    return asyncio.run(probe())
+
+
+def test_schedule_budget_fits_sixty_seconds_by_design():
+    """Platform-independent: slowest of M3/M4 plus the naming cap is under 60 s."""
+    critical = max(LIVE_S["theme_discovery"], LIVE_S["constellation_formation"])
+    assert critical + NAME_TIMEOUT_S < 60
+    assert LIVE_S["theme_discovery"] + LIVE_S["constellation_formation"] + NAME_TIMEOUT_S > 60
+
+
 def test_live_latency_replay_fits_sixty_seconds():
     muse = LatencyMuse()
     formation = FormationService(muse, Snap(), FixtureGuard(), timeout_s=75 * SCALE,
@@ -70,8 +92,9 @@ def test_live_latency_replay_fits_sixty_seconds():
     raw = asyncio.run(port.form("c"))
     elapsed = (time.monotonic() - started) / SCALE
     assert raw["status"] == "ok" and len(raw["constellations"]) == 7
-    print(f"simulated formation {elapsed:.1f} s")
-    assert elapsed < 60, f"simulated {elapsed:.1f} s"
+    slop = SEQUENTIAL_WAITS * timer_slop_s() / SCALE  # coarse timers (Windows) inflate replay
+    print(f"simulated formation {elapsed:.1f} s (timer allowance {slop:.1f} s)")
+    assert elapsed - slop < 60, f"simulated {elapsed:.1f} s, allowance {slop:.1f} s"
     sky = asyncio.run(port.computeSky("c", 3))  # precomputed during naming
     assert sky["headlines"] == ["30 people shared their week."]
     hung = [c for c in raw["constellations"] if c["name"] != "Quiet Lanterns"]

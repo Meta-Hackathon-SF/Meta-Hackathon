@@ -1,4 +1,4 @@
-"""Constellations Muse provider adapter (owner: Adam). See README.md."""
+"""Facebook Space Muse provider adapter (owner: Adam). See README.md."""
 from .config import DEFAULT_MODEL, MuseConfig, load_muse_config
 from .contract import IN_SCHEMAS, OUT_SCHEMAS, contract_spec
 from .errors import ProviderError

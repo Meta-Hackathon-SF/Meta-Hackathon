@@ -1,4 +1,4 @@
-"""Constellations privacy: verification, sessions, consent (owner: Patrik).
+"""Facebook Space privacy: verification, sessions, consent (owner: Patrik).
 
 Public surface for other owners. Do not import privacy internals or open the
 privacy store directly; use these ports.

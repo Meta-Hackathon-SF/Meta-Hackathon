@@ -1,4 +1,4 @@
-"""Constellations planning (owner: Adam): question bank, weekly selection, M2 follow-up, M7 event nudges, M6 question generation.
+"""Facebook Space planning (owner: Adam): question bank, weekly selection, M2 follow-up, M7 event nudges, M6 question generation.
 
 See README.md. Other owners import from this package root only; the FastAPI
 router lives in ``server.planning.api`` so the rest stays standard-library only.

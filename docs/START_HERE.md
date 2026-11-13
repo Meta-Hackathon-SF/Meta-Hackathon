@@ -1,4 +1,4 @@
-# Launch your coding agent: Constellations weekly game
+# Launch your coding agent: Facebook Space weekly game
 Each teammate clones the repo, switches to their branch, and pastes the master prompt below into their coding agent, replacing NAME.
 
 | Person | Branch | Tasks |
@@ -16,7 +16,7 @@ git fetch origin && git switch --track origin/role/NAME-BRANCH   # or: git switc
 
 ## Master prompt
 ```text
-I am NAME on the Constellations team (repo: willapat/Meta-Hackathon). The product pivoted to a WEEKLY GAME on 2026-11-12 (decisions D005 and D006). Work only on my role branch and only in my owned paths.
+I am NAME on the Facebook Space team (repo: willapat/Meta-Hackathon). The product pivoted to a WEEKLY GAME on 2026-11-12 (decisions D005 and D006). Work only on my role branch and only in my owned paths.
 
 1. Sync: run `git fetch origin`, confirm `git rev-parse --abbrev-ref HEAD` is my role branch (from AGENTS.md), confirm `git status --short` is clean, then `git merge origin/main`. If the checkout has someone else's uncommitted work, use a separate git worktree; never stash, reset or discard it.
 2. Tags first: check open PRs, issues and PR comments that mention my GitHub handle (docs/COORDINATION.md §1). Answer each with ACK / CHANGE: / DELIVERED: before my own work. Then post my ACK of D005 and D006 (docs/DECISIONS.md).
