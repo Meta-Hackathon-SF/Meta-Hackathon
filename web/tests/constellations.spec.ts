@@ -560,4 +560,14 @@ test("Marketplace and Events use one demo catalog: item pages, register, and a M
   expect(fallback.supplies[0]).toBe("mk-speaker");
   expect(fallback.hangout[0]).toBe("ev-film-club");
   expect(fallback.kinds).toEqual(["create", "create", "supplies", "barter", "hangout"]);
+  // Catalog events that share an id with Adam's approved campus events use the same venue and start.
+  const drift = await page.evaluate(async () => {
+    const { BASE_EVENTS } = await import("/src/features/catalog/catalog.ts");
+    const { APPROVED_EVENTS } = await import("/src/features/constellations/nudges/venues.ts");
+    return APPROVED_EVENTS.flatMap((a) => {
+      const c = BASE_EVENTS.find((e) => e.eventId === a.eventId);
+      return !c || c.placeId !== a.placeId || c.start !== a.start ? [a.eventId] : [];
+    });
+  });
+  expect(drift).toEqual([]);
 });
