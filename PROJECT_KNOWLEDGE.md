@@ -4,7 +4,7 @@ Main is the mock Facebook shell only (`web/`: React/Vite/TypeScript, local demon
 
 2026-11-12 weekly-game pivot (D005/D006): contract 2.0.0 and `contracts/fixtures/` added; typecheck passes; fixtures parse. Baseline check reported by the audit: `web/` build and lint pass; Playwright browser tests could not launch a browser, so UI regression verification is outstanding.
 
-Muse model note (2026-11-12): `muse-spark-1.3` answered 2 live calls and the provider echoed the model name, through the removed Group Quests adapter. Observed single-call latency was 17 to 24 s at low reasoning effort. Two calls are not a benchmark, and no Constellations code has called the model. Wonder and Ember were not available in the docs read and were not tested. Re-verify on the new adapter.
+Muse model note (2026-11-12): `muse-spark-1.3` answered 2 live calls and the provider echoed the model name, through the removed Group Quests adapter. Observed single-call latency was 17 to 24 s at low reasoning effort. Two calls are not a benchmark, and no Constellations code has called the model. Wonder and Ember were not available in the docs read and were not tested. Re-verified on the 2.0.0 adapter 2026-11-13T02:25Z: one `clarify` (M2) call on a synthetic answer, provider echoed `muse-spark-1.3`, 16.2 s at low effort, first attempt. Three single calls in total across both adapters; still not a benchmark.
 
 Role-branch work from teammates is not claimed integrated here; inspect their latest handoffs and PRs (see [docs/COORDINATION.md](docs/COORDINATION.md)) before declaring a dependency missing.
 
@@ -35,7 +35,7 @@ Role-branch work from teammates is not claimed integrated here; inspect their la
 | Facebook shell (`web/`) | Will | Existing; mock data | Build/lint pass; Playwright rerun outstanding (browser failed to launch) |
 | Contract 2.0.0 + fixtures | all | Authored; typechecks; pending D006 ACK | ACK from all five owners |
 | API composition (`server/app/`) | Kai | Planned (restore from archive) | Registry, health, every owner's router mounted |
-| Muse adapter (`server/providers/`) | Adam | Implemented for 2.0.0 (M1-M8 validators, one malformed retry, evidence log); offline tests pass; **not live-verified** | Live `muse-spark-1.3` call through the new adapter with model echo and latency |
+| Muse adapter (`server/providers/`) | Adam | Implemented for 2.0.0 (M1-M8 validators, one malformed retry, evidence log); offline tests pass; **one live M2 call verified** 2026-11-13T02:25Z (`muse-spark-1.3` echoed, 16.2 s, low effort) | Live calls for M1 and M3-M8; timing under parallel load |
 | Sessions, consent, private storage (`server/privacy/`) | Patrik | Planned (restore from archive) | 403 test; prompt payload test; TTL test |
 | Safety screening + OutputGuard | Patrik | Planned | Seeded distress never appears; no-quote fuzz; red-team 30 |
 | Weekly cycle, daily answers, catch-up, streaks | Will | Planned | Lock test; catch-up rules; streak fixture |
