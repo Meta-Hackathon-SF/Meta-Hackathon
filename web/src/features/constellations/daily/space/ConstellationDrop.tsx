@@ -11,7 +11,8 @@ import type { DailyConstellation } from "../v3";
 import "./drop.css";
 
 type Phase = "ready" | "forming" | "payoff" | "signaled";
-const FORM_MS = 3000;
+/** Slow on purpose: the last star lands near 5s, the last line settles just after. */
+const FORM_MS = 6200;
 const MIN_OTHERS = 4;
 const MAX_OTHERS = 6;
 const SHARED_MEANING_MIN = 3;
@@ -56,17 +57,22 @@ function layout(id: string, others: number): Star[] {
       y: 50 + Math.sin(angle) * reach * 0.78,
       fromX: Math.cos(edge) * 70,
       fromY: Math.sin(edge) * 70,
-      delay: 150 + i * 220 + rand() * 120,
-      r: 0.9 + rand() * 0.7,
+      delay: 400 + i * 420 + rand() * 160,
+      r: 0.7 + rand() * 0.5,
     };
   });
 }
 
-/** A slightly bowed line so the constellation reads as hand-drawn rather than ruled. */
+/** A slightly bowed line with a faint tremor, so the constellation reads as drawn by hand rather than ruled. */
 function sketchPath(a: { x: number; y: number }, b: { x: number; y: number }, bow: number) {
-  const mx = (a.x + b.x) / 2 + (b.y - a.y) * bow;
-  const my = (a.y + b.y) / 2 - (b.x - a.x) * bow;
-  return `M${a.x.toFixed(2)} ${a.y.toFixed(2)} Q${mx.toFixed(2)} ${my.toFixed(2)} ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const c1x = a.x + dx * 0.33 + dy * bow;
+  const c1y = a.y + dy * 0.33 - dx * bow;
+  const c2x = a.x + dx * 0.68 + dy * bow * 0.55;
+  const c2y = a.y + dy * 0.68 - dx * bow * 0.55;
+  const f = (n: number) => n.toFixed(2);
+  return `M${f(a.x)} ${f(a.y)} C${f(c1x)} ${f(c1y)} ${f(c2x)} ${f(c2y)} ${f(b.x)} ${f(b.y)}`;
 }
 
 function useChime() {
@@ -114,6 +120,7 @@ export interface ConstellationDropProps {
 export function ConstellationDrop({ constellation, answerText, onEnter, onLater, onSignal }: ConstellationDropProps) {
   const reduced = usePrefersReducedMotion();
   const [phase, setPhase] = useState<Phase>("ready");
+  const [pulses, setPulses] = useState(0); // pulses from others: a count only, never who
   const headingRef = useRef<HTMLHeadingElement>(null);
   const chime = useChime();
   const members = constellation.memberCount ?? constellation.starIndices.length;
@@ -150,7 +157,12 @@ export function ConstellationDrop({ constellation, answerText, onEnter, onLater,
   const signal = () => {
     chime.play(783.99);
     setPhase("signaled");
-    void onSignal?.()?.catch(() => undefined); // the pulse is best effort; the moment never blocks
+    void onSignal?.()
+      ?.then((r) => {
+        const n = (r as { pulses?: number } | undefined)?.pulses;
+        if (typeof n === "number") setPulses(Math.max(0, n - 1)); // minus my own
+      })
+      .catch(() => undefined); // best effort; the moment never blocks
   };
 
   const showMeaning = members >= SHARED_MEANING_MIN && !!constellation.sharedMeaning;
@@ -186,12 +198,12 @@ export function ConstellationDrop({ constellation, answerText, onEnter, onLater,
       <svg className={`spc-drop-sky${phase === "forming" ? " is-forming" : ""}${formed ? " is-formed" : ""}`} viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         {phase !== "ready" &&
           stars.map((s, i) => (
-            <path key={`l${i}`} className="spc-drop-line" d={sketchPath(me, s, i % 2 ? 0.08 : -0.07)} pathLength={1} style={{ animationDelay: `${s.delay + 500}ms` }} />
+            <path key={`l${i}`} className="spc-drop-line" d={sketchPath(me, s, i % 2 ? 0.08 : -0.07)} pathLength={1} style={{ animationDelay: `${s.delay + 1300}ms` }} />
           ))}
         {phase !== "ready" && stars.length > 1 &&
           stars.map((s, i) => {
             const n = stars[(i + 1) % stars.length];
-            return <path key={`r${i}`} className="spc-drop-line is-rim" d={sketchPath(s, n, 0.06)} pathLength={1} style={{ animationDelay: `${s.delay + 900}ms` }} />;
+            return <path key={`r${i}`} className="spc-drop-line is-rim" d={sketchPath(s, n, 0.06)} pathLength={1} style={{ animationDelay: `${s.delay + 1900}ms` }} />;
           })}
         {phase !== "ready" && <path className="spc-drop-pulse" d={stars.map((s, i) => sketchPath(i ? stars[i - 1] : me, s, 0.04)).join(" ")} pathLength={1} />}
         {phase !== "ready" &&
@@ -205,8 +217,12 @@ export function ConstellationDrop({ constellation, answerText, onEnter, onLater,
               style={{ ["--fx" as string]: `${s.fromX - (s.x - 50)}px`, ["--fy" as string]: `${s.fromY - (s.y - 50)}px`, animationDelay: `${s.delay}ms` }}
             />
           ))}
-        <circle className={`spc-drop-me${phase === "signaled" ? " is-signal" : ""}`} cx={me.x} cy={me.y} r={1.9} />
-        <circle className="spc-drop-me-halo" cx={me.x} cy={me.y} r={4.2} />
+        {phase === "signaled" &&
+          stars.slice(0, Math.min(pulses, stars.length)).map((s, i) => (
+            <circle key={`p${i}`} className="spc-drop-ring" cx={s.x} cy={s.y} r={s.r} style={{ animationDelay: `${400 + i * 420}ms` }} />
+          ))}
+        <circle className={`spc-drop-me${phase === "signaled" ? " is-signal" : ""}`} cx={me.x} cy={me.y} r={1.3} />
+        <circle className="spc-drop-me-halo" cx={me.x} cy={me.y} r={3.4} />
       </svg>
 
       <div className="spc-drop-copy">
@@ -232,8 +248,8 @@ export function ConstellationDrop({ constellation, answerText, onEnter, onLater,
         {formed && (
           <>
             <h2 id="spc-drop-title" ref={headingRef} tabIndex={-1}>You were not the only one.</h2>
-            <p className="spc-drop-count">{members} people here have been feeling this too.</p>
-            {showMeaning && <p className="spc-drop-meaning">{constellation.sharedMeaning}</p>}
+            <p className="spc-drop-count">{members >= SHARED_MEANING_MIN ? `${members} people here have been feeling this too.` : "You were not the only one today."}</p>
+            <p className="spc-drop-meaning">{showMeaning ? constellation.sharedMeaning : "You were not the only one today."}</p>
             <p className={`spc-drop-chip${constellation.isFallback ? " is-fallback" : ""}`} data-testid="spc-drop-evidence">{evidenceLabel}</p>
             {phase === "payoff" ? (
               <div className="spc-drop-actions">

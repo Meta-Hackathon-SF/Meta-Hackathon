@@ -14,8 +14,7 @@ import { getCycleClient } from "../daily/clientContext";
 import { CONSTELLATIONS_PATH, FEATURE_NAME, PLAY_COMMUNITY } from "../daily/communities";
 import { FormationDebug } from "../formation";
 import { OperatorNudgePanel } from "../nudges";
-import { CloseDayControl, CustomEventQueue } from "./V3Panels";
-import ReasoningPanel from "./ReasoningPanel";
+import { CloseDayControl } from "./V3Panels";
 import "../daily/daily.css";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -433,10 +432,6 @@ export default function OperatorConsole() {
         selected={nudgeRoom}
         onSelect={setNudgeRoom}
       />
-
-      <CustomEventQueue client={client} />
-
-      <ReasoningPanel client={client} />
 
       <section className="card cst-panel" aria-labelledby="cst-op-formation">
         <h2 id="cst-op-formation" className="cst-card-title">

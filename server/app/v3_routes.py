@@ -138,3 +138,29 @@ def build_v3_router(*, answers, cycles, privacy_actor, muse, guard, store: InMem
         return await v3.mainConstellation(cycleId)
 
     return router
+
+
+class V3Scheduler:
+    """Closes finished days and forms Sunday's main when the cycle locks. Driven by cycle
+    changes (day advance, lock); every step is idempotent and failure never blocks the cycle."""
+
+    def __init__(self, answers, muse, guard, store: InMemoryDayStore) -> None:
+        self._answers, self._muse, self._guard, self._store = answers, muse, guard, store
+        self._closed: set[tuple[str, int]] = set()
+        self._main_done: set[str] = set()
+
+    def _port(self, cycle) -> FormationV3:
+        return FormationV3(
+            self._muse, AnswersDaySource(self._answers, cycle.communityId), self._store, guard=self._guard
+        )
+
+    async def on_cycle(self, cycle) -> None:
+        v3 = self._port(cycle)
+        last_finished = cycle.currentDay if cycle.status != "open" else cycle.currentDay - 1
+        for day in range(1, max(0, last_finished) + 1):
+            if (cycle.cycleId, day) not in self._closed:
+                self._closed.add((cycle.cycleId, day))
+                await v3.closeDay(cycle.cycleId, day)
+        if cycle.status != "open" and cycle.cycleId not in self._main_done:
+            self._main_done.add(cycle.cycleId)
+            await v3.mainConstellation(cycle.cycleId)

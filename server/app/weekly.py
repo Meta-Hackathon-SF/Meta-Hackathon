@@ -142,8 +142,20 @@ def build_weekly_app(
         ClarifyService(muse, guard, DurableClarifyStore(repository)), questions.bank
     )
     screen = safety.sync_screen()
+    from server.app.v3_routes import InMemoryDayStore as _Store, V3Scheduler
+
+    v3_store = _Store()
+    v3_scheduler = V3Scheduler(answers, KeywordMusePort(muse), guard, v3_store)
+
+    def _v3_tick(cycle):
+        # Fire and forget on the running loop; a v3 failure never blocks the cycle.
+        try:
+            asyncio.get_running_loop().create_task(v3_scheduler.on_cycle(cycle))
+        except RuntimeError:
+            pass
+
     hooks = CycleHooks(
-        publish_cycle=lambda c: holder["runtime"].on_changed(c),
+        publish_cycle=lambda c: (holder["runtime"].on_changed(c), _v3_tick(c))[0],
         enqueue_formation=lambda c: holder["runtime"].on_locked(c),
         reveal_cycle=lambda c: holder["runtime"].on_revealed(c),
     )
@@ -291,7 +303,7 @@ def build_weekly_app(
 
     # Re-register the v3 handlers as plain routes: the registry accepts only direct HTTP routes.
     for route in build_v3_router(
-        answers=answers, cycles=cycles, privacy_actor=privacy, muse=KeywordMusePort(muse), guard=guard
+        answers=answers, cycles=cycles, privacy_actor=privacy, muse=KeywordMusePort(muse), guard=guard, store=v3_store
     ).routes:
         matching.routes.append(route)
 
