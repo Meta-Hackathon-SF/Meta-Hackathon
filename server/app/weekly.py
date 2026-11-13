@@ -21,6 +21,7 @@ from server.app.planning_stores import (
     DurableSelectionStore,
 )
 from server.app.registry import ServiceRegistration
+from server.app.stage import build_stage_router
 from server.chat.api import build_router as chat_router
 from server.chat.service import ChatService
 from server.cycle import CycleService
@@ -166,7 +167,11 @@ def build_weekly_app(
                 asyncio.run_coroutine_threadsafe(_v3_run(cycle), loop)
 
     hooks = CycleHooks(
-        publish_cycle=lambda c: (holder["runtime"].on_changed(c), _v3_tick(c))[0],
+        publish_cycle=lambda c: (
+            holder["stage_note"](c),
+            holder["runtime"].on_changed(c),
+            _v3_tick(c),
+        )[1],
         enqueue_formation=lambda c: holder["runtime"].on_locked(c),
         reveal_cycle=lambda c: holder["runtime"].on_revealed(c),
     )
@@ -304,6 +309,17 @@ def build_weekly_app(
             "agreements": debug.get("agreements", 0),
             "fallbackGrouping": bool(debug.get("usedFallback")),
         }
+
+    # Demo stage: opt-in slots for two players and the operator's big-screen view.
+    stage_router, holder["stage_note"] = build_stage_router(
+        repository=repository,
+        privacy=privacy,
+        answers=answers,
+        cycles=cycles,
+        guard=guard,
+        calls=calls,
+    )
+    matching.routes.extend(stage_router.routes)
 
     def sky_refresh(room_id, tasks):
         job_id = runtime.request_sky_for_room(room_id)

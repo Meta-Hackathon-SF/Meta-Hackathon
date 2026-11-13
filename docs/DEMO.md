@@ -46,6 +46,14 @@ words they used, and places you with 5 or more people who feel the same. On Sund
 - **Streaks and loneliness?** Streaks reward showing up, never what you disclose.
 - **The name?** Meta's earlier "Facebook Spaces" was about avatars. This one is about real people.
 
+## Stage view (built 2026-11-13, D017)
+The planned staging is two phones and one laptop on the big screen.
+- **Laptop:** open `/space/stage` in a browser whose player has the operator role (see docs/DEPLOYMENT.md, issue 4). It shows Phone A on the left, Phone B on the right and the Muse pipeline between them, and has the week controls at the bottom (start week, next day, add synthetic players, lock, find people, reveal). "Reveal" stays disabled while Muse is matching.
+- **Each phone:** join Facebook Space, then Privacy → Demo screen → choose Phone A or Phone B. Until then the stage shows that phone as "not connected". Only these two players' answers appear as text; everyone else is a count or a dot.
+- **Order that works:** start week → both phones answer each day → next day (x4) → on Friday press "Add synthetic players" → lock → find people → wait about 10 s → reveal.
+- **Not guaranteed:** that the two phones land in different constellations. Muse groups by meaning; two clearly different sets of answers make it likely, nothing forces it.
+- Do not merge to `main` during the demo: a redeploy erases the running week.
+
 ## Run sheet
 
 1. Start backend and web, open the Group page, show the Space card.
