@@ -2318,3 +2318,11 @@
   padding: 48px 24px;
   text-align: center;
 }
+
+/* The logo carries its own gradient circle (same as the sidebar). */
+.spc-avatar.is-logo {
+  background: transparent;
+}
+.spc-avatar.is-logo > svg {
+  display: block;
+}

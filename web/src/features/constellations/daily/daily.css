@@ -2113,3 +2113,13 @@ a.cst-post-title:hover {
   color: var(--cst-danger);
   font-weight: 700;
 }
+
+/* The logo carries its own gradient circle (same as the sidebar). */
+.cst-mark.is-logo {
+  background: transparent;
+  box-shadow: none;
+}
+.cst-mark.is-logo svg {
+  width: 100%;
+  height: 100%;
+}

@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { ArrowDown, MoonStar, ShieldCheck, Smartphone, Sparkles } from "lucide-react";
+import { SpaceIcon } from "../../../components/navigation/AppIcons";
 import { getCycleClient } from "../daily/clientContext";
 import { CONSTELLATIONS_PATH, PLAY_COMMUNITY } from "../daily/communities";
 import { fetchStage, stageAvailable, StageError, type Slot, type StageCall, type StagePanel, type StageView } from "./client";
@@ -286,7 +287,7 @@ export function StagePage() {
     <main className="stg" data-testid="stage">
       <header className="stg-top">
         <div className="stg-brand">
-          <MoonStar size={20} aria-hidden />
+          <SpaceIcon size={24} />
           <strong>Facebook Space</strong>
           <span className="stg-muted">behind the scenes</span>
         </div>

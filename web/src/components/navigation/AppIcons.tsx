@@ -124,6 +124,40 @@ export function GroupsIcon(props: AppIconProps) {
   );
 }
 
+/** The Facebook Space constellation (36x36 box): every Space logo draws these stars and lines. */
+export const SPACE_STARS: [number, number, number][] = [
+  [9.5, 22.5, 2.2],
+  [15.5, 12, 2.8],
+  [24, 15.5, 2.2],
+  [27, 25, 1.9],
+  [18, 26.5, 1.9],
+];
+export const SPACE_LINES: [number, number][] = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [0, 4],
+];
+
+/** Stars and lines only, in one color (for toolbar buttons on light or dark backgrounds). */
+export function SpaceStars({ color = "#fff" }: { color?: string }) {
+  return (
+    <>
+      <g stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.85">
+        {SPACE_LINES.map(([p, q]) => (
+          <line key={`${p}-${q}`} x1={SPACE_STARS[p][0]} y1={SPACE_STARS[p][1]} x2={SPACE_STARS[q][0]} y2={SPACE_STARS[q][1]} />
+        ))}
+      </g>
+      <g fill={color}>
+        {SPACE_STARS.map(([x, y, r]) => (
+          <circle key={`${x}-${y}`} cx={x} cy={y} r={r} />
+        ))}
+      </g>
+    </>
+  );
+}
+
+/** The Facebook Space logo, as in the left sidebar. Used everywhere Space is branded. */
 export function SpaceIcon(props: AppIconProps) {
   const [a] = useGrad(1);
   return (
@@ -132,19 +166,7 @@ export function SpaceIcon(props: AppIconProps) {
         <Linear id={a} from="#3b6cff" to="#a440e0" x2={1} />
       </defs>
       <circle cx="18" cy="18" r="17" fill={`url(#${a})`} />
-      <g stroke="#fff" strokeWidth="1.5" strokeLinecap="round" opacity="0.85">
-        <line x1="9.5" y1="22.5" x2="15.5" y2="12" />
-        <line x1="15.5" y1="12" x2="24" y2="15.5" />
-        <line x1="24" y1="15.5" x2="27" y2="25" />
-        <line x1="9.5" y1="22.5" x2="18" y2="26.5" />
-      </g>
-      <g fill="#fff">
-        <circle cx="9.5" cy="22.5" r="2.2" />
-        <circle cx="15.5" cy="12" r="2.8" />
-        <circle cx="24" cy="15.5" r="2.2" />
-        <circle cx="27" cy="25" r="1.9" />
-        <circle cx="18" cy="26.5" r="1.9" />
-      </g>
+      <SpaceStars />
     </Svg>
   );
 }

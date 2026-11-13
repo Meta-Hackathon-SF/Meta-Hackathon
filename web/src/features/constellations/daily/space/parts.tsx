@@ -1,22 +1,21 @@
 import type { ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
+import { SpaceIcon, SpaceStars } from "../../../../components/navigation/AppIcons";
 
-/** Three stars joined by two lines: the Space mark. */
+/** The Space constellation without the circle, in one color (same stars as the sidebar logo). */
 export function Glyph({ size = 20, color = "#fff" }: { size?: number; color?: string }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="1.6" aria-hidden="true">
-      <path d="M5 17 L10 7 L19 12" />
-      <circle cx="5" cy="17" r="2" fill={color} />
-      <circle cx="10" cy="7" r="2" fill={color} />
-      <circle cx="19" cy="12" r="2" fill={color} />
+    <svg viewBox="4 4 28 28" width={size} height={size} aria-hidden="true" focusable="false">
+      <SpaceStars color={color} />
     </svg>
   );
 }
 
+/** The Facebook Space logo (same as the left sidebar). */
 export function SpaceAvatar({ size = 40 }: { size?: number }) {
   return (
-    <span className="spc-avatar" style={{ width: size, height: size }}>
-      <Glyph size={size / 2} />
+    <span className="spc-avatar is-logo" style={{ width: size, height: size }}>
+      <SpaceIcon size={size} />
     </span>
   );
 }

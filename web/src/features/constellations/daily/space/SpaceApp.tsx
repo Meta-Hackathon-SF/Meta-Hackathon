@@ -6,7 +6,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { MoonStar } from "lucide-react";
+import { SpaceIcon } from "../../../../components/navigation/AppIcons";
 import type { MutualReveal } from "../../../../../../contracts/protocol";
 import { currentUser } from "../../../../data/demo";
 import { getPrivacyClient, usePrivacySession, type SessionView } from "../../privacy";
@@ -271,7 +271,7 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
         <div className="spc-screen">
           <HomeBar go={go} fixture={client.mode === "fixture"} />
           <section className="spc-card spc-empty">
-            <MoonStar size={28} aria-hidden="true" />
+            <SpaceIcon size={32} />
             <h2>No week is running yet</h2>
             <p className="spc-sub">The next week opens Monday morning with its first question.</p>
           </section>
