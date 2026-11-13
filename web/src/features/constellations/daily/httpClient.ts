@@ -111,6 +111,12 @@ export function createHttpClient(
       }
       return call("POST", "/voice/transcribe", parseTranscript, { raw: wav, signal });
     },
+    liveTranscriptionUrl() {
+      // Same origin as the API (the session cookie rides along); ws:// or wss://.
+      const url = new URL(`${base}/voice/live`, window.location.href);
+      url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+      return url.toString();
+    },
     createCycle: () =>
       mutate(
         call("POST", "/operator/cycles", parseCycle, {
