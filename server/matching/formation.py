@@ -29,7 +29,7 @@ from server.matching.models import (
     FALLBACK_LABEL,
     LOOSE_MATCH_CONFIDENCE,
     MAX_NAME_CHARS,
-    SHAPES_BY_SIZE,
+    shapes_for,
     Constellation,
     FormationResult,
     FormationSnapshot,
@@ -109,7 +109,7 @@ def _accepts_correction(muse: Any) -> bool:
 
 def _fallback_name(index: int, size: int) -> tuple[str, str, str]:
     color = COLOR_IDS[index % len(COLOR_IDS)]
-    shape = SHAPES_BY_SIZE[size][index % len(SHAPES_BY_SIZE[size])]
+    shape = shapes_for(size)[index % len(shapes_for(size))]
     return f"The {color.capitalize()} {shape.split('-')[0].capitalize()}", shape, color
 
 
@@ -119,7 +119,7 @@ def _fallback_grouping_name(index: int, size: int) -> tuple[str, str, str]:
     isFallback is not a wire field (protocol.ts 2.0.0), so the label rides in the name.
     """
     color = COLOR_IDS[index % len(COLOR_IDS)]
-    shape = SHAPES_BY_SIZE[size][index % len(SHAPES_BY_SIZE[size])]
+    shape = shapes_for(size)[index % len(shapes_for(size))]
     base = f"{color.capitalize()} {shape.split('-')[0].capitalize()}"
     base = base[:MAX_NAME_CHARS - len(FALLBACK_SUFFIX)].rstrip()
     return f"{base}{FALLBACK_SUFFIX}", shape, color

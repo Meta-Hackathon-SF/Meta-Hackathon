@@ -28,6 +28,14 @@ SHAPES_BY_SIZE: Mapping[int, tuple[str, ...]] = {
     4: ("kite", "square", "dipper-4", "cross"),
     5: ("w-cass", "house", "pentagon", "dipper-5"),
 }
+
+
+def shapes_for(size: int) -> tuple[str, ...]:
+    """Shape ids for a constellation of `size` (D016: 5+, no max; every size >= 5 shares the
+    5-star set, since the shapes are only decoration and the star count is the member count)."""
+    return SHAPES_BY_SIZE[min(size, 5)]
+
+
 COLOR_IDS: tuple[str, ...] = ("ember", "tide", "moss", "dusk", "gold", "rose", "frost", "violet")
 MUSE_CALL_TYPES = frozenset({"M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10"})
 EVIDENCE_SOURCES = frozenset({"live", "replay"})

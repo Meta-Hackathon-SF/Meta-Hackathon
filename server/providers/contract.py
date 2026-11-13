@@ -121,7 +121,7 @@ M4_OUT = _obj({
 
 M5_IN = _obj({
     "sharedMeaning": _str(400),
-    "size": {"type": "integer", "minimum": 3, "maximum": 5},
+    "size": {"type": "integer", "minimum": 3, "maximum": MAX_ANSWERS},  # D016: no max; the 5+ rule is enforced by matching
 })
 M5_OUT = _obj({"name": _str(60), "shapeId": _ID, "colorId": _ID})
 

@@ -18,6 +18,7 @@ from server.matching.models import (
     MAX_MEANING_CHARS,
     MAX_NAME_CHARS,
     SHAPES_BY_SIZE,
+    shapes_for,
     PromptText,
     QuestionText,
     ValidationError,
@@ -266,7 +267,7 @@ def parse_m5(output: Any, size: int) -> tuple[str, str, str]:
     data = load_object(output)
     _exact_keys(data, {"name", "shapeId", "colorId"}, "output")
     name = _text(data["name"], "output.name", MAX_NAME_CHARS)
-    if data["shapeId"] not in SHAPES_BY_SIZE[size]:
+    if data["shapeId"] not in shapes_for(size):
         raise ValidationError("output.shapeId", "not in fixed set for size")
     if data["colorId"] not in COLOR_IDS:
         raise ValidationError("output.colorId", "not in fixed set")

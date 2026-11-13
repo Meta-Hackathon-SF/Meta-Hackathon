@@ -66,7 +66,7 @@ def assert_private_fields_absent(value):
 
 
 def prepare_locked(env, client):
-    players = [join(client, f"player {index}") for index in range(3)]
+    players = [join(client, f"player {index}") for index in range(5)]
     grant_operator(env.privacy_store, players[0].player_id, COMMUNITY)
     response = call(
         client,
@@ -127,7 +127,7 @@ def revealed(env, client):
 def test_composed_daily_loop_formation_reveal_chat_sky_and_expiry():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, job_id = formed(env, client)
-        a, b, c = players
+        a, b, c, *_ = players
         before = call(client, b, "GET", f"/cycles/{cycle_id}/room")
         assert before.status_code == 404
         response = call(
@@ -238,7 +238,7 @@ def test_http_auth_cross_community_forged_fields_and_scoped_metadata():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         assert client.get("/api/v1/session").status_code == 401
         players, cycle_id, job_id, room_id = revealed(env, client)
-        a, b, _ = players
+        a, b, _, *__ = players
         assert call(client, b, "GET", "/operator/calls").status_code == 403
         assert call(client, b, "GET", "/operator/reports").status_code == 403
         assert call(client, b, "GET", f"/jobs/{job_id}").status_code == 403
@@ -285,7 +285,7 @@ def test_http_auth_cross_community_forged_fields_and_scoped_metadata():
 def test_privacy_delete_and_revocation_clear_chat_replay_and_cached_sky():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, _job_id, room_id = revealed(env, client)
-        a, b, c = players
+        a, b, c, *_ = players
         response = call(
             client,
             a,
@@ -353,7 +353,7 @@ def test_stale_private_snapshot_cannot_commit_formation(monkeypatch):
 def test_sse_seq_replay_and_session_revocation_use_real_current_checks():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, _cycle_id, _job_id, room_id = revealed(env, client)
-        a, b, _c = players
+        a, b, _c, *_rest = players
         actor_b = env.app.state.privacy.require_session(b.token)
         with env.repository.transaction() as state:
             previous = state.chat.seq
@@ -408,7 +408,7 @@ def test_sse_seq_replay_and_session_revocation_use_real_current_checks():
 def test_http_reports_and_blocks_use_real_canonical_privacy_stores():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, _cycle_id, _job_id, room_id = revealed(env, client)
-        a, b, c = players
+        a, b, c, *_ = players
         message = call(
             client, a, "POST", f"/rooms/{room_id}/messages", json={"text": "First synthetic hello"}
         ).json()
@@ -471,7 +471,7 @@ def test_real_m1_outage_cannot_accept_chat_or_persist_a_message():
 def test_mutual_reveal_updates_sky_count_without_duplicate_narration():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, _job_id, room_id = revealed(env, client)
-        a, b, _c = players
+        a, b, _c, *_rest = players
 
         def m8_calls():
             return sum(
