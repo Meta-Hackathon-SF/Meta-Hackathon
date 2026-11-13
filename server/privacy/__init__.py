@@ -13,6 +13,7 @@ from .api import (
 )
 from .answers import AnswerStore
 from .errors import PrivacyError
+from .events import EventStore
 from .formation import FormationLease, LeasedSnapshot, PrivacyFormation
 from .guard import OutputGuard
 from .moderation import ModerationStore
@@ -24,6 +25,7 @@ __all__ = [
     "Actor",
     "AnswerStore",
     "ChangeNotice",
+    "EventStore",
     "FormationLease",
     "LeasedSnapshot",
     "ModerationStore",

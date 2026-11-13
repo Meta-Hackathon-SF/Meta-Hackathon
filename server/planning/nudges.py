@@ -26,7 +26,7 @@ from zoneinfo import ZoneInfo
 from server.providers import MUSE_VOICE, MusePort, NullTrace, MuseRequest, ProviderError, TaskRegistry, contract_spec
 
 from .errors import PlanningError
-from .ports import ChatPostPort, OutputGuardPort, guard_allows
+from .ports import ChatPostPort, OutputGuardPort, guard_allows, sensitivity_allows
 from .venues import VenueCatalog, parse_utc, to_utc
 
 NUDGE_PROMPT_VERSION = "event_nudge.v1"
@@ -110,9 +110,11 @@ class NudgeService:
                  store: InMemoryNudgeStore | None = None,
                  now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
                  time_zone: str = "America/Los_Angeles",
-                 new_id: Callable[[], str] = lambda: uuid.uuid4().hex, trace: Any = None) -> None:
+                 new_id: Callable[[], str] = lambda: uuid.uuid4().hex, trace: Any = None,
+                 sensitivity: Any = None) -> None:
         self._muse = muse
         self._trace = trace if trace is not None else NullTrace()
+        self._sensitivity = sensitivity  # D014 M10 port, optional; runs after OutputGuard
         self._guard = guard
         self._catalog = catalog
         self._context = context
@@ -172,6 +174,9 @@ class NudgeService:
         if not guard_allows(self._guard, self.chat_text(nudge), against):
             self._trace.note(rid, "refused", "guard_rejected_text")
             return NudgeOutcome(None, "guard_rejected_text")
+        if not await sensitivity_allows(self._sensitivity, [out["title"], out["why"]]):
+            self._trace.note(rid, "refused", "sensitive_text")
+            return NudgeOutcome(None, "sensitive_text")
         self._trace.note(rid, "checked", "venue_time_text_ok")
         self._store.put(constellation_id, nudge)
         return NudgeOutcome(dict(nudge), "ok")

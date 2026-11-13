@@ -126,7 +126,8 @@ class RouterTests(unittest.TestCase):
         self.assertEqual(MEASURED_ROUTES["clarify"].model, "muse-ember-1.0")
         self.assertNotIn("muse-spark-1.3", (MEASURED_ROUTES["sky_narration"].model, *MEASURED_ROUTES["sky_narration"].fallbacks))
         r = build_muse_router(TaskRegistry(), BASE, adapter_factory=FakeAdapter)
-        self.assertEqual(r.route_for("constellation_formation"), None)  # waits for its eval
+        self.assertEqual(r.route_for("theme_discovery"), None)  # not compared head to head
+        self.assertEqual(r.route_for("constellation_formation").model, "muse-ember-1.0")
 
     def test_route_attempts_reach_the_adapter_config(self):
         seen = []
