@@ -140,6 +140,26 @@ def test_competing_workers_and_expired_lease_cannot_publish_stale_effect():
     asyncio.run(scenario())
 
 
+def test_crash_on_last_attempt_becomes_terminal_after_lease_expires():
+    env = FixtureLifecycle()
+    job_id = env.enqueue("week_lock")
+    with env.repository.transaction() as state:
+        state.records["lifecycleJobs"][job_id].update(
+            status="running",
+            attempts=3,
+            claimId="synthetic-claim",
+            leaseUntil=policy.stamp(env.now + timedelta(seconds=1)),
+        )
+    env.now += timedelta(seconds=1)
+    assert job_id in env.runner.pending()
+    assert not asyncio.run(env.runner.run(job_id))
+    assert job_id not in env.runner.pending()
+    with env.repository.transaction() as state:
+        job = state.records["lifecycleJobs"][job_id]
+        assert job["status"] == "failed" and job["failureCode"] == "PROVIDER_UNAVAILABLE"
+        assert "claimId" not in job and "leaseUntil" not in job
+
+
 def test_cancelled_prepare_can_retry_after_backoff():
     async def scenario():
         env = FixtureLifecycle()

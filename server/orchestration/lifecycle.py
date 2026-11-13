@@ -104,6 +104,15 @@ class LifecycleRunner:
                 job = state.records["lifecycleJobs"][job_id]
                 now = self.clock()
                 if (
+                    job["status"] == "running"
+                    and job["attempts"] >= 3
+                    and moment(job["leaseUntil"]) <= now
+                ):
+                    job.update(status="failed", failureCode="PROVIDER_UNAVAILABLE")
+                    job.pop("claimId", None)
+                    job.pop("leaseUntil", None)
+                    return None
+                if (
                     job["status"] == "succeeded"
                     or job["attempts"] >= 3
                     or moment(job["dueAt"]) > now
@@ -168,5 +177,6 @@ class LifecycleRunner:
             return [
                 job["jobId"]
                 for job in state.records.get("lifecycleJobs", {}).values()
-                if job["status"] != "succeeded" and job["attempts"] < 3
+                if job["status"] != "succeeded"
+                and (job["attempts"] < 3 or job["status"] == "running")
             ]
