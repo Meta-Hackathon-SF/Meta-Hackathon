@@ -57,9 +57,14 @@ Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
 - Worktree at origin/role/kai-orchestration 057f5aa (b1192cb app): `python -m pytest tests/planning tests/providers tests/orchestration` 271 passed, 2 skipped (PostgreSQL DSN not set). Kai edits none of my paths; every planning name he imports exists.
 - His `ChatService.postSystem(roomId, message)` accepts exactly the `{roomId, handle: "Muse", text, kind}` my nudge sends. Added `ChatSystemPoster` (server/planning/adapters.py) to bridge `post_system` -> `postSystem`; tested against a double copying his input check. Not run against his real chat service. No live calls.
 
+## Operator nudge panel (2026-11-13T05:45Z)
+- `OperatorNudgePanel` + `createNudgeRequester` + `APPROVED_VENUES` in web/src/features/constellations/nudges/ give the demo beat "Muse posts an event nudge" an operator button (Will's console has none). Chat itself only gets the nudge text as a `muse_nudge` bubble (Kai's ChatPanel already renders it).
+- Checks: web lint (no new warnings), build ok, `PLAYWRIGHT_CHANNEL=chrome npx playwright test` 38 passed; `python -m pytest tests` 563 passed, 1 skipped; temporary preview in Chrome covered posted/failure/bad venue/cancel. Not mounted; not run against the server.
+
 ## API budget
 Adam's Muse key has a $100 cap for the whole event including the demo. About 44 live calls so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
 
 ## Next action
+- Will or Kai: mount `OperatorNudgePanel` in the operator console for an open room.
 - Me: no unblocked build task left. Once Kai wires nudges into `PlanningRuntime`, run the operator nudge route in his app (offline scripted Muse), then one capped live M7.
 - Consumers: Rishi/Patrik register prompts with `contract_spec` (server/providers/README.md). Will calls `ClarifyService.follow_up` and `QuestionService.released` (server/planning/README.md). Kai calls `register_planning_tasks(registry)` and builds one adapter per process.
