@@ -13,7 +13,8 @@ Status codes: 400 `INVALID_INPUT`, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN`/`CONSE
 | GET /session | session | Player (self), Consent, isOperator |
 | PATCH /me/consent | expectedVersion, toggles | Consent; revocation invalidates jobs and leaves rooms |
 | POST /me/blocks | roomId + handle | 204, no existence leak |
-| DELETE /me/data | none | 202; deletes answers, guesses, chat authorship links |
+| DELETE /me/data | none | 202; deletes answers, guesses, chat authorship links, activity signals |
+| PUT /me/activity | useActivity, profileId?, groupIds, eventIds, friendIds, texts (D010) | `{useActivity, topics}`; off deletes stored signals; texts are reduced to allowlisted topics and discarded |
 
 ## Weekly cycle and daily answers (Will)
 | Route | Input | Output |

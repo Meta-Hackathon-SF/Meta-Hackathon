@@ -26,7 +26,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-CONTRACT_VERSION = "2.0.0"
+CONTRACT_VERSION = "2.1.0"
 
 
 class Wire(BaseModel):
@@ -99,6 +99,7 @@ class Consent(Wire):
     is_adult: StrictBool
     version: StrictInt = Field(ge=1)
     revoked_at: IsoTime | None
+    use_activity: StrictBool = False  # D010; stored apart from the versioned toggles
 
     @property
     def grants_play(self) -> bool:

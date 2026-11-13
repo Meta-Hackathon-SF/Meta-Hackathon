@@ -13,6 +13,7 @@ from tests.matching.test_formation import BLOCKED, GOOD
 
 CONSTELLATION_KEYS = {"constellationId", "cycleId", "memberIds", "sharedMeaning", "confidence",
                       "isLooseMatch", "name", "shapeId", "colorId", "baselineAgrees"}
+OPTIONAL_KEYS = {"closeness", "memberContext"}  # D009/D010, private, present when computed
 EVIDENCE_KEYS = {"callType", "model", "source", "generatedAt", "latencyMs"}
 
 
@@ -49,7 +50,7 @@ def test_form_returns_exact_formation_success_wire():
     raw = run(port().form("cycle-1"))
     assert set(raw) == {"status", "constellations", "evidence"} and raw["status"] == "ok"
     for c in raw["constellations"]:
-        assert set(c) == CONSTELLATION_KEYS
+        assert CONSTELLATION_KEYS <= set(c) <= CONSTELLATION_KEYS | OPTIONAL_KEYS
         assert c["cycleId"] == "cycle-1" and 3 <= len(c["memberIds"]) <= 5
         assert len(set(c["memberIds"])) == len(c["memberIds"])
     assert all(set(e) == EVIDENCE_KEYS for e in raw["evidence"])
