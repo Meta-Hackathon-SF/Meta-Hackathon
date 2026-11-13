@@ -89,8 +89,17 @@ def bands_for_viewer(
     return bands
 
 
-def member_context(snap: FormationSnapshot, refs: Sequence[str]) -> dict[str, dict[str, int]]:
-    """playerId -> counts for that viewer. Players without activity get zeros."""
+# Friend ids come from the client (PUT /me/activity) and cannot be verified in this
+# build, so a player could list someone as a friend and read alreadyFriends to learn
+# whether that person is in their anonymous room (audit P1, issues #47/#48). Off until
+# Patrik's side sources friend ids from a verified session; the wire field stays 0.
+COUNT_FRIENDS = False
+
+
+def member_context(snap: FormationSnapshot, refs: Sequence[str], *,
+                   count_friends: bool = COUNT_FRIENDS) -> dict[str, dict[str, int]]:
+    """playerId -> counts for that viewer. Players without activity get zeros.
+    ``alreadyFriends`` is always 0 unless ``count_friends`` (see COUNT_FRIENDS)."""
     by_ref: Mapping[str, ActivitySignals] = snap.activity
     out: dict[str, dict[str, int]] = {}
     for viewer in refs:
@@ -105,7 +114,8 @@ def member_context(snap: FormationSnapshot, refs: Sequence[str]) -> dict[str, di
                     continue
                 shared_group += bool(set(mine.group_ids) & set(theirs.group_ids))
                 same_event += bool(set(mine.event_ids) & set(theirs.event_ids))
-                friends += bool(theirs.profile_id and theirs.profile_id in mine.friend_ids)
+                if count_friends:
+                    friends += bool(theirs.profile_id and theirs.profile_id in mine.friend_ids)
         out[snap.id_map[viewer]] = {
             "sharedGroupStars": shared_group,
             "alreadyFriends": friends,

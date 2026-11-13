@@ -207,6 +207,19 @@ class FormationService:
             name = FALLBACK_LABEL  # fixed text; still labeled
         return name, shape, color
 
+    def _guarded_themes(self, themes: Sequence[prompts.RawTheme],
+                        answer_texts: Sequence[str]) -> tuple[prompts.RawTheme, ...]:
+        """Drop any M3 theme whose label or description fails OutputGuard against the
+        answers. Theme labels reach the public Sky, and Sky runs later without the
+        answers, so the no-quote check has to happen here, while they are in hand."""
+        kept = []
+        for theme in themes:
+            _, label, desc, _ = theme
+            verdicts = (self._guard.check(label, answer_texts), self._guard.check(desc, answer_texts))
+            if all(isinstance(v, Mapping) and v.get("ok") is True for v in verdicts):
+                kept.append(theme)
+        return tuple(kept)
+
     @staticmethod
     def _theme_objects(cycle_id: str, snap: FormationSnapshot,
                        themes: Sequence[prompts.RawTheme]) -> tuple[Theme, ...]:
@@ -266,10 +279,11 @@ class FormationService:
                     "PROVIDER_UNAVAILABLE", "Formation unavailable; retry", retryable=True))
             proposal = tuple((g, FALLBACK_MEANING, FALLBACK_CONFIDENCE) for g in baseline)
 
+        answer_texts = [a.text for a in snap.answers]
+        themes = self._guarded_themes(themes, answer_texts)
         theme_objs = self._theme_objects(cycle_id, snap, themes)
         hook = asyncio.ensure_future(_run_hook(on_grouped, theme_objs, len(snap.refs),
                                                len(proposal)))
-        answer_texts = [a.text for a in snap.answers]
         if used_fallback:
             names = [self._guarded_fallback_name(i, len(refs), answer_texts)
                      for i, (refs, _, _) in enumerate(proposal)]

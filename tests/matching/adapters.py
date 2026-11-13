@@ -84,6 +84,11 @@ class FakeMuse:
         if task == "theme_discovery":
             if self.m3_mode == "raise":
                 raise RuntimeError("provider down")
+            if self.m3_mode == "quote":  # first label quotes 5+ words of a fixture answer
+                return {"output": {"themes": [
+                    {"id": f"t{i}", "label": "eat in my room so no one" if i == 0 else f"Shared week {i}",
+                     "description": "fake", "memberIds": g} for i, g in enumerate(self.groups)]},
+                    "evidence": evidence("M3")}
             return {"output": {"themes": [
                 {"id": f"t{i}", "label": f"Shared week {i}", "description": "fake",
                  "memberIds": g} for i, g in enumerate(self.groups)]},

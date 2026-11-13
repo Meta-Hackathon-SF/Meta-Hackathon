@@ -181,6 +181,23 @@ def test_quoting_name_is_replaced_by_fixed_fallback_name():
         assert FixtureGuard().check(c.name, [])["ok"]
 
 
+def test_quoting_theme_label_never_reaches_sky():
+    service, _, _ = build(m3_mode="quote")
+    result = run(service.form("c", "r"))
+    assert result.status == "ok"
+    labels = [t.label for t in result.themes]
+    assert "eat in my room so no one" not in labels
+    assert labels and all(FixtureGuard().check(t.label, []) ["ok"] for t in result.themes)
+
+
+def test_theme_discovery_gets_voice_rules():
+    from server.matching.muse_specs import register_formation_specs
+    from server.providers import MUSE_VOICE, TaskRegistry
+
+    spec = register_formation_specs(TaskRegistry()).get("theme_discovery", prompts.PROMPT_VERSION_M3)
+    assert spec is not None and MUSE_VOICE in spec.instructions
+
+
 def test_prompts_carry_refs_and_text_only():
     service, muse, _ = build()
     run(service.form("c", "r"))

@@ -22,7 +22,7 @@ from server.matching.models import (
     ValidationError,
 )
 
-PROMPT_VERSION_M3 = "theme_discovery.v1"
+PROMPT_VERSION_M3 = "theme_discovery.v2"  # v2: voice rules (labels are public in Sky)
 PROMPT_VERSION_M4 = "constellation_formation.v1"
 PROMPT_VERSION_M5 = "constellation_naming.v1"
 MAX_THEMES = 12
