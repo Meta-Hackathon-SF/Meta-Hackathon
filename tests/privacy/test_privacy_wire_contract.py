@@ -41,6 +41,7 @@ def py_fields(model) -> set[str]:
 @pytest.mark.parametrize("ts_name,model", [
     ("Player", wire.Player), ("Consent", wire.Consent), ("ApiError", wire.ApiError),
     ("DailyAnswer", wire.DailyAnswer), ("PrevalenceGuess", wire.PrevalenceGuess),
+    ("Block", wire.Block), ("Report", wire.Report),
 ])
 def test_fields_match_protocol(ts_name, model):
     assert py_fields(model) == ts_fields(ts_name)

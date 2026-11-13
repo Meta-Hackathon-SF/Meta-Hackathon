@@ -13,7 +13,9 @@ from .api import (
 )
 from .answers import AnswerStore
 from .errors import PrivacyError
+from .formation import FormationLease, LeasedSnapshot, PrivacyFormation
 from .guard import OutputGuard
+from .moderation import ModerationStore
 from .safety import SafetyScreener, register_safety_task
 from .service import Actor, ChangeNotice, JoinResult, PrivacyService
 from .store import PrivacyStore
@@ -22,9 +24,13 @@ __all__ = [
     "Actor",
     "AnswerStore",
     "ChangeNotice",
+    "FormationLease",
+    "LeasedSnapshot",
+    "ModerationStore",
     "JoinResult",
     "OutputGuard",
     "PrivacyError",
+    "PrivacyFormation",
     "PrivacyService",
     "PrivacyStore",
     "SafetyScreener",

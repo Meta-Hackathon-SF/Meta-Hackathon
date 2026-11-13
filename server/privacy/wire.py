@@ -187,3 +187,32 @@ class PrevalenceGuess(Wire):
     cycle_id: Id
     player_id: Id
     percent: StrictInt = Field(ge=0, le=100)
+
+
+# ---------------------------------------------------------------------------
+# Block / Report (PRIVATE; protocol.ts). Stored by privacy, used by Kai's chat.
+# ---------------------------------------------------------------------------
+Handle = Annotated[StrictStr, Field(min_length=1, max_length=40)]
+ReportReason = Literal["harassment", "self_harm", "spam", "personal_info", "other"]
+
+
+class Block(Wire):
+    blocker_id: Id
+    blocked_id: Id
+
+
+class Report(Wire):
+    report_id: Id
+    room_id: Id
+    message_id: Id | None
+    reporter_id: Id
+    reported_handle: Handle
+    reason: ReportReason
+    created_at: IsoTime
+
+
+class BlockRequest(WireRequest):
+    """POST /me/blocks body. The handle is resolved server-side by Kai's chat."""
+
+    room_id: Id
+    handle: Handle

@@ -217,22 +217,39 @@ class AnswerStore:
         return counts
 
     # --------------------------------------------------------------- formation
-    def eligible_answers(self, cycle_id: str) -> list[sqlite3.Row]:
-        """Server-only input for formationSnapshot (task 6): unflagged answers
-        of currently consenting, active members. Never exposed over HTTP."""
+    def eligible_answers(self, cycle_id: str, community_id: str | None = None) -> list[sqlite3.Row]:
+        """Server-only formation input: answers of players who are active
+        members with all three consents on and have NO flagged answer in this
+        cycle (contract: eligible = consented, not flagged; week-sample
+        expectedFormation excludes the distress player entirely), (in ``community_id`` when
+        given, else in any community). One row per answer, never duplicated.
+        Rows include ``consent_version`` (of ``community_id`` when given) for
+        the publish-guard revision. Never exposed over HTTP."""
+        return self._eligible(cycle_id, community_id)
+
+    def _eligible(self, cycle_id: str, community_id: str | None) -> list[sqlite3.Row]:
         with self._store.tx() as conn:
             return conn.execute(
                 """
-                SELECT a.player_id, a.day, a.text, a.weight, p.is_synthetic
+                SELECT a.answer_id, a.player_id, a.day, a.text, a.weight, a.edited_at, p.is_synthetic,
+                  (SELECT max(c.version) FROM current_consents c
+                   WHERE c.player_id = a.player_id AND (:community IS NULL OR c.community_id = :community)
+                  ) AS consent_version
                 FROM answers a
                 JOIN players p ON p.player_id = a.player_id
-                JOIN memberships m ON m.player_id = a.player_id AND m.left_at IS NULL
-                JOIN current_consents c ON c.player_id = m.player_id AND c.community_id = m.community_id
-                WHERE a.cycle_id = ? AND a.safety_flag = 'none'
-                  AND c.match_answers = 1 AND c.anonymous_chat = 1 AND c.is_adult = 1
+                WHERE a.cycle_id = :cycle AND a.safety_flag = 'none'
+                  AND NOT EXISTS (  -- a player with any flagged answer this cycle sits out entirely
+                    SELECT 1 FROM answers f
+                    WHERE f.cycle_id = a.cycle_id AND f.player_id = a.player_id AND f.safety_flag <> 'none')
+                  AND EXISTS (
+                    SELECT 1 FROM memberships m
+                    JOIN current_consents c ON c.player_id = m.player_id AND c.community_id = m.community_id
+                    WHERE m.player_id = a.player_id AND m.left_at IS NULL
+                      AND (:community IS NULL OR m.community_id = :community)
+                      AND c.match_answers = 1 AND c.anonymous_chat = 1 AND c.is_adult = 1)
                 ORDER BY a.player_id, a.day
                 """,
-                (cycle_id,),
+                {"cycle": cycle_id, "community": community_id},
             ).fetchall()
 
     @staticmethod
