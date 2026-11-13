@@ -32,7 +32,7 @@ export const sidebarNavigation = [
     icon: ConstellationsIcon,
     color: "purple",
   },
-  { to: "/watch", label: "Video", icon: VideoIcon, color: "pink" },
+  { to: "/watch", label: "Reels", icon: VideoIcon, color: "pink" },
   { to: "/marketplace", label: "Marketplace", icon: MarketplaceIcon, color: "cyan" },
   { to: "/events", label: "Events", icon: EventsIcon, color: "red" },
 ];
