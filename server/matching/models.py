@@ -1,4 +1,4 @@
-"""Formation wire models mirroring contracts/protocol.ts 2.0.0 (camelCase on the wire).
+"""Formation wire models mirroring contracts/protocol.ts 2.1.0 (camelCase on the wire).
 
 Stdlib only. Every constructor path that accepts external data validates it; dataclasses are
 frozen so nothing is mutated after validation.
@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-CONTRACT_VERSION = "2.0.0"
+CONTRACT_VERSION = "2.1.0"
 MIN_CONSTELLATION_SIZE = 3
 MAX_CONSTELLATION_SIZE = 5
 LOOSE_MATCH_CONFIDENCE = 0.5
@@ -85,12 +85,44 @@ class PromptText:
         return {"id": self.id, "text": self.text, "weight": self.weight}
 
 
+def _id_list(data: Mapping[str, Any], key: str, path: str) -> tuple[str, ...]:
+    value = data.get(key, [])
+    if not isinstance(value, list) or len(value) > 50 or not all(
+            isinstance(v, str) and 0 < len(v) <= 128 for v in value):
+        raise ValidationError(f"{path}.{key}", "expected up to 50 ids")
+    return tuple(sorted(set(value)))
+
+
+@dataclass(frozen=True)
+class ActivitySignals:
+    """D010 (PRIVATE): opaque ids and allowlisted topic labels; never free text."""
+    profile_id: str | None = None
+    group_ids: tuple[str, ...] = ()
+    event_ids: tuple[str, ...] = ()
+    friend_ids: tuple[str, ...] = ()
+    topics: tuple[str, ...] = ()
+
+    @staticmethod
+    def from_dict(data: Any, path: str) -> ActivitySignals:
+        if not isinstance(data, Mapping):
+            raise ValidationError(path, "expected object")
+        profile = data.get("profileId")
+        if profile is not None and not (isinstance(profile, str) and 0 < len(profile) <= 128):
+            raise ValidationError(f"{path}.profileId", "expected id or null")
+        topics = _id_list(data, "topics", path)
+        if any(len(t) > 40 for t in topics):
+            raise ValidationError(f"{path}.topics", "topic label too long")
+        return ActivitySignals(profile, _id_list(data, "groupIds", path), _id_list(data, "eventIds", path),
+                               _id_list(data, "friendIds", path), topics)
+
+
 @dataclass(frozen=True)
 class FormationSnapshot:
     """PrivacyPort.formationSnapshot output. Already consent-filtered and safety-filtered."""
     answers: tuple[PromptText, ...]
     id_map: Mapping[str, str]  # ref -> playerId (private, never sent to Muse)
     blocked_pairs: tuple[tuple[str, str], ...]  # playerIds
+    activity: Mapping[str, ActivitySignals] = field(default_factory=dict)  # D010: by ref, opt-in only
 
     @staticmethod
     def from_dict(data: Any) -> FormationSnapshot:
@@ -113,7 +145,14 @@ class FormationSnapshot:
                 isinstance(p, (list, tuple)) and len(p) == 2 and all(isinstance(x, str) for x in p)
                 for p in pairs):
             raise ValidationError("snapshot.blockedPairs", "expected [id, id] pairs")
-        return FormationSnapshot(answers, dict(id_map), tuple((a, b) for a, b in pairs))
+        raw_activity = data.get("activity", {})
+        if not isinstance(raw_activity, Mapping):
+            raise ValidationError("snapshot.activity", "expected object")
+        if set(raw_activity) - set(id_map):
+            raise ValidationError("snapshot.activity", "activity for unknown ref")
+        activity = {ref: ActivitySignals.from_dict(v, f"snapshot.activity.{ref}")
+                    for ref, v in raw_activity.items()}
+        return FormationSnapshot(answers, dict(id_map), tuple((a, b) for a, b in pairs), activity)
 
     @property
     def refs(self) -> tuple[str, ...]:
@@ -186,13 +225,22 @@ class Constellation:
     color_id: str
     baseline_agrees: bool
     is_fallback: bool = False  # UI label FALLBACK_LABEL when true
+    # D009, PRIVATE: (playerA, playerB, score 0..1) for every member pair; banded before output.
+    closeness: tuple[tuple[str, str, float], ...] = ()
+    # D010, PRIVATE: playerId -> {sharedGroupStars, alreadyFriends, sameEventStars}; served only to that member.
+    member_context: Mapping[str, Mapping[str, int]] = field(default_factory=dict)
 
     def to_wire(self) -> dict:
-        return {"constellationId": self.constellation_id, "cycleId": self.cycle_id,
-                "memberIds": list(self.member_ids), "sharedMeaning": self.shared_meaning,
-                "confidence": self.confidence, "isLooseMatch": self.is_loose_match,
-                "name": self.name, "shapeId": self.shape_id, "colorId": self.color_id,
-                "baselineAgrees": self.baseline_agrees}
+        out = {"constellationId": self.constellation_id, "cycleId": self.cycle_id,
+               "memberIds": list(self.member_ids), "sharedMeaning": self.shared_meaning,
+               "confidence": self.confidence, "isLooseMatch": self.is_loose_match,
+               "name": self.name, "shapeId": self.shape_id, "colorId": self.color_id,
+               "baselineAgrees": self.baseline_agrees}
+        if self.closeness:
+            out["closeness"] = [{"a": a, "b": b, "score": s} for a, b, s in self.closeness]
+        if self.member_context:
+            out["memberContext"] = {k: dict(v) for k, v in self.member_context.items()}
+        return out
 
 
 @dataclass(frozen=True)

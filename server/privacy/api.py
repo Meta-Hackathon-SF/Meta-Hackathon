@@ -19,6 +19,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .errors import PrivacyError
+from .activity import ActivityRequest, ActivityStore
 from .answers import AnswerStore
 from .moderation import HandleResolver, ModerationStore
 from .service import Actor, PrivacyService
@@ -100,6 +101,7 @@ def build_router(
     answers: AnswerStore | None = None,
     moderation: ModerationStore | None = None,
     resolve_handle: HandleResolver | None = None,
+    activity: ActivityStore | None = None,
 ) -> APIRouter:
     router = APIRouter()
     ActorDep = Annotated[Actor, Depends(actor_dependency(service))]
@@ -138,6 +140,8 @@ def build_router(
             """Deletes every answer and guess of this player now; Kai's listener
             drops chat authorship links on the ``data_deleted`` notice."""
             answers.delete_my_data(actor.player_id)
+            if activity is not None:
+                activity.delete_player(actor.player_id)
             return {"status": "deleted"}
 
     if moderation is not None and resolve_handle is not None:
@@ -151,5 +155,14 @@ def build_router(
                 target = None
             moderation.block(actor, target)
             return Response(status_code=204)
+
+    if activity is not None:
+        @router.put("/me/activity")
+        def put_activity(body: ActivityRequest, actor: ActorDep) -> dict:
+            """D010: opt in/out of activity signals. Texts become allowlisted topics
+            and are discarded; nothing here is logged or echoed back."""
+            if body.use_activity:
+                service.require_consent(actor)  # only fully consenting players can add signals
+            return activity.put(actor.player_id, actor.community_id, body, service.now().isoformat()).wire()
 
     return router
