@@ -86,9 +86,10 @@ def test_operator_login_bootstrap_is_explicit_and_privacy_only():
         response = client.post("/api/v1/operator/other", headers={"Idempotency-Key": "b"})
         assert response.status_code == 401
     with pytest.raises(ValueError, match="Only privacy"):
-        create_app(settings=Settings(environment="test"), registrations=[
-            ServiceRegistration("planning", router, synthetic_guard, ready, True)
-        ])
+        create_app(
+            settings=Settings(environment="test"),
+            registrations=[ServiceRegistration("planning", router, synthetic_guard, ready, True)],
+        )
 
 
 def assert_api_error(response, status: int, code: ErrorCode) -> ApiError:

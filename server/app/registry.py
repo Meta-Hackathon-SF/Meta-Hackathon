@@ -63,9 +63,7 @@ def register_services(app: FastAPI, registrations: Sequence[ServiceRegistration]
                 raise ValueError("Operator login bootstrap requires POST only")
             if (is_join or is_login) and "POST" in route.methods:
                 if registration.owner != "privacy" or route.methods != {"POST"}:
-                    raise ValueError(
-                        "Only privacy may register an authentication bootstrap route"
-                    )
+                    raise ValueError("Only privacy may register an authentication bootstrap route")
                 bootstrap_routes.append(route)
             else:
                 protected_routes.append(route)
