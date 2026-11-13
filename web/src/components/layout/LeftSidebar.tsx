@@ -48,10 +48,6 @@ export default function LeftSidebar() {
         <img className="shortcut-image" src={photo("team")} alt="" />
         <span>Hackathon Builders</span>
       </Link>
-      <Link className="sidebar-row" to="/campus">
-        <img className="shortcut-image" src={photo("campus")} alt="" />
-        <span>Campus Community</span>
-      </Link>
       <Link className="sidebar-row" to="/groups">
         <img className="shortcut-image" src={photo("headset")} alt="" />
         <span>XR Student Collective</span>
