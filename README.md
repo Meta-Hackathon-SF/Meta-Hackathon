@@ -47,8 +47,18 @@ The research below shows the same pattern. People consistently underestimate how
 
 Figures are quoted from the PRD with the sources it names. We have not independently re-verified them.
 
+## First-use matching and calibration (planned)
+
+A new player starts with a provisional constellation, even before they have answered enough daily questions. With their permission, initial connections are based on available Meta platform activity: videos they like, accounts and creators they follow, their comments, and other interests they choose to share. Activity sharing is optional and separate from the required game consent; the prototype does not claim access to real Meta activity APIs.
+
+Daily-question answers then help calibrate the match around what the player means and experiences, beyond their activity-based interests. Until enough daily-question information is available, the constellation and connection view keeps this disclaimer visible:
+
+> **Calibration is not complete yet.** Your initial connections are based on the Meta activity you chose to share. Answer daily questions to help us understand you better and refine your constellation.
+
+Once there is enough daily-question information, those answers become the primary basis for connections and the disclaimer is removed. The readiness criterion and this onboarding flow still need implementation; no answer-count threshold is specified here. Activity signals and private answers are never shown to other players, and identity still requires mutual reveal.
+
 ## How a week works
-1. **Join.** Constellations tab inside a Group, or QR. One screen explains what is private and what is shared. Three consent toggles (match me, anonymous chat, 18+) are required before any answer.
+1. **Join.** Constellations tab inside a Group, or QR. One screen explains what is private and what is shared. Three consent toggles (match me, anonymous chat, 18+) are required before any answer. The planned first-use flow starts with activity-based provisional connections and the calibration disclaimer above while daily-question information builds up.
 2. **Daily answer (Mon-Fri).** One question per day from the question bank. Answer by voice or text, 1 to 400 characters. Muse may ask one follow-up. Answering on the day counts at full weight and builds a streak.
 3. **Catch-up.** Missed a day? Answer it any time before Saturday lock. Catch-up answers count at lower weight and never extend a streak.
 4. **Guess.** Each player guesses what percent of the Group feels like them this week.
