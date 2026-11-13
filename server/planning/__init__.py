@@ -5,7 +5,7 @@ router lives in ``server.planning.api`` so the rest stays standard-library only.
 """
 from server.providers import TaskRegistry
 
-from .adapters import CycleQuestionPort, SyncClarify, run_sync
+from .adapters import ChatSystemPoster, CycleQuestionPort, SyncClarify, run_sync
 from .clarify import (
     CLARIFY_PROMPT_VERSION,
     ClarifyResult,
@@ -48,6 +48,7 @@ __all__ = [
     "ChatPostPort",
     "ClarifyResult",
     "ClarifyService",
+    "ChatSystemPoster",
     "CycleQuestionPort",
     "InMemoryClarifyStore",
     "GENERATION_PROMPT_VERSION",
