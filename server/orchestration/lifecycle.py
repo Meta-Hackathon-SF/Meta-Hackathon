@@ -36,7 +36,9 @@ class LifecycleRunner:
         self.clock, self.lease_seconds = clock, lease_seconds
 
     @staticmethod
-    def enqueue_in_state(state, *, community_id, cycle_id, revision, kind, due_at, day=None):
+    def enqueue_in_state(
+        state, *, community_id, cycle_id, revision, kind, due_at, day=None, room_id=None
+    ):
         """May run in a guarded reveal commit to schedule expiry atomically."""
         if (
             kind not in KINDS
@@ -45,9 +47,19 @@ class LifecycleRunner:
             )
             or (kind == "day_close" and (type(day) is not int or not 1 <= day <= 5))
             or (kind != "day_close" and day is not None)
+            or (
+                room_id is not None
+                and (
+                    kind != "room_expiry"
+                    or not isinstance(room_id, str)
+                    or not 0 < len(room_id) <= 200
+                )
+            )
         ):
             raise ServiceError("INVALID_INPUT")
         identity = [community_id, cycle_id, kind, day]
+        if room_id is not None:
+            identity.append(room_id)
         job_id = "lifecycle-" + sha256(json.dumps(identity).encode()).hexdigest()
         record = {
             "jobId": job_id,
@@ -58,6 +70,8 @@ class LifecycleRunner:
             "day": day,
             "dueAt": stamp(due_at),
         }
+        if room_id is not None:
+            record["roomId"] = room_id
         jobs = state.records.setdefault("lifecycleJobs", {})
         previous = jobs.get(job_id)
         if previous is not None:

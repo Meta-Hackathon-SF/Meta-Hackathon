@@ -56,6 +56,26 @@ def test_future_job_runs_only_when_due():
     assert asyncio.run(env.runner.run(job_id))
 
 
+def test_expiry_jobs_are_scoped_to_each_room_and_can_have_different_deadlines():
+    env = FixtureLifecycle()
+    common = {
+        "community_id": "synthetic-group",
+        "cycle_id": env.chat.cycle.cycleId,
+        "revision": env.revision,
+        "kind": "room_expiry",
+    }
+    first = env.runner.enqueue(**common, room_id="synthetic-room-a", due_at=env.now)
+    second = env.runner.enqueue(
+        **common, room_id="synthetic-room-b", due_at=env.now + timedelta(hours=1)
+    )
+    assert first != second
+    assert env.runner.enqueue(**common, room_id="synthetic-room-a", due_at=env.now) == first
+    with pytest.raises(ServiceError, match="INVALID_INPUT"):
+        env.runner.enqueue(
+            **{**common, "kind": "week_lock"}, room_id="synthetic-room-a", due_at=env.now
+        )
+
+
 @pytest.mark.parametrize("change", ["consent", "revision"])
 def test_inflight_preparation_rechecks_current_privacy_and_cycle(change):
     async def scenario():

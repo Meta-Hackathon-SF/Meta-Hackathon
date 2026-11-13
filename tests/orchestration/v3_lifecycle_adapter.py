@@ -91,6 +91,7 @@ class FixtureHandler:
                 cycle_id=job["cycleId"],
                 revision=job["revision"],
                 kind="room_expiry",
+                room_id=room.wire.roomId,
                 due_at=self.env.now + timedelta(hours=24),
             )
         elif job["kind"] == "room_expiry":
