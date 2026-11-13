@@ -54,6 +54,11 @@ def _seed(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()[:8]
 
 
+class SkipRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    slot: Literal["A", "B"]
+
+
 class StageChoice(BaseModel):
     model_config = ConfigDict(extra="forbid")
     slot: Literal["A", "B", "off"] | None  # None: let the stage pick automatically
@@ -335,6 +340,23 @@ def build_stage_router(*, repository, privacy, privacy_store, answers, cycles, g
                 formed = cycle.cycleId in state.records.get("formations", {})
             if formed:
                 cycles.advance(cycle.cycleId)  # Sunday reveal
+        return view(actor)
+
+    @router.post("/operator/stage/skip")
+    def skip(body: SkipRequest, request: Request):
+        """The wrong account took a phone slot: keep it off the stage, pick the next newest."""
+        actor = request.state.cst_actor
+        community = actor.community_id
+        recent = recent_players(community)  # privacy first, never inside the transaction
+        with repository.transaction() as state:
+            slots = resolve(state, recent, actor.player_id, community)
+            player = slots.get(body.slot)
+            if player is not None:
+                off = state.records.setdefault("stageOff", {}).setdefault(community, [])
+                if player not in off:
+                    off.append(player)
+                pinned = state.records.setdefault("stageSlots", {}).setdefault(community, {})
+                pinned.pop(body.slot, None)
         return view(actor)
 
     @router.post("/operator/stage/phones/reset")

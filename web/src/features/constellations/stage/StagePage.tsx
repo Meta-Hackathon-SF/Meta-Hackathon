@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { MoonStar, RefreshCw, ShieldCheck, Smartphone } from "lucide-react";
 import { CONSTELLATIONS_PATH } from "../daily/communities";
-import { fetchStage, nextStep, redetectPhones, stageAvailable, startWeek, StageError, type Slot, type StageCall, type StagePanel, type StageView } from "./client";
+import { fetchStage, nextStep, redetectPhones, skipPhone, stageAvailable, startWeek, StageError, type Slot, type StageCall, type StagePanel, type StageView } from "./client";
 import { cells, constellationMap, scatter, type Pt } from "./geometry";
 import "./stage.css";
 
@@ -234,7 +234,7 @@ function Pipeline({ view, phase, fresh }: { view: StageView; phase: Phase; fresh
 }
 
 // ------------------------------------------------------------------ phones
-function Phone({ panel, view, phase }: { panel: StagePanel; view: StageView; phase: Phase }) {
+function Phone({ panel, view, phase, onSkip }: { panel: StagePanel; view: StageView; phase: Phase; onSkip: () => void }) {
   const answered = new Map(panel.answers.map((a) => [a.day, a]));
   const today = view.cycle?.status === "open" ? view.cycle.currentDay : null;
   const color = SLOT_COLOR[panel.slot];
@@ -244,6 +244,11 @@ function Phone({ panel, view, phase }: { panel: StagePanel; view: StageView; pha
         <Smartphone size={18} aria-hidden />
         <strong>Phone {panel.slot}</strong>
         <span className={`stg-dot ${panel.joined ? "is-on" : ""}`} aria-hidden />
+        {panel.joined && (phase === "idle" || phase === "prefill") && (
+          <button type="button" className="stg-skip" onClick={onSkip} title="Not this phone: show the next newest player">
+            Skip
+          </button>
+        )}
       </header>
       <div className="stg-phone-name">{panel.joined ? panel.displayName : "Waiting for a phone"}</div>
       {!panel.joined ? (
@@ -414,7 +419,7 @@ export function StagePage() {
         </div>
       </header>
       <div className="stg-grid">
-        <Phone panel={a} view={view} phase={phase} />
+        <Phone panel={a} view={view} phase={phase} onSkip={() => void act(() => skipPhone("A"))} />
         <section className="stg-mid" aria-label="What Muse and the server are doing">
           <p className="stg-say" role="status">
             {SAY[phase]}
@@ -437,7 +442,7 @@ export function StagePage() {
             <ShieldCheck size={14} aria-hidden /> Muse proposes; code enforces: group sizes, one group per person, no quotes in names, and only the two phones' answers are shown here.
           </p>
         </section>
-        <Phone panel={b} view={view} phase={phase} />
+        <Phone panel={b} view={view} phase={phase} onSkip={() => void act(() => skipPhone("B"))} />
       </div>
       <footer className="stg-controls">
         <span className="stg-label">Demo timing</span>

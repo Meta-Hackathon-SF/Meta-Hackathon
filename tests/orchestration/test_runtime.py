@@ -708,6 +708,12 @@ def test_stage_controls_run_the_demo_week_with_phones_typing_only_friday():
         assert body["cycle"]["status"] == "revealed"
         assert all(p["constellation"] for p in body["panels"])
         assert len(body["constellations"]) >= 2
+        # The wrong account on a phone slot can be skipped from the stage; the next fills in.
+        stranger = join(client, "someone else")
+        panels = call(client, laptop, "POST", "/operator/stage/phones/reset").json()["panels"]
+        assert panels[1]["displayName"] == stranger.name
+        panels = call(client, laptop, "POST", "/operator/stage/skip", json={"slot": "B"}).json()
+        assert [p["displayName"] for p in panels["panels"]] == [phone_a.name, phone_b.name]
         # Starting again gives a fresh Monday and re-detects: a pin from before is dropped.
         call(client, laptop, "POST", "/me/stage", json={"slot": "A"})
         body = call(client, laptop, "POST", "/operator/stage/start").json()
