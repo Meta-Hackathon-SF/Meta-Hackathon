@@ -46,6 +46,14 @@ Fixture versus live evidence: fixture only. FakeMuse is scripted, so tests prove
 - Needs from Patrik: `prevalence_guesses(cycleId) -> {playerId: percent}` (GuessSource), `formation_snapshot(cycleId)`, OutputGuard `check`.
 - Checks: pytest tests/matching -> 64 passed; ruff clean.
 
+## Live latency fix (added 2026-11-13, after Adam's live run on #21)
+- Adam's live run, 30 players, muse-spark-1.3: M3 21.5 s + M4 38.8 s sequential, M5 phase 70 s (two hung calls retried), formation 130.5 s, with Sky 149.3 s. Every output passed schemas first try; no repair needed. Missed the 60 s target by more than 2x.
+- Changes: M3 and M4 run concurrently (M4 gets no themes; themes feed Sky only). `parallel_themes=False` restores the old order. M5 makes one attempt with a 20 s cap, then a fixed name with no retry. M8 Sky precompute runs alongside M5 through `on_grouped` and is cached in MatchingPort. M3/M4 timeout raised to 75 s so the adapter's own 60 s attempt can finish.
+- Simulated replay of Adam's latencies at 1/100 scale (tests/matching/test_schedule.py): 59.4 s, against 130.5 s live. Thin margin. Not a live measurement.
+- Risk: M4 without themes may group worse. Measure with `live_eval --gold --live` (parallel vs `parallel_themes=False`).
+- Kai: `form_once` wraps form in `wait_for(60)`. Raise it to about 120 s or every live lock will cancel.
+- Checks: pytest tests/matching -> 66 passed; ruff clean.
+
 ## Interface assumptions (need ACK, not blocking)
 - Patrik `@patrikliska13`: `formationSnapshot` returns `answers[].id` as one random ref per PLAYER (shared by all that player's answers), `weight` per answer, `idMap` ref->playerId, `blockedPairs` as playerIds. Players with any distress/harm flag this cycle are excluded entirely. Prevalence guesses will be needed for computeSky (shape TBD).
 - Adam `@adamzhang06`: Python MusePort is `async run(*, task, requestId, promptVersion, payload, signal=None) -> {"output", "evidence"}` with evidence in MuseCallEvidence wire shape. Formation sends `instructions` inside payload; tell me if the adapter owns system prompts instead.

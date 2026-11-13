@@ -24,7 +24,12 @@ from server.matching.models import (
     ValidationError,
 )
 from server.matching.ports import MusePortLike, OutputGuardLike, SnapshotSource
-from server.matching.sky import SkyService, SyntheticSignal, synthetic_signals_from_population
+from server.matching.sky import (
+    SkyService,
+    SkyStats,
+    SyntheticSignal,
+    synthetic_signals_from_population,
+)
 
 
 class GuessSource(Protocol):
@@ -55,7 +60,8 @@ class MatchingPort:
     def __init__(self, formation: FormationService, sky: SkyService, guesses: GuessSource,
                  *, themes: ThemeStore | None = None,
                  synthetic_tags: tuple[str, ...] = (), synthetic_seed: int = 0,
-                 synthetic_size: int = 500) -> None:
+                 synthetic_size: int = 500,
+                 precompute_threshold: int | None = DEMO_SKY_THRESHOLD) -> None:
         self._formation = formation
         self._sky = sky
         self._guesses = guesses
@@ -63,9 +69,23 @@ class MatchingPort:
         self._synthetic_tags = synthetic_tags
         self._synthetic_seed = synthetic_seed
         self._synthetic_size = synthetic_size
+        self._precompute_threshold = precompute_threshold
+        self._sky_cache: dict[tuple[str, int], SkyStats] = {}
 
     async def form(self, cycleId: str) -> dict:  # noqa: N803 - protocol.ts parameter name
-        result = await self._formation.form(cycleId)
+        """Formation, with Sky (M8) precomputed alongside M5 naming when enabled."""
+        hook = None
+        if self._precompute_threshold is not None:
+            threshold = self._precompute_threshold
+
+            async def hook(themes, eligible, constellations):  # type: ignore[no-untyped-def]
+                guesses = await self._guesses.prevalence_guesses(cycleId)
+                stats = await self._sky.compute_from(
+                    cycleId, themes, eligible, constellations, guesses, threshold,
+                    synthetic_signals=self._synthetic())
+                self._sky_cache = {**self._sky_cache, (cycleId, threshold): stats}
+
+        result = await self._formation.form(cycleId, on_grouped=hook)
         if result.status == "ok":
             self._themes.save(cycleId, result)
         return result.to_wire(f"form-{cycleId}")
@@ -80,6 +100,9 @@ class MatchingPort:
                           *, mutual_reveals: int = 0) -> dict:
         """SkyStats wire dict. Raises MatchingError NOT_FOUND if the cycle was not formed here,
         INVALID_INPUT on bad guesses or threshold."""
+        cached = self._sky_cache.get((cycle_id, threshold))
+        if cached is not None and mutual_reveals == cached.mutual_reveals:
+            return cached.to_wire()
         result = self._themes.load(cycle_id)
         if result is None:
             raise MatchingError("NOT_FOUND", "No formation for this cycle", retryable=False)
@@ -100,9 +123,12 @@ class MatchingPort:
 def build_matching_port(*, muse: MusePortLike, snapshots: SnapshotSource,
                         guesses: GuessSource, guard: OutputGuardLike,
                         themes: ThemeStore | None = None, allow_fallback: bool = True,
-                        synthetic_tags: tuple[str, ...] = (),
+                        synthetic_tags: tuple[str, ...] = (), parallel_themes: bool = True,
+                        precompute_threshold: int | None = DEMO_SKY_THRESHOLD,
                         **sky_kwargs: Any) -> MatchingPort:
     """Public factory. Register Muse specs separately with register_formation_specs."""
-    formation = FormationService(muse, snapshots, guard, allow_fallback=allow_fallback)
+    formation = FormationService(muse, snapshots, guard, allow_fallback=allow_fallback,
+                                 parallel_themes=parallel_themes)
     return MatchingPort(formation, SkyService(muse, guard, **sky_kwargs), guesses,
-                        themes=themes, synthetic_tags=synthetic_tags)
+                        themes=themes, synthetic_tags=synthetic_tags,
+                        precompute_threshold=precompute_threshold)
