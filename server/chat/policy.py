@@ -58,6 +58,10 @@ class ChatState:
         event = EVENT.validate_python({**body, "seq": self.seq}).model_dump()
         if not recipients:
             raise ServiceError("INVALID_INPUT")
+        if event["type"] == "reveal.mutual":
+            pair = {player["playerId"] for player in event["reveal"]["players"]}
+            if recipients != pair:
+                raise ServiceError("FORBIDDEN")
         self.deliveries.append(Delivery(event, frozenset(recipients), room_id))
         return self.seq
 
@@ -384,7 +388,9 @@ def events_for(state, actor_id, eligible, now, after):
         if event["type"] == "reveal.mutual":
             ids = {p["playerId"] for p in event["reveal"]["players"]}
             if (
-                frozenset(ids) not in room.reveals
+                actor_id not in ids
+                or event["reveal"]["roomId"] != delivery.room_id
+                or frozenset(ids) not in room.reveals
                 or room.wire.status != "open"
                 or not ids <= eligible
                 or now >= moment(room.wire.expiresAt)

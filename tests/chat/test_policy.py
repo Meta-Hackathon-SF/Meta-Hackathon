@@ -253,3 +253,37 @@ def test_mismatched_profile_mapping_cannot_reveal_someone_else():
         assert not any(e["type"] == "reveal.mutual" for e in d.events(a))
 
     asyncio.run(scenario())
+
+
+def test_identity_filter_defends_against_corrupt_persisted_recipient_list():
+    from dataclasses import replace
+
+    async def scenario():
+        d = Driver()
+        a, b, c = d.players
+        await d.reveal(a, b)
+        await d.reveal(b, a)
+        d.state.deliveries = [
+            replace(item, recipients=frozenset(d.players))
+            if item.event["type"] == "reveal.mutual"
+            else item
+            for item in d.state.deliveries
+        ]
+        assert not any(e["type"] == "reveal.mutual" for e in d.events(c))
+        assert any(e["type"] == "reveal.mutual" for e in d.events(a))
+
+    asyncio.run(scenario())
+
+
+def test_outbox_rejects_identity_publication_to_the_whole_room():
+    async def scenario():
+        d = Driver()
+        a, b, _ = d.players
+        await d.reveal(a, b)
+        await d.reveal(b, a)
+        event = next(e for e in d.events(a) if e["type"] == "reveal.mutual")
+        with pytest.raises(ServiceError) as error:
+            d.state.emit({k: v for k, v in event.items() if k != "seq"}, set(d.players), d.room_id)
+        assert error.value.code == "FORBIDDEN"
+
+    asyncio.run(scenario())
