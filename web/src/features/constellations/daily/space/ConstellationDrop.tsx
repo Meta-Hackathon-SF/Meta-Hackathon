@@ -108,20 +108,14 @@ export function ConstellationDrop({ constellation, day, onEnter, onLater, onSign
         )}
         {found && (
           <>
-            {counted && (
-              <div className="spc-big-num" aria-hidden="true">
-                {members}
-              </div>
-            )}
             <h2 id="spc-drop-title" ref={headingRef} tabIndex={-1} className="spc-stage-sub">
-              {counted ? (
-                <>
-                  <span className="sr-only">{members} </span>people answered close to you
-                </>
-              ) : (
-                "You're in today's sky."
-              )}
+              {counted ? "Other people felt this too." : "You're in today's sky."}
             </h2>
+            {counted && (
+              <p className="spc-stage-note" data-testid="spc-drop-count">
+                {members} people landed close to this feeling.
+              </p>
+            )}
             {counted && constellation.sharedMeaning && <p className="spc-meaning">{constellation.sharedMeaning}</p>}
             <p className="spc-drop-chip" data-testid="spc-drop-evidence">
               {evidenceLabel}
