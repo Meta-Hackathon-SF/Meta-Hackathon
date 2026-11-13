@@ -437,7 +437,11 @@ class CycleService:
             cycle = record.cycle
             if cycle.status != "open":
                 raise CycleError("CYCLE_LOCKED")
-            players = fixture["players"]
+            # Patrik's 30-player demo cast (server/privacy/demo_population.py) on top
+            # of the 8 fixture players, so formation has real groups to find.
+            from server.privacy import demo_population
+
+            players = fixture["players"] + demo_population.players()
             if not all(p.get("isSynthetic") is True for p in players):
                 raise CycleError("INVALID_INPUT")
             try:
@@ -445,6 +449,8 @@ class CycleService:
             except Exception:  # noqa: BLE001
                 raise CycleError("PROVIDER_UNAVAILABLE") from None
             rows = [(a, "none") for a in fixture["answers"]]
+            rows += [(a, "none") for a in demo_population.topup_rows(
+                {d: self._question(record, d).question.questionId for d in (1, 2, 3, 4, 5)})]
             rows.append((fixture["distressFixture"], fixture["distressFixture"]["expectedFlag"]))
             rows.append((fixture["injectionFixture"], "none"))
             added = 0

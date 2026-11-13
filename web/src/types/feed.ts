@@ -12,6 +12,8 @@ export interface PostImage {
 export interface Comment {
   id: string;
   text: string;
+  /** Who wrote it; omitted means the current user. */
+  author?: Author;
 }
 
 export interface Post {

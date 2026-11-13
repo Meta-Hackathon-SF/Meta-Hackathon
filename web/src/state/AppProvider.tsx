@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { currentUser, initialPosts } from "../data/demo";
+import { populationPosts } from "../data/population";
 import type { Post, PostImage } from "../types/feed";
 import { AppContext } from "./context";
 
-const STORAGE_KEY = "closer-together-feed-v1";
+const STORAGE_KEY = "closer-together-feed-v2";
 
 function loadPosts(): Post[] {
   try {
@@ -27,7 +28,7 @@ function loadPosts(): Post[] {
   } catch {
     /* Storage can be unavailable or contain an older demo format. */
   }
-  return initialPosts;
+  return [...initialPosts, ...populationPosts];
 }
 
 export default function AppProvider({ children }: { children: ReactNode }) {

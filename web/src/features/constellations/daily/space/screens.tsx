@@ -72,7 +72,13 @@ export function AnswerScreen({
         {voice.recording ? (
           <div className="spc-listening is-box">
             <Waveform />
-            <span>Listening… tap the mic to stop</span>
+            {draft ? (
+              <p className="spc-live-text" aria-live="polite">
+                {draft}
+              </p>
+            ) : (
+              <span>Listening… tap the mic to stop</span>
+            )}
           </div>
         ) : (
           <textarea

@@ -141,3 +141,24 @@ class UsageParsingTests(unittest.TestCase):
         self.assertEqual(parse_chat_completion(raw).usage, {"inputTokens": 12, "outputTokens": 30, "reasoningTokens": 20})
         raw = json.dumps({"choices": [{"message": {"content": "{}"}}], "usage": {"prompt_tokens": "12", "completion_tokens": -1}}).encode()
         self.assertIsNone(parse_chat_completion(raw).usage)
+
+
+class TimeoutLabelTests(unittest.TestCase):
+    def test_wrapped_socket_timeout_is_a_timeout_not_unavailable(self):
+        import socket
+        import urllib.error
+        from unittest import mock
+
+        from server.providers import ProviderError
+        from server.providers.config import MuseConfig
+        from server.providers.transport import ChatRequest, MetaChatCompletionsTransport
+
+        t = MetaChatCompletionsTransport(MuseConfig(api_key="k-test", timeout_s=2.0))
+        req = ChatRequest(developer="d", user="u", schema_name="s", schema={"type": "object"},
+                          max_output_tokens=10, temperature=None, timeout_s=2.0)
+        for exc, kind in ((urllib.error.URLError(socket.timeout("timed out")), "timeout"),
+                          (urllib.error.URLError(ConnectionRefusedError()), "unavailable")):
+            with mock.patch("urllib.request.urlopen", side_effect=exc):
+                with self.assertRaises(ProviderError) as ctx:
+                    t._send(req)
+            self.assertEqual(ctx.exception.kind, kind)
