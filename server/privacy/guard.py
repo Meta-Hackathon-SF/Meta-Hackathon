@@ -149,10 +149,23 @@ _SENSITIVE = _term_pattern(_TERMS)
 _COMPACT_TERMS = tuple(t for t in _TERMS if " " not in t and len(t) >= COMPACT_MIN_LETTERS)
 
 
+# Ordinary words that merely contain a sensitive term. The compact (embedded)
+# check skips exactly these chunks; whole-word matching still applies to them.
+# Add a word here only for a reviewed false positive, never to unblock content.
+BENIGN_EMBEDDED = frozenset({
+    "hospitality", "hospitable", "inhospitable", "aromatherapy", "aromatherapist",
+})
+
+
 def _has_sensitive(text: str) -> bool:
     if _SENSITIVE.search(fold(text)):
         return True
-    return any(term in chunk for chunk in folded_chunks(text) for term in _COMPACT_TERMS)
+    return any(
+        term in chunk
+        for chunk in folded_chunks(text)
+        if chunk not in BENIGN_EMBEDDED
+        for term in _COMPACT_TERMS
+    )
 
 
 # ---------------------------------------------------------------------- PII

@@ -57,7 +57,7 @@ _DISTRESS = (
     "better off dead", "cant go on", "overdose", "not worth living",
     # obfuscated / slang forms (safety eval)
     "unalive", "unaliving", "goodbye note", "goodbye notes", "suicide note", "enough pills",
-    "kill me now", "hopefully not wake up", "hopefully never wake up", "hope i dont wake up",
+    "hopefully not wake up", "hopefully never wake up", "hope i dont wake up",
     "hope i never wake up", "hope i wont wake up", "wish i wouldnt wake up", "wish i didnt wake up",
 )
 # "kms" is also a distance unit: it only counts when no number precedes it
