@@ -1,6 +1,7 @@
 """Bounded formation job. Provider work is outside the store transaction."""
 
 import asyncio
+import math
 from typing import Protocol
 
 from server.app.errors import ServiceError
@@ -13,7 +14,11 @@ class FormationPort(Protocol):
     async def form(self, cycleId: str) -> dict: ...
 
 
-async def form_once(store: FormationStore, formation: FormationPort, cycle_id: str):
+async def form_once(
+    store: FormationStore, formation: FormationPort, cycle_id: str, *, timeout_seconds: float = 120
+):
+    if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+        raise ValueError("Formation timeout must be positive and finite")
     job = await store.claim(cycle_id)
     if job is None:
         return None
@@ -21,7 +26,7 @@ async def form_once(store: FormationStore, formation: FormationPort, cycle_id: s
         cycle = await store.cycle(cycle_id)
         if cycle.status not in {"locked", "forming"}:
             raise ServiceError("CYCLE_LOCKED")
-        raw = await asyncio.wait_for(formation.form(cycle_id), timeout=60)
+        raw = await asyncio.wait_for(formation.form(cycle_id), timeout=timeout_seconds)
         if isinstance(raw, dict) and raw.get("status") == "failed":
             failed = FormationFailure.model_validate(raw)
             raise ServiceError(failed.error.code)

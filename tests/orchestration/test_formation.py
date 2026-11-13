@@ -153,3 +153,27 @@ def test_cancellation_and_provider_failure_store_only_safe_codes():
         assert store.committed is None and store.failures == ["PROVIDER_UNAVAILABLE"]
 
     asyncio.run(scenario())
+
+
+def test_configured_formation_timeout_holds_no_transaction_and_records_safe_failure():
+    async def scenario():
+        store = TestFormationStore()
+        with pytest.raises(ServiceError) as error:
+            await form_once(
+                store, TestFormation(pause=asyncio.Event()), "cycle-demo-w1", timeout_seconds=0.001
+            )
+        assert error.value.code == "PROVIDER_UNAVAILABLE"
+        assert store.committed is None
+        assert store.failures == ["PROVIDER_UNAVAILABLE"]
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("timeout", [0, -1, float("inf"), float("nan")])
+def test_formation_timeout_must_be_bounded_positive_configuration(timeout):
+    with pytest.raises(ValueError):
+        asyncio.run(
+            form_once(
+                TestFormationStore(), TestFormation(), "cycle-demo-w1", timeout_seconds=timeout
+            )
+        )
