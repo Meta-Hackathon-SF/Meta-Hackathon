@@ -87,11 +87,12 @@ def _text(value: Any, path: str, max_len: int) -> str:
     return value.strip()
 
 
-def _refs(value: Any, known: set[str], path: str) -> tuple[str, ...]:
+def _refs(value: Any, known: set[str], path: str, *,
+          allow_unknown: bool = False) -> tuple[str, ...]:
     if not isinstance(value, list) or not value:
         raise ValidationError(path, "expected non-empty array")
     for ref in value:
-        if not isinstance(ref, str) or ref not in known:
+        if not isinstance(ref, str) or (ref not in known and not allow_unknown):
             raise ValidationError(path, "unknown member ref")
     return tuple(value)
 
@@ -137,7 +138,10 @@ def build_m4_payload(themes: Sequence[RawTheme], answers: Sequence[PromptText],
             "blockedPairs": [list(p) for p in blocked_ref_pairs]}
 
 
-def parse_m4(output: Any, known_refs: set[str]) -> tuple[RawConstellation, ...]:
+def parse_m4(output: Any, known_refs: set[str], *,
+             allow_unknown_refs: bool = False) -> tuple[RawConstellation, ...]:
+    """Strict shape parse. allow_unknown_refs lets repair drop hallucinated refs instead of
+    rejecting the whole proposal; refs must still be strings."""
     data = load_object(output)
     _exact_keys(data, {"constellations"}, "output")
     items = data["constellations"]
@@ -153,7 +157,8 @@ def parse_m4(output: Any, known_refs: set[str]) -> tuple[RawConstellation, ...]:
         if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) \
                 or not 0 <= confidence <= 1:
             raise ValidationError(f"{path}.confidence", "expected number 0-1")
-        out.append((_refs(item["memberIds"], known_refs, f"{path}.memberIds"),
+        out.append((_refs(item["memberIds"], known_refs, f"{path}.memberIds",
+                          allow_unknown=allow_unknown_refs),
                     _text(item["sharedMeaning"], f"{path}.sharedMeaning", MAX_MEANING_CHARS),
                     float(confidence)))
     return tuple(out)

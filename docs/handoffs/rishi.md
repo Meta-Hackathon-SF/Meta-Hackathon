@@ -34,6 +34,12 @@ Fixture versus live evidence: fixture only. FakeMuse is scripted, so tests prove
 - Partition stress: 30/10, 80/40, 80/120, 200/300 (players/blocks) all valid in 0.02 s or less.
 - Still blocked for integration (not for my tasks): Patrik's OutputGuard and formationSnapshot are not on main or his branch; asked in #16.
 
+## M4 repair (added 2026-11-13)
+- server/matching/repair.py: near-valid M4 proposals (missing/duplicate/unknown ref, group of 6 or 2, blocked pair) are fixed by code instead of spending the re-solve call. Every legal Muse group is kept; evicted refs are re-placed by keyword affinity, with a swap step when groups are full. Touched groups get confidence capped at 0.49, so they read "looser this week". If fewer than half the refs survive in their Muse group, it gives up: re-solve, then Fallback grouping.
+- Fuzz: 375/400 random broken proposals repaired, 0 invalid outputs. Saves one Muse round trip (about 20 s observed) whenever a live M4 is near-valid.
+- `FormationResult.repaired_groups` (internal) counts groups code fixed; not a wire field.
+- Checks: pytest tests/matching -> 57 passed; ruff clean.
+
 ## Interface assumptions (need ACK, not blocking)
 - Patrik `@patrikliska13`: `formationSnapshot` returns `answers[].id` as one random ref per PLAYER (shared by all that player's answers), `weight` per answer, `idMap` ref->playerId, `blockedPairs` as playerIds. Players with any distress/harm flag this cycle are excluded entirely. Prevalence guesses will be needed for computeSky (shape TBD).
 - Adam `@adamzhang06`: Python MusePort is `async run(*, task, requestId, promptVersion, payload, signal=None) -> {"output", "evidence"}` with evidence in MuseCallEvidence wire shape. Formation sends `instructions` inside payload; tell me if the adapter owns system prompts instead.

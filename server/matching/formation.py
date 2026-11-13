@@ -15,7 +15,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from server.matching import prompts
-from server.matching.baseline import baseline_groups, same_group
+from server.matching.baseline import (
+    Similarity,
+    baseline_groups,
+    same_group,
+    similarity_matrix,
+)
 from server.matching.models import (
     COLOR_IDS,
     FALLBACK_LABEL,
@@ -31,6 +36,7 @@ from server.matching.models import (
     ValidationError,
 )
 from server.matching.ports import MusePortLike, OutputGuardLike, SnapshotSource
+from server.matching.repair import repair_proposal
 from server.matching.validation import violations
 
 DEFAULT_TIMEOUT_S = 45.0
@@ -119,18 +125,29 @@ class FormationService:
         return parsed or ()
 
     async def _groups(self, snap: FormationSnapshot, themes: Sequence[prompts.RawTheme],
-                      request_id: str, evidence: list[MuseCallEvidence]
-                      ) -> tuple[prompts.RawConstellation, ...] | None:
+                      request_id: str, evidence: list[MuseCallEvidence], sim: Similarity
+                      ) -> tuple[tuple[prompts.RawConstellation, ...], int] | None:
+        """M4 with repair. Returns (proposal, repairedGroups) or None.
+
+        Order per attempt: strict parse -> valid? accept -> near-valid? repair and accept ->
+        otherwise spend the re-solve attempt. Repair keeps Muse's grouping and marks touched
+        groups loose (confidence capped).
+        """
         known = set(snap.refs)
         blocked = snap.blocked_ref_pairs()
         payload = prompts.build_m4_payload(themes, snap.answers, blocked)
 
-        def parse(out: Any) -> tuple[prompts.RawConstellation, ...]:
-            proposal = prompts.parse_m4(out, known)
-            problems = violations([c[0] for c in proposal], known, blocked)
-            if problems:
-                raise ValidationError("output.constellations", ",".join(problems))
-            return proposal
+        def parse(out: Any) -> tuple[tuple[prompts.RawConstellation, ...], int]:
+            proposal = prompts.parse_m4(out, known, allow_unknown_refs=True)
+            clean = tuple(c for c in proposal if all(r in known for r in c[0]))
+            if len(clean) == len(proposal) and not violations(
+                    [c[0] for c in proposal], known, blocked):
+                return proposal, 0
+            fixed = repair_proposal(proposal, sorted(known), blocked, sim)
+            if fixed is None:
+                raise ValidationError("output.constellations", "not repairable")
+            return (tuple(zip(fixed.groups, fixed.meanings, fixed.confidences, strict=False)),
+                    sum(fixed.touched))
 
         return await self._try(
             lambda: self._call("constellation_formation", prompts.PROMPT_VERSION_M4,
@@ -174,6 +191,7 @@ class FormationService:
         timings: dict[str, int] = {}
         try:
             snap = FormationSnapshot.from_dict(await self._snapshots.formation_snapshot(cycle_id))
+            sim = similarity_matrix(snap.answers)
             baseline = baseline_groups(snap.answers, snap.blocked_ref_pairs())
         except ValidationError:
             return FormationResult("failed", error=MatchingError(
@@ -185,10 +203,11 @@ class FormationService:
         evidence: list[MuseCallEvidence] = []
         themes = await self._themes(snap, request_id, evidence)
         timings["m3Ms"] = int((self._clock() - started) * 1000)
-        proposal = await self._groups(snap, themes, request_id, evidence)
+        grouped = await self._groups(snap, themes, request_id, evidence, sim)
         timings["m4Ms"] = int((self._clock() - started) * 1000)
 
-        used_fallback = proposal is None
+        used_fallback = grouped is None
+        proposal, repaired = grouped if grouped is not None else ((), 0)
         if used_fallback:
             if not self._allow_fallback:
                 return FormationResult("failed", evidence=tuple(evidence), error=MatchingError(
@@ -225,4 +244,5 @@ class FormationService:
             for i, (_, label, desc, refs) in enumerate(themes))
         return FormationResult("ok", constellations=constellations, themes=theme_objs,
                                evidence=tuple(evidence), used_fallback=used_fallback,
+                               repaired_groups=repaired,
                                timings_ms=timings)
