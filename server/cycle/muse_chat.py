@@ -38,6 +38,7 @@ CATALOG_PATH = Path(__file__).resolve().parent / "data" / "catalog.json"
 KINDS = ("hangout", "supplies", "barter", "create")
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 _SENDER = re.compile(r"^(You|Muse|Member [1-9])$")
+_ID = re.compile(r"\b(?:mk|ev|v)-[a-z0-9-]+\b")
 _CLOCK = re.compile(r"^(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?$")
 _CONTACT = re.compile(r"(\d[\s.()-]?){7,}|@|https?:|www\.|\.(com|net|org|edu)\b", re.I)
 
@@ -49,7 +50,8 @@ INSTRUCTIONS = " ".join(
         "task=hangout: pick 1 or 2 eventIds that best fit the chat. Mention the event title. Do not mention items.",
         "task=supplies: pick 1 or 2 itemIds that best fit the chat. Say they are demo listings, not purchases.",
         "task=barter: tell the group to ask Campus Cafe, and say nothing is booked until the cafe agrees. You may pick the coffee set itemId.",
-        "task=create: you must include draft {title (3-60 chars), placeId (exactly one of the venue ids, e.g. v-quad), day (full weekday name, e.g. Saturday), time (24h HH:MM between 08:00 and 22:00, e.g. 14:00), description (under 160 chars)} built from what the group wants. If they name no place, pick the best venue. Say it is a draft they can create. Do not invent venues.",
+        "task=create: you must fill draftTitle (3-60 chars), draftPlaceId (one venue placeId from the catalog), draftDay (full weekday name), draftTime (24-hour HH:MM between 08:00 and 22:00) and draftDescription (under 160 chars) from what the group wants. If they name no place, pick the best venue. In text, say it is a draft they can create.",
+        "Never write any id in text; ids go only in itemIds, eventIds and draftPlaceId. In text use the names.",
     ]
 )
 
@@ -59,11 +61,10 @@ _SCHEMA = {
         "text": {"type": "string"},
         "itemIds": {"type": "array", "items": {"type": "string"}},
         "eventIds": {"type": "array", "items": {"type": "string"}},
-        "draft": {
-            "type": "object",
-            "properties": {
-                k: {"type": "string"} for k in ("title", "placeId", "day", "time", "description")
-            },
+        # Flat draft fields: models fill these more reliably than a nested object.
+        **{
+            f"draft{k}": {"type": "string"}
+            for k in ("Title", "PlaceId", "Day", "Time", "Description")
         },
     },
     "required": ["text"],
@@ -150,6 +151,11 @@ class MuseChat:
         self._event_ids = {e["eventId"] for e in data["events"]}
         venues = {v["placeId"]: v["name"] for v in data["venues"]}
         self._venue_names = venues
+        self._id_names = {
+            **venues,
+            **{i["itemId"]: i["title"] for i in data["items"]},
+            **{e["eventId"]: e["title"] for e in data["events"]},
+        }
         self._facts = {
             "events": [
                 {
@@ -259,6 +265,27 @@ class MuseChat:
                 return day.capitalize()
         return ""
 
+    @staticmethod
+    def _draft_fields(parsed: Mapping[str, Any]) -> dict[str, Any] | None:
+        """The draft from flat draftX fields, or a nested draft object (possibly a JSON string)."""
+        flat = {
+            k: parsed.get("draft" + k[0].upper() + k[1:])
+            for k in ("title", "placeId", "day", "time", "description")
+        }
+        if any(isinstance(v, str) and v.strip() for v in flat.values()):
+            return flat
+        nested = parsed.get("draft") or parsed.get("event")
+        if isinstance(nested, str):
+            try:
+                nested = json.loads(nested)
+            except ValueError:
+                return None
+        return nested if isinstance(nested, dict) else None
+
+    def _names_for_ids(self, text: str) -> str:
+        """Safety net: any catalog id that slips into the reply is shown by its name."""
+        return _ID.sub(lambda m: self._id_names.get(m.group(0), m.group(0)), text)
+
     def clean_draft(self, value: Any) -> dict[str, str] | None:
         """Normalizes common variants, then applies the same hard limits: approved
         venue, a weekday, 08:00-22:00, title 3-60 chars, no contact details."""
@@ -343,7 +370,7 @@ class MuseChat:
         if not text:
             raise MuseChatError("PROVIDER_UNAVAILABLE")
         return {
-            "text": text,
+            "text": self._names_for_ids(text),
             "source": "live",
             "itemIds": self._ids(parsed.get("itemIds"), self._item_ids)
             if kind in ("supplies", "barter")
@@ -351,5 +378,5 @@ class MuseChat:
             "eventIds": self._ids(parsed.get("eventIds"), self._event_ids)
             if kind == "hangout"
             else [],
-            "draft": self.clean_draft(parsed.get("draft")) if kind == "create" else None,
+            "draft": self.clean_draft(self._draft_fields(parsed)) if kind == "create" else None,
         }
