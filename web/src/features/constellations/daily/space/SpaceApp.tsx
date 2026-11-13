@@ -5,7 +5,7 @@
  * chat, reveal and events are labeled previews until contract 3.0.0 producers land.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { MoonStar } from "lucide-react";
 import { currentUser } from "../../../../data/demo";
 import { getPrivacyClient, usePrivacySession, type SessionView } from "../../privacy";
@@ -17,7 +17,6 @@ import { CANVAS_SCREENS, DARK_SCREENS, SCREENS, weekModel, type Screen } from ".
 import { CanvasScreen, ChatScreen, RevealedScreen } from "./dark";
 import { AnswerScreen, DistressScreen, EventsScreen, FollowUpScreen, HomeBar, InviteScreen, JoinScreen, SettingsScreen, type LocalPrefs } from "./screens";
 import { SkyHome } from "./skyhome";
-import ScopeOverlay from "./ScopeOverlay";
 import "./space.css";
 
 const PREFS_KEY = "spc-prefs";
@@ -58,6 +57,15 @@ function useSpaceNav() {
   return { screen, dayParam: Number.isInteger(dayParam) && dayParam >= 1 && dayParam <= 5 ? dayParam : null, go, wantsJoin: raw === "join" };
 }
 
+/** Demo-only answers used by "Skip to Sunday". Clearly labeled; never real player content. */
+const DEMO_ANSWERS = [
+  "Demo answer: the dining hall, usually with my floor.",
+  "Demo answer: that it's fine to change your major late.",
+  "Demo answer: the late-night robotics lab.",
+  "Demo answer: forgetting a birthday, if they own it.",
+  "Demo answer: midterms and missing home.",
+];
+
 function nextLabel(status: string | undefined, day: number | undefined): string {
   if (status === "open") return day && day < 5 ? "Next day" : "Lock week (Saturday)";
   if (status === "locked") return "Find people (forming)";
@@ -68,6 +76,19 @@ function nextLabel(status: string | undefined, day: number | undefined): string 
 function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleClient; cycleId: string | null; status?: string; day?: number; refresh: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const skipToSunday = async () => {
+    let cycle = cycleId ? (await client.current())?.cycle ?? null : null;
+    if (!cycle || cycle.status === "closed") cycle = cycle ? await client.reset(cycle.cycleId) : await client.createCycle();
+    const id = cycle.cycleId;
+    if (client.mode === "fixture" && cycle.status === "open") await client.topUp(id);
+    while (cycle.status === "open") {
+      const mine = await client.myAnswers(id);
+      for (let d = 1; d <= cycle.currentDay; d++)
+        if (!mine.some((a) => a.day === d)) await client.submit(id, { day: d as CycleDay, text: DEMO_ANSWERS[d - 1], source: "text" });
+      cycle = await client.advance(id);
+    }
+    while (cycle.status === "locked" || cycle.status === "forming") cycle = await client.advance(id);
+  };
   const act = async (work: () => Promise<unknown>) => {
     setBusy(true);
     setError(null);
@@ -102,6 +123,11 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
             Add synthetic players
           </button>
         )}
+        {status !== "revealed" && (
+          <button type="button" className="spc-btn spc-btn-primary spc-btn-sm" disabled={busy} onClick={() => void act(skipToSunday)} data-testid="spc-demo-skip">
+            Skip to Sunday (filled week)
+          </button>
+        )}
         <Link className="spc-btn spc-btn-gray spc-btn-sm" to={OPERATOR_PATH}>
           Operator console
         </Link>
@@ -111,7 +137,7 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
           {error}
         </p>
       )}
-      <p className="spc-fine">Try: answer today, then type "hopeless" on another day to see the support card.</p>
+      <p className="spc-fine">"Skip to Sunday" answers each weekday with a labeled demo answer, then locks, matches and reveals. Answer with "SYNTHETIC SAFETY TEST" to see the support card.</p>
     </aside>
   );
 }
@@ -242,6 +268,8 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
         matchOn={view.consent.matchAnswers}
         chatOn={view.consent.anonymousChat}
         revealsAt={cycle.revealsAt}
+        weekDay={week.day}
+        questionText={(d) => question(d)?.question.text}
       />
     );
   };
@@ -385,13 +413,7 @@ export default function SpaceApp() {
   const client = getCycleClient(PLAY_COMMUNITY);
   const { state, set, reload } = usePrivacySession(privacy, PLAY_COMMUNITY);
   const { go } = useSpaceNav();
-  const location = useLocation();
   const navigate = useNavigate();
-  const [scope, setScope] = useState(Boolean((location.state as { scope?: boolean } | null)?.scope));
-  const endScope = useCallback(() => {
-    setScope(false);
-    navigate({ search: location.search }, { replace: true, state: null });
-  }, [navigate, location.search]);
   const [epoch, setEpoch] = useState(0);
 
   let body: React.ReactNode;
@@ -445,10 +467,5 @@ export default function SpaceApp() {
       />
     );
 
-  return (
-    <>
-      {body}
-      {scope && <ScopeOverlay onDone={endScope} />}
-    </>
-  );
+  return body;
 }

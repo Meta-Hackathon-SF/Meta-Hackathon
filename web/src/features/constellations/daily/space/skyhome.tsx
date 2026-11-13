@@ -313,6 +313,56 @@ function AboutCard() {
   );
 }
 
+// ---------------------------------------------------------------- this week
+function WeekList({ week, question, go }: { week: WeekModel; question: (d: number) => DailyQuestion | undefined; go: Go }) {
+  const days = ([1, 2, 3, 4, 5] as CycleDay[]).filter((d) => d !== week.today);
+  return (
+    <section className="spc-card spc-list spc-weeklist" aria-labelledby="spc-week-title" data-testid="spc-weeklist">
+      <h3 id="spc-week-title" className="spc-list-title">
+        This week
+      </h3>
+      {days.map((d) => {
+        const a = week.answers.get(d);
+        const q = question(d);
+        const released = week.day > d || (week.day <= 5 && d <= week.day);
+        const canCatchUp = !a && week.day <= 5 && d < week.day;
+        const status = a ? (a.isCatchUp ? "Caught up" : "Answered") : canCatchUp ? "Catch up" : released ? "Missed" : `Opens ${DAY_LONG[d - 1]}`;
+        const badgeCls = a ? "" : canCatchUp ? " is-open" : " is-future";
+        const body = (
+          <>
+            <span className={`spc-day-badge${badgeCls}`} style={{ background: dayHex(d), color: a ? "#fff" : dayHex(d) }} aria-hidden="true">
+              {a ? "✓" : DAY_SHORT[d - 1]}
+            </span>
+            <span className="spc-list-main">
+              <b>{DAY_LONG[d - 1]}</b>
+              {released && q ? q.question.text : "Question not out yet"}
+            </span>
+            <span className={`spc-status-pill${a ? " is-done" : canCatchUp ? " is-action" : ""}`}>{canCatchUp ? "Answer" : status}</span>
+          </>
+        );
+        if (canCatchUp)
+          return (
+            <button type="button" key={d} className="spc-list-row" onClick={() => go("answer", d)} data-testid={`spc-catchup-${d}`} aria-label={`Catch up: ${DAY_LONG[d - 1]}'s question`}>
+              {body}
+            </button>
+          );
+        if (a)
+          return (
+            <button type="button" key={d} className="spc-list-row" onClick={() => go("daily", d)} aria-label={`${DAY_LONG[d - 1]}: ${status}. See that day's stars`}>
+              {body}
+            </button>
+          );
+        return (
+          <div key={d} className="spc-list-row is-static">
+            {body}
+          </div>
+        );
+      })}
+      {week.catchUps.length > 0 && <p className="spc-fine spc-weeklist-foot">Catch-ups close Saturday at noon. They don't extend your streak.</p>}
+    </section>
+  );
+}
+
 // ---------------------------------------------------------------- page
 export function SkyHome({
   client,
@@ -419,23 +469,7 @@ export function SkyHome({
             />
           )}
 
-          {week.catchUps.length > 0 && (
-            <section className="spc-card spc-list" aria-labelledby="spc-catchup">
-              <h3 id="spc-catchup" className="spc-list-title">
-                Catch up
-              </h3>
-              {week.catchUps.map((d) => (
-                <button type="button" key={d} className="spc-list-row" onClick={() => go("answer", d)} data-testid={`spc-catchup-${d}`}>
-                  <span className="spc-list-icon" style={{ background: dayHex(d) }} aria-hidden="true" />
-                  <span className="spc-list-main">
-                    {DAY_LONG[d - 1]}'s question
-                    <small>Closes Saturday at noon</small>
-                  </span>
-                  <span className="spc-chip-btn">Answer</span>
-                </button>
-              ))}
-            </section>
-          )}
+          <WeekList week={week} question={question} go={go} />
 
           {week.day === 6 && (
             <section className="spc-card spc-today" data-testid="spc-weekend-sat">

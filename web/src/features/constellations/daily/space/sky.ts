@@ -22,6 +22,8 @@ export interface SkyInput {
   noMatch: boolean;
   /** Freeze at the end state (reduced motion). */
   still: boolean;
+  /** Week sky: highlight one day's lines (1-5); others dim. */
+  focusDay?: number | null;
 }
 
 export interface SkyHooks {
@@ -383,7 +385,7 @@ export class SkyRenderer {
     const { W, H } = this;
     ctx.globalAlpha = 1;
     ctx.fillStyle = "#03081A";
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(-W, -H, W * 3, H * 3);
     if (input.still) el = 1e6;
     const ans = input.answered;
     let settled = false;
@@ -404,6 +406,8 @@ export class SkyRenderer {
         break;
       }
       case "sky": {
+        const fd = input.focusDay ?? null;
+        const dimFor = (d: number) => (fd === null || fd === d ? 1 : 0.18);
         this.drawBg(ctx, el, ts, true, 1);
         this.drawNb(ctx, ts, 1);
         this.drawAmbient(ctx, ts, 1);
@@ -413,19 +417,27 @@ export class SkyRenderer {
         ctx.lineWidth = 0.8;
         for (const sd of this.second)
           if (ans.has(sd.d)) {
-            for (let i = 0; i < sd.pts.length - 1; i++) this.seg(ctx, sd.pts[i], sd.pts[i + 1], 6, 4, 1, 0.12 * k);
-            sd.pts.slice(1).forEach((p) => this.spot(ctx, 2, p.x, p.y, 5, (p.a ?? 0.4) * k * this.lvl(p, 0, ts, false)));
+            const dm = dimFor(sd.d);
+            for (let i = 0; i < sd.pts.length - 1; i++) this.seg(ctx, sd.pts[i], sd.pts[i + 1], 6, 4, 1, 0.12 * k * dm);
+            sd.pts.slice(1).forEach((p) => this.spot(ctx, 2, p.x, p.y, 5, (p.a ?? 0.4) * k * dm * this.lvl(p, 0, ts, false)));
           }
         for (const e of Object.values(this.emap)) {
           const ds = e.days.filter((d) => ans.has(d));
           if (!ds.length) continue;
+          if (fd !== null) {
+            const on = ds.includes(fd);
+            ctx.strokeStyle = on ? `rgb(${RGB[fd - 1]})` : "#fff";
+            ctx.lineWidth = on ? 1.8 : 0.8;
+            this.seg(ctx, e.a, e.b, e.a.id === "me" ? 11 : 8, e.b.id === "me" ? 11 : 8, 1, (on ? 0.95 : 0.08) * k);
+            continue;
+          }
           const multi = ds.length > 1;
           ctx.strokeStyle = multi ? "#fff" : `rgb(${RGB[ds[0] - 1]})`;
           ctx.lineWidth = multi ? 1.4 : 1.1;
           this.seg(ctx, e.a, e.b, e.a.id === "me" ? 11 : 8, e.b.id === "me" ? 11 : 8, 1, (multi ? 0.45 + 0.1 * ds.length : 0.5) * k);
         }
         for (let d = 1; d <= 5; d++)
-          if (ans.has(d)) this.days[d].forEach((cn) => cn.pts.forEach((p) => p.id[0] === "x" && this.spot(ctx, 5 + d, p.x, p.y, 17, k * this.lvl(p, 0, ts, false))));
+          if (ans.has(d)) this.days[d].forEach((cn) => cn.pts.forEach((p) => p.id[0] === "x" && this.spot(ctx, 5 + d, p.x, p.y, fd === d ? 20 : 17, k * dimFor(d) * this.lvl(p, 0, ts, false))));
         this.close.forEach((p) => {
           let n = 0;
           for (let d = 1; d <= 5; d++) if (ans.has(d) && this.days[d].some((cn) => cn.pts.includes(p))) n++;

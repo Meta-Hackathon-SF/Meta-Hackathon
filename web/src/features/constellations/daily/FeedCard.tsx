@@ -22,7 +22,6 @@ import "./space/space.css";
 
 const COMMUNITY = PLAY_COMMUNITY;
 const PAGE = CONSTELLATIONS_PATH;
-const SCOPE = { scope: true };
 
 function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
   const { data, refresh } = useDaily(client);
@@ -44,7 +43,7 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
   const send = async () => {
     const text = draft.trim();
     if (!text || busy) return;
-    if (!joined || !cycle || !open) return navigate(`${PAGE}`, { state: SCOPE });
+    if (!joined || !cycle || !open) return navigate(`${PAGE}`);
     setBusy(true);
     setError(null);
     try {
@@ -81,12 +80,12 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
       <div className="spc-feed-head">
         <SpaceAvatar />
         <div className="spc-grow">
-          <Link to={PAGE} state={SCOPE} className="spc-feed-name">
+          <Link to={PAGE} className="spc-feed-name">
             {FEATURE_NAME}
           </Link>
           <div className="spc-post-meta">{meta}</div>
         </div>
-        <Link to={PAGE} state={SCOPE} className="spc-btn spc-btn-tint spc-btn-sm spc-pill-btn">
+        <Link to={PAGE} className="spc-btn spc-btn-tint spc-btn-sm spc-pill-btn">
           {joined ? "Open Space" : "Join"}
         </Link>
       </div>

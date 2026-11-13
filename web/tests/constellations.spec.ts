@@ -179,7 +179,7 @@ test("streak: Mon and Tue on the day -> 2-day streak; a missed Wednesday shows i
   await advance(page, 2); // Wednesday, then Wednesday ends
   await page.goto(DAILY);
   await expect(page.getByTestId("spc-today")).not.toContainText("streak");
-  await expect(page.getByTestId("spc-catchup-3")).toContainText("Wednesday's question");
+  await expect(page.getByTestId("spc-catchup-3")).toHaveAccessibleName("Catch up: Wednesday's question");
   await expect(page.getByTestId("spc-week-5").getByRole("button")).toHaveCount(0); // future days not answerable
   await page.getByTestId("spc-catchup-3").click();
   await expect(page.getByRole("heading", { name: "Catch up · Wednesday" })).toBeVisible();

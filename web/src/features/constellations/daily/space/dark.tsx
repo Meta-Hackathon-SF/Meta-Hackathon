@@ -22,12 +22,17 @@ export interface CanvasProps {
   matchOn: boolean;
   chatOn: boolean;
   revealsAt: string;
+  /** 1-5 question days, 6 Saturday (locked), 7 Sunday, 8 over. */
+  weekDay: number;
+  /** Question text for a released day. */
+  questionText: (day: number) => string | undefined;
 }
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
 export function CanvasScreen(p: CanvasProps) {
   const [settled, setSettled] = useState(false);
+  const [focus, setFocus] = useState<number | null>(null);
   const countRef = useRef<HTMLDivElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
 
@@ -40,7 +45,8 @@ export function CanvasScreen(p: CanvasProps) {
   return (
     <div className="spc-stage" data-testid={`spc-canvas-${p.mode}`}>
       <SkyCanvas
-        input={{ mode: p.mode, answered: p.answered, viewDay: p.viewDay, emptyDay: p.dailyEmpty, noMatch }}
+        input={{ mode: p.mode, answered: p.answered, viewDay: p.viewDay, emptyDay: p.dailyEmpty, noMatch, focusDay: p.mode === "sky" ? focus : null }}
+        interactive={p.mode === "sky" || p.mode === "daily" || (p.mode === "main" && settled)}
         hooks={{
           onCount: (k) => {
             if (countRef.current) countRef.current.textContent = fmt(target * k);
@@ -93,18 +99,45 @@ export function CanvasScreen(p: CanvasProps) {
                 <span className="sr-only">{fmt(skyTotal)} </span>answers this week
               </div>
             </div>
-            <div className="spc-legend">
-              {[1, 2, 3, 4, 5].map((d) => (
-                <span key={d} style={{ opacity: p.answered.has(d) ? 1 : 0.3 }}>
-                  <b>{(PREVIEW_DAY_COUNTS[d - 1] / 1000).toFixed(1)}k</b>
-                  <i style={{ background: dayHex(d), boxShadow: `0 0 8px ${dayHex(d)}` }} />
-                  <small>{DAY_SHORT[d - 1]}</small>
+            {focus !== null && (
+              <p className="spc-focus-q" data-testid="spc-focus-q">
+                <i style={{ background: dayHex(focus) }} />
+                <span>
+                  <b>{DAY_LONG[focus - 1]}'s lines</b> {p.questionText(focus) ?? ""}
                 </span>
-              ))}
+              </p>
+            )}
+            <div className="spc-legend" role="group" aria-label="Highlight a day's lines">
+              {[1, 2, 3, 4, 5].map((d) => {
+                const on = p.answered.has(d);
+                return (
+                  <button
+                    type="button"
+                    key={d}
+                    disabled={!on}
+                    aria-pressed={focus === d}
+                    aria-label={`${DAY_LONG[d - 1]}${on ? "" : " (not answered)"}`}
+                    className={focus === d ? "is-on" : focus !== null ? "is-dim" : ""}
+                    onClick={() => setFocus(focus === d ? null : d)}
+                  >
+                    <b>{(PREVIEW_DAY_COUNTS[d - 1] / 1000).toFixed(1)}k</b>
+                    <i style={{ background: dayHex(d), boxShadow: `0 0 8px ${dayHex(d)}` }} />
+                    <small>{DAY_SHORT[d - 1]}</small>
+                  </button>
+                );
+              })}
             </div>
-            <button type="button" className="spc-btn spc-btn-white spc-btn-lg spc-stretch" onClick={() => p.go(p.revealed ? "main" : "forming")}>
-              {p.revealed ? "See my constellation" : "Find my people"}
-            </button>
+            {p.weekDay === 6 && (
+              <button type="button" className="spc-btn spc-btn-white spc-btn-lg spc-stretch" onClick={() => p.go("forming")}>
+                Find my people
+              </button>
+            )}
+            {p.weekDay >= 7 && p.revealed && (
+              <button type="button" className="spc-btn spc-btn-white spc-btn-lg spc-stretch" onClick={() => p.go("main")}>
+                See my constellation
+              </button>
+            )}
+            {p.weekDay <= 5 && <p className="spc-stage-note">Tap a day to see its lines. Your people are found Saturday after the week locks.</p>}
           </>
         )}
         {p.mode === "forming" && (
