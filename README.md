@@ -123,6 +123,9 @@ No server exists yet, so there is no server setup. Kai adds server setup instruc
 
 Server setup is added by Kai when the FastAPI app is restored (step 2).
 
+## Hosting (plan, not deployed)
+Supabase Postgres for the workflow database (decided). Web host and API host are still open; the API needs one always-on container because it runs background jobs, live chat streams and a SQLite privacy file, so it can't run as serverless functions. Requirements, settings, cookie setup and blockers: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## Coordination
 Full protocol: [docs/COORDINATION.md](docs/COORDINATION.md). Every agent follows it.
 
