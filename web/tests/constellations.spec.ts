@@ -198,7 +198,7 @@ test("streak: Mon and Tue on the day -> 2-day streak; a missed Wednesday shows i
   await advance(page, 2); // Wednesday, then Wednesday ends
   await page.goto(DAILY);
   await expect(page.locator(".spc-streak-chip")).toHaveCount(0);
-  await expect(page.getByTestId("spc-catchup-3")).toHaveAccessibleName("Catch up: Wednesday's question");
+  await expect(page.getByTestId("spc-catchup-3")).toHaveAccessibleName("Wednesday: Catch up");
   await expect(page.getByTestId("spc-week-5").getByRole("button")).toHaveCount(0); // future days not answerable
   await page.getByTestId("spc-catchup-3").click();
   await expect(page.getByRole("heading", { name: "Catch up · Wednesday" })).toBeVisible();
@@ -570,4 +570,29 @@ test("Marketplace and Events use one demo catalog: item pages, register, and a M
     });
   });
   expect(drift).toEqual([]);
+});
+
+test("Space inputs remain readable and week checks stay on one row", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+  await page.goto(DAILY);
+  const name = page.getByTestId("cstp-name");
+  await expect(name).toBeVisible();
+  const field = await name.boundingBox();
+  expect(field!.height).toBeGreaterThanOrEqual(48);
+  expect(field!.width).toBeGreaterThan(250);
+  await join(page);
+  await newCycle(page);
+  await page.goto(DAILY);
+  const answerBox = page.getByTestId("spc-today").getByRole("textbox", { name: "Your answer" });
+  await answerBox.fill(LONG);
+  await expect(answerBox).toHaveValue(LONG);
+  await expect(answerBox).toHaveCSS("color", "rgb(28, 30, 33)");
+  await expect(answerBox).not.toHaveAttribute("placeholder");
+  expect((await answerBox.boundingBox())!.height).toBeGreaterThanOrEqual(112);
+  const rows = await page.locator(".spc-week-item").evaluateAll((items) => items.map((item) => Math.round(item.getBoundingClientRect().top)));
+  expect(new Set(rows).size).toBe(1);
+  await page.locator(".spc-week-static").first().focus();
+  await expect(page.locator("#spc-day-tip-1")).toBeVisible();
+  await expect(page.locator("#spc-day-tip-1")).toContainText("Where did you eat");
+  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Facebook Space" })).toHaveCount(0);
 });

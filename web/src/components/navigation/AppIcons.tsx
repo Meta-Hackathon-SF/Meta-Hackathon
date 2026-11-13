@@ -126,23 +126,12 @@ export function GroupsIcon(props: AppIconProps) {
 }
 
 export function SpaceIcon(props: AppIconProps) {
-  const [a] = useGrad(1);
   return (
     <Svg {...props}>
-      <defs>
-        <Linear id={a} from="#3b6cff" to="#a440e0" x2={1} />
-      </defs>
-      <circle cx="18" cy="18" r="17" fill={`url(#${a})`} />
-      <g stroke="#fff" strokeWidth="1.5" strokeLinecap="round" opacity="0.85">
-        {SPACE_LINES.map(([a, b]) => (
-          <line key={`${a}-${b}`} x1={SPACE_STARS[a][0]} y1={SPACE_STARS[a][1]} x2={SPACE_STARS[b][0]} y2={SPACE_STARS[b][1]} />
-        ))}
+      <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        {SPACE_LINES.map(([a, b]) => <line key={`${a}-${b}`} x1={SPACE_STARS[a][0]} y1={SPACE_STARS[a][1]} x2={SPACE_STARS[b][0]} y2={SPACE_STARS[b][1]} />)}
       </g>
-      <g fill="#fff">
-        {SPACE_STARS.map(([x, y, r]) => (
-          <circle key={`${x}-${y}`} cx={x} cy={y} r={r} />
-        ))}
-      </g>
+      {SPACE_STARS.map(([x, y, r]) => <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill="currentColor" />)}
     </Svg>
   );
 }
@@ -275,18 +264,8 @@ function Tab({ size = 28, children }: { size?: number; children: ReactNode }) {
   );
 }
 
-export function SpaceTabIcon({ size, active }: TabIconProps) {
-  const k = 28 / 36; // SPACE_STARS are drawn on a 36 grid
-  return (
-    <Tab size={size}>
-      {SPACE_LINES.map(([a, b]) => (
-        <line key={`${a}-${b}`} x1={SPACE_STARS[a][0] * k} y1={SPACE_STARS[a][1] * k} x2={SPACE_STARS[b][0] * k} y2={SPACE_STARS[b][1] * k} strokeWidth={active ? 2.2 : 1.8} />
-      ))}
-      {SPACE_STARS.map(([x, y, r]) => (
-        <circle key={`${x}-${y}`} cx={x * k} cy={y * k} r={r * k * 1.45} fill={active ? "currentColor" : "none"} />
-      ))}
-    </Tab>
-  );
+export function SpaceTabIcon({ size = 28 }: TabIconProps) {
+  return <SpaceIcon size={size} />;
 }
 
 export function HomeTabIcon({ size, active }: TabIconProps) {

@@ -120,7 +120,7 @@ export function LiveGroupThread({ thread, suggestions }: { thread: InboxThread; 
             <div key={l.local!.id} className="thread-line">
               {!l.local!.mine && (
                 <small className="thread-sender">
-                  {l.local!.fromMuse ? `${l.local!.source === "catalog" ? "Muse · catalog" : "Muse"} · only you see this` : l.local!.senderName}
+                  {l.local!.fromMuse ? `${l.local!.source === "catalog" ? "Catalog suggestions · Muse unavailable" : "Muse"} · only you see this` : l.local!.senderName}
                 </small>
               )}
               <p className={l.local!.mine ? "sent-message" : l.local!.fromMuse ? "muse-message" : "received-message"}>{l.local!.text}</p>

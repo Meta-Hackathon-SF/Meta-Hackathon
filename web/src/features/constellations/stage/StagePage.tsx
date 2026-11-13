@@ -17,6 +17,15 @@ import { cells, constellationMap, scatter, type Pt } from "./geometry";
 import "./stage.css";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+// The server marks a backup group inside its name (server/matching/models.py FALLBACK_LABEL).
+// The stage says so once per place instead of repeating the label on every name.
+const FALLBACK_LABEL = "Fallback grouping";
+const isBackup = (name: string | null): boolean => !!name && name.includes(FALLBACK_LABEL);
+function shortName(name: string | null): string | null {
+  if (!name) return null;
+  const short = name.replace(`(${FALLBACK_LABEL})`, "").trim();
+  return short && short !== FALLBACK_LABEL ? short : null;
+}
 const POLL_MS = 1500;
 const SLOT_COLOR: Record<Slot, string> = { A: "var(--a)", B: "var(--b)" };
 
@@ -112,10 +121,10 @@ function CommunitySky({ view, phase }: { view: StageView; phase: Phase }) {
       map.stars.forEach((p) => pos.push({ x: ox + p.x, y: oy + p.y }));
       map.edges.forEach(([a, b]) => lines.push([pos[start + a], pos[start + b]]));
       for (const s of g.slots) slotDot[s] = start;
-      labels.push({ x: cell.cx, y: cell.cy + cell.ch * 0.42, name: g.name ?? "", slot: g.slots[0] ?? null });
+      labels.push({ x: cell.cx, y: cell.cy + cell.ch * 0.42, name: shortName(g.name) ?? "", slot: g.slots[0] ?? null });
       if (g.slots[0]) {
         const xs = map.stars.map((p) => ox + p.x), ys = map.stars.map((p) => oy + p.y);
-        const half = ((g.name ?? "").length * 7.2) / 2 + 8; // the bold name under the stars
+        const half = ((shortName(g.name) ?? "").length * 7.2) / 2 + 8; // the bold name under the stars
         const x = Math.min(Math.min(...xs) - 12, cell.cx - half), y = Math.min(...ys) - 12;
         const right = Math.max(Math.max(...xs) + 12, cell.cx + half);
         boxes.push({ x, y, w: right - x, h: cell.cy + cell.ch * 0.42 + 8 - y, slot: g.slots[0] });
@@ -265,9 +274,10 @@ function Phone({ panel, view, phase }: { panel: StagePanel; view: StageView; pha
             <div className="stg-result" data-testid={`stage-result-${panel.slot}`}>
               <StarMap seed={panel.constellation.mapSeed} size={panel.constellation.size} color={color} />
               <small>{phase === "revealed" ? "Their constellation" : "Placed, not yet revealed"}</small>
-              {panel.constellation.name && <strong>{panel.constellation.name}</strong>}
+              {shortName(panel.constellation.name) && <strong>{shortName(panel.constellation.name)}</strong>}
               <span>
-                {panel.constellation.size} people{panel.constellation.isLooseMatch ? " · loose match" : ""}
+                {panel.constellation.size} people
+                {isBackup(panel.constellation.name) ? " · backup grouping" : panel.constellation.isLooseMatch ? " · loose match" : ""}
               </span>
             </div>
           ) : (
