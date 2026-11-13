@@ -47,7 +47,8 @@ const INSTRUCTIONS = [
   "task=hangout: pick 1 or 2 eventIds that best fit the chat. Mention the event title. Do not mention items.",
   "task=supplies: pick 1 or 2 itemIds that best fit the chat. Say they are demo listings, not purchases.",
   "task=barter: tell the group to ask Campus Cafe, and say nothing is booked until the cafe agrees. You may pick the coffee set itemId.",
-  "task=create: you must include draft {title (3-60 chars), placeId (exactly one of the venue ids, e.g. v-quad), day (full weekday name, e.g. Saturday), time (24h HH:MM between 08:00 and 22:00, e.g. 14:00), description (under 160 chars)} built from what the group wants. If they name no place, pick the best venue. Say it is a draft they can create. Do not invent venues.",
+  "task=create: you must fill draftTitle (3-60 chars), draftPlaceId (one venue placeId from the catalog), draftDay (full weekday name), draftTime (24-hour HH:MM between 08:00 and 22:00) and draftDescription (under 160 chars) from what the group wants. If they name no place, pick the best venue. In text, say it is a draft they can create.",
+  "Never write any id in text; ids go only in itemIds, eventIds and draftPlaceId. In text use the names.",
 ].join(" ");
 
 export interface MuseConfig {
@@ -168,16 +169,11 @@ export async function handleMuseChat(body: unknown, config: MuseConfig | null, c
                 text: { type: "string" },
                 itemIds: { type: "array", items: { type: "string" } },
                 eventIds: { type: "array", items: { type: "string" } },
-                draft: {
-                  type: "object",
-                  properties: {
-                    title: { type: "string" },
-                    placeId: { type: "string" },
-                    day: { type: "string" },
-                    time: { type: "string" },
-                    description: { type: "string" },
-                  },
-                },
+                draftTitle: { type: "string" },
+                draftPlaceId: { type: "string" },
+                draftDay: { type: "string" },
+                draftTime: { type: "string" },
+                draftDescription: { type: "string" },
               },
               required: ["text"],
             },
@@ -203,7 +199,16 @@ export async function handleMuseChat(body: unknown, config: MuseConfig | null, c
         source: "live",
         itemIds: kind === "supplies" || kind === "barter" ? ids(parsed.itemIds, itemIds) : [],
         eventIds: kind === "hangout" ? ids(parsed.eventIds, eventIds) : [],
-        draft: kind === "create" ? cleanDraft(parsed.draft, venueIds, venueNames) : null,
+        draft:
+          kind === "create"
+            ? cleanDraft(
+                parsed.draftTitle
+                  ? { title: parsed.draftTitle, placeId: parsed.draftPlaceId, day: parsed.draftDay, time: parsed.draftTime, description: parsed.draftDescription }
+                  : parsed.draft,
+                venueIds,
+                venueNames,
+              )
+            : null,
       },
     };
   } catch (error) {
