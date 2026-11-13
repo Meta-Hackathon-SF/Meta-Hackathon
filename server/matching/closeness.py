@@ -15,7 +15,7 @@ owners' ACKs, see docs/DECISIONS.md). Code only, no model call.
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from itertools import combinations
 
 from .baseline import cosine, player_vectors
@@ -125,11 +125,16 @@ def heat_bucket(count: int) -> str | None:
     return "10+" if count >= 10 else "6-9" if count >= 6 else "3-5"
 
 
-def event_heat(snap: FormationSnapshot, viewer_ref: str) -> list[dict[str, str]]:
+def event_heat(
+    snap: FormationSnapshot, viewer_ref: str, approved_event_ids: Collection[str]
+) -> list[dict[str, str]]:
     """D010 "Where people like you are going": per event id, how many players
     similar to the viewer are interested, bucketed and thresholded by code.
-    Only players who opted in to activity are counted; never who they are."""
-    if viewer_ref not in snap.id_map:
+    Only players who opted in to activity are counted; never who they are.
+    Only events in `approved_event_ids` (Adam's catalog) are counted; an empty
+    allowlist shows nothing, so an unapproved or invented event never appears."""
+    approved = frozenset(approved_event_ids)
+    if viewer_ref not in snap.id_map or not approved:
         return []
     others = [r for r in snap.refs if r != viewer_ref and r in snap.activity]
     scores = {(a, b): s for a, b, s in pair_closeness(snap, [viewer_ref, *others])}
@@ -139,6 +144,7 @@ def event_heat(snap: FormationSnapshot, viewer_ref: str) -> list[dict[str, str]]
         if scores.get(pair(viewer, snap.id_map[ref]), 0.0) < SIMILAR_FLOOR:
             continue
         for event in snap.activity[ref].event_ids:
-            counts[event] = counts.get(event, 0) + 1
+            if event in approved:
+                counts[event] = counts.get(event, 0) + 1
     rows = [{"eventId": e, "bucket": b} for e, n in counts.items() if (b := heat_bucket(n))]
     return sorted(rows, key=lambda r: (-counts[r["eventId"]], r["eventId"]))

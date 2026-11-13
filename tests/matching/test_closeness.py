@@ -132,6 +132,20 @@ def test_event_heat_thresholds_and_buckets():
     )
     act = {f"s{i}": {"eventIds": ["e-games"] + (["e-rare"] if i < 2 else [])} for i in range(4)}
     act["x"] = {"eventIds": ["e-games"]}
-    rows = event_heat(snap(answers, act), "v")
+    approved = {"e-games", "e-rare"}
+    rows = event_heat(snap(answers, act), "v", approved)
     assert rows == [{"eventId": "e-games", "bucket": "3-5"}]  # e-rare has 2: hidden; x not similar
     assert "p-s0" not in str(rows)
+
+
+def test_event_heat_only_counts_approved_events():
+    from server.matching.closeness import event_heat
+
+    answers = [("v", "board games in the dining hall")] + [
+        (f"s{i}", "board games in the dining hall") for i in range(4)
+    ]
+    act = {f"s{i}": {"eventIds": ["e-games", "e-invented"]} for i in range(4)}
+    rows = event_heat(snap(answers, act), "v", {"e-games"})
+    assert rows == [{"eventId": "e-games", "bucket": "3-5"}]
+    assert "e-invented" not in str(rows)
+    assert event_heat(snap(answers, act), "v", set()) == []  # no allowlist: fail closed
