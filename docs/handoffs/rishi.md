@@ -25,6 +25,7 @@ Fixture versus live evidence: fixture only. FakeMuse is scripted, so tests prove
 - server/matching/live_eval.py: `python -m server.matching.live_eval --players 30 [--live]`. Offline run through Adam's FixtureMuse: 30 synthetic players -> 6 constellations of 5, no fallback, evidence M3/M4/M5/M8 all `replay`.
 - Live timing pending: no MUSE_API_KEY in this environment. Run `python -m server.matching.live_eval --players 30 --live` with MUSE env set and record formationTimingsMs here.
 - Kai: compose with `register_formation_specs(registry)` when building the shared adapter.
+- Formation debug UI: `web/src/features/constellations/formation` exports `FormationDebug` + `parseFormationDebug` (ids only, "Operator only", Fallback grouping badge, Muse chips). @willapat mounts it in the operator console.
 - Checks: pytest tests/matching -> 46 passed; ruff clean.
 
 ## Interface assumptions (need ACK, not blocking)
