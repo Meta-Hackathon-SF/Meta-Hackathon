@@ -128,7 +128,7 @@ function placeDay(cycleId: string, day: number, answer: DailyAnswer): DailyConst
         y: Math.min(0.92, Math.max(0.08, cy + Math.sin(angle) * reach * 0.8)),
       };
     });
-    return { constellationId: `c-fixture-${day}-${i + 1}`, starIndices: indices, brightness: bands[i], anchors };
+    return { constellationId: `c-fixture-${day}-${i + 1}`, starIndices: indices, brightness: bands[i], anchors, memberCount: size, isFallback: true, museEvidence: null };
   });
 }
 

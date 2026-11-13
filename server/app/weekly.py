@@ -57,7 +57,8 @@ from server.privacy import (
 )
 from server.privacy import build_router as privacy_router
 from server.privacy.fixtures import seed_players
-from server.providers import KeywordMusePort, TaskRegistry, build_muse_adapter, load_muse_config
+from server.providers import KeywordMusePort, TaskRegistry, load_muse_config
+from server.providers.router import build_muse_router
 
 VERIFIED_TOKEN = contextvars.ContextVar("verified_session_token", default=None)
 
@@ -118,7 +119,7 @@ def build_weekly_app(
     base_muse = (
         muse_factory(registry)
         if muse_factory is not None
-        else build_muse_adapter(registry, load_muse_config())
+        else build_muse_router(registry, load_muse_config())
     )
     muse = ScopedMuse(base_muse, repository)
     privacy = PrivacyService(privacy_store, clock=clock)
@@ -268,15 +269,31 @@ def build_weekly_app(
             data = state.records.get("formations", {}).get(cycleId)
             if not data:
                 raise ServiceError("NOT_FOUND")
-            _ = data["privateFormation"]
-        # Actual baseline groups are not part of FormationResult. Never invent a
-        # comparison from baselineAgrees flags; wait for the producer's artifact.
-        raise ServiceError("PROVIDER_UNAVAILABLE")
+            debug = (data["privateFormation"] or {}).get("debug") or {}
+        if not debug:
+            raise ServiceError("NOT_FOUND")
+        # Operator-only: player ids (synthetic in the demo), never answer text.
+        return {
+            "label": "Keyword grouping next to Muse grouping. Synthetic players.",
+            "keywordGroups": debug.get("baselineGroups", []),
+            "museGroups": debug.get("museGroups", []),
+            "splitByKeywords": debug.get("splitByBaseline", []),
+            "agreements": debug.get("agreements", 0),
+            "fallbackGrouping": bool(debug.get("usedFallback")),
+        }
 
     def sky_refresh(room_id, tasks):
         job_id = runtime.request_sky_for_room(room_id)
         if job_id is not None:
             tasks.add_task(runtime.run_job, job_id)
+
+    from server.app.v3_routes import build_v3_router
+
+    # Re-register the v3 handlers as plain routes: the registry accepts only direct HTTP routes.
+    for route in build_v3_router(
+        answers=answers, cycles=cycles, privacy_actor=privacy, muse=KeywordMusePort(muse), guard=guard
+    ).routes:
+        matching.routes.append(route)
 
     nudges = GuardedNudges(runtime, chat, muse, VERIFIED_TOKEN.get)
     planning = PlanningRuntime(

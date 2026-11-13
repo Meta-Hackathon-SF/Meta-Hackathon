@@ -212,6 +212,7 @@ export interface DailyConstellationView {
   constellationId: Id; // opaque; no name, no label
   starIndices: StarIndex[]; // includes myStarIndex; 3..dailyConstellationMaxStars
   brightness: Brightness; // per viewer, banded by code (D009)
+  sharedMeaning: string | null; // Muse line, OutputGuard-checked, null under 3 members or if guard fails
   anchors: SkyPoint[];
 }
 export interface DailyConstellationsView {
@@ -260,6 +261,7 @@ export interface MainConstellationView {
   roomIndices: RoomIndex[]; // 3..5 including me (V3.mainSize)
   anchors: { index: RoomIndex; t: number }[]; // t in 0..1 along the Meta-logo path, one per member
   brightness: Record<number, Brightness>; // keyed by room index; banded per viewer
+  sharedMeaning: string | null; // M4 line, guarded; null if guard fails
   revealedAt: IsoTime; roomExpiresAt: IsoTime; // revealedAt + V3.chatHours
 }
 /** `main: null` carries only an enum reason, never detail. */

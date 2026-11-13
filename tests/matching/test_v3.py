@@ -160,3 +160,40 @@ def test_main_never_puts_blocked_pair_together_and_uses_m4_evidence():
     assert out["status"] == "ok"
     for g in v3.store.load_main("c1"):
         assert not ({"a", "b"} <= set(g))
+
+
+class _Guard:
+    def check(self, text, against):
+        return {"ok": "never" not in text}
+
+
+def test_shared_meaning_is_guarded_and_only_for_three_plus():
+    class M(ThemeMuse):
+        pass
+
+    muse = M([["r-a", "r-b", "r-c", "r-d", "r-e"]])
+    v3 = FormationV3(muse, Src(PARAPHRASE), InMemoryDayStore(), guard=_Guard())
+    run(v3.closeDay("c1", 1))
+    view = v3.daily_view("c1", 1, "a", "tide", 5)
+    assert view["constellations"][0]["sharedMeaning"] == "y"
+    unguarded = FormationV3(muse, Src(PARAPHRASE), InMemoryDayStore())
+    run(unguarded.closeDay("c1", 1))
+    assert unguarded.daily_view("c1", 1, "a", "tide", 5)["constellations"][0]["sharedMeaning"] is None
+    bad = FormationV3(ThemeMuse([["r-a", "r-b", "r-c", "r-d", "r-e"]]), Src(PARAPHRASE),
+                      InMemoryDayStore(), guard=type("G", (), {"check": lambda s, t, a: {"ok": False}})())
+    run(bad.closeDay("c1", 1))
+    assert bad.daily_view("c1", 1, "a", "tide", 5)["constellations"][0]["sharedMeaning"] is None
+
+
+def test_daily_view_carries_drop_fields_and_quiet_signal_is_one_per_member():
+    from server.matching.v3 import QuietSignals
+
+    muse = ThemeMuse([["r-a", "r-b", "r-c", "r-d", "r-e"]])
+    v3 = FormationV3(muse, Src(PARAPHRASE), InMemoryDayStore(), guard=_Guard())
+    run(v3.closeDay("c1", 1))
+    c = v3.daily_view("c1", 1, "a", "tide", 5)["constellations"][0]
+    assert c["memberCount"] == 5 and c["isFallback"] is False
+    assert c["museEvidence"]["callType"] == "M3" and "text" not in str(c["museEvidence"])
+    q = QuietSignals()
+    assert q.send(c["constellationId"], "a")["sent"] is True
+    assert q.send(c["constellationId"], "a") == {"sent": False, "pulses": 1}

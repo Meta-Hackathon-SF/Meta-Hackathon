@@ -539,3 +539,18 @@ def test_operator_topup_records_canonical_synthetic_labels():
             labeled = state.records["syntheticPlayers"]
             assert len(labeled) == 38
             assert all(row["communityId"] == COMMUNITY for row in labeled.values())
+
+
+def test_v3_live_routes_serve_indices_only_from_the_verified_session():
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        players, cycle_id, _job = formed(env, client)
+        a = players[0]
+        close = call(client, a, "POST", f"/operator/cycles/{cycle_id}/close-day", key="close-1", json={"day": 1})
+        assert close.status_code == 200 and close.json()["status"] == "ok"
+        view = call(client, a, "GET", f"/cycles/{cycle_id}/days/1/constellations")
+        assert view.status_code == 200
+        body = view.json()
+        assert "myStarIndex" in body and all("starIndices" in c for c in body["constellations"])
+        assert "player" not in str(body).lower().replace("placement", "")
+        sky = call(client, a, "GET", f"/cycles/{cycle_id}/sky/stars")
+        assert sky.status_code == 200 and sky.json()["stars"]["count"] == 10000

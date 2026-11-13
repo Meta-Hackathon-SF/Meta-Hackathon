@@ -1,10 +1,12 @@
 /* Dark Space screens: the animated sky (daily / week / forming / main), the anonymous chat and mutual reveal. */
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ArrowUp, ChevronLeft, Minimize2 } from "lucide-react";
 import { DAY_LONG, DAY_SHORT, dayHex, type Screen } from "./model";
 import { DemoNote, StarField } from "./parts";
 import { CONTACT_PATTERN } from "./preview";
+import "./reveal.css";
+import { ensureConnection, sendFriendRequest, useConnections } from "./connections";
 import SkyCanvas from "./SkyCanvas";
 import Telescope from "./Telescope";
 import { chat, useChat } from "./chatStore";
@@ -35,6 +37,10 @@ export interface CanvasProps {
   weekDay: number;
   /** Question text for a released day. */
   questionText: (day: number) => string | undefined;
+  /** Muse-written line about what a daily constellation shares; shown only with 3 or more members. */
+  sharedMeaning?: string | null;
+  /** Member count of the constellation sharedMeaning belongs to. */
+  sharedMeaningMembers?: number;
 }
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
@@ -93,6 +99,7 @@ export function CanvasScreen(p: CanvasProps) {
             <div className="spc-stage-sub">
               <span className="sr-only">{fmt(target)} </span>people answered today
             </div>
+            {p.sharedMeaning && (p.sharedMeaningMembers ?? 0) >= 3 && <p className="spc-meaning">{p.sharedMeaning}</p>}
             {p.dailyEmpty && <p className="spc-stage-note">No one close yet. Check back after today closes.</p>}
             <button type="button" className="spc-btn spc-btn-glass spc-btn-lg spc-stretch" onClick={p.onBack}>
               Done
@@ -155,7 +162,7 @@ export function CanvasScreen(p: CanvasProps) {
               <div ref={barRef} />
             </div>
             <div className="spc-stage-sub" role="status">
-              {settled ? (p.revealed ? "Ready." : `Ready. It opens ${new Date(p.revealsAt).toLocaleString(undefined, { weekday: "long", hour: "numeric", minute: "2-digit" })}.`) : "Following one path, backing up when it dead-ends…"}
+              {settled ? (p.revealed ? "Ready." : `Ready. It opens ${new Date(p.revealsAt).toLocaleString(undefined, { weekday: "long", hour: "numeric", minute: "2-digit" })}.`) : "Finding your people…"}
             </div>
             {settled && (
               <button type="button" className="spc-btn spc-btn-white spc-btn-lg spc-stretch" onClick={() => (p.revealed ? p.go("main") : p.onBack())}>
@@ -439,7 +446,11 @@ export function ChatScreen({
   );
 }
 
+const PERSON = { id: "star-3", name: "Jordan Lee" };
+
 export function RevealedScreen({ onBack }: { onBack: () => void }) {
+  const navigate = useNavigate();
+  const requested = useConnections().some((c) => c.id === PERSON.id && c.requested);
   return (
     <div className="spc-screen spc-night spc-revealed">
       <StarField dense />
@@ -456,13 +467,31 @@ export function RevealedScreen({ onBack }: { onBack: () => void }) {
       </div>
       <p className="spc-reveal-sub">You and Star 3 both chose to reveal</p>
       <div className="spc-reveal-avatar" aria-hidden="true" />
-      <h2 className="spc-reveal-name">Jordan Lee</h2>
+      <h2 className="spc-reveal-name">{PERSON.name}</h2>
       <p className="spc-reveal-note">Only you two can see this. Everyone else still sees Star 3.</p>
       <div className="spc-flex" />
       <div className="spc-col spc-reveal-actions">
-        <button type="button" className="spc-btn spc-btn-primary spc-btn-lg">
-          Message Jordan
-        </button>
+        <div className="spc-reveal-pair">
+          <button
+            type="button"
+            className="spc-btn spc-btn-primary spc-btn-lg"
+            disabled={requested}
+            onClick={() => sendFriendRequest(PERSON.id, PERSON.name)}
+          >
+            {requested ? "Request sent" : "Add friend"}
+          </button>
+          <button
+            type="button"
+            className="spc-btn spc-btn-primary spc-btn-lg"
+            onClick={() => {
+              ensureConnection(PERSON.id, PERSON.name);
+              navigate("/messages");
+            }}
+          >
+            Message on Messenger
+          </button>
+          <p className="spc-reveal-sim">Simulated Facebook</p>
+        </div>
         <button type="button" className="spc-btn spc-btn-glass spc-btn-lg" onClick={onBack}>
           Back to chat
         </button>

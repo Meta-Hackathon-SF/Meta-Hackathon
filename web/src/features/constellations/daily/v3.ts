@@ -47,6 +47,14 @@ export interface DailyConstellation {
   /** Week-randomized star indices, never player ids. Includes myStarIndex. */
   starIndices: number[];
   brightness: Brightness;
+  /** Muse-written, guarded; only meaningful with 3 or more members. */
+  sharedMeaning?: string | null;
+  /** Members in this constellation, you included. */
+  memberCount?: number;
+  /** True when sharedMeaning came from the deterministic fallback, not Muse. */
+  isFallback?: boolean;
+  /** Evidence for the sharedMeaning Muse call, when one ran. */
+  museEvidence?: MuseCallEvidence | null;
   /** Layout positions in 0..1. */
   anchors: { index: number; x: number; y: number }[];
 }
@@ -167,6 +175,19 @@ const isoTime = (v: unknown): string =>
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(str(v)) ? (v as string) : bad();
 const STAR_MAX = 1_000_000;
 
+const MUSE_CALL_TYPES = ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10"] as const;
+function parseDropEvidence(v: unknown): MuseCallEvidence | null {
+  if (v === undefined || v === null) return null;
+  const o = rec(v);
+  return {
+    model: str(o.model).slice(0, 80),
+    source: oneOf(o.source, ["live", "replay"] as const),
+    generatedAt: isoTime(o.generatedAt),
+    latencyMs: int(o.latencyMs, 0, 3_600_000),
+    callType: oneOf(o.callType, MUSE_CALL_TYPES),
+  };
+}
+
 export function parseDailyConstellations(v: unknown): DailyConstellationsView {
   const o = rec(v);
   const myStarIndex = int(o.myStarIndex, 0, STAR_MAX);
@@ -180,6 +201,10 @@ export function parseDailyConstellations(v: unknown): DailyConstellationsView {
         constellationId: str(c.constellationId),
         starIndices,
         brightness: oneOf(c.brightness, ["bright", "mid", "faint"] as const),
+        sharedMeaning: typeof c.sharedMeaning === "string" && c.sharedMeaning.trim() ? c.sharedMeaning.trim().slice(0, 240) : null,
+        memberCount: c.memberCount === undefined ? starIndices.length : int(c.memberCount, 1, 1000),
+        isFallback: c.isFallback === undefined ? false : bool(c.isFallback),
+        museEvidence: parseDropEvidence(c.museEvidence),
         anchors: list(
           c.anchors,
           (a) => {

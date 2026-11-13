@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { Author } from "../types/feed";
 import { Link } from "react-router";
 import {
   Bookmark,
@@ -23,6 +24,7 @@ import Composer from "../components/feed/Composer";
 import { currentUser, notifications, people, photo } from "../data/demo";
 import { useApp } from "../state/context";
 import { useChat } from "../features/constellations/daily/space/chatStore";
+import { useConnections } from "../features/constellations/daily/space/connections";
 
 export function FriendsPage() {
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -116,6 +118,13 @@ export function GroupsPage() {
       title="Groups"
       description="Discover people who share your interests."
     >
+      <section className="card empty-state" data-testid="groups-space-card">
+        <h2>Facebook Space</h2>
+        <p>Answer one question a day with people in this Group. Anonymous until you both choose.</p>
+        <Link to="/space" className="button-primary">
+          Open Facebook Space
+        </Link>
+      </section>
       <h2 className="section-heading">Suggested for you</h2>
       <div className="discovery-grid">
         {[
@@ -468,7 +477,11 @@ export function NotificationsPage() {
 
 export function MessagesPage() {
   const space = useChat();
-  const [selected, setSelected] = useState(people[0]);
+  const connections = useConnections();
+  const [selected, setSelected] = useState<Author>(() => {
+    const last = connections[connections.length - 1];
+    return last ? { name: last.name, avatar: photo("avatar-jordan") } : people[0];
+  });
   const [showSpace, setShowSpace] = useState(true);
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<Record<string, string[]>>({});
@@ -490,7 +503,7 @@ export function MessagesPage() {
               <span>Your constellation</span>
             </button>
           )}
-          {people.slice(0, 4).map((person) => (
+          {[...connections.map((c): Author => ({ name: c.name, avatar: photo("avatar-jordan") })), ...people.slice(0, 4)].map((person) => (
             <button
               key={person.name}
               className={selected.name === person.name ? "selected" : ""}
@@ -618,7 +631,7 @@ export function GamingPage() {
       <section className="card empty-state">
         <Gamepad2 size={40} />
         <h2>Looking for a game? Try this week's questions.</h2>
-        <p>One question a day, a streak to keep, and on Sunday you meet your constellation.</p>
+        <p>One question a day, a streak that rewards showing up, and on Sunday you meet your constellation.</p>
         <Link to="/space" className="button-primary">
           Play Facebook Space
         </Link>

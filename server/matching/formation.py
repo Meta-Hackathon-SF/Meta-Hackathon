@@ -387,9 +387,19 @@ class FormationService:
             for i, ((refs, meaning, confidence), (name, shape, color))
             in enumerate(zip(proposal, names, strict=False)))
         debug = formation_debug([tuple(refs) for refs, _, _ in proposal], baseline)
+        ids = snap.id_map
+        # Operator-only, kept apart from the ref-only `debug` so the public getter stays ids-free.
+        operator_debug = {
+            "baselineGroups": [sorted(ids[r] for r in g) for g in baseline],
+            "museGroups": [sorted(ids[r] for r in refs) for refs, _, _ in proposal],
+            "splitByBaseline": [[ids[a], ids[b]] for a, b in debug["splitByBaseline"]],
+            "agreements": debug["agreements"],
+            "usedFallback": used_fallback,
+        }
         if sample_reason:
             debug = {**debug, "reason": sample_reason}  # operator-only, no ids or text
         return FormationResult("ok", constellations=constellations, themes=theme_objs,
                                evidence=tuple(evidence), used_fallback=used_fallback,
                                repaired_groups=repaired, debug=debug,
+                               operator_debug=operator_debug,
                                timings_ms=timings)

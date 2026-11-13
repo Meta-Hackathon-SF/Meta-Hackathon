@@ -2596,3 +2596,48 @@
   .spc-composer, .spc-textarea, .spc-comment-box { background: #3a3b3c; }
   .spc-composer:focus-within, .spc-textarea:focus, .spc-comment-box:focus-within { background: #4a4b4d; }
 }
+
+/* ---------- design pass: screen enter, flat inputs, press feedback, rhythm ---------- */
+/* One enter for every screen: opacity + 6px rise, ease-out, 200ms. No exit animation, so a new tap interrupts instantly. */
+@keyframes spc-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes spc-enter-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.spc-with-demo.spc-enter { animation: spc-enter 200ms var(--spc-ease-out) both; }
+.spc-with-demo.spc-enter.is-dark,
+.spc-with-demo.spc-enter:has(> .spc-stage) { animation-name: spc-enter-fade; }
+
+/* Flat, native-feeling text boxes: no inset ring on focus, a quiet underline-weight shift instead. */
+.spc-composer,
+.spc-textarea {
+  border-radius: 8px;
+  background: var(--spc-bg);
+  transition: background-color var(--spc-dur-fast) ease-out;
+}
+.spc-composer:focus-within,
+.spc-textarea:focus {
+  box-shadow: none;
+  background: #e8eaee;
+}
+.spc-composer textarea::placeholder,
+.spc-textarea::placeholder { color: #5f6368; }
+
+/* Press feedback on buttons and tabs. */
+.spc-btn, .spc-round, .spc-tab { transition: transform var(--spc-dur-fast) var(--spc-ease-out), background-color var(--spc-dur-fast) ease-out; }
+.spc-btn:active, .spc-round:active { transform: scale(0.97); }
+
+/* Type rhythm: tighter display, balanced headings, readable prose measure. */
+.spc-cover-title { letter-spacing: -0.02em; text-wrap: balance; }
+.spc-qcard p, .spc-topbar-title { text-wrap: balance; }
+.spc-sub, .spc-fine { max-width: 65ch; text-wrap: pretty; }
+.spc-weeklist .spc-list-main { line-height: 1.4; }
+.spc-day-badge { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .spc-with-demo.spc-enter { animation: none; }
+  .spc-btn:active, .spc-round:active { transform: none; }
+}

@@ -156,7 +156,7 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
   const [followUp, setFollowUp] = useState<{ day: CycleDay; fu: FollowUp } | null>(null);
   const [skyCount, setSkyCount] = useState<number | null>(null);
   const [room, setRoom] = useState<{ indices: number[]; expiresAt: string } | null>(null);
-  const [daily, setDaily] = useState<{ key: string; count: number | null; empty: boolean; preview: boolean } | null>(null);
+  const [daily, setDaily] = useState<{ key: string; count: number | null; empty: boolean; meaning?: string | null; meaningMembers?: number; preview: boolean } | null>(null);
 
   const current = data?.current ?? null;
   const week = useMemo(() => (current && data ? weekModel(current, data.answers) : null), [current, data]);
@@ -169,9 +169,9 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
     if (screen !== "daily" || !cycleId || daily?.key === dailyKey) return;
     const controller = new AbortController();
     if (!client.v3) return;
-    const fallback = { key: dailyKey, count: null, empty: false, preview: true };
+    const fallback = { key: dailyKey, count: null, empty: false, preview: true, meaning: null, meaningMembers: 0 };
     client.v3.dailyConstellations(cycleId, viewDay, controller.signal).then(
-      (v) => !controller.signal.aborted && setDaily({ key: dailyKey, count: v.answeredToday, empty: v.constellations.length === 0, preview: false }),
+      (v) => !controller.signal.aborted && setDaily({ key: dailyKey, count: v.answeredToday, empty: v.constellations.length === 0, preview: false, meaning: v.constellations.find((c) => c.sharedMeaning)?.sharedMeaning ?? null, meaningMembers: v.constellations.find((c) => c.sharedMeaning)?.starIndices.length ?? 0 }),
       () => !controller.signal.aborted && setDaily(fallback),
     );
     return () => controller.abort();
@@ -281,6 +281,8 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
         go={go}
         dailyCount={prevPreview?.count ?? null}
         dailyEmpty={prevPreview?.empty ?? false}
+        sharedMeaning={prevPreview?.meaning ?? null}
+        sharedMeaningMembers={prevPreview?.meaningMembers ?? 0}
         skyCount={skyCount}
         demo={client.mode === "fixture"}
         revealed={cycle.status === "revealed" || cycle.status === "closed"}
@@ -408,7 +410,7 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
   }
 
   return (
-    <div className={`spc-with-demo${DARK_SCREENS.includes(screen) ? " is-dark" : ""}`}>
+    <div key={screen} className={`spc-with-demo spc-enter${DARK_SCREENS.includes(screen) ? " is-dark" : ""}`}>
       {body}
     </div>
   );
