@@ -1,3 +1,4 @@
+import { apiBase } from "../apiBase";
 /*
  * Stage (presenter screen) data. Live API only: there is no fixture for this
  * view, so without VITE_CONSTELLATIONS_API the page says so instead of faking it.
@@ -27,7 +28,7 @@ export class StageError extends Error {
   }
 }
 
-const base = (import.meta.env.VITE_CONSTELLATIONS_API as string | undefined)?.replace(/\/$/, "") ?? null;
+const base = apiBase() ?? null;
 export const stageAvailable = base !== null;
 
 const rec = (v: unknown): Record<string, unknown> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});

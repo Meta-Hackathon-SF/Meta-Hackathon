@@ -1,3 +1,4 @@
+import { apiBase } from "../apiBase";
 /*
  * Privacy client for the "Session, consent, safety" routes (contracts/API.md;
  * owner: Patrik). Wire types come from contracts/protocol.ts (type-only import).
@@ -308,7 +309,7 @@ let shared: PrivacyClient | null = null;
 /** One client per page load, chosen like the daily page's client. */
 export function getPrivacyClient(): PrivacyClient {
   if (!shared) {
-    const base = (import.meta.env.VITE_CONSTELLATIONS_API as string | undefined)?.replace(/\/$/, "");
+    const base = apiBase();
     shared = base ? httpPrivacyClient(base) : fixturePrivacyClient();
   }
   return shared;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { Users, X } from "lucide-react";
+import { Users } from "lucide-react";
 import Avatar from "../../../components/common/Avatar";
 import { currentUser, people } from "../../../data/demo";
 import { SUNDAY_THREAD_ID, addMuseMessage, sendInboxMessage, useInbox, type InboxThread } from "./inbox";
@@ -17,16 +17,6 @@ const SUGGESTIONS: [MuseKind, string, string][] = [
 const REVEAL_KINDS: MuseKind[] = ["hangout", "create"];
 
 import "../daily/space/space.css";
-
-const VIBE_KEY = "fb-space-messenger-vibe-closed";
-
-function vibeClosed(): boolean {
-  try {
-    return sessionStorage.getItem(VIBE_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
 
 /** Threads opened from a real mutual reveal: the person is not one of the demo profiles. */
 const isReveal = (thread: InboxThread) => thread.id.startsWith("reveal-");
@@ -53,22 +43,6 @@ function ThreadMark({ thread }: { thread: InboxThread }) {
   return <Avatar person={person(thread.title)} online />;
 }
 
-function SharedVibe({ onClose }: { onClose: () => void }) {
-  return (
-    <aside className="vibe-card">
-      <button type="button" className="vibe-close" aria-label="Close shared vibe" onClick={onClose}>
-        <X size={16} />
-      </button>
-      <strong>
-        Same vibe <span className="spc-preview">Preview</span>
-      </strong>
-      <p>
-        You all thought you were the only one feeling it, and Tuesday&apos;s question is what brought it out. That&apos;s an easy place to start.
-      </p>
-    </aside>
-  );
-}
-
 export default function MessengerInbox() {
   const threads = useInbox();
   const [params, setParams] = useSearchParams();
@@ -76,7 +50,6 @@ export default function MessengerInbox() {
   const selected = threads.find((thread) => thread.id === requested) ?? threads[0];
   const [draft, setDraft] = useState("");
   const [asking, setAsking] = useState<MuseKind | null>(null);
-  const [vibeOpen, setVibeOpen] = useState(() => !vibeClosed());
   const input = useRef<HTMLInputElement | null>(null);
   const end = useRef<HTMLDivElement | null>(null);
   const count = selected?.messages.length ?? 0;
@@ -110,7 +83,6 @@ export default function MessengerInbox() {
       setAsking(null);
     });
   };
-  const showVibe = vibeOpen && selected.id === SUNDAY_THREAD_ID;
 
   return (
     <section className="card messenger-page">
@@ -150,26 +122,14 @@ export default function MessengerInbox() {
             <>
               {!isReveal(selected) && <Avatar person={person(selected.title)} size={56} />}
               <h2>{selected.title}</h2>
-              <p className="muted">You're connected in the hackathon community.</p>
+              <p className="muted">{isReveal(selected) ? "You both chose to share your names." : "Simulated conversation"}</p>
             </>
-          )}
-          {showVibe && (
-            <SharedVibe
-              onClose={() => {
-                setVibeOpen(false);
-                try {
-                  sessionStorage.setItem(VIBE_KEY, "1");
-                } catch {
-                  /* The note stays closed for this view if storage is blocked. */
-                }
-              }}
-            />
           )}
           {selected.messages.map((message) => (
             <div key={message.id} className="thread-line">
               {!message.mine && (
                 <small className="thread-sender">
-                  {message.fromMuse ? (message.source === "catalog" ? "Muse · catalog" : "Muse") : message.senderName}
+                  {message.fromMuse ? (message.source === "catalog" ? "Catalog suggestions · Muse unavailable" : "Muse") : message.senderName}
                 </small>
               )}
               <p className={message.mine ? "sent-message" : message.fromMuse ? "muse-message" : "received-message"}>

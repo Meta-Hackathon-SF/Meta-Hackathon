@@ -173,22 +173,6 @@ function StatsCard({ answered, count }: { answered: boolean; count: number | nul
   );
 }
 
-function AboutCard() {
-  return (
-    <section className="spc-side-block" aria-labelledby="spc-about-title">
-      <h3 id="spc-about-title">How it works</h3>
-      <dl className="spc-about">
-        <dt>Mon-Fri: one question a day</dt>
-        <dd>Type or talk. Missed one? Catch up until Saturday noon.</dd>
-        <dt>Sunday: meet your people</dt>
-        <dd>5 or more people whose answers meant the same thing.</dd>
-        <dt>Private by default</dt>
-        <dd>Nobody reads your answers. Names show only if you both reveal.</dd>
-      </dl>
-    </section>
-  );
-}
-
 // ---------------------------------------------------------------- page
 export function SkyHome({
   client,
@@ -365,7 +349,6 @@ export function SkyHome({
         </div>
         <aside className="spc-col-side" aria-label="About this week">
           {week.day <= 5 && <StatsCard answered={answeredToday} count={count} />}
-          <AboutCard />
           {demo}
         </aside>
       </div>
