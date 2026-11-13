@@ -30,3 +30,34 @@ Preview: `npm run dev -- --host 127.0.0.1 --port 5193` from web/.
 Targeted browser checks (with the preview running):
 `npx playwright test --config src/features/constellations/chat/test-only/playwright.config.ts`.
 Also run the role's normal lint/build/test:e2e before declaring the PR ready.
+
+## Live adapter and container
+
+Will can import `LiveConstellation` from this directory's index.ts and mount it
+inside the existing server-backed privacy gate. Props are `cycleId`, `viewerPlayerId` from the verified own-session, optional
+`baseUrl` (default `/api/v1`), `messageEvidence`, `nudgeSlot` and `projector`.
+The container keys its memory by that viewer and cycle. viewerPlayerId is used
+only to reject mutual-reveal events for another pair, never sent as identity;
+HTTP authentication still comes solely from the server session cookie.
+This export does not alter Groups routing or authenticate a viewer itself.
+
+`createChatClient` uses credentialed HTTP with runtime validators. Every mutation
+sends the action's stable Idempotency-Key. It never sends playerId or a fixture
+override. The fetch-based SSE reader uses Last-Event-ID, validates seq/id/type,
+drops duplicates, handles split chunks/CRLF and reconnects with bounded backoff.
+Events are processed in order so an authorized room refresh completes before
+replayed identities are considered. Mismatched-room messages/reveals are ignored.
+The server remains responsible for mutual-pair recipient authorization.
+
+Room, messages and Sky are fetched from their existing contract routes; report
+and block callbacks update the local view after the server responds. Moderation
+events hide messages immediately and refresh the canonical projection. Auth or
+consent loss clears the view, expiry disables writes, and cycle changes abort
+stale requests. Pending reveal responses never create identities. Muse text
+without supplied model evidence stays hidden in live mode. No session content
+or chat text is written to localStorage or logs.
+
+`test-only/live.html` is a separate HTTP-intercept test harness, explicitly
+synthetic and never imported by the application entrypoint. `live.spec.ts` and
+`client.spec.ts` prove adapter/browser mechanics; no backend, paid model, real
+participant or physical-phone verification is claimed.
