@@ -15,7 +15,7 @@ import { getCycleClient } from "../clientContext";
 import { OPERATOR_PATH, PLAY_COMMUNITY } from "../communities";
 import { MAX_CHARS, message, useDaily } from "../useDaily";
 import { CANVAS_SCREENS, DARK_SCREENS, SCREENS, weekModel, type Screen } from "./model";
-import { CanvasScreen, ChatScreen, RevealedScreen } from "./dark";
+import { CanvasScreen, ChatScreen, RevealedScreen, type MainState } from "./dark";
 import { AnswerScreen, DistressScreen, EventsScreen, FollowUpScreen, HomeBar, InviteScreen, JoinScreen, SettingsScreen, type LocalPrefs } from "./screens";
 import { SkyHome } from "./skyhome";
 import { DropGate } from "./ConstellationDrop";
@@ -78,12 +78,18 @@ function nextLabel(status: string | undefined, day: number | undefined): string 
 function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleClient; cycleId: string | null; status?: string; day?: number; refresh: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const topUp = async (id: string) => {
+    const r = await client.topUp(id);
+    setNote(`${r.syntheticPlayers} players added, each labeled "${r.label}". ${r.answersAdded} answers added.`);
+  };
   const skipToSunday = async () => {
     let cycle = cycleId ? (await client.current())?.cycle ?? null : null;
     if (!cycle || cycle.status === "closed") cycle = cycle ? await client.reset(cycle.cycleId) : await client.createCycle();
     const id = cycle.cycleId;
-    if (client.mode === "fixture" && cycle.status === "open") await client.topUp(id);
     while (cycle.status === "open") {
+      // Operator-only on the server. Fills each released day with labeled synthetic players.
+      await client.topUp(id);
       const mine = await client.myAnswers(id);
       for (let d = 1; d <= cycle.currentDay; d++)
         if (!mine.some((a) => a.day === d)) await client.submit(id, { day: d as CycleDay, text: DEMO_ANSWERS[d - 1], source: "text" });
@@ -94,6 +100,7 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
   const act = async (work: () => Promise<unknown>) => {
     setBusy(true);
     setError(null);
+    setNote(null);
     try {
       await work();
       refresh();
@@ -120,8 +127,8 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
             {cycleId ? "Restart week" : "Start demo week"}
           </button>
         )}
-        {cycleId && client.mode === "fixture" && (
-          <button type="button" className="spc-btn spc-btn-gray spc-btn-sm" disabled={busy} onClick={() => void act(() => client.topUp(cycleId))}>
+        {cycleId && status === "open" && (
+          <button type="button" className="spc-btn spc-btn-gray spc-btn-sm" disabled={busy} onClick={() => void act(() => topUp(cycleId))} data-testid="spc-demo-topup">
             Add synthetic players
           </button>
         )}
@@ -137,6 +144,11 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
       {error && (
         <p className="spc-error" role="alert">
           {error}
+        </p>
+      )}
+      {note && (
+        <p className="spc-fine" role="status" data-testid="spc-demo-note">
+          {note}
         </p>
       )}
       <p className="spc-fine">"Skip to Sunday" answers each weekday with a labeled demo answer, then locks, matches and reveals. Answer with "SYNTHETIC SAFETY TEST" to see the support card.</p>
@@ -158,12 +170,27 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
   const [followUp, setFollowUp] = useState<{ day: CycleDay; fu: FollowUp } | null>(null);
   const [reveal, setReveal] = useState<MutualReveal | null>(null);
   const [skyCount, setSkyCount] = useState<number | null>(null);
+  const [mainResult, setMainResult] = useState<{ cycleId: string; state: MainState } | null>(null);
   const [daily, setDaily] = useState<{ key: string; count: number | null; empty: boolean; meaning?: string | null; meaningMembers?: number; preview: boolean } | null>(null);
 
   const current = data?.current ?? null;
   const week = useMemo(() => (current && data ? weekModel(current, data.answers) : null), [current, data]);
   const cycleId = current?.cycle.cycleId ?? null;
   const viewDay = (dayParam ?? week?.today ?? 1) as CycleDay;
+
+  // Sunday: the main constellation exactly as the server returned it, or an honest non-answer.
+  const mainWanted = (screen === "main" || screen === "chat" || screen === "revealed") && cycleId !== null && current?.cycle.status === "revealed";
+  useEffect(() => {
+    if (!mainWanted || !cycleId || !client.v3 || mainResult?.cycleId === cycleId) return;
+    const controller = new AbortController();
+    const done = (state: MainState) => !controller.signal.aborted && setMainResult({ cycleId, state });
+    client.v3.main(cycleId, controller.signal).then(
+      (r) => done(r.main ? { status: "ready", members: r.main.roomIndices.length, sharedMeaning: r.main.sharedMeaning } : { status: "none" }),
+      () => done({ status: "unavailable" }),
+    );
+    return () => controller.abort();
+  }, [mainWanted, cycleId, mainResult?.cycleId, client]);
+  const mainState: MainState = !client.v3 ? { status: "unavailable" } : mainResult && mainResult.cycleId === cycleId ? mainResult.state : { status: "loading" };
 
   // Daily count for the sky screen: the v3 port when it exists, else a labeled preview.
   const dailyKey = `${cycleId}:${viewDay}:${week?.answers.get(viewDay)?.answerId ?? ""}`;
@@ -213,7 +240,9 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
       </div>
     );
 
-  const demo = client.isOperator ? <DemoPanel client={client} cycleId={cycleId} status={current?.cycle.status} day={current?.cycle.currentDay} refresh={() => void refresh()} /> : null;
+  // The server decides who is an operator; the in-browser fixture is always one.
+  const isOperator = client.mode === "fixture" ? client.isOperator : view.isOperator;
+  const demo = isOperator ? <DemoPanel client={client} cycleId={cycleId} status={current?.cycle.status} day={current?.cycle.currentDay} refresh={() => void refresh()} /> : null;
 
   if (!current || !week)
     return (
@@ -282,6 +311,7 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
         sharedMeaning={prevPreview?.meaning ?? null}
         sharedMeaningMembers={prevPreview?.meaningMembers ?? 0}
         skyCount={skyCount}
+        main={mainState}
         demo={client.mode === "fixture"}
         revealed={cycle.status === "revealed" || cycle.status === "closed"}
         matchOn={view.consent.matchAnswers}

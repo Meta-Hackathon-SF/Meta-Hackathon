@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
-import { SPACE_LINES, SPACE_STARS } from "../../../../components/navigation/AppIcons";
+import { SPACE_LINES, SPACE_STARS } from "../../../../components/navigation/spaceMark";
 
 /** The Space mark: the same five-star constellation as the sidebar, tabs and post header (SPACE_STARS). */
 export function Glyph({ size = 20, color = "#fff" }: { size?: number; color?: string }) {

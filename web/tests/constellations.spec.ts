@@ -232,11 +232,70 @@ test("weekend: lock closes answers, week sky and formation are labeled previews,
   await expect(page.getByRole("button", { name: "Open chat" })).toHaveCount(0);
   await advance(page, 2); // forming, revealed
   await page.goto(DAILY);
-  await expect(page.getByTestId("spc-weekend-sun")).toContainText("Your constellation is ready");
+  await expect(page.getByTestId("spc-weekend-sun")).toContainText("Sunday's reveal is open");
   await page.getByRole("button", { name: "View constellation" }).click();
-  await page.getByRole("button", { name: "Open chat" }).click();
-  // Fixture mode has no live room: the chat says so instead of faking one.
-  await expect(page.getByTestId("spc-chat-unavailable")).toContainText("Chat needs the live server");
+  // Fixture mode has no formation data: the canvas says so, shows no member count and offers no chat.
+  await expect(page.getByTestId("spc-main-unavailable")).toBeVisible();
+  await expect(page.getByTestId("spc-main-count")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open chat" })).toHaveCount(0);
+});
+
+test("reveal thread in Messenger: @muse finds a catalog event and drafts one; no vendor action", async ({ page }) => {
+  const sent: { kind: string; senders: string[] }[] = [];
+  await page.route("**/api/muse-chat", async (route) => {
+    const body = route.request().postDataJSON();
+    sent.push({ kind: body?.kind, senders: (body?.context ?? []).map((n: { sender: string }) => n.sender) });
+    const replies: Record<string, object> = {
+      hangout: { text: "Board game night fits you two.", eventIds: ["ev-board-games", "not-a-real-event"] },
+      create: {
+        text: "Here's a draft you can create.",
+        draft: { title: "Thursday study session", placeId: "v-library-commons", day: "Thursday", time: "19:00", description: "Bring notes." },
+      },
+    };
+    await route.fulfill({ json: { source: "live", itemIds: [], eventIds: [], draft: null, ...replies[body?.kind] } });
+  });
+  // Test double for a thread that a real mutual reveal would have opened.
+  const name = "Test Player (synthetic)";
+  await page.addInitScript((title) => {
+    const thread = { id: "reveal-test-player", kind: "direct", title, memberNames: [title], messages: [], preview: "", synthetic: true };
+    sessionStorage.setItem("fb-space-messenger-demo", JSON.stringify([thread]));
+  }, name);
+  await page.goto("/messages?chat=reveal-test-player");
+  const convo = page.getByRole("region", { name });
+  await expect(convo.getByText("Synthetic player · Simulated Facebook")).toBeVisible();
+  const actions = convo.getByRole("group", { name: "Ask Muse" });
+  await expect(actions.getByRole("button")).toHaveText(["Find an event", "Create an event"]);
+  await expect(page.getByText("Ask a vendor")).toHaveCount(0);
+
+  const box = convo.getByRole("textbox", { name: "Message" });
+  await actions.getByRole("button", { name: "Find an event" }).click();
+  await expect(box).toHaveValue(/@muse/);
+  expect(sent).toHaveLength(0); // a chip only fills the box
+  await box.press("Enter");
+  await expect(convo.getByText("Board game night fits you two.")).toBeVisible();
+  await expect(convo.getByTestId("cat-event-ev-board-games")).toBeVisible();
+  await expect(convo.getByTestId(/cat-event-not-a-real/)).toHaveCount(0); // off-catalog ids are dropped
+
+  await actions.getByRole("button", { name: "Create an event" }).click();
+  await box.press("Enter");
+  const draft = convo.getByTestId("cat-draft");
+  await expect(draft).toContainText("Library Commons"); // approved venue from the catalog
+  await draft.getByRole("button", { name: "Create event" }).click();
+  await expect(draft.getByRole("link", { name: /Created · View event/ })).toBeVisible();
+
+  // A cafe or table request is no longer a vendor errand: it is answered as an event lookup.
+  await box.fill("can the cafe hold a table for us @muse");
+  await box.press("Enter");
+  await expect.poll(() => sent.map((r) => r.kind)).toEqual(["hangout", "create", "hangout"]);
+  // The revealed name never reaches Muse.
+  for (const r of sent) for (const sender of r.senders) expect(sender).toMatch(/^(You|Muse|Member [1-9])$/);
+});
+
+test("operator adds synthetic players from the Space demo panel and sees the label", async ({ page }) => {
+  await newCycle(page);
+  await openSpace(page);
+  await page.getByTestId("spc-demo-topup").click();
+  await expect(page.getByTestId("spc-demo-note")).toContainText('each labeled "Synthetic player"');
 });
 
 test("privacy: turning matching off shows it on Sunday; delete my data returns to Join", async ({ page }) => {
@@ -490,7 +549,8 @@ test("Marketplace and Events use one demo catalog: item pages, register, and a M
   expect(fallback.create).toMatchObject({ title: "Picnic", placeId: "v-quad", day: "Saturday", time: "14:00" });
   expect(fallback.supplies[0]).toBe("mk-speaker");
   expect(fallback.hangout[0]).toBe("ev-film-club");
-  expect(fallback.kinds).toEqual(["create", "create", "supplies", "barter", "hangout"]);
+  // A cafe or table request is an event lookup now; no vendor is contacted.
+  expect(fallback.kinds).toEqual(["create", "create", "supplies", "hangout", "hangout"]);
   // Catalog events that share an id with Adam's approved campus events use the same venue and start.
   const drift = await page.evaluate(async () => {
     const { BASE_EVENTS } = await import("/src/features/catalog/catalog.ts");

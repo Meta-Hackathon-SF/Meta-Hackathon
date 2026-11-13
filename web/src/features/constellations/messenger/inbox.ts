@@ -34,6 +34,8 @@ export interface InboxThread {
   memberNames: string[];
   messages: InboxMessage[];
   preview: string;
+  /** Set on a thread opened with a server-seeded synthetic player. */
+  synthetic?: boolean;
 }
 
 export interface SundayLine {
@@ -143,10 +145,10 @@ export function promoteSundayChat(lines: SundayLine[], memberNames: string[]) {
 }
 
 /** Opens (or creates) a direct thread with a player after a real mutual reveal. Returns the thread id. */
-export function openRevealThread(playerId: string, displayName: string): string {
+export function openRevealThread(playerId: string, displayName: string, synthetic = false): string {
   const id = `reveal-${playerId}`;
   if (!threads.some((thread) => thread.id === id)) {
-    threads = [{ id, kind: "direct", title: displayName, memberNames: [displayName], messages: [], preview: "" }, ...threads];
+    threads = [{ id, kind: "direct", title: displayName, memberNames: [displayName], messages: [], preview: "", synthetic }, ...threads];
     emit();
   }
   return id;

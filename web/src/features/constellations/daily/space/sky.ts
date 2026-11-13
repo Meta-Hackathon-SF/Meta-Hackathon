@@ -24,6 +24,8 @@ export interface SkyInput {
   still: boolean;
   /** Week sky: highlight one day's lines (1-5); others dim. */
   focusDay?: number | null;
+  /** Main: how many people the server put in the constellation, the viewer included. */
+  members?: number;
 }
 
 export interface SkyHooks {
@@ -649,7 +651,9 @@ export class SkyRenderer {
         if (input.noMatch) this.drawMe(ctx, this.cx, this.cy, 1, ts);
         else {
           const mv = ease((el - 700) / 1500), lp = ease((el - 2000) / 1300);
-          const pos = this.close.map((p, k) => ({ x: p.x + (this.anchors[k].x - p.x) * mv, y: p.y + (this.anchors[k].y - p.y) * mv }));
+          // One star per real member besides the viewer; never more than the server reported.
+          const others = Math.max(0, Math.min(this.close.length, (input.members ?? 1) - 1));
+          const pos = this.close.slice(0, others).map((p, k) => ({ x: p.x + (this.anchors[k].x - p.x) * mv, y: p.y + (this.anchors[k].y - p.y) * mv }));
           const meP = { x: this.cx + (this.meAnchor.x - this.cx) * mv, y: this.cy + (this.meAnchor.y - this.cy) * mv };
           if (lp > 0) this.drawMetaLogo(ctx, lp, ts);
           if (mv < 1) {

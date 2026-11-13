@@ -3,7 +3,7 @@
  * Close day: runs day-close formation for a released day ("Demo timing").
  * Custom-event queue removed from the visible UI.
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CalendarCheck2 } from "lucide-react";
 import { ClientError, type CycleClient, type CycleDay, type WeeklyCycle } from "../daily/client";
 import { DAY_NAMES } from "../daily/useDaily";
@@ -22,10 +22,11 @@ function explain(error: unknown): string {
 export function CloseDayControl({ client, cycle, onDone }: { client: CycleClient; cycle: WeeklyCycle; onDone: () => void }) {
   const v3 = client.v3;
   const released = cycle.status === "open" ? cycle.currentDay : 5;
-  const [day, setDay] = useState<CycleDay>(released as CycleDay);
+  // The pick resets to the newest released day whenever the cycle moves on.
+  const [picked, setPicked] = useState<{ released: number; day: CycleDay } | null>(null);
+  const day = picked && picked.released === released ? picked.day : (released as CycleDay);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
-  useEffect(() => setDay(released as CycleDay), [released]);
   if (!v3 || cycle.status !== "open") return null;
 
   const close = async () => {
@@ -46,7 +47,7 @@ export function CloseDayControl({ client, cycle, onDone }: { client: CycleClient
     <div className="cst-op-close" data-testid="cst-op-close-day">
       <label className="cst-op-close-pick" style={dayStyle(day)}>
         <span className="sr-only">Day to close</span>
-        <select value={day} onChange={(e) => setDay(Number(e.target.value) as CycleDay)} disabled={busy}>
+        <select value={day} onChange={(e) => setPicked({ released, day: Number(e.target.value) as CycleDay })} disabled={busy}>
           {Array.from({ length: released }, (_, i) => (i + 1) as CycleDay).map((d) => (
             <option key={d} value={d}>
               {DAY_NAMES[d - 1]}

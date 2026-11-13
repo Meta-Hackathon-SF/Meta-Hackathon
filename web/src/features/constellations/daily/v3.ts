@@ -133,6 +133,8 @@ export interface MainConstellationView {
   roomIndices: number[];
   anchors: { index: number; t: number }[];
   brightness: Record<number, Brightness>;
+  /** Muse line, checked by the server guard. Null when the guard rejected it. */
+  sharedMeaning: string | null;
   revealedAt: string;
   roomExpiresAt: string;
 }
@@ -307,6 +309,7 @@ export function parseMain(v: unknown): MainConstellationResponse {
         return { index: int(a.index, 0, 99), t: unit(a.t) };
       }, 5),
       brightness,
+      sharedMeaning: m.sharedMeaning === null || m.sharedMeaning === undefined ? null : str(m.sharedMeaning),
       revealedAt: isoTime(m.revealedAt),
       roomExpiresAt: isoTime(m.roomExpiresAt),
     },

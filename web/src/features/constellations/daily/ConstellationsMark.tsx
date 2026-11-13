@@ -1,4 +1,4 @@
-import { SPACE_LINES, SPACE_STARS } from "../../../components/navigation/AppIcons";
+import { SPACE_LINES, SPACE_STARS } from "../../../components/navigation/spaceMark";
 
 /** Circular Facebook Space badge. Same geometry as the sidebar and tab icons (SPACE_STARS). */
 export default function ConstellationsMark({ size = 40 }: { size?: number }) {

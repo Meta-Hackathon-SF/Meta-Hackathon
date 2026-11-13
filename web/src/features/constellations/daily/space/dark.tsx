@@ -1,5 +1,5 @@
 /* Dark Space screens: the animated sky (daily / week / forming / main), the anonymous chat and mutual reveal. */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ArrowUp, ChevronLeft } from "lucide-react";
 import type { MutualReveal } from "../../../../../../contracts/protocol";
@@ -42,7 +42,16 @@ export interface CanvasProps {
   sharedMeaning?: string | null;
   /** Member count of the constellation sharedMeaning belongs to. */
   sharedMeaningMembers?: number;
+  /** Sunday: what the server returned for the viewer's main constellation. */
+  main?: MainState;
 }
+
+/** The Sunday screen only claims what the server returned. */
+export type MainState =
+  | { status: "loading" }
+  | { status: "unavailable" }
+  | { status: "none" }
+  | { status: "ready"; members: number; sharedMeaning: string | null };
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
@@ -54,7 +63,8 @@ export function CanvasScreen(p: CanvasProps) {
 
   const skyTotal = p.skyCount ?? 0;
   const target = p.mode === "daily" ? (p.dailyCount ?? 0) : skyTotal;
-  const noMatch = !p.matchOn || (p.mode === "main" && !p.revealed);
+  const main = p.main ?? { status: "unavailable" as const };
+  const noMatch = !p.matchOn || (p.mode === "main" && (!p.revealed || main.status !== "ready"));
   const title =
     p.mode === "daily" ? null : p.mode === "sky" ? "Your week" : p.mode === "forming" ? "Finding your people" : "Your constellation";
 
@@ -62,7 +72,7 @@ export function CanvasScreen(p: CanvasProps) {
     <div className="spc-stage" data-testid={`spc-canvas-${p.mode}`}>
       <Telescope />
       <SkyCanvas
-        input={{ mode: p.mode, answered: p.answered, viewDay: p.viewDay, emptyDay: p.dailyEmpty, noMatch, focusDay: p.mode === "sky" ? focus : null }}
+        input={{ mode: p.mode, answered: p.answered, viewDay: p.viewDay, emptyDay: p.dailyEmpty, noMatch, focusDay: p.mode === "sky" ? focus : null, members: main.status === "ready" ? main.members : undefined }}
         interactive={p.mode === "sky" || p.mode === "daily" || (p.mode === "main" && settled)}
         hooks={{
           onCount: (k) => {
@@ -91,7 +101,7 @@ export function CanvasScreen(p: CanvasProps) {
         {p.demo && <DemoNote dark />}
       </div>
 
-      <div className={`spc-stage-ui${settled || p.mode === "forming" ? " is-in" : ""}`}>
+      <div className={`spc-stage-ui${settled || p.mode === "forming" || (p.mode === "main" && main.status !== "ready") ? " is-in" : ""}`}>
         {p.mode === "daily" && (
           <>
             <div ref={countRef} className="spc-big-num" aria-hidden="true">
@@ -189,15 +199,46 @@ export function CanvasScreen(p: CanvasProps) {
                 Back to Space
               </button>
             </>
-          ) : p.chatOn ? (
+          ) : main.status === "loading" ? (
+            <div className="spc-stage-sub" role="status" data-testid="spc-main-loading">
+              Loading your constellation…
+            </div>
+          ) : main.status !== "ready" ? (
             <>
-              <button type="button" className="spc-btn spc-btn-primary spc-btn-lg spc-stretch" onClick={() => p.go("chat")}>
-                Open chat
+              <div className="spc-stage-h" data-testid={`spc-main-${main.status}`}>
+                {main.status === "none" ? "No constellation this week" : "Constellation unavailable"}
+              </div>
+              <div className="spc-stage-sub">
+                {main.status === "none" ? "Not enough answers were close to yours. A new week starts Monday." : "We couldn't load it from the server. Try again in a moment."}
+              </div>
+              <button type="button" className="spc-btn spc-btn-glass spc-btn-lg spc-stretch" onClick={p.onBack}>
+                Back to Space
               </button>
-              <div className="spc-stage-note">Open for 24 hours</div>
             </>
           ) : (
-            <div className="spc-stage-sub">Turn on anonymous chat in Privacy to talk with them.</div>
+            <>
+              <div className="spc-big-num" aria-hidden="true">
+                {main.members}
+              </div>
+              <div className="spc-stage-sub" data-testid="spc-main-count">
+                <span className="sr-only">{main.members} </span>people in your constellation, you included
+              </div>
+              {main.sharedMeaning && (
+                <p className="spc-meaning" data-testid="spc-main-meaning">
+                  {main.sharedMeaning}
+                </p>
+              )}
+              {p.chatOn ? (
+                <>
+                  <button type="button" className="spc-btn spc-btn-primary spc-btn-lg spc-stretch" onClick={() => p.go("chat")}>
+                    Open chat
+                  </button>
+                  <div className="spc-stage-note">Anonymous until two people both ask to reveal.</div>
+                </>
+              ) : (
+                <div className="spc-stage-sub">Turn on anonymous chat in Privacy to talk with them.</div>
+              )}
+            </>
           ))}
       </div>
     </div>
@@ -236,7 +277,12 @@ export function ChatScreen({
   const [support, setSupport] = useState(false);
   const others = room?.members.filter((m) => !m.isSelf) ?? [];
   const self = room?.members.find((m) => m.isSelf);
-  const hoursLeft = room ? Math.max(0, Math.ceil((new Date(room.expiresAt).getTime() - Date.now()) / 3_600_000)) : null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const hoursLeft = room ? Math.max(0, Math.ceil((new Date(room.expiresAt).getTime() - now) / 3_600_000)) : null;
   const expired = room?.status === "expired";
   const member = sheet ? others.find((m) => m.handle === sheet) ?? null : null;
   const reveal = snapshot.reveals[0];
@@ -473,6 +519,11 @@ export function RevealedScreen({ reveal, viewerPlayerId, onBack }: { reveal: Mut
       <p className="spc-reveal-sub">You both chose to reveal</p>
       <div className="spc-reveal-avatar" aria-hidden="true" style={other?.avatarColor ? { background: other.avatarColor } : undefined} />
       <h2 className="spc-reveal-name">{other?.displayName ?? "Your match"}</h2>
+      {other?.isSynthetic && (
+        <p className="spc-preview" data-testid="spc-reveal-synthetic">
+          Synthetic player
+        </p>
+      )}
       <p className="spc-reveal-note">Only you two can see this.</p>
       <div className="spc-flex" />
       <div className="spc-col spc-reveal-actions">
@@ -484,7 +535,7 @@ export function RevealedScreen({ reveal, viewerPlayerId, onBack }: { reveal: Mut
             <button
               type="button"
               className="spc-btn spc-btn-primary spc-btn-lg"
-              onClick={() => navigate(`/messages?chat=${openRevealThread(other.playerId, other.displayName)}`)}
+              onClick={() => navigate(`/messages?chat=${openRevealThread(other.playerId, other.displayName, other.isSynthetic)}`)}
             >
               Message
             </button>

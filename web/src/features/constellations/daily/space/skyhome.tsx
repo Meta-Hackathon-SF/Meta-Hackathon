@@ -3,7 +3,7 @@
  * flat sections on the page itself (today's question, this week, weekend) with
  * hairline rhythm instead of stacked cards, and a plain-text side column.
  */
-import { useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { CalendarDays, ChevronRight, Flame, Lock, MessageCircle } from "lucide-react";
 import type { CycleClient, CycleDay, DailyQuestion } from "../client";
 import { MAX_CHARS } from "../useDaily";
@@ -11,7 +11,7 @@ import { DAY_LONG, DAY_SHORT, dayHex, type Screen, type WeekModel } from "./mode
 import { MicIcon, Waveform } from "./parts";
 import SkyCanvas from "./SkyCanvas";
 import { useVoiceInput } from "./useVoiceInput";
-import { fmtDuration, readTook, useAnsweredToday, writeTook } from "./stats";
+import { useAnsweredToday } from "./stats";
 
 type Go = (screen: Screen, day?: number) => void;
 
@@ -81,47 +81,33 @@ function QuestionPost({
   week,
   day,
   text,
-  cycleId,
   go,
   onPost,
   busy,
   error,
-  onTook,
 }: {
   client: CycleClient;
   week: WeekModel;
   day: CycleDay;
   text: string;
-  cycleId: string;
   go: Go;
   onPost: (day: CycleDay, text: string, source: "voice" | "text") => Promise<void>;
   busy: boolean;
   error: string | null;
-  onTook: (s: number) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [releasing, setReleasing] = useState<string | null>(null);
-  const started = useRef<number | null>(null);
-  const voice = useVoiceInput(client, (t) => {
-    started.current ??= Date.now();
-    setDraft(t);
-  });
+  const voice = useVoiceInput(client, setDraft);
   const answer = week.answers.get(day);
   const post = async () => {
     const t = draft.trim();
     if (!t || busy || releasing) return;
-    const seconds = started.current ? (Date.now() - started.current) / 1000 : 0;
-    if (seconds > 0) {
-      writeTook(cycleId, day, seconds);
-      onTook(seconds);
-    }
     setReleasing(t);
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     try {
       await Promise.all([onPost(day, t, voice.source), new Promise((r) => window.setTimeout(r, reduce ? 0 : 1800))]);
       setDraft("");
       voice.reset();
-      started.current = null;
     } catch {
       /* the parent shows the error; the draft stays */
     } finally {
@@ -157,11 +143,7 @@ function QuestionPost({
                 value={releasing ? "" : draft}
                 maxLength={MAX_CHARS}
                 disabled={Boolean(releasing)}
-                onFocus={() => (started.current ??= Date.now())}
-                onChange={(e) => {
-                  started.current ??= Date.now();
-                  setDraft(e.target.value.slice(0, MAX_CHARS));
-                }}
+                onChange={(e) => setDraft(e.target.value.slice(0, MAX_CHARS))}
                 placeholder="Say it to the sky. Nobody's reading this but you."
               />
             )}
@@ -218,7 +200,7 @@ function QuestionPost({
 }
 
 // ---------------------------------------------------------------- stats
-function StatsCard({ answered, count, took }: { day: CycleDay; answered: boolean; count: number | null; took: number | null }) {
+function StatsCard({ answered, count }: { answered: boolean; count: number | null }) {
   return (
     <section className="spc-side-block spc-stats" aria-labelledby="spc-stats-title" data-testid="spc-stats">
       <h3 id="spc-stats-title">Today in the sky</h3>
@@ -232,11 +214,6 @@ function StatsCard({ answered, count, took }: { day: CycleDay; answered: boolean
           <span>Answer to see how many people answered.</span>
         )}
       </p>
-      {answered && took ? (
-        <p className="spc-stats-verdict">
-          <b>You took {fmtDuration(took)}.</b>
-        </p>
-      ) : null}
     </section>
   );
 }
@@ -342,7 +319,6 @@ export function SkyHome({
   const answeredToday = today ? week.answered.has(today) : false;
   const statsDay = (today ?? 5) as CycleDay;
   const count = useAnsweredToday(client, cycleId, today, today ? (week.answers.get(today)?.answerId ?? null) : null);
-  const [took, setTook] = useState<number | null>(() => (today ? readTook(cycleId, today) : null));
   const sunday = week.day >= 7;
   const tabs: { label: string; to: Screen; on?: boolean }[] = [
     { label: "Today", to: "home", on: true },
@@ -397,12 +373,10 @@ export function SkyHome({
               week={week}
               day={today}
               text={q.question.text}
-              cycleId={cycleId}
               go={go}
               onPost={onPost}
               busy={busy}
               error={error}
-              onTook={setTook}
             />
           )}
 
@@ -420,8 +394,8 @@ export function SkyHome({
           {week.day === 7 && (
             <>
               <section className="spc-block spc-today" data-testid="spc-weekend-sun">
-                <h2 className="spc-block-lead">Your constellation is ready</h2>
-                <p className="spc-block-sub">Meet the people who answered like you.</p>
+                <h2 className="spc-block-lead">Sunday&apos;s reveal is open</h2>
+                <p className="spc-block-sub">See who answered like you this week.</p>
                 <button type="button" className="spc-btn spc-btn-primary" onClick={() => go("main")}>
                   View constellation
                 </button>
@@ -482,7 +456,7 @@ export function SkyHome({
           )}
         </div>
         <aside className="spc-col-side" aria-label="About this week">
-          {week.day <= 5 && <StatsCard day={statsDay} answered={answeredToday} count={count} took={took} />}
+          {week.day <= 5 && <StatsCard answered={answeredToday} count={count} />}
           <AboutCard />
           {demo}
         </aside>
