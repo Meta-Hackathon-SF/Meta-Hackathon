@@ -14,7 +14,7 @@ Updated: 2026-11-13T03:05Z
 Also done: sync adapters for Will's cycle service (`CycleQuestionPort`, `SyncClarify`) and the operator router for Kai's registry (`server/planning/api.py`).
 5. M6 question generation: `QuestionGenerator.generate / pending / approve / reject`, prompt `question_generation.v1`; generated questions stay pending and inactive until an operator approves.
 
-Not done: live calls beyond the one M2 smoke; anything running inside the composed app.
+Not done: `OperatorNudgePanel` mounted in the console (Will); M1 on nudge text called live; the mid-week nudge schedule (Kai, cuttable). Kai's composed app with my nudge wiring is on role/kai-orchestration, not yet on main.
 
 ## Changed interfaces and files
 - No change to `contracts/`. Shared-file edits claimed: one ACK line each under D005 and D006 in docs/DECISIONS.md; my four rows in the PROJECT_KNOWLEDGE.md evidence ledger.
@@ -23,7 +23,8 @@ Not done: live calls beyond the one M2 smoke; anything running inside the compos
 - `server/planning/`: `QuestionBank`, `load_default_bank`, `QuestionService`, `ClarifyService`, `register_planning_tasks`, ports `OutputGuardPort`, `ChatPostPort`, `WeekStartLookup`, stores `SelectionStore`, `ClarifyStore`.
 - `server/planning/data/question-bank.json`: 32 curated questions, superset of the shared fixture (the 12-row fixture cannot fill a third week under the four-week no-repeat rule).
 - `server/planning/` nudges: `NudgeService`, `VenueCatalog`, `ConstellationContext` lookup (new port needed from orchestration), `InMemoryNudgeStore`; `data/venues.json` equals the shared fixture.
-- `web/src/features/constellations/nudges/`: `NudgeCard`, `parseEventNudge`, `parseVenue`, `formatWindow`. Not mounted on a route.
+- `web/src/features/constellations/nudges/`: `NudgeCard`, `OperatorNudgePanel`, `createNudgeRequester`, `APPROVED_VENUES`, `parseEventNudge`, `parseVenue`, `formatWindow`. Not mounted on a route.
+- `server/planning/adapters.py`: `ChatSystemPoster` (bridges to chat `postSystem`).
 - Tests: `tests/providers/`, `tests/planning/` (`doubles.py` holds the TEST-ONLY adapters).
 
 ## Checks run + actual result
@@ -33,7 +34,7 @@ Not done: live calls beyond the one M2 smoke; anything running inside the compos
 - `python3 -m server.providers.smoke`: exit 0, live M2 call ok (2026-11-13T02:25Z). Earlier the same day: exit 2, `not_configured`, before the key was added.
 
 ## Fixture versus live evidence
-One live Muse call exists: the M2 smoke call above, on a synthetic answer. Everything else is fixture evidence. Muse outputs come from `FixtureMuse` (labeled `source: "replay"`, model `fixture:scripted-muse`). OutputGuard, cycle lookup and chat are test-only doubles. No route mounted, no durable storage, no live call for M1 or M3-M8, and plus five live calls through the real services on synthetic fixture input (2026-11-13T02:29-02:31Z, `python3 -m tests.planning.live_check`): M2 x3, M7 x1, M6 x1, all passed validators with the TEST-ONLY guard; table in server/planning/README.md. Observed latency 10-25 s per call.
+Live (synthetic input, Adam's key): the M2 smoke (02:25Z); planning live checks M2 x5, M7 x2, M6 x2 (test guard 02:29Z, real guard 03:05Z); Rishi's formation timing runs M3/M4/M5/M8 (02:40Z, 02:51Z); one M7 through Kai's composed app route (05:56Z). Everything else is fixture evidence from `FixtureMuse` (labeled `source: "replay"`, model `fixture:scripted-muse`). Planning routes run inside Kai's composed app with durable selection, clarify and nudge bookkeeping on his branch; they are not deployed.
 
 ## Requests answered
 - 2026-11-12: no open PR, issue or comment mentioned `@adamzhang06` at session start.
