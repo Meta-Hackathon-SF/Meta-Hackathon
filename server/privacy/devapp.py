@@ -1,4 +1,4 @@
-"""LOCAL PRIVACY DEV HARNESS - not the Constellations server.
+"""LOCAL PRIVACY DEV HARNESS - not the Facebook Space server.
 
 Kai owns API composition (server/app/). Until it is restored on main, this
 mounts only the privacy router so the consent UI and other owners can exercise
@@ -14,7 +14,7 @@ from fastapi import FastAPI
 
 from server.privacy import PrivacyService, PrivacyStore, build_router, install_error_handlers
 
-app = FastAPI(title="Constellations privacy dev harness (local only)")
+app = FastAPI(title="Facebook Space privacy dev harness (local only)")
 install_error_handlers(app)
 _service = PrivacyService(PrivacyStore(os.environ.get("CST_PRIVACY_DB", ":memory:")))
 app.include_router(build_router(_service), prefix="/api/v1")

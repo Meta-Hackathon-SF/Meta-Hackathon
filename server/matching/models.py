@@ -112,7 +112,8 @@ class ActivitySignals:
         topics = _id_list(data, "topics", path)
         if any(len(t) > 40 for t in topics):
             raise ValidationError(f"{path}.topics", "topic label too long")
-        return ActivitySignals(profile, _id_list(data, "groupIds", path), _id_list(data, "eventIds", path),
+        return ActivitySignals(profile, _id_list(data, "groupIds", path),
+                               _id_list(data, "eventIds", path),
                                _id_list(data, "friendIds", path), topics)
 
 
@@ -122,7 +123,8 @@ class FormationSnapshot:
     answers: tuple[PromptText, ...]
     id_map: Mapping[str, str]  # ref -> playerId (private, never sent to Muse)
     blocked_pairs: tuple[tuple[str, str], ...]  # playerIds
-    activity: Mapping[str, ActivitySignals] = field(default_factory=dict)  # D010: by ref, opt-in only
+    # D010: by ref, opt-in only
+    activity: Mapping[str, ActivitySignals] = field(default_factory=dict)
 
     @staticmethod
     def from_dict(data: Any) -> FormationSnapshot:
@@ -227,7 +229,8 @@ class Constellation:
     is_fallback: bool = False  # UI label FALLBACK_LABEL when true
     # D009, PRIVATE: (playerA, playerB, score 0..1) for every member pair; banded before output.
     closeness: tuple[tuple[str, str, float], ...] = ()
-    # D010, PRIVATE: playerId -> {sharedGroupStars, alreadyFriends, sameEventStars}; served only to that member.
+    # D010, PRIVATE: playerId -> {sharedGroupStars, alreadyFriends, sameEventStars};
+    # served only to that member.
     member_context: Mapping[str, Mapping[str, int]] = field(default_factory=dict)
 
     def to_wire(self) -> dict:
@@ -251,6 +254,7 @@ class FormationResult:
     evidence: tuple[MuseCallEvidence, ...] = ()
     used_fallback: bool = False
     repaired_groups: int = 0  # internal: groups code fixed after a near-valid M4 proposal
+    debug: Mapping[str, Any] | None = None  # internal, operator only: ids-only baseline vs Muse
     error: MatchingError | None = None
     timings_ms: Mapping[str, int] = field(default_factory=dict)
 

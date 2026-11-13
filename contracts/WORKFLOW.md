@@ -1,4 +1,4 @@
-# Weekly cycle workflow (Constellations 2.0.0)
+# Weekly cycle workflow (Facebook Space 2.0.0)
 Cycle: Will. Formation and Sky numbers: Rishi. Rooms, reveal, realtime, composition: Kai. Questions and nudges: Adam. Safety, guards, storage: Patrik.
 
 ## Calendar (community time zone)

@@ -1,9 +1,9 @@
-# Architecture (Constellations 2.0.0)
+# Architecture (Facebook Space 2.0.0)
 Status: design. Main holds the mock Facebook shell (`web/`), contracts and fixtures. Server code is restored per owner from `archive/group-quests-before-pivot` during step 2 and retested.
 
 ```mermaid
 flowchart TD
-    UI["Constellations UI in Simulated Facebook shell (Groups tab)"] --> API["FastAPI /api/v1 (Kai composition)"]
+    UI["Facebook Space UI in Simulated Facebook shell (Groups tab)"] --> API["FastAPI /api/v1 (Kai composition)"]
     API --> PRIV["Patrik: sessions, consent, private answers, M1, OutputGuard, TTL"]
     API --> CYC["Will: weekly cycle, daily answers, catch-up, streaks, operator"]
     API --> CHAT["Kai: rooms, moderation pipeline, reveal, expiry, SSE"]

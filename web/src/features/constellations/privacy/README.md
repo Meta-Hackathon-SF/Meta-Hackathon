@@ -1,4 +1,4 @@
-# Constellations privacy UI (owner: Patrik)
+# Facebook Space privacy UI (owner: Patrik)
 
 Role task 7: the join and consent screen (three toggles), privacy settings with "delete my data", and the private support card. Styles use the `.cstp-` prefix only, so the Simulated Facebook shell, the feed and Will's `.cst-` styles are untouched.
 

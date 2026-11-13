@@ -1,4 +1,4 @@
--- Constellations privacy store (owner: Patrik). Contract 2.0.0. SQLite dialect.
+-- Facebook Space privacy store (owner: Patrik). Contract 2.0.0. SQLite dialect.
 --
 -- Applied by server/privacy/store.py on open (idempotent). No server process,
 -- no container: the store is a single SQLite file (or :memory: in tests).

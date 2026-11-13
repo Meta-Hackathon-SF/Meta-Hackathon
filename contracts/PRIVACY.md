@@ -1,4 +1,4 @@
-# Privacy and access contract (Constellations 2.0.0)
+# Privacy and access contract (Facebook Space 2.0.0)
 Owner: Patrik. Every owner enforces it at their boundary. No player ever sees another player's answers. Players see their constellation's name and anonymous handles, chat messages that passed moderation, aggregate Sky patterns, and real identities only after a mutual reveal. Enforced by server code, not by the model.
 
 | Data | Self | Room members | Server | Model provider |

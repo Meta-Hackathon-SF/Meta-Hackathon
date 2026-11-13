@@ -1,6 +1,6 @@
 """Voice transcription boundary for daily answers (owner: Will).
 
-Constellations 2.0.0: a player may speak a daily answer. The browser uploads
+Facebook Space 2.0.0: a player may speak a daily answer. The browser uploads
 the recording, this module validates it, calls a configured ``Transcriber``
 and returns ``{"transcript": str}`` (or raises ``VoiceError`` carrying a
 contract ErrorCode). The player reviews the transcript and submits it as a

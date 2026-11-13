@@ -14,7 +14,7 @@ export const TOGGLES: { key: keyof ConsentToggles; label: string; detail: string
   {
     key: "isAdult",
     label: "I'm 18 or older",
-    detail: "Constellations is for adults only, and for friendship only.",
+    detail: "Facebook Space is for adults only, and for friendship only.",
   },
 ];
 

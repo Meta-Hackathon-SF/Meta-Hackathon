@@ -11,10 +11,11 @@ owners' ACKs, see docs/DECISIONS.md). Code only, no model call.
 * ``member_context``: per viewer, counts only (how many other members share a
   Group, are already friends, share an event). Never which member.
 """
+
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from itertools import combinations
 
 from .baseline import cosine, player_vectors
@@ -34,18 +35,25 @@ def activity_boost(a: ActivitySignals | None, b: ActivitySignals | None) -> floa
     groups = len(set(a.group_ids) & set(b.group_ids))
     events = len(set(a.event_ids) & set(b.event_ids))
     topics = len(set(a.topics) & set(b.topics))
-    boost = (min(GROUP_CAP, groups * GROUP_BOOST) + min(EVENT_CAP, events * EVENT_BOOST)
-             + min(TOPIC_CAP, topics * TOPIC_BOOST))
+    boost = (
+        min(GROUP_CAP, groups * GROUP_BOOST)
+        + min(EVENT_CAP, events * EVENT_BOOST)
+        + min(TOPIC_CAP, topics * TOPIC_BOOST)
+    )
     return min(MAX_BOOST, boost)
 
 
-def pair_closeness(snap: FormationSnapshot, refs: Sequence[str]) -> tuple[tuple[str, str, float], ...]:
+def pair_closeness(
+    snap: FormationSnapshot, refs: Sequence[str]
+) -> tuple[tuple[str, str, float], ...]:
     """(playerA, playerB, score) for each pair of refs, sorted, scores in [0, 1]."""
     vectors = player_vectors(a for a in snap.answers if a.id in set(refs))
     out = []
     for ra, rb in combinations(sorted(refs), 2):
         base = cosine(vectors.get(ra, {}), vectors.get(rb, {}))  # type: ignore[arg-type]
-        score = min(1.0, max(0.0, base + activity_boost(snap.activity.get(ra), snap.activity.get(rb))))
+        score = min(
+            1.0, max(0.0, base + activity_boost(snap.activity.get(ra), snap.activity.get(rb)))
+        )
         a, b = pair(snap.id_map[ra], snap.id_map[rb])
         out.append((a, b, round(score, 4)))
     return tuple(sorted(out))
@@ -59,8 +67,9 @@ def _score(closeness: Sequence[tuple[str, str, float]], x: str, y: str) -> float
     return 0.0
 
 
-def bands_for_viewer(viewer: str, member_ids: Sequence[str],
-                     closeness: Sequence[tuple[str, str, float]]) -> dict[str, str]:
+def bands_for_viewer(
+    viewer: str, member_ids: Sequence[str], closeness: Sequence[tuple[str, str, float]]
+) -> dict[str, str]:
     """Other members -> band, by rank of closeness to the viewer. Ties share a band."""
     others = [m for m in member_ids if m != viewer]
     if not others:
@@ -97,8 +106,11 @@ def member_context(snap: FormationSnapshot, refs: Sequence[str]) -> dict[str, di
                 shared_group += bool(set(mine.group_ids) & set(theirs.group_ids))
                 same_event += bool(set(mine.event_ids) & set(theirs.event_ids))
                 friends += bool(theirs.profile_id and theirs.profile_id in mine.friend_ids)
-        out[snap.id_map[viewer]] = {"sharedGroupStars": shared_group, "alreadyFriends": friends,
-                                    "sameEventStars": same_event}
+        out[snap.id_map[viewer]] = {
+            "sharedGroupStars": shared_group,
+            "alreadyFriends": friends,
+            "sameEventStars": same_event,
+        }
     return out
 
 
@@ -113,11 +125,16 @@ def heat_bucket(count: int) -> str | None:
     return "10+" if count >= 10 else "6-9" if count >= 6 else "3-5"
 
 
-def event_heat(snap: FormationSnapshot, viewer_ref: str) -> list[dict[str, str]]:
+def event_heat(
+    snap: FormationSnapshot, viewer_ref: str, approved_event_ids: Collection[str]
+) -> list[dict[str, str]]:
     """D010 "Where people like you are going": per event id, how many players
     similar to the viewer are interested, bucketed and thresholded by code.
-    Only players who opted in to activity are counted; never who they are."""
-    if viewer_ref not in snap.id_map:
+    Only players who opted in to activity are counted; never who they are.
+    Only events in `approved_event_ids` (Adam's catalog) are counted; an empty
+    allowlist shows nothing, so an unapproved or invented event never appears."""
+    approved = frozenset(approved_event_ids)
+    if viewer_ref not in snap.id_map or not approved:
         return []
     others = [r for r in snap.refs if r != viewer_ref and r in snap.activity]
     scores = {(a, b): s for a, b, s in pair_closeness(snap, [viewer_ref, *others])}
@@ -127,6 +144,7 @@ def event_heat(snap: FormationSnapshot, viewer_ref: str) -> list[dict[str, str]]
         if scores.get(pair(viewer, snap.id_map[ref]), 0.0) < SIMILAR_FLOOR:
             continue
         for event in snap.activity[ref].event_ids:
-            counts[event] = counts.get(event, 0) + 1
+            if event in approved:
+                counts[event] = counts.get(event, 0) + 1
     rows = [{"eventId": e, "bucket": b} for e, n in counts.items() if (b := heat_bucket(n))]
     return sorted(rows, key=lambda r: (-counts[r["eventId"]], r["eventId"]))
