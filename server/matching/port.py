@@ -115,6 +115,18 @@ class MatchingPort:
             raise MatchingError("INVALID_INPUT", "Sky inputs invalid", retryable=False) from exc
         return stats.to_wire()
 
+    def debug(self, cycle_id: str) -> dict:
+        """Operator-only FormationDebugData for a cycle formed by this port: random per-lease
+        refs only, never answer text or playerIds. Kai persists it under the guarded
+        formation commit. Raises NOT_FOUND if this port did not form the cycle."""
+        result = self._themes.load(cycle_id)
+        if result is None or result.debug is None:
+            raise MatchingError("NOT_FOUND", "No formation for this cycle", retryable=False)
+        return {"data": dict(result.debug),
+                "evidence": [e.to_wire() for e in result.evidence],
+                "totalMs": int(result.timings_ms.get("totalMs", 0)),
+                "usedFallback": result.used_fallback}
+
     async def computeSky(self, cycleId: str, threshold: int) -> dict:  # noqa: N802,N803
         """protocol.ts FormationPort.computeSky(cycleId, threshold)."""
         return await self.compute_sky(cycleId, threshold)

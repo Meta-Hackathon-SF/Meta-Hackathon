@@ -19,10 +19,10 @@ from typing import Any
 
 from server.matching.baseline import baseline_groups
 from server.matching.evaluation import gold_snapshot, pair_metrics
-from server.matching.formation import FormationService
 from server.matching.models import FormationSnapshot
 from server.matching.muse_specs import register_formation_specs
-from server.matching.sky import SkyService
+from server.matching.port import build_matching_port
+from server.privacy import OutputGuard
 from server.providers import (
     KeywordMusePort,
     TaskRegistry,
@@ -61,11 +61,14 @@ class _Snapshots:
         return self._snap
 
 
-class _AllowAll:
-    """Stand-in until Patrik's OutputGuard is wired; evaluation only."""
+class _Guesses:
+    """Synthetic guesses; Patrik's bulk guess getter is not delivered yet."""
 
-    def check(self, text: str, against_answers: Sequence[str]) -> Mapping[str, Any]:
-        return {"ok": True, "reasons": []}
+    def __init__(self, players: Sequence[str]) -> None:
+        self._guesses = {p: (sum(map(ord, p)) * 7) % 100 for p in players}
+
+    async def prevalence_guesses(self, cycle_id: str) -> Mapping[str, int]:
+        return self._guesses
 
 
 def scripted_transport(players: int) -> ScriptedTransport:
@@ -117,25 +120,29 @@ async def evaluate(players: int, live: bool, threshold: int = 3, gold: bool = Fa
         snap, gold_labels = gold_snapshot(players)
     else:
         snap = synthetic_snapshot(players)
-    formation = FormationService(port, _Snapshots(snap), _AllowAll())
+    matching = build_matching_port(muse=port, snapshots=_Snapshots(snap),
+                                   guesses=_Guesses(list(snap["idMap"].values())),
+                                   guard=OutputGuard(), precompute_threshold=threshold)
     started = time.monotonic()
-    result = await formation.form("eval-cycle")
-    if result.status != "ok":
-        return {"label": SYNTHETIC_LABEL, "status": "failed", "error": result.error.code}
-    guesses = {p: (sum(map(ord, p)) * 7) % 100 for p in snap["idMap"].values()}
-    stats = await SkyService(port, _AllowAll()).compute("eval-cycle", result, guesses,
-                                                        threshold)
+    raw = await matching.form("eval-cycle")
+    formed_ms = int((time.monotonic() - started) * 1000)
+    if raw["status"] != "ok":
+        return {"label": SYNTHETIC_LABEL, "status": "failed", "error": raw["error"]["code"]}
+    sky = await matching.computeSky("eval-cycle", threshold)
+    debug = matching.debug("eval-cycle")
+    result_groups = [c["memberIds"] for c in raw["constellations"]]
     return {
         "label": SYNTHETIC_LABEL, "mode": "live" if live else "fixture", "players": players,
-        "status": "ok", "usedFallback": result.used_fallback,
-        "formationTimingsMs": dict(result.timings_ms),
+        "status": "ok", "usedFallback": debug["usedFallback"],
+        "formationTotalMs": debug["totalMs"], "formWallMs": formed_ms,
         "totalWithSkyMs": int((time.monotonic() - started) * 1000),
-        "constellationSizes": sorted(len(c.member_ids) for c in result.constellations),
-        "baselineAgrees": sum(c.baseline_agrees for c in result.constellations),
-        "skyThemesShown": len(stats.themes), "skyThemesSuppressed": stats.suppressed_themes,
-        "evidence": [e.to_wire() for e in (*result.evidence, *stats.evidence)],
-        **({"quality": _quality(snap, [c.member_ids for c in result.constellations],
-                                gold_labels),
+        "constellationSizes": sorted(len(g) for g in result_groups),
+        "baselineAgrees": sum(c["baselineAgrees"] for c in raw["constellations"]),
+        "fixedNames": sum(1 for c in raw["constellations"] if c["name"].startswith("The ")),
+        "skyThemesShown": len(sky["themes"]), "skyThemesSuppressed": sky["suppressedThemes"],
+        "guard": "server.privacy.OutputGuard",
+        "evidence": [*raw["evidence"], *sky["evidence"]],
+        **({"quality": _quality(snap, result_groups, gold_labels),
             "qualityNote": "fixture Muse is scripted; only --live measures Muse quality"
             if not live else "live Muse vs keyword baseline on synthetic gold set"}
            if gold else {}),
