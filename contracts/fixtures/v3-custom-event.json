@@ -1,0 +1,61 @@
+{
+  "contractVersion": "3.0.0",
+  "_note": "S14. Muse input is aggregate only: no ids, answers or names. Operator approves before any Invite exists.",
+  "input": {
+    "clusterSize": 9,
+    "interestTags": [
+      "coffee",
+      "music"
+    ],
+    "area": "Berkeley",
+    "windows": [
+      {
+        "start": "2026-11-21T01:00:00Z",
+        "end": "2026-11-21T04:00:00Z"
+      }
+    ],
+    "venues": [
+      {
+        "placeId": "place-cafe",
+        "name": "Campus Cafe",
+        "kind": "cafe",
+        "isPublic": true
+      }
+    ]
+  },
+  "proposal": {
+    "proposalId": "cp-01",
+    "clusterSize": 9,
+    "title": "Coffee and a low-key jam",
+    "why": "People who keep landing in the same constellations like coffee and music.",
+    "placeId": "place-cafe",
+    "timeWindow": {
+      "start": "2026-11-21T01:00:00Z",
+      "end": "2026-11-21T04:00:00Z"
+    },
+    "evidence": {
+      "model": "fixture",
+      "source": "replay",
+      "generatedAt": "2026-11-13T09:00:00Z",
+      "latencyMs": 0,
+      "callType": "M7"
+    },
+    "status": "pending"
+  },
+  "invite": {
+    "inviteId": "iv-01",
+    "event": {
+      "eventId": "ev-custom-cp-01",
+      "title": "Coffee and a low-key jam",
+      "placeId": "place-cafe",
+      "startsAt": "2026-11-21T01:00:00Z",
+      "endsAt": "2026-11-21T04:00:00Z",
+      "constellationInterestBucket": "none",
+      "myInterest": false,
+      "kind": "custom"
+    },
+    "rsvp": "none",
+    "status": "pending",
+    "confirmAtCount": 3
+  }
+}

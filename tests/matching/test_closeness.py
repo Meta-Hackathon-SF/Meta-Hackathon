@@ -97,8 +97,12 @@ def test_context_counts_only_and_mutual_friends():
             "topics": [],
         },
     }
-    ctx = member_context(snap(ANSWERS, act), ["a", "b", "c", "d"])
+    ctx = member_context(snap(ANSWERS, act), ["a", "b", "c", "d"], count_friends=True)
     assert ctx["p-a"] == {"sharedGroupStars": 1, "alreadyFriends": 1, "sameEventStars": 1}
+    # Default: client-asserted friend ids are not counted (friend-oracle fix, audit P1).
+    default = member_context(snap(ANSWERS, act), ["a", "b", "c", "d"])
+    assert all(v["alreadyFriends"] == 0 for v in default.values())
+    assert default["p-a"]["sharedGroupStars"] == 1
     assert ctx["p-d"] == {"sharedGroupStars": 0, "alreadyFriends": 0, "sameEventStars": 0}
     assert all(
         set(v) == {"sharedGroupStars", "alreadyFriends", "sameEventStars"} for v in ctx.values()

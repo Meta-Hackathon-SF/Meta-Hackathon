@@ -26,7 +26,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-CONTRACT_VERSION = "2.2.0"
+CONTRACT_VERSION = "3.0.0"
 
 
 class Wire(BaseModel):

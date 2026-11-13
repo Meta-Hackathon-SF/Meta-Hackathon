@@ -69,7 +69,9 @@ class FakeMuse:
     def __init__(self, ref_of: Mapping[str, str], groups: Sequence[Sequence[str]],
                  *, m4_script: Sequence[str] = ("good",), m3_mode: str = "good",
                  m5_name: str = "Quiet Lanterns",
-                 blocked_groups: Sequence[Sequence[str]] = ()) -> None:
+                 blocked_groups: Sequence[Sequence[str]] = (),
+                 meaning: str = "fake meaning") -> None:
+        self.meaning = meaning
         self.ref_of = ref_of
         self.groups = [[ref_of[p] for p in g] for g in groups]
         self.m4_script = list(m4_script)
@@ -79,11 +81,17 @@ class FakeMuse:
         self.calls: list[dict] = []
 
     async def run(self, *, task: str, requestId: str, promptVersion: str, payload: Any,
-                  signal: Any = None) -> Mapping[str, Any]:
-        self.calls.append({"task": task, "payload": payload})
+                  signal: Any = None, correction: str | None = None) -> Mapping[str, Any]:
+        self.calls.append({"task": task, "payload": payload, "correction": correction,
+                           "promptVersion": promptVersion})
         if task == "theme_discovery":
             if self.m3_mode == "raise":
                 raise RuntimeError("provider down")
+            if self.m3_mode == "quote":  # first label quotes 5+ words of a fixture answer
+                return {"output": {"themes": [
+                    {"id": f"t{i}", "label": "eat in my room so no one" if i == 0 else f"Shared week {i}",
+                     "description": "fake", "memberIds": g} for i, g in enumerate(self.groups)]},
+                    "evidence": evidence("M3")}
             return {"output": {"themes": [
                 {"id": f"t{i}", "label": f"Shared week {i}", "description": "fake",
                  "memberIds": g} for i, g in enumerate(self.groups)]},
@@ -94,11 +102,15 @@ class FakeMuse:
                 raise RuntimeError("provider down")
             if mode == "invalid_json":
                 return {"output": "{not json", "evidence": evidence("M4")}
+            if mode == "garbage":  # too few refs kept to repair -> re-solve
+                return {"output": {"constellations": [
+                    {"memberIds": self.groups[0][:2], "sharedMeaning": "fake meaning",
+                     "confidence": 0.8}]}, "evidence": evidence("M4")}
             groups = self.groups
             if mode == "blocked":
                 groups = self.blocked_groups
             return {"output": {"constellations": [
-                {"memberIds": g, "sharedMeaning": "fake meaning", "confidence": 0.8}
+                {"memberIds": g, "sharedMeaning": self.meaning, "confidence": 0.8}
                 for g in groups]}, "evidence": evidence("M4")}
         if task == "constellation_naming":
             shape = SHAPES_BY_SIZE[payload["size"]][0]

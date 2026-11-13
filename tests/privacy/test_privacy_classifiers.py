@@ -423,6 +423,10 @@ def test_snapshot_answers_carry_stored_question_id(store, stores):
     save_week(store, answers)
     snap = PrivacyFormation(store, answers, moderation).prepare_formation("cycle-demo-w1", COMMUNITY).snapshot
     assert "questions" not in snap  # no source injected: never guessed
+    assert all("questionId" not in a for a in snap["answers"])  # nothing to resolve it against (#62)
+    texts = {q: f"Synthetic question text for {q}?" for q in QID_BY_DAY.values()}
+    snap = PrivacyFormation(store, answers, moderation, question_texts=lambda c, k: texts) \
+        .prepare_formation("cycle-demo-w1", COMMUNITY).snapshot
     by_text = {a["text"]: a["questionId"] for a in snap["answers"]}
     for a in WEEK["answers"]:
         assert by_text[a["text"]] == QID_BY_DAY[a["day"]]
@@ -443,9 +447,11 @@ def test_snapshot_questions_from_injected_source(store, stores):
     formation = PrivacyFormation(store, answers, moderation, question_texts=source)
     lease = formation.prepare_formation("cycle-demo-w1", COMMUNITY)
     qs = lease.snapshot["questions"]
-    answered = {a["questionId"] for a in lease.snapshot["answers"]}
+    answered = {QID_BY_DAY[a["day"]] for a in WEEK["answers"]}
     assert calls == [("cycle-demo-w1", COMMUNITY)]
     assert {q["questionId"] for q in qs} == answered - {QID_BY_DAY[1]}
+    tagged = {a.get("questionId") for a in lease.snapshot["answers"]}
+    assert tagged - {None} == {q["questionId"] for q in qs}  # day-1 text dropped, so its answers carry no id
     assert all(set(q) == {"questionId", "text"} for q in qs)
     models = pytest.importorskip("server.matching.models")
     parsed = models.FormationSnapshot.from_dict(run(LeasedSnapshot(lease).formation_snapshot("cycle-demo-w1")))

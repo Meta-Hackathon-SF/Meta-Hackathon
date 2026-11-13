@@ -2,7 +2,7 @@
 
 Status: **proposed (D012, contract 3.0.0)**. Needs ACK from all five owners before implementation. Supersedes Sky statistics, the prevalence guess and constellation naming of 2.x.
 
-Base path `/api/v1`, session cookie, `Idempotency-Key` on mutations, errors `{error:{code,message,requestId,retryable}}`. Existing routes are in `contracts/API.md`, wire types in `contracts/protocol.ts` (2.1.0). This document is backend only. UI owners keep their own screen notes.
+Base path `/api/v1`, session cookie, `Idempotency-Key` on mutations, errors `{error:{code,message,requestId,retryable}}`. Existing routes are in `contracts/API.md`, wire types in `contracts/protocol.ts` (3.0.0, drafted in the same PR as the R1-R3 privacy fixes below). This document is backend only. UI owners keep their own screen notes.
 
 ## 1. What changed
 
@@ -51,10 +51,21 @@ Week timeline (all times community-local, demo timing via operator):
 | Sunday 10:00 | main constellation, chat opens | reveal |
 | Reveal + 24 h | chat closes | room expiry |
 
+Visibility floor: no constellation, first or second degree, is ever returned to a player with fewer than 3 members.
+
 Wire identity rules:
 - A star is an integer index into this week's sky, randomized per cycle. It is never a player id. `myStarIndex` identifies the viewer only to the viewer.
 - Constellations have an opaque `constellationId` and a `colorId` (day), no name.
 - Co-membership graph: for week W, edge weight between two players is the number of constellations they share. Stored server side only, ids never leave the server.
+
+Daily clustering method (Rishi). M4 returns 3-5 groups from a bounded input, so it does not fit "several constellations per player per day". Daily groups use tags instead:
+1. At day close, Muse (M3, batched, off the player path) proposes a small set of meaning tags for the day (about 8 to 20), from the day's answers and question. Muse never assigns people.
+2. Code assigns each answer to its best 1 to 2 tags (baseline similarity between answer vector and tag description; ties by lower tag id). A player gets at most `MAX_DAILY_CONSTELLATIONS` tags per day.
+3. A tag with 3 or more distinct eligible players becomes that day's constellation. A tag with fewer than 3 is dropped and its players are re-assigned to their next-best tag, or left unplaced. No constellation under 3 is ever stored for display.
+4. Blocked pairs never share a constellation (a blocked pair stays in different tags; if both need the same tag, the lower-similarity member moves).
+5. If Muse is unavailable or fails validation, the tags come from the keyword baseline and the output is labeled "Fallback grouping" in the operator view only.
+6. Co-membership edges (week graph) are updated from the final day clusters.
+Sunday main constellation reuses M4: the candidate set (co-membership weight 2+ or high similarity) is the bounded input, and M4 refines it to a group of 3-5.
 
 Instant placement (Rishi): on answer accept, embed the answer weight vector with the local baseline matcher (no Muse), assign the player to up to `MAX_DAILY_CONSTELLATIONS` (default 3) existing or new same-day clusters by similarity above threshold. Day close (Rishi, batch) re-forms the day with the final answer set; players keep membership of clusters that survive, others are replaced. The UI reads `daily.updated` to redraw.
 
@@ -228,7 +239,7 @@ Actions: none.
 
 SSE: `daily.updated` `{ day }` when placement becomes ready or day close changes membership; client refetches.
 
-Jobs: instant placement (Rishi, on answer), day close (Kai runs, Rishi forms, Muse M3 batched theme grouping optional and off the player path).
+Jobs: instant placement (Rishi, on answer), day close (Kai runs, Rishi forms, Muse M3 batched theme grouping optional and off the player path). Method: see "Daily clustering method" in section 3. Day close drops any cluster with fewer than 3 distinct players before anything is stored for a viewer.
 
 Muse: none on this path. M3 only runs in the day-close batch and only affects grouping, never the response text.
 
@@ -236,7 +247,8 @@ Privacy
 - Only for days the player answered; otherwise 404 `NOT_FOUND` (no leak of whether others answered).
 - Star indices only, no ids, no labels, no shared-meaning text, no member answers.
 - `answeredToday` is the only count. No percentages, no per-constellation sizes beyond `starIndices.length`.
-- A constellation under 3 players is not returned (`placement: "pending"`, empty list).
+- A constellation under 3 players is never returned, at day close or at any other time (`placement: "pending"`, empty list). 3 is the floor for anything a player can see (Patrik R2).
+- `starIndices` here are sky star indices (week-randomized). They are never reused in the chat room (R1, see S11).
 
 Errors: `UNAUTHENTICATED`, `NOT_FOUND`, `CONSENT_REQUIRED`.
 
@@ -338,7 +350,7 @@ interface MySkyView {
   }[];
   secondDegree: {
     constellationId: Id;
-    viaStarIndex: number;       // which of my constellation-stars it hangs from
+    viaStarIndex: number;       // sky star index of one of my constellation-stars it hangs from
     starIndices: number[];
   }[];                          // drawn at low opacity
 }
@@ -350,7 +362,7 @@ SSE: `cycle.phase` (lock moves to S10).
 
 Jobs
 - Week lock + sky layout (Saturday 12:00, Kai runs, Rishi lays out): deterministic force-free layout seeded by `weekSeed`, so all clients see the same positions. Stars are re-randomized every week.
-- Second-degree (Rishi): for each star in my constellations (excluding me), its up to 2 biggest other constellations that week by size, excluding ones I am already in. Cap 40 constellations and 3,000 stars total per viewer; drop smallest first.
+- Second-degree (Rishi): for each star in my constellations (excluding me), its up to 2 biggest other constellations that week by size, excluding ones I am already in. Cap 40 constellations and 3,000 stars total per viewer; drop smallest first. Computed only when at least 30 players are eligible that week; otherwise `secondDegree: []` (Patrik R2: in a small community the viewer's own sets plus 2 biggest per star reconstruct most of the co-membership graph). Never include a constellation with fewer than 3 members.
 
 Muse: none.
 
@@ -362,7 +374,7 @@ Privacy
 
 Errors: `NOT_FOUND` (before lock), `UNAUTHENTICATED`, `CONSENT_REQUIRED`.
 
-Empty: `mine: []` if the player answered no day; `secondDegree: []` if cut (cut order 3) or no neighbors.
+Empty: `mine: []` if the player answered no day; `secondDegree: []` if cut (cut order 3), fewer than 30 eligible players, or no neighbors.
 
 Backend owner: Rishi (data), Kai (route composition).
 
@@ -411,10 +423,10 @@ Reads
 interface MainConstellationView {
   constellationId: Id;
   roomId: Id;
-  myStarIndex: number;
-  starIndices: number[];                         // 3-5 including me
-  anchors: { index: number; t: number }[];       // t in 0..1 along the Meta-logo path, one per member
-  brightness: Record<number, "bright" | "mid" | "faint">;
+  myRoomIndex: number;                           // room-local, NOT the sky star index (R1)
+  roomIndices: number[];                         // 3-5 including me, 0..n-1 shuffled per room, unrelated to sky indices
+  anchors: { index: number; t: number }[];       // index is a room index; t in 0..1 along the Meta-logo path, one per member
+  brightness: Record<number, "bright" | "mid" | "faint">; // keyed by room index
   revealedAt: string;
   roomExpiresAt: string;                         // revealedAt + 24 h
 }
@@ -432,7 +444,8 @@ Jobs
 Muse: M4 may refine ties only (Adam adapter). No Muse text reaches the player. No shared-meaning sentence is returned in v3.
 
 Privacy
-- Star indices and anchors only. No names, no shared-meaning text, no scores.
+- Room indices and anchors only. No names, no shared-meaning text, no scores.
+- R1 (Patrik): the main view and the chat room use room-local indices that are drawn fresh per room and never equal the sky `starIndex`. Only the server maps between them. After a mutual reveal, a named person therefore cannot be traced back to their Saturday `mine` or `secondDegree` sets. Chat handles ("Star 3") derive from the room index, not the sky index.
 - Group size 3-5 is enforced by code; below 3 -> `main: null` and the player gets a fallback state, never a padded group with synthetic stars (synthetic players count only in fixture mode and are labeled in the operator view).
 - Brightness is banded per viewer; raw score never sent.
 
@@ -492,7 +505,7 @@ interface EventView {
   placeId: Id;                       // approved public venue
   startsAt: string;
   endsAt: string;
-  constellationInterestBucket: "none" | "3-5" | "6-10" | "11+";
+  constellationInterestBucket: "none" | "3-5" | "6-9" | "10+";
   myInterest: boolean;
   kind: "catalog" | "custom";
 }
@@ -500,7 +513,7 @@ interface EventNudge {
   nudgeId: Id;
   eventId: Id;
   copy: string;                      // Adam M7, templated, validated
-  interestBucket: "3-5" | "6-10" | "11+";
+  interestBucket: "3-5" | "6-9" | "10+";
   expiresAt: string;
 }
 ```
@@ -512,15 +525,15 @@ Actions
 SSE: `event.nudge` `{ nudgeId }`.
 
 Jobs
-- Constellation-interest counts (Rishi, hourly and on interest change): for each event, count distinct interested players who share at least one constellation this week with the viewer (computed per viewer, not stored globally). Bucketed, shown only when at least 3, otherwise `"none"`.
+- Constellation-interest counts (Rishi, hourly only, never on interest change; Patrik R3): for each event, count distinct interested players who share at least one constellation this week with the viewer (computed per viewer, not stored globally). Bucketed, shown only when at least 3, otherwise `"none"`. The allowlist from D015 applies: only approved `eventId`s are counted. Real use should also count only peers who joined at least 7 days ago and rate-limit account creation (Sybil defence); for the demo this risk is accepted.
 - Nudge eligibility (Rishi): viewer has `eventSignals`, bucket is at least `3-5`, event is upcoming within 7 days, viewer has not dismissed it, max 2 nudges per week.
 - Nudge copy (Adam, M7): one sentence from a template plus event title, e.g. "People from your constellations are going to Open mic." Validated by OutputGuard (no names, no counts other than the bucket, no venue not in catalog). Failure falls back to the fixed template.
-- Delivery (Kai): in-feed card and notification.
+- Delivery (Kai): in-feed card and notification, delayed by a random 1 to 6 hours after the hourly job so a nudge cannot be timed against a known person's action (Patrik R3).
 
 Muse: M7 for copy only, off the request path (precomputed by the job). Player-facing GET never calls Muse.
 
 Privacy
-- Never reveals who is going, never which constellation, never exact counts, never a count under 3.
+- Never reveals who is going, never which constellation, never exact counts, never a count under 3. A bucket changes at most once per hour (no live differencing).
 - Interest is private; there is no attendee list.
 - `eventId` must be in the allowlist; unknown ids -> 404.
 - Nudges require `eventSignals`; revoking deletes queued nudges.
@@ -646,8 +659,8 @@ Filtered per player. `Last-Event-ID` resumes. Event ids are monotonic per player
 | Formation progress stream | during main formation | Kai | none | `formation.progress` |
 | Reveal | Sunday 10:00 | Kai | none | `main.revealed`, room open |
 | Room expiry | reveal + 24 h | Kai | none | room closed, deletion scheduled |
-| Event interest counts | interest change, hourly | Rishi | none | per-viewer buckets, nudge eligibility |
-| Event nudges | after counts | Adam copy, Kai delivery | M7 | `EventNudge`, `event.nudge` |
+| Event interest counts | hourly only (R3) | Rishi | none | per-viewer buckets, nudge eligibility |
+| Event nudges | after counts, delivered with a 1-6 h delay (R3) | Adam copy, Kai delivery | M7 | `EventNudge`, `event.nudge` |
 | Custom-event cluster finder | week close, every 2-3 weeks | Rishi | none | clusters (internal) |
 | Custom-event proposals | after cluster finder | Adam | M7 `custom_event` | `CustomEventProposal` pending approval |
 | Custom-event confirmation | RSVP change, T-24 h | Kai | none | `confirmed` at 3 going, else `cancelled` |
@@ -657,7 +670,7 @@ Latency budget: nothing on a player-facing GET waits on Muse. Instant placement 
 
 ## 7. Contract 3.0.0 type sketch
 
-Breaking vs 2.1.0; all five owners ACK in `docs/DECISIONS.md` (D012).
+Breaking vs 2.2.0 (builds on 2.2.0, D014); all five owners ACK in `docs/DECISIONS.md` (D012). The committed types are in `contracts/protocol.ts`; this sketch is superseded by that file where they differ. Fixtures: `contracts/fixtures/v3-*.json`.
 
 ```ts
 export const CONTRACT_VERSION = "3.0.0";
@@ -746,10 +759,12 @@ Fixtures to add under `contracts/fixtures/`: daily-constellations, week, sky-sta
 2. No constellation, room or chat title carries a name or label. No shared-meaning text player-facing.
 3. Only the owner reads their `DailyAnswer`, follow-up, interest or RSVP.
 4. The only shared number on daily screens is `answeredToday`. No percentages, no prevalence, no per-constellation stats.
-5. Second-degree sets contain star indices only and are computed per viewer.
+5. Second-degree sets contain star indices only, are computed per viewer, and only when at least 30 players are eligible (R2).
+5a. No constellation of fewer than 3 members is ever shown, at any degree (R2).
+5b. The Sunday main view and the chat room use room-local indices, never sky star indices (R1).
 6. Main constellation is 3-5 players enforced by code; below 3 returns null, no padding with synthetic stars.
 7. Chat handles are per room; mutual reveal only when both ask, only inside the room; reports and blocks never notify the other party.
-8. Event counts are bucketed and only shown at 3 or more. Never who, never which constellation.
+8. Event counts are bucketed and only shown at 3 or more, recomputed hourly only, nudges delivered with a delay. Never who, never which constellation (R3).
 9. Event signals require `eventSignals` consent; revocation deletes interests, RSVPs and queued nudges and invites.
 10. Custom events use approved public venues only, confirmed at 3 or more RSVPs, operator approved before any invite.
 11. Muse never sees player ids, names, emails or raw answers for event and cluster work; only allowlisted tags and buckets. Muse is not called on any player-facing GET.

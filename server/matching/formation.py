@@ -8,9 +8,10 @@ Muse proposes; this module decides. Nothing here persists; orchestration (Kai) c
 from __future__ import annotations
 
 import asyncio
+import inspect
 import time
 import uuid
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -21,7 +22,7 @@ from server.matching.baseline import (
     same_group,
     similarity_matrix,
 )
-from server.matching.closeness import member_context, pair_closeness
+from server.matching.closeness import affinity_pairs, member_context, pair_closeness
 from server.matching.models import (
     COLOR_IDS,
     FALLBACK_LABEL,
@@ -52,6 +53,9 @@ M4_ATTEMPTS = 2  # first proposal + one re-solve
 FALLBACK_MEANING = "Grouped by shared keywords (Fallback grouping)"
 FALLBACK_CONFIDENCE = 0.0
 FALLBACK_SUFFIX = f" ({FALLBACK_LABEL})"
+# sharedMeaning is private but feeds M5 naming and M7 nudges, so a meaning that quotes an
+# answer or carries a sensitive term is replaced by this fixed text before it goes anywhere.
+NEUTRAL_MEANING = "Answers that share a similar feeling this week"
 
 
 GroupedHook = Callable[[tuple[Theme, ...], int, int], Awaitable[Any]]
@@ -72,6 +76,16 @@ async def _run_hook(hook: GroupedHook | None, themes: tuple[Theme, ...], eligibl
 class _Call:
     output: Any
     evidence: MuseCallEvidence
+
+
+def _accepts_correction(muse: Any) -> bool:
+    """True when muse.run takes `correction=` (KeywordMusePort does; older fakes do not)."""
+    try:
+        params = inspect.signature(muse.run).parameters
+    except (TypeError, ValueError, AttributeError):
+        return False
+    return "correction" in params or any(
+        p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
 
 
 def _fallback_name(index: int, size: int) -> tuple[str, str, str]:
@@ -96,8 +110,12 @@ class FormationService:
     def __init__(self, muse: MusePortLike, snapshots: SnapshotSource, guard: OutputGuardLike,
                  *, timeout_s: float = DEFAULT_TIMEOUT_S, allow_fallback: bool = True,
                  parallel_themes: bool = True, name_timeout_s: float = NAME_TIMEOUT_S,
+                 approved_event_ids: Collection[str] = (),
                  clock: Callable[[], float] = time.monotonic) -> None:
         self._muse = muse
+        self._sends_correction = _accepts_correction(muse)
+        # Adam's venue catalog event ids; only these count toward M4 affinity.
+        self._approved_event_ids = frozenset(approved_event_ids)
         self._snapshots = snapshots
         self._guard = guard
         self._timeout_s = timeout_s
@@ -109,10 +127,12 @@ class FormationService:
     # ------------------------------------------------------------ Muse calls
 
     async def _call(self, task: str, prompt_version: str, payload: dict,
-                    request_id: str, timeout_s: float | None = None) -> _Call:
+                    request_id: str, timeout_s: float | None = None,
+                    correction: str | None = None) -> _Call:
+        extra = {"correction": correction} if correction and self._sends_correction else {}
         response = await asyncio.wait_for(
             self._muse.run(task=task, requestId=request_id, promptVersion=prompt_version,
-                           payload=payload),
+                           payload=payload, **extra),
             timeout=timeout_s or self._timeout_s)
         if not isinstance(response, Mapping) or set(response) != {"output", "evidence"}:
             raise ValidationError("response", "expected output and evidence")
@@ -142,7 +162,7 @@ class FormationService:
     async def _themes(self, snap: FormationSnapshot, request_id: str,
                       evidence: list[MuseCallEvidence]) -> tuple[prompts.RawTheme, ...]:
         known = set(snap.refs)
-        payload = prompts.build_m3_payload(snap.answers)
+        payload = prompts.build_m3_payload(snap.answers, snap.questions)
         parsed = await self._try(
             lambda: self._call("theme_discovery", prompts.PROMPT_VERSION_M3, payload,
                                f"{request_id}:m3"),
@@ -155,28 +175,40 @@ class FormationService:
         """M4 with repair. Returns (proposal, repairedGroups) or None.
 
         Order per attempt: strict parse -> valid? accept -> near-valid? repair and accept ->
-        otherwise spend the re-solve attempt. Repair keeps Muse's grouping and marks touched
-        groups loose (confidence capped).
+        otherwise spend the re-solve attempt, which carries a code-generated `correction`
+        (violation kinds, counts and random refs only). Repair keeps Muse's grouping and
+        marks touched groups loose (confidence capped).
         """
         known = set(snap.refs)
         blocked = snap.blocked_ref_pairs()
-        payload = prompts.build_m4_payload(themes, snap.answers, blocked)
+        payload = prompts.build_m4_payload(
+            themes, snap.answers, blocked, snap.questions,
+            affinity_pairs(snap, self._approved_event_ids))
+        correction: str | None = None
 
         def parse(out: Any) -> tuple[tuple[prompts.RawConstellation, ...], int]:
-            proposal = prompts.parse_m4(out, known, allow_unknown_refs=True)
-            clean = tuple(c for c in proposal if all(r in known for r in c[0]))
-            if len(clean) == len(proposal) and not violations(
-                    [c[0] for c in proposal], known, blocked):
+            nonlocal correction
+            try:
+                proposal = prompts.parse_m4(out, known, allow_unknown_refs=True)
+            except ValidationError:
+                correction = prompts.m4_correction((), parse_failed=True)
+                raise
+            groups = [c[0] for c in proposal]
+            codes = violations(groups, known, blocked)
+            if not codes:
                 return proposal, 0
             fixed = repair_proposal(proposal, sorted(known), blocked, sim)
             if fixed is None:
+                placed = {r for g in groups for r in g}
+                correction = prompts.m4_correction(
+                    codes, unplaced=sorted(known - placed), unknown=len(placed - known))
                 raise ValidationError("output.constellations", "not repairable")
             return (tuple(zip(fixed.groups, fixed.meanings, fixed.confidences, strict=False)),
                     sum(fixed.touched))
 
         return await self._try(
             lambda: self._call("constellation_formation", prompts.PROMPT_VERSION_M4,
-                               payload, f"{request_id}:m4"),
+                               payload, f"{request_id}:m4", correction=correction),
             evidence, parse, attempts=M4_ATTEMPTS)
 
     async def _name(self, index: int, meaning: str, size: int, answer_texts: Sequence[str],
@@ -206,6 +238,31 @@ class FormationService:
         if not isinstance(verdict, Mapping) or verdict.get("ok") is not True:
             name = FALLBACK_LABEL  # fixed text; still labeled
         return name, shape, color
+
+    def _guarded_meanings(self, proposal: Sequence[prompts.RawConstellation],
+                          answer_texts: Sequence[str]) -> tuple[prompts.RawConstellation, ...]:
+        """Replace any sharedMeaning that fails OutputGuard against the answers with fixed
+        neutral text. sharedMeaning feeds M5 naming and M7 nudges after this point."""
+        out = []
+        for refs, meaning, confidence in proposal:
+            verdict = self._guard.check(meaning, answer_texts)
+            if not isinstance(verdict, Mapping) or verdict.get("ok") is not True:
+                meaning = NEUTRAL_MEANING
+            out.append((refs, meaning, confidence))
+        return tuple(out)
+
+    def _guarded_themes(self, themes: Sequence[prompts.RawTheme],
+                        answer_texts: Sequence[str]) -> tuple[prompts.RawTheme, ...]:
+        """Drop any M3 theme whose label or description fails OutputGuard against the
+        answers. Theme labels reach the public Sky, and Sky runs later without the
+        answers, so the no-quote check has to happen here, while they are in hand."""
+        kept = []
+        for theme in themes:
+            _, label, desc, _ = theme
+            verdicts = (self._guard.check(label, answer_texts), self._guard.check(desc, answer_texts))
+            if all(isinstance(v, Mapping) and v.get("ok") is True for v in verdicts):
+                kept.append(theme)
+        return tuple(kept)
 
     @staticmethod
     def _theme_objects(cycle_id: str, snap: FormationSnapshot,
@@ -266,10 +323,12 @@ class FormationService:
                     "PROVIDER_UNAVAILABLE", "Formation unavailable; retry", retryable=True))
             proposal = tuple((g, FALLBACK_MEANING, FALLBACK_CONFIDENCE) for g in baseline)
 
+        answer_texts = [a.text for a in snap.answers]
+        proposal = self._guarded_meanings(proposal, answer_texts)
+        themes = self._guarded_themes(themes, answer_texts)
         theme_objs = self._theme_objects(cycle_id, snap, themes)
         hook = asyncio.ensure_future(_run_hook(on_grouped, theme_objs, len(snap.refs),
                                                len(proposal)))
-        answer_texts = [a.text for a in snap.answers]
         if used_fallback:
             names = [self._guarded_fallback_name(i, len(refs), answer_texts)
                      for i, (refs, _, _) in enumerate(proposal)]

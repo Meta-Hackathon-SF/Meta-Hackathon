@@ -83,7 +83,7 @@ Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
   - `MuseRouter` with `MEASURED_ROUTES`;
   - Wonder and Ember models, with per-model efforts;
   - provider token usage and estimated cost per call;
-  - D013 event ids;
+  - D015 event ids (was D013);
   - D014 contract 2.2.0 proposal, with mechanical version and callType bumps in other owners' paths (listed in D014).
 - PRs for owners' review, not merged by me:
   - #53 (Rishi): Sky no-quote fix and friend count off.
