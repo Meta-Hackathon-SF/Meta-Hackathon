@@ -34,3 +34,12 @@ Task-1-authorized pyproject.toml, .github/workflows/validation.yml and db/workfl
 
 ## Next consumer action
 Owners ACK/CHANGE the registry and deliver approved public factories/dependencies, production transaction hooks and cycle gates. Kai can then replace test stores with approved adapters and verify integration. Until then only independent work behind labeled test adapters; tasks 2-5 are not declared live-complete.
+
+## Independent chat milestone (PR #13)
+- Pure authorized-transaction chat policies: anonymous handles, M1 + OutputGuard gate, rate limiting, actor/route/body idempotency helper, immediate report hiding, two distinct reporters auto-hide, room-local blocks, pending/mutual reveal, exact weekly expiry, 14-day text/outbox purge.
+- Validated StreamEvent union, SSE encoder, Last-Event-ID parsing, seq replay filtering; historical messages recheck current moderation/block state and mutual identities are pair-only.
+- TEST-ONLY transaction/privacy/session/clock driver is exclusively tests/chat/adapters.py. No production chat store, route, HTTP stream or fake auth installed. Canonical block/report persistence, current privacy gates and actual moderation remain blocked.
+- Targeted tests/chat: 32 passed; Ruff clean. Fixture evidence only, no model call.
+- Requests answered: #14 DELIVERED registry/cycle slot/deps; #12 DELIVERED registry, ACK store needs; #17 ACK nudge shape and scope cut; #15 ACK D007 privacy SQLite (no cross-store atomicity assumed); #16 ACK guarded public fallback fix. Responses posted in original threads.
+- New remote state: privacy sessions/consent are now on main; Rishi fallback fix/Sky computation and Will cycle hooks/router are on branches. Next sync main before composition; update old blockers accordingly.
+- Sites skill applies only as local repository UI workflow; no hosting registration or deployment requested.
