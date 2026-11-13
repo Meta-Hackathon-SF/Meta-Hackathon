@@ -14,7 +14,7 @@ Updated: 2026-11-13T03:05Z
 Also done: sync adapters for Will's cycle service (`CycleQuestionPort`, `SyncClarify`) and the operator router for Kai's registry (`server/planning/api.py`).
 5. M6 question generation: `QuestionGenerator.generate / pending / approve / reject`, prompt `question_generation.v1`; generated questions stay pending and inactive until an operator approves.
 
-Not done: `OperatorNudgePanel` mounted in the console (Will); M1 on nudge text called live; the mid-week nudge schedule (Kai, cuttable). Kai's composed app with my nudge wiring is on role/kai-orchestration, not yet on main.
+Not done: M1 on nudge text called live; the mid-week nudge schedule (Kai, cuttable). Kai's composed app with my nudge wiring is on role/kai-orchestration, not yet on main.
 
 ## Changed interfaces and files
 - No change to `contracts/`. Shared-file edits claimed: one ACK line each under D005 and D006 in docs/DECISIONS.md; my four rows in the PROJECT_KNOWLEDGE.md evidence ledger.
@@ -72,6 +72,7 @@ Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
 Adam's Muse key has a $100 cap for the whole event including the demo. About 45 live calls so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
 
 ## Next action
-- Will or Kai: mount `OperatorNudgePanel` in the operator console for an open room.
+- DONE (Will, #38 f88311f): `OperatorNudgePanel` mounted in the operator console; verified on main 6d7dc62: Playwright 55 passed incl. the nudge test on desktop+mobile, pytest 565 passed 1 skipped.
+- Waiting on Kai: composed app on main (only role/kai-orchestration cad28cb has the nudge route) and ACK + contracts/API.md rows for the M6 approval routes (asked on #13 06:02Z).
 - Me: no unblocked build task left. Once Kai wires nudges into `PlanningRuntime`, run the operator nudge route in his app (offline scripted Muse), then one capped live M7.
 - Consumers: Rishi/Patrik register prompts with `contract_spec` (server/providers/README.md). Will calls `ClarifyService.follow_up` and `QuestionService.released` (server/planning/README.md). Kai calls `register_planning_tasks(registry)` and builds one adapter per process.
