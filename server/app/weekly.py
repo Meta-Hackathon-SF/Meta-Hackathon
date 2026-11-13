@@ -118,7 +118,8 @@ def build_weekly_app(
     base_muse = (
         muse_factory(registry)
         if muse_factory is not None
-        else build_muse_router(registry, load_muse_config())  # measured per-task models (+ MUSE_ROUTES override)
+        # Measured per-task models (server/providers/router.py), MUSE_ROUTES can override.
+        else build_muse_router(registry, load_muse_config())
     )
     muse = ScopedMuse(base_muse, repository)
     privacy = PrivacyService(privacy_store, clock=clock)
