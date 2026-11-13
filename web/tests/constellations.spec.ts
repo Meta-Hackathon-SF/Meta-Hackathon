@@ -128,7 +128,7 @@ test("why-this-group shows counts only, and new data sources need the player's O
   // No Star handle is tied to a shared Group, friend or event before reveal.
   await expect(why).not.toContainText(/Star \d/);
   for (const source of ["Groups you're in", "Events you're going to", "Posts and comments"]) {
-    await expect(why.getByRole("listitem").filter({ hasText: source })).toContainText("Needs your OK");
+    await expect(why.getByRole("listitem").filter({ hasText: source })).toContainText("Off");
   }
   await expect(why.getByRole("listitem").filter({ hasText: "Daily answers" })).toContainText("On");
 });
@@ -458,4 +458,67 @@ test("Facebook-style shell: sidebar order, Meta AI and Gaming placeholders, new-
   await expect(page.getByRole("heading", { level: 1, name: "Meta AI" })).toBeVisible();
   await page.getByRole("link", { name: "Open Facebook Space" }).click();
   await expect(page).toHaveURL(/\/space$/);
+});
+
+test("operator posts an event nudge to the revealed room (fixture replay, approved venue)", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page); // the operator also plays, so they have a room after reveal
+  await page.goto(OPERATOR);
+  const nudge = page.getByTestId("cst-op-nudge");
+  await expect(nudge).toContainText("open after Sunday's reveal");
+  await advance(page, 7); // Tue..Fri, lock, form, reveal
+  await expect(page.getByTestId("cst-op-state")).toContainText(/Reveal/i);
+  await expect(nudge.getByRole("combobox", { name: "Room" })).toHaveValue("room-orion");
+  await nudge.getByRole("button", { name: "Post event nudge" }).click();
+  await expect(nudge).toContainText("Replay of a saved cycle");
+  await expect(nudge).toContainText("Campus Cafe");
+  await expect(nudge).toContainText("Fixture mode");
+});
+
+test("D009: your answers drive star brightness against labeled synthetic players", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await answer(page, 1, "Board games with my floor in the dining hall");
+  await page.getByRole("tab", { name: /Constellation/ }).click();
+  const sky = page.getByTestId("cst-constellation");
+  await expect(sky.getByText("Synthetic players · preview")).toBeVisible();
+  const stars = sky.getByTestId("cst-star");
+  await expect(stars).toHaveCount(4);
+  // Star 2 answered about board games and the dining hall: closest, so brightest.
+  // Ranked by closeness: Star 2 is closest; the top third (2 of 4) are bright, the bottom one faint.
+  await expect(stars.first()).toContainText("Star 2");
+  await expect(stars.first()).toHaveAttribute("data-brightness", "bright");
+  await expect(sky.locator('[data-testid="cst-star"][data-brightness="bright"]')).toHaveCount(2);
+  await expect(sky.locator('[data-testid="cst-star"][data-brightness="faint"]')).toHaveCount(1);
+  // Event heat is computed too: thresholded and bucketed, never exact.
+  const heat = page.getByTestId("cst-heat");
+  await expect(heat.getByTestId("cst-heat-row").first()).toContainText("Board game night");
+  await expect(heat).not.toContainText("Film club");
+  await expect(heat).not.toContainText(/\b11 people/);
+});
+
+test("D010: activity is off by default; turning it on shows counts and topics, never text", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await answer(page, 1, "Board games with my floor in the dining hall");
+  await page.getByRole("tab", { name: /Constellation/ }).click();
+  const why = page.getByTestId("cst-why");
+  await expect(why.getByTestId("cst-why-off")).toBeVisible();
+  await expect(why.getByRole("listitem").filter({ hasText: "Groups you're in" })).toContainText("Off");
+  // Mark an event, then opt in from Privacy and data.
+  await page.getByTestId("cst-heat").getByRole("button", { name: "Interested" }).first().click();
+  await page.getByTestId("cstp-panel").locator("summary").click();
+  const toggle = page.getByTestId("cstp-toggle-useActivity");
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("cstp-activity-topics")).toBeVisible();
+  await expect(why.getByRole("listitem").filter({ hasText: "Groups you're in" })).toContainText("On");
+  await expect(why).toContainText(/in a Group you're in/);
+  await expect(why).toContainText(/interested in an event you're interested in/);
+  await expect(why).not.toContainText(/Star \d/); // counts only, never which star
+  // Off again deletes it.
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  await expect(why.getByTestId("cst-why-off")).toBeVisible();
 });

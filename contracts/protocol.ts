@@ -8,7 +8,7 @@
  * PUBLIC  = safe in responses to authorized session holders as annotated.
  * Fixtures that conform to this file: contracts/fixtures/*.json.
  */
-export const CONTRACT_VERSION = "2.0.0" as const;
+export const CONTRACT_VERSION = "2.1.0" as const; // 2.1.0 = D009 + D010, additive
 export type Id = string;
 export type IsoTime = string; // RFC3339 UTC
 export type IsoDate = string; // YYYY-MM-DD in the community time zone
@@ -24,6 +24,17 @@ export interface Consent { // PRIVATE (self + privacy module)
   anonymousChat: boolean; // join my constellation's anonymous chat on Sunday
   isAdult: boolean;       // 18+
   version: number; revokedAt: IsoTime | null;
+  useActivity?: boolean; // D010: optional, default false; lets matching use my Groups, Events, friends, post topics
+}
+/**
+ * D010, PRIVATE (self + privacy + formation). Stored only while useActivity is on.
+ * Topics are derived by code from my own posts/comments with a fixed safe
+ * allowlist; the text itself is never stored, sent to Muse or shown to anyone.
+ */
+export interface ActivitySignals {
+  profileId: Id | null; // opaque Facebook-side id, used only to count mutual friends
+  groupIds: Id[]; eventIds: Id[]; friendIds: Id[];
+  topics: string[]; // allowlisted labels only; never sensitive categories
 }
 export interface Block { blockerId: Id; blockedId: Id } // PRIVATE; never share a constellation
 export type SafetyLevel = "none" | "distress" | "harm";
@@ -94,6 +105,8 @@ export interface Constellation {
   name: string;          // PUBLIC to members; passes OutputGuard
   shapeId: string; colorId: string; // fixed sets, sized to member count
   baselineAgrees: boolean; // keyword baseline grouped these members the same way
+  closeness?: { a: Id; b: Id; score: number }[]; // D009, PRIVATE server-only pairwise 0..1 incl. D010 boosts; banded before output
+  memberContext?: Record<Id, ConstellationContext>; // D010, PRIVATE: per member, served only to that member
 }
 export interface SkyTheme { // PUBLIC aggregate; rendered only if count >= threshold
   themeId: Id; label: string; count: number;
@@ -115,15 +128,25 @@ export interface SyntheticSignal { // PUBLIC
 }
 
 // ---- Anonymous chat, moderation, reveal (Kai; moderation calls Patrik) --
+/** D009: closeness to the viewer, banded by code. Never a raw score. */
+export type Brightness = "bright" | "mid" | "faint";
 export interface AnonymousHandle { // PUBLIC to room members
   roomId: Id; handle: string; // e.g. "Star 3"; never derived from name
   starColor: string; isSelf: boolean;
+  brightness?: Brightness; // D009; omitted when isSelf
+}
+/** D010, PUBLIC to the viewing member: counts only, never which star shares what. */
+export interface ConstellationContext {
+  sharedGroupStars: number; // other members in at least one of my Groups
+  alreadyFriends: number;   // other members already my friends
+  sameEventStars: number;   // other members interested in an event I'm interested in
 }
 export type RoomStatus = "open" | "expired" | "closed";
 export interface ChatRoom { // PUBLIC to members
   roomId: Id; constellationId: Id; cycleId: Id;
   status: RoomStatus; opensAt: IsoTime; expiresAt: IsoTime;
   members: AnonymousHandle[];
+  context?: ConstellationContext; // D010, per viewer
 }
 export type ModerationState = "visible" | "hidden_pending" | "removed";
 export interface ChatMessage { // PUBLIC to room members
@@ -230,7 +253,10 @@ export interface MusePort {
 /** Patrik: sessions, authorized snapshots, safety, guards. */
 export interface PrivacyPort {
   requireSession(token: string): Promise<{ playerId: Id; communityId: Id; isOperator: boolean }>;
-  formationSnapshot(cycleId: Id): Promise<{ answers: PromptText[]; idMap: Record<string, Id>; blockedPairs: [Id, Id][] }>;
+  formationSnapshot(cycleId: Id): Promise<{
+    answers: PromptText[]; idMap: Record<string, Id>; blockedPairs: [Id, Id][];
+    activity?: Record<string, ActivitySignals>; // D010: by ref, only for players with useActivity
+  }>;
   screen(text: string, subjectType: "answer" | "chat_message"): Promise<SafetyFlag["flag"]>;
 }
 export interface OutputGuard { // Patrik; applied to every Muse text and every chat message
