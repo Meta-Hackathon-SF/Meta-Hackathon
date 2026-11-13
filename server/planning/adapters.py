@@ -64,6 +64,25 @@ class CycleQuestionPort:
         return self._service.select_week_on(cycle_id, community_id, monday)
 
 
+class ChatSystemPoster:
+    """``ChatPostPort`` over a chat service that spells the method ``postSystem``.
+
+    Kai's chat service (server/chat/service.py on role/kai-orchestration) exposes
+    ``async postSystem(roomId, message)`` and accepts only
+    ``{roomId, handle: "Muse", text, kind: "system" | "muse_nudge"}``, which is
+    exactly what ``NudgeService.propose_and_post`` sends. This only renames the
+    call; it imports nothing from server/chat and adds no fields.
+    """
+
+    def __init__(self, chat: Any) -> None:
+        if not callable(getattr(chat, "postSystem", None)):
+            raise TypeError("chat must provide async postSystem(roomId, message)")
+        self._chat = chat
+
+    async def post_system(self, room_id: str, message: dict[str, Any]) -> dict[str, Any]:
+        return await self._chat.postSystem(room_id, message)
+
+
 class SyncClarify:
     """Sync ``Clarify(question_text, answer_text) -> M2Out`` for the cycle service.
 
