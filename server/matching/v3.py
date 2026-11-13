@@ -24,14 +24,15 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from server.matching import prompts
-from server.matching.baseline import tokens
 from server.matching.adaptive import adaptive_weights
+from server.matching.baseline import tokens
 from server.matching.closeness import bands_for_viewer, pair_closeness
 from server.matching.daily import (
     SECOND_DEGREE_MIN_ELIGIBLE,
     SKY_STARS,
     Tag,
     daily_groups,
+    groups_from_themes,
     main_groups,
     second_degree,
     sky_positions,
@@ -44,8 +45,10 @@ from server.matching.models import (
     MuseCallEvidence,
     PromptText,
     ValidationError,
+    pair,
 )
 from server.matching.ports import MusePortLike
+from server.matching.validation import violations
 
 M3_TIMEOUT_S = 45.0
 BAND_ORDER = {"bright": 0, "mid": 1, "faint": 2}
@@ -69,6 +72,7 @@ class DayRecord:
     final: bool
     groups: tuple[DayGroup, ...]
     players: tuple[str, ...]  # everyone placed or not, private ids
+    blocked: tuple[tuple[str, str], ...] = ()  # private-id pairs, for the Sunday main
 
 
 class InMemoryDayStore:
@@ -139,9 +143,14 @@ class FormationV3:
         return FormationSnapshot.from_dict(await self._snapshots.day_snapshot(cycle, day))
 
     def _record(
-        self, cycle: str, day: int, snap: FormationSnapshot, tags, final: bool
+        self, cycle: str, day: int, snap: FormationSnapshot, tags, final: bool, themes=None
     ) -> DayRecord:
-        groups, _unplaced = daily_groups(snap.answers, _ref_blocks(snap), tags)
+        if themes:  # Muse's own groups; code only enforces the guarantees
+            groups, _unplaced = groups_from_themes(
+                [t[3] for t in themes], snap.refs, _ref_blocks(snap)
+            )
+        else:
+            groups, _unplaced = daily_groups(snap.answers, _ref_blocks(snap), tags)
         close = pair_closeness(snap, snap.refs, adaptive_weights(snap))
         out = []
         for g in groups:
@@ -153,7 +162,10 @@ class FormationV3:
                 for r in g
             }
             out.append(DayGroup(_gid(cycle, day, ids), ids, bright))
-        return DayRecord(final, tuple(out), tuple(sorted(snap.id_map[r] for r in snap.refs)))
+        blocked = tuple(sorted({pair(a, b) for a, b in snap.blocked_pairs}))
+        return DayRecord(
+            final, tuple(out), tuple(sorted(snap.id_map[r] for r in snap.refs)), blocked
+        )
 
     # ---- FormationPort ----------------------------------------------------
 
@@ -162,8 +174,13 @@ class FormationV3:
             snap = await self._snap(cycleId, day)
         except ValidationError:
             return _failure("INVALID_INPUT", "Bad snapshot")
-        rec = self._record(cycleId, day, snap, None, final=False)
-        self.store.save_day(cycleId, day, rec)
+        existing = self.store.load_days(cycleId).get(day)
+        if existing is not None and existing.final:
+            # A closed day is never overwritten by a late answer's keyword groups.
+            rec = existing
+        else:
+            rec = self._record(cycleId, day, snap, None, final=False)
+            self.store.save_day(cycleId, day, rec)
         ids = [
             g.group_id
             for g in rec.groups
@@ -177,8 +194,11 @@ class FormationV3:
             snap = await self._snap(cycleId, day)
         except ValidationError:
             return _failure("INVALID_INPUT", "Bad snapshot")
-        tags, evidence = await self._propose_tags(cycleId, day, snap)
-        rec = self._record(cycleId, day, snap, tags, final=True)
+        themes, evidence = await self._propose_themes(cycleId, day, snap)
+        if themes:
+            rec = self._record(cycleId, day, snap, None, final=True, themes=themes)
+        else:
+            rec = self._record(cycleId, day, snap, None, final=True)
         self.store.save_day(cycleId, day, rec)
         placed = {p for g in rec.groups for p in g.members}
         return {
@@ -188,8 +208,8 @@ class FormationV3:
             "evidence": evidence,
         }
 
-    async def _propose_tags(self, cycle: str, day: int, snap: FormationSnapshot):
-        """M3 tags if Muse answers validly; else None (daily_groups falls back to keyword tags)."""
+    async def _propose_themes(self, cycle: str, day: int, snap: FormationSnapshot):
+        """Validated M3 themes if Muse answers; else None (keyword fallback, no evidence)."""
         if self._muse is None or not snap.answers:
             return None, []
         try:
@@ -203,8 +223,7 @@ class FormationV3:
                 timeout=self._m3_timeout_s,
             )
             themes = prompts.parse_m3(resp["output"], set(snap.refs))
-            tags = tags_from_themes(themes, snap.answers)
-            return (tags or None), [MuseCallEvidence.from_dict(resp["evidence"]).to_wire()]
+            return (themes or None), [MuseCallEvidence.from_dict(resp["evidence"]).to_wire()]
         except (TimeoutError, Exception):  # noqa: BLE001 - keyword fallback, never fails the day
             return None, []
 
@@ -227,9 +246,57 @@ class FormationV3:
         if not days:
             return _failure("NOT_FOUND", "No days formed for this cycle")
         players = sorted({p for r in days.values() for p in r.players})
-        groups, unplaced = main_groups(players, self._graph(cycleId))
+        blocked = sorted({p for r in days.values() for p in r.blocked})
+        graph = self._graph(cycleId)
+        groups, unplaced = main_groups(players, graph, (), blocked)
+        evidence: list = []
+        refined = await self._refine_main(cycleId, days, players, blocked)
+        if refined is not None:
+            (groups, unplaced), evidence = refined
         self.store.save_main(cycleId, groups)
-        return {"status": "ok", "groups": len(groups), "unplaced": len(unplaced), "evidence": []}
+        return {
+            "status": "ok",
+            "groups": len(groups),
+            "unplaced": len(unplaced),
+            "evidence": evidence,
+        }
+
+    async def _refine_main(self, cycle: str, days, players, blocked):
+        """M4 over the week's answers. Used only if it passes the same guarantees; else None."""
+        if self._muse is None:
+            return None
+        try:
+            ref_of = {p: f"w{i}" for i, p in enumerate(players)}
+            answers: list[PromptText] = []
+            for day in sorted(days):
+                snap = await self._snap(cycle, day)
+                answers += [
+                    PromptText(ref_of[snap.id_map[a.id]], a.text, a.weight)
+                    for a in snap.answers
+                    if snap.id_map.get(a.id) in ref_of
+                ]
+            refs = {ref_of[p] for p in players}
+            ref_blocks = [(ref_of[a], ref_of[b]) for a, b in blocked if a in ref_of and b in ref_of]
+            resp = await asyncio.wait_for(
+                self._muse.run(
+                    task="constellation_formation",
+                    requestId=f"main-{cycle}",
+                    promptVersion=prompts.PROMPT_VERSION_M4,
+                    payload=prompts.build_m4_payload((), answers[:400], ref_blocks),
+                ),
+                timeout=self._m3_timeout_s,
+            )
+            proposed = prompts.parse_m4(resp["output"], refs)
+            groups = [tuple(m) for m, _meaning, _conf in proposed]
+            placed = {r for g in groups for r in g}
+            if violations(groups, placed, ref_blocks):
+                return None
+            by_ref = {v: k for k, v in ref_of.items()}
+            out = tuple(tuple(sorted(by_ref[r] for r in g)) for g in groups)
+            unplaced = tuple(sorted(set(players) - {p for g in out for p in g}))
+            return (out, unplaced), [MuseCallEvidence.from_dict(resp["evidence"]).to_wire()]
+        except Exception:  # noqa: BLE001 - code grouping stands, never fails Sunday
+            return None
 
     async def skyLayout(self, cycleId: str) -> dict:  # noqa: N802,N803
         days = self.store.load_days(cycleId)
