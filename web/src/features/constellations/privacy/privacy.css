@@ -1,4 +1,4 @@
-/* Constellations privacy UI (owner: Patrik). Every rule uses the .cstp- prefix,
+/* Facebook Space privacy UI (owner: Patrik). Every rule uses the .cstp- prefix,
    so the Simulated Facebook shell, feed and Will's .cst- styles are untouched. */
 .cstp-card {
   --cstp-ink: #14162b;

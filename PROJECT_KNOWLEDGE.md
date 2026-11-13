@@ -1,20 +1,20 @@
 # Shared project knowledge
 ## Evidence baseline
-Main is the mock Facebook shell only (`web/`: React/Vite/TypeScript, local demonstration state, feed components, secondary routes, Playwright tests), plus documentation and `contracts/protocol.ts`. Date of this baseline: 2026-11-12 (Constellations pivot and repo reset). Main was reset to the shell; the earlier Group Quests server code, tests, database files and provider adapter were removed. They survive only on branch `archive/group-quests-before-pivot` as reference. Under D005 owners restore reusable pieces (FastAPI app, Muse adapter, privacy/session code, voice boundary) into their own paths and retest them against contract 2.0.0; nothing restored counts as verified until its tests pass on main. Earlier Group Quests test counts are not claimed.
+Main is the mock Facebook shell only (`web/`: React/Vite/TypeScript, local demonstration state, feed components, secondary routes, Playwright tests), plus documentation and `contracts/protocol.ts`. Date of this baseline: 2026-11-12 (Facebook Space pivot and repo reset). Main was reset to the shell; the earlier Group Quests server code, tests, database files and provider adapter were removed. They survive only on branch `archive/group-quests-before-pivot` as reference. Under D005 owners restore reusable pieces (FastAPI app, Muse adapter, privacy/session code, voice boundary) into their own paths and retest them against contract 2.0.0; nothing restored counts as verified until its tests pass on main. Earlier Group Quests test counts are not claimed.
 
 2026-11-12 weekly-game pivot (D005/D006): contract 2.0.0 and `contracts/fixtures/` added; typecheck passes; fixtures parse. Baseline check reported by the audit: `web/` build and lint pass; Playwright browser tests could not launch a browser, so UI regression verification is outstanding.
 
-Muse model note (2026-11-12): `muse-spark-1.3` answered 2 live calls and the provider echoed the model name, through the removed Group Quests adapter. Observed single-call latency was 17 to 24 s at low reasoning effort. Two calls are not a benchmark, and no Constellations code has called the model. Wonder and Ember were not available in the docs read and were not tested. Re-verified on the 2.0.0 adapter 2026-11-13T02:25Z: one `clarify` (M2) call on a synthetic answer, provider echoed `muse-spark-1.3`, 16.2 s at low effort, first attempt. Three single calls in total across both adapters; still not a benchmark.
+Muse model note (2026-11-12): `muse-spark-1.3` answered 2 live calls and the provider echoed the model name, through the removed Group Quests adapter. Observed single-call latency was 17 to 24 s at low reasoning effort. Two calls are not a benchmark, and no Facebook Space code has called the model. Wonder and Ember were not available in the docs read and were not tested. Re-verified on the 2.0.0 adapter 2026-11-13T02:25Z: one `clarify` (M2) call on a synthetic answer, provider echoed `muse-spark-1.3`, 16.2 s at low effort, first attempt. Three single calls in total across both adapters; still not a benchmark.
 
 Role-branch work from teammates is not claimed integrated here; inspect their latest handoffs and PRs (see [docs/COORDINATION.md](docs/COORDINATION.md)) before declaring a dependency missing.
 
 ## Locked decisions
-- Product: Constellations weekly game (D005). Daily questions Mon-Fri, catch-up until Saturday 12:00 lock, streaks (on-day only), Sunday 10:00 reveal, anonymous moderated chat expiring at next lock, mutual reveal, event nudges, thresholded Sky with labeled synthetic signals.
+- Product: Facebook Space weekly game (D005). Daily questions Mon-Fri, catch-up until Saturday 12:00 lock, streaks (on-day only), Sunday 10:00 reveal, anonymous moderated chat expiring at next lock, mutual reveal, event nudges, thresholded Sky with labeled synthetic signals.
 - Removed: hunt mechanics, clues, found codes, Keeper, Ritual, society branding. Terms: constellation (not society), daily answer (not confession), weekly cycle (not round).
 - Existing Facebook mock UI is the host shell, labeled "Simulated Facebook"; feed tests stay green. Feature UI under `web/src/features/constellations/<area>/`.
 - Ownership (D005): Rishi formation/validation/prevalence; Adam Muse adapter/questions/nudges; Will cycle/daily answers/voice/streaks/operator; Patrik verification/sessions/storage/safety/guards; Kai chat/expiry/reveal/realtime/API composition/Sky UI.
 - Contract: `contracts/protocol.ts` 2.0.0 (D006, pending ACK). Fixtures in `contracts/fixtures/`.
-- Friendship only, 18+, public places only. Constellations of 3 to 5.
+- Friendship only, 18+, public places only. Facebook Space of 3 to 5.
 - Muse proposes, code enforces. OutputGuard on every Muse public text and chat message.
 - Answers never shown to other players. Identity only on mutual reveal.
 - Sky themes only at 3+ (demo) / 25+ (production).

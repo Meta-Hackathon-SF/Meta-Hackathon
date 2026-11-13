@@ -30,7 +30,7 @@ export default function App() {
           <Route path="groups" element={<GroupsPage />} />
           <Route path="space" element={<DailyPage />} />
           <Route path="space/operator" element={<OperatorConsole />} />
-          {/* Earlier links (Constellations, Group-scoped) keep working. */}
+          {/* Earlier links (Facebook Space, Group-scoped) keep working. */}
           <Route path="constellations" element={<Navigate to="/space" replace />} />
           <Route
             path="constellations/operator"

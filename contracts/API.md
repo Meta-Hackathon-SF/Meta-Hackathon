@@ -1,4 +1,4 @@
-# HTTP surface (Constellations 2.0.0, proposed)
+# HTTP surface (Facebook Space 2.0.0, proposed)
 Base `/api/v1`. Kai owns API composition: the FastAPI app, router registration, envelope, idempotency and the SSE stream. Each route's named owner implements its handler as a router in their own package; Kai mounts it. Operator routes require the operator role.
 
 ## Envelope and errors
