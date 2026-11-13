@@ -1,4 +1,4 @@
-"""Constellations planning (owner: Adam): question bank, weekly selection, M2 follow-up, M7 event nudges.
+"""Constellations planning (owner: Adam): question bank, weekly selection, M2 follow-up, M7 event nudges, M6 question generation.
 
 See README.md. Other owners import from this package root only; the FastAPI
 router lives in ``server.planning.api`` so the rest stays standard-library only.
@@ -14,6 +14,13 @@ from .clarify import (
     register_clarify_task,
 )
 from .errors import BankError, PlanningError
+from .generation import (
+    GENERATION_PROMPT_VERSION,
+    GenerationResult,
+    InMemoryPendingQuestions,
+    QuestionGenerator,
+    register_generation_task,
+)
 from .nudges import (
     NUDGE_PROMPT_VERSION,
     InMemoryNudgeStore,
@@ -31,6 +38,7 @@ def register_planning_tasks(registry: TaskRegistry) -> TaskRegistry:
     """Register every Muse task planning owns. Kai calls this once at startup."""
     register_clarify_task(registry)
     register_nudge_task(registry)
+    register_generation_task(registry)
     return registry
 
 
@@ -42,7 +50,10 @@ __all__ = [
     "ClarifyService",
     "CycleQuestionPort",
     "InMemoryClarifyStore",
+    "GENERATION_PROMPT_VERSION",
+    "GenerationResult",
     "InMemoryNudgeStore",
+    "InMemoryPendingQuestions",
     "InMemorySelectionStore",
     "NUDGE_PROMPT_VERSION",
     "NudgeOutcome",
@@ -50,6 +61,7 @@ __all__ = [
     "OutputGuardPort",
     "PlanningError",
     "QuestionBank",
+    "QuestionGenerator",
     "QuestionService",
     "SelectionStore",
     "SyncClarify",
@@ -60,6 +72,7 @@ __all__ = [
     "question_problems",
     "register_clarify_task",
     "run_sync",
+    "register_generation_task",
     "register_nudge_task",
     "register_planning_tasks",
     "validate_question",

@@ -6,8 +6,15 @@
 
 Kai mounts it through the registry (owner "planning") under /api/v1 with
 Patrik's verified-session dependency. Every route here is operator-only and
-rechecks the role itself. ``POST /operator/questions/generate`` is not
-registered: question generation (M6) is not implemented.
+rechecks the role itself.
+
+With a ``QuestionGenerator`` in the runtime (step 7) it also registers:
+    POST /operator/questions/generate           -> 202 {status: "pending", questions, rejected, evidence}
+and three routes that are NOT in contracts/API.md yet (proposed, additive;
+they need ACK before they count as contract):
+    GET  /operator/questions/pending            -> [{question, evidence}]
+    POST /operator/questions/{id}/approve       -> Question (now active, in the bank)
+    POST /operator/questions/{id}/reject        -> 204
 
 This module is the only part of planning that needs FastAPI.
 """
@@ -17,10 +24,11 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Literal
 
-from fastapi import APIRouter, Depends, FastAPI, Query, Request
+from fastapi import APIRouter, Body, Depends, FastAPI, Query, Request, Response
 from fastapi.responses import JSONResponse
 
 from .errors import PlanningError
+from .generation import QuestionGenerator
 from .nudges import NudgeService
 from .selection import QuestionService
 from .venues import VenueCatalog
@@ -46,6 +54,7 @@ class PlanningRuntime:
     room_constellation: Callable[[str], Awaitable[str | None]] | None = None
     venues: VenueCatalog | None = None
     muse_configured: bool = False
+    generator: QuestionGenerator | None = None
 
     async def ready(self) -> bool:
         """Readiness for the registry. Local state only; never probes the paid model."""
@@ -134,5 +143,34 @@ def build_router(runtime: PlanningRuntime, session_dependency: Callable[..., Any
                 raise PlanningError("NOT_FOUND", "room not found")
             result = await nudges.propose_and_post(constellation_id, request_id=_request_id(request))
             return result["nudge"]
+
+    if runtime.generator is not None:
+        generator = runtime.generator
+
+        @router.post("/operator/questions/generate", status_code=202)
+        async def generate(request: Request, body: dict[str, Any] = Body(...),
+                           _community: str = Depends(operator)) -> dict[str, Any]:
+            if set(body) - {"count", "categoryMix", "aggregateSignals"}:
+                raise PlanningError("INVALID_INPUT", "unexpected fields")
+            recent = [q["questionId"] for q in runtime.questions.bank.questions]
+            result = await generator.generate(
+                count=body.get("count"), request_id=_request_id(request), category_mix=body.get("categoryMix"),
+                aggregate_signals=body.get("aggregateSignals"), recent_question_ids=recent,
+            )
+            return {"status": "pending", "questions": result.pending, "rejected": result.rejected,
+                    "evidence": result.evidence}
+
+        @router.get("/operator/questions/pending")
+        async def pending(_community: str = Depends(operator)) -> list[dict[str, Any]]:
+            return generator.pending()
+
+        @router.post("/operator/questions/{question_id}/approve")
+        async def approve(question_id: str, _community: str = Depends(operator)) -> dict[str, Any]:
+            return generator.approve(question_id)
+
+        @router.post("/operator/questions/{question_id}/reject", status_code=204)
+        async def reject(question_id: str, _community: str = Depends(operator)) -> Response:
+            generator.reject(question_id)
+            return Response(status_code=204)
 
     return router
