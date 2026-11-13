@@ -1,7 +1,10 @@
 """M3/M4/M5 payload builders and strict output parsers.
 
-Payloads carry random refs and answer text only. Outputs are parsed strictly: unknown or
-missing keys, unknown refs, and out-of-set ids are rejected. Payloads are never logged.
+Payloads match M3In/M4In/M5In in contracts/protocol.ts exactly: random refs and answer text
+only, no instructions. The *_INSTRUCTIONS constants are prompt text for Adam's adapter, keyed
+by promptVersion via PROMPT_TEXT; the adapter owns system prompts. Outputs are parsed
+strictly: unknown or missing keys, unknown refs, and out-of-set ids are rejected.
+Payloads are never logged.
 """
 from __future__ import annotations
 
@@ -41,8 +44,16 @@ M4_INSTRUCTIONS = (
 M5_INSTRUCTIONS = (
     "You are Muse. Name this constellation in 2-4 evocative words, like a star pattern. "
     "Never quote or closely paraphrase anyone. Pick shapeId and colorId only from the lists "
-    "given. Return strict JSON {name,shapeId,colorId}."
+    "given. Return strict JSON {name,shapeId,colorId}. shapeIds by size: "
+    + "; ".join(f"{n}: {', '.join(ids)}" for n, ids in SHAPES_BY_SIZE.items())
+    + f". colorIds: {', '.join(COLOR_IDS)}."
 )
+
+PROMPT_TEXT: Mapping[str, str] = {
+    PROMPT_VERSION_M3: M3_INSTRUCTIONS,
+    PROMPT_VERSION_M4: M4_INSTRUCTIONS,
+    PROMPT_VERSION_M5: M5_INSTRUCTIONS,
+}
 
 RawTheme = tuple[str, str, str, tuple[str, ...]]  # id, label, description, member refs
 RawConstellation = tuple[tuple[str, ...], str, float]  # member refs, meaning, confidence
@@ -90,8 +101,7 @@ def _refs(value: Any, known: set[str], path: str) -> tuple[str, ...]:
 def build_m3_payload(answers: Sequence[PromptText],
                      questions: Sequence[Mapping[str, str]] = ()) -> dict:
     return {"answers": [a.to_wire() for a in answers],
-            "questions": [dict(q) for q in questions],
-            "instructions": M3_INSTRUCTIONS}
+            "questions": [dict(q) for q in questions]}
 
 
 def parse_m3(output: Any, known_refs: set[str]) -> tuple[RawTheme, ...]:
@@ -124,8 +134,7 @@ def build_m4_payload(themes: Sequence[RawTheme], answers: Sequence[PromptText],
     return {"themes": [{"id": t[0], "label": t[1], "description": t[2],
                         "memberIds": list(t[3])} for t in themes],
             "answers": [a.to_wire() for a in answers],
-            "blockedPairs": [list(p) for p in blocked_ref_pairs],
-            "instructions": M4_INSTRUCTIONS}
+            "blockedPairs": [list(p) for p in blocked_ref_pairs]}
 
 
 def parse_m4(output: Any, known_refs: set[str]) -> tuple[RawConstellation, ...]:
@@ -153,9 +162,7 @@ def parse_m4(output: Any, known_refs: set[str]) -> tuple[RawConstellation, ...]:
 # ---------------------------------------------------------------- M5
 
 def build_m5_payload(shared_meaning: str, size: int) -> dict:
-    return {"sharedMeaning": shared_meaning, "size": size,
-            "shapeIds": list(SHAPES_BY_SIZE[size]), "colorIds": list(COLOR_IDS),
-            "instructions": M5_INSTRUCTIONS}
+    return {"sharedMeaning": shared_meaning, "size": size}
 
 
 def parse_m5(output: Any, size: int) -> tuple[str, str, str]:

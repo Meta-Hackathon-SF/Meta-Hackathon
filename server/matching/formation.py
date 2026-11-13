@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+import uuid
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -17,7 +18,9 @@ from server.matching import prompts
 from server.matching.baseline import baseline_groups, same_group
 from server.matching.models import (
     COLOR_IDS,
+    FALLBACK_LABEL,
     LOOSE_MATCH_CONFIDENCE,
+    MAX_NAME_CHARS,
     SHAPES_BY_SIZE,
     Constellation,
     FormationResult,
@@ -34,6 +37,7 @@ DEFAULT_TIMEOUT_S = 45.0
 M4_ATTEMPTS = 2  # first proposal + one re-solve
 FALLBACK_MEANING = "Grouped by shared keywords (Fallback grouping)"
 FALLBACK_CONFIDENCE = 0.0
+FALLBACK_SUFFIX = f" ({FALLBACK_LABEL})"
 
 
 @dataclass(frozen=True)
@@ -46,6 +50,18 @@ def _fallback_name(index: int, size: int) -> tuple[str, str, str]:
     color = COLOR_IDS[index % len(COLOR_IDS)]
     shape = SHAPES_BY_SIZE[size][index % len(SHAPES_BY_SIZE[size])]
     return f"The {color.capitalize()} {shape.split('-')[0].capitalize()}", shape, color
+
+
+def _fallback_grouping_name(index: int, size: int) -> tuple[str, str, str]:
+    """Name for a Fallback grouping constellation: '<Color> <Shape> (Fallback grouping)'.
+
+    isFallback is not a wire field (protocol.ts 2.0.0), so the label rides in the name.
+    """
+    color = COLOR_IDS[index % len(COLOR_IDS)]
+    shape = SHAPES_BY_SIZE[size][index % len(SHAPES_BY_SIZE[size])]
+    base = f"{color.capitalize()} {shape.split('-')[0].capitalize()}"
+    base = base[:MAX_NAME_CHARS - len(FALLBACK_SUFFIX)].rstrip()
+    return f"{base}{FALLBACK_SUFFIX}", shape, color
 
 
 class FormationService:
@@ -141,9 +157,19 @@ class FormationService:
         evidence.extend(local)
         return named or _fallback_name(index, size)
 
+    def _guarded_fallback_name(self, index: int, size: int,
+                               answer_texts: Sequence[str]) -> tuple[str, str, str]:
+        name, shape, color = _fallback_grouping_name(index, size)
+        verdict = self._guard.check(name, answer_texts)
+        if not isinstance(verdict, Mapping) or verdict.get("ok") is not True:
+            name = FALLBACK_LABEL  # fixed text; still labeled
+        return name, shape, color
+
     # ------------------------------------------------------------ public
 
-    async def form(self, cycle_id: str, request_id: str) -> FormationResult:
+    async def form(self, cycle_id: str, request_id: str | None = None) -> FormationResult:
+        """FormationPort.form(cycleId). request_id is optional (generated when omitted)."""
+        request_id = request_id or f"form-{cycle_id}-{uuid.uuid4().hex[:8]}"
         started = self._clock()
         timings: dict[str, int] = {}
         try:
@@ -170,9 +196,13 @@ class FormationService:
             proposal = tuple((g, FALLBACK_MEANING, FALLBACK_CONFIDENCE) for g in baseline)
 
         answer_texts = [a.text for a in snap.answers]
-        names = await asyncio.gather(*(
-            self._name(i, meaning, len(refs), answer_texts, request_id, evidence)
-            for i, (refs, meaning, _) in enumerate(proposal)))
+        if used_fallback:
+            names = [self._guarded_fallback_name(i, len(refs), answer_texts)
+                     for i, (refs, _, _) in enumerate(proposal)]
+        else:
+            names = await asyncio.gather(*(
+                self._name(i, meaning, len(refs), answer_texts, request_id, evidence)
+                for i, (refs, meaning, _) in enumerate(proposal)))
         timings["totalMs"] = int((self._clock() - started) * 1000)
 
         constellations = tuple(
