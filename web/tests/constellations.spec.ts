@@ -236,6 +236,51 @@ test("weekend: lock closes answers, week sky and formation are labeled previews,
   await expect(page.getByRole("dialog", { name: "Star 3" }).getByText("Names only show if you both ask.")).toBeVisible();
 });
 
+test("everyone keeping the Sunday chat moves it to Messenger with real names", async ({ page }) => {
+  await page.route("**/api/muse-chat", async (route) => {
+    const kind = route.request().postDataJSON()?.kind;
+    const text =
+      kind === "supplies"
+        ? "The coffee set on Marketplace is a demo listing, not a purchase."
+        : kind === "barter"
+          ? "Ask Campus Cafe for a table and bring the coffee set. Nothing is booked until the cafe agrees."
+          : "Library Commons has board game night on Thursday.";
+    await route.fulfill({ json: { text, source: "live" } });
+  });
+  await newCycle(page);
+  await openSpace(page);
+  await answer(page, 1, LONG);
+  await advance(page, 7);
+  await page.goto(DAILY);
+  await expect(page.getByTestId("spc-weekend-sun")).toContainText("Your constellation is ready");
+  await page.getByRole("button", { name: "View constellation" }).click();
+  await page.getByRole("button", { name: "Open chat" }).click();
+  const chat = page.getByTestId("spc-chat");
+  await chat.getByRole("button", { name: "Keep", exact: true }).click();
+  await expect(chat.getByText("Everyone agreed. Names are visible, and this chat is in Messenger.")).toBeVisible();
+  await expect(chat.getByRole("button", { name: "Maya Chen" })).toBeVisible();
+  await chat.getByRole("link", { name: "Open in Messenger" }).click();
+  await expect(page).toHaveURL(/\/messages\?chat=sunday-constellation/);
+  await expect(page.getByRole("heading", { level: 1, name: "Messenger" })).toBeVisible();
+  const convo = page.getByRole("region", { name: "Sunday constellation" });
+  await expect(convo.getByText("Maya Chen, Jordan Davis, Sofia Patel, Daniel Kim")).toBeVisible();
+  await expect(convo.getByText("Same vibe")).toBeVisible();
+  await convo.getByRole("button", { name: "Close shared vibe" }).click();
+  await expect(convo.getByText("Same vibe")).toHaveCount(0);
+  await expect(convo.getByText("i really thought i was the only one who felt that way")).toBeVisible();
+  await expect(convo.getByRole("button", { name: "Plan a hangout" })).toBeDisabled();
+  await convo.getByRole("textbox", { name: "Message" }).fill("we should get together this week");
+  await convo.getByRole("button", { name: "Plan a hangout" }).click();
+  await expect(convo.getByText("we should get together this week @muse")).toBeVisible();
+  await expect(convo.getByText("Library Commons has board game night on Thursday.")).toBeVisible();
+  await convo.getByRole("textbox", { name: "Message" }).fill("we will need drinks");
+  await convo.getByRole("button", { name: "Find supplies" }).click();
+  await expect(convo.getByText("The coffee set on Marketplace is a demo listing, not a purchase.")).toBeVisible();
+  await convo.getByRole("textbox", { name: "Message" }).fill("can the cafe hold a table");
+  await convo.getByRole("button", { name: "Ask a vendor" }).click();
+  await expect(convo.getByText("Ask Campus Cafe for a table and bring the coffee set. Nothing is booked until the cafe agrees.")).toBeVisible();
+});
+
 test("privacy: turning matching off shows it on Sunday; delete my data returns to Join", async ({ page }) => {
   await newCycle(page);
   await openSpace(page);
