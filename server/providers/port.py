@@ -126,6 +126,8 @@ class KeywordMusePort:
 
     ``signal`` is accepted for protocol parity and ignored: cancel the awaiting
     asyncio task instead, which propagates into the HTTP attempt.
+    ``deadline_s`` is the caller's overall cap for this call (the router never
+    starts a fallback past it); it defaults to the port's.
     ``correction`` is the caller's re-ask feedback after its own validator
     rejected the previous answer (e.g. "2 unknown member ids; group 3 has 6
     members"). It must be code-generated: never player or model text. The
@@ -148,6 +150,7 @@ class KeywordMusePort:
             request_id=requestId,
             prompt_version=promptVersion,
             payload=payload,
+            # A caller's own cap (e.g. naming's 20 s) lets the router budget its fallback.
             deadline_s=deadline_s if deadline_s is not None else self._deadline_s,
             correction=correction or None,
         ))

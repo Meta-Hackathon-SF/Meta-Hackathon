@@ -1,0 +1,785 @@
+{
+ "label": "Synthetic demo population. Not real people.",
+ "posts": [
+  {
+   "id": "post-p-demo-ella-hart",
+   "authorName": "Ella Hart (synthetic)",
+   "authorColor": "#4c6ef5",
+   "theme": "outdoors",
+   "text": "Sunrise hike Saturday, easy trail, back by 10. Bringing extra snacks.",
+   "comments": [
+    {
+     "id": "c-p-demo-ella-hart-0",
+     "authorName": "Noah Price (synthetic)",
+     "authorColor": "#12b886",
+     "text": "I'll bring the snacks"
+    },
+    {
+     "id": "c-p-demo-ella-hart-1",
+     "authorName": "Aisha Bello (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "Down for Saturday!"
+    }
+   ],
+   "reactionCount": 3,
+   "minutesAgo": 55
+  },
+  {
+   "id": "post-p-demo-jade-wu",
+   "authorName": "Jade Wu (synthetic)",
+   "authorColor": "#4c6ef5",
+   "theme": "music_stage",
+   "text": "Open mic is Thursday. Who's signing up? I'll go if you go.",
+   "comments": [
+    {
+     "id": "c-p-demo-jade-wu-0",
+     "authorName": "Caleb Stone (synthetic)",
+     "authorColor": "#12b886",
+     "text": "I'll go if you go 🎤"
+    },
+    {
+     "id": "c-p-demo-jade-wu-1",
+     "authorName": "Maya Lopez (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "I play bass, let's jam"
+    }
+   ],
+   "reactionCount": 3,
+   "minutesAgo": 70
+  },
+  {
+   "id": "post-p-demo-ana-silva",
+   "authorName": "Ana Silva (synthetic)",
+   "authorColor": "#4c6ef5",
+   "theme": "home_cooking",
+   "text": "Made my grandma's soup in the shared kitchen and three people asked for the recipe 🥣",
+   "comments": [
+    {
+     "id": "c-p-demo-ana-silva-0",
+     "authorName": "Marco Rossi (synthetic)",
+     "authorColor": "#12b886",
+     "text": "Recipe please!!"
+    },
+    {
+     "id": "c-p-demo-ana-silva-1",
+     "authorName": "Hana Kim (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "I'll bring dumplings"
+    }
+   ],
+   "reactionCount": 3,
+   "minutesAgo": 75
+  },
+  {
+   "id": "post-p-demo-theo-park",
+   "authorName": "Theo Park (synthetic)",
+   "authorColor": "#4c6ef5",
+   "theme": "night_builders",
+   "text": "Anyone else still in the lab? Ordering pizza, there's room for two more 🍕",
+   "comments": [
+    {
+     "id": "c-p-demo-theo-park-0",
+     "authorName": "Nia Brooks (synthetic)",
+     "authorColor": "#12b886",
+     "text": "I'm in, saving you a seat!"
+    },
+    {
+     "id": "c-p-demo-theo-park-1",
+     "authorName": "Ravi Shah (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "This is so cool, show us at demo night"
+    }
+   ],
+   "reactionCount": 3,
+   "minutesAgo": 85
+  },
+  {
+   "id": "post-p-demo-mila-novak",
+   "authorName": "Mila Novak (synthetic)",
+   "authorColor": "#4c6ef5",
+   "theme": "dinner_company",
+   "text": "Dining hall at 6? I'll be at the long table by the windows if anyone wants to join.",
+   "comments": [
+    {
+     "id": "c-p-demo-mila-novak-0",
+     "authorName": "Jonah Reed (synthetic)",
+     "authorColor": "#12b886",
+     "text": "Saving you a seat 🙌"
+    },
+    {
+     "id": "c-p-demo-mila-novak-1",
+     "authorName": "Priya Nair (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "I'll be there at 6!"
+    }
+   ],
+   "reactionCount": 3,
+   "minutesAgo": 85
+  },
+  {
+   "id": "post-p-demo-noah-price",
+   "authorName": "Noah Price (synthetic)",
+   "authorColor": "#12b886",
+   "theme": "outdoors",
+   "text": "Found a quiet trail ten minutes from campus. Who wants to explore it this weekend?",
+   "comments": [
+    {
+     "id": "c-p-demo-noah-price-0",
+     "authorName": "Aisha Bello (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "Down for Saturday!"
+    },
+    {
+     "id": "c-p-demo-noah-price-1",
+     "authorName": "Finn Murphy (synthetic)",
+     "authorColor": "#e64980",
+     "text": "Can a total beginner come?"
+    },
+    {
+     "id": "c-p-demo-noah-price-2",
+     "authorName": "Rosa Diaz (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "See you on the lawn"
+    }
+   ],
+   "reactionCount": 10,
+   "minutesAgo": 92
+  },
+  {
+   "id": "post-p-demo-caleb-stone",
+   "authorName": "Caleb Stone (synthetic)",
+   "authorColor": "#12b886",
+   "theme": "music_stage",
+   "text": "Looking for people to jam with. I play guitar badly but enthusiastically.",
+   "comments": [
+    {
+     "id": "c-p-demo-caleb-stone-0",
+     "authorName": "Maya Lopez (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "I play bass, let's jam"
+    },
+    {
+     "id": "c-p-demo-caleb-stone-1",
+     "authorName": "Ollie Grant (synthetic)",
+     "authorColor": "#e64980",
+     "text": "Need to hear this song"
+    },
+    {
+     "id": "c-p-demo-caleb-stone-2",
+     "authorName": "Sara Iqbal (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "See you Friday!"
+    }
+   ],
+   "reactionCount": 10,
+   "minutesAgo": 107
+  },
+  {
+   "id": "post-p-demo-marco-rossi",
+   "authorName": "Marco Rossi (synthetic)",
+   "authorColor": "#12b886",
+   "theme": "home_cooking",
+   "text": "Weekly meal prep done. Five boxes of the same curry. No regrets.",
+   "comments": [
+    {
+     "id": "c-p-demo-marco-rossi-0",
+     "authorName": "Hana Kim (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "I'll bring dumplings"
+    },
+    {
+     "id": "c-p-demo-marco-rossi-1",
+     "authorName": "Omar Haddad (synthetic)",
+     "authorColor": "#e64980",
+     "text": "Coming over right now"
+    },
+    {
+     "id": "c-p-demo-marco-rossi-2",
+     "authorName": "Lucy Tran (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "Potluck, yes!"
+    }
+   ],
+   "reactionCount": 10,
+   "minutesAgo": 112
+  },
+  {
+   "id": "post-p-demo-nia-brooks",
+   "authorName": "Nia Brooks (synthetic)",
+   "authorColor": "#12b886",
+   "theme": "night_builders",
+   "text": "Shipped my first side project tonight. It's tiny and a little broken but it's mine.",
+   "comments": [
+    {
+     "id": "c-p-demo-nia-brooks-0",
+     "authorName": "Ravi Shah (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "This is so cool, show us at demo night"
+    },
+    {
+     "id": "c-p-demo-nia-brooks-1",
+     "authorName": "Lena Ortiz (synthetic)",
+     "authorColor": "#e64980",
+     "text": "Count me in for the hackathon"
+    },
+    {
+     "id": "c-p-demo-nia-brooks-2",
+     "authorName": "Sam Okafor (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "Same, I'm here until midnight most days"
+    }
+   ],
+   "reactionCount": 10,
+   "minutesAgo": 122
+  },
+  {
+   "id": "post-p-demo-jonah-reed",
+   "authorName": "Jonah Reed (synthetic)",
+   "authorColor": "#12b886",
+   "theme": "dinner_company",
+   "text": "Hot take: the Tuesday pasta is the best meal of the week.",
+   "comments": [
+    {
+     "id": "c-p-demo-jonah-reed-0",
+     "authorName": "Priya Nair (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "I'll be there at 6!"
+    },
+    {
+     "id": "c-p-demo-jonah-reed-1",
+     "authorName": "Leo Martin (synthetic)",
+     "authorColor": "#e64980",
+     "text": "Yes please, I always eat alone on Tuesdays"
+    },
+    {
+     "id": "c-p-demo-jonah-reed-2",
+     "authorName": "Zoe Adams (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "Count me in for brunch"
+    }
+   ],
+   "reactionCount": 10,
+   "minutesAgo": 122
+  },
+  {
+   "id": "post-p-demo-aisha-bello",
+   "authorName": "Aisha Bello (synthetic)",
+   "authorColor": "#f59f00",
+   "theme": "outdoors",
+   "text": "Climbing gym beginner night was so fun. Going again Thursday!",
+   "comments": [
+    {
+     "id": "c-p-demo-aisha-bello-0",
+     "authorName": "Finn Murphy (synthetic)",
+     "authorColor": "#e64980",
+     "text": "Can a total beginner come?"
+    },
+    {
+     "id": "c-p-demo-aisha-bello-1",
+     "authorName": "Rosa Diaz (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "See you on the lawn"
+    }
+   ],
+   "reactionCount": 17,
+   "minutesAgo": 129
+  },
+  {
+   "id": "post-p-demo-maya-lopez",
+   "authorName": "Maya Lopez (synthetic)",
+   "authorColor": "#f59f00",
+   "theme": "music_stage",
+   "text": "Found a crate of old records at the thrift store 🎶",
+   "comments": [
+    {
+     "id": "c-p-demo-maya-lopez-0",
+     "authorName": "Ollie Grant (synthetic)",
+     "authorColor": "#e64980",
+     "text": "Need to hear this song"
+    },
+    {
+     "id": "c-p-demo-maya-lopez-1",
+     "authorName": "Sara Iqbal (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "See you Friday!"
+    }
+   ],
+   "reactionCount": 17,
+   "minutesAgo": 144
+  },
+  {
+   "id": "post-p-demo-hana-kim",
+   "authorName": "Hana Kim (synthetic)",
+   "authorColor": "#f59f00",
+   "theme": "home_cooking",
+   "text": "Potluck idea: everyone brings one dish from where they grew up. Who's in?",
+   "comments": [
+    {
+     "id": "c-p-demo-hana-kim-0",
+     "authorName": "Omar Haddad (synthetic)",
+     "authorColor": "#e64980",
+     "text": "Coming over right now"
+    },
+    {
+     "id": "c-p-demo-hana-kim-1",
+     "authorName": "Lucy Tran (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "Potluck, yes!"
+    }
+   ],
+   "reactionCount": 17,
+   "minutesAgo": 149
+  },
+  {
+   "id": "post-p-demo-ravi-shah",
+   "authorName": "Ravi Shah (synthetic)",
+   "authorColor": "#f59f00",
+   "theme": "night_builders",
+   "text": "Looking for 1-2 people for the weekend hackathon. I can do backend, need someone who likes design.",
+   "comments": [
+    {
+     "id": "c-p-demo-ravi-shah-0",
+     "authorName": "Lena Ortiz (synthetic)",
+     "authorColor": "#e64980",
+     "text": "Count me in for the hackathon"
+    },
+    {
+     "id": "c-p-demo-ravi-shah-1",
+     "authorName": "Sam Okafor (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "Same, I'm here until midnight most days"
+    }
+   ],
+   "reactionCount": 17,
+   "minutesAgo": 159
+  },
+  {
+   "id": "post-p-demo-priya-nair",
+   "authorName": "Priya Nair (synthetic)",
+   "authorColor": "#f59f00",
+   "theme": "dinner_company",
+   "text": "Is there a group that does dinner together? Asking for me.",
+   "comments": [
+    {
+     "id": "c-p-demo-priya-nair-0",
+     "authorName": "Leo Martin (synthetic)",
+     "authorColor": "#e64980",
+     "text": "Yes please, I always eat alone on Tuesdays"
+    },
+    {
+     "id": "c-p-demo-priya-nair-1",
+     "authorName": "Zoe Adams (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "Count me in for brunch"
+    }
+   ],
+   "reactionCount": 17,
+   "minutesAgo": 159
+  },
+  {
+   "id": "post-p-demo-finn-murphy",
+   "authorName": "Finn Murphy (synthetic)",
+   "authorColor": "#e64980",
+   "theme": "outdoors",
+   "text": "Pickup volleyball on the lawn at 4, all levels welcome.",
+   "comments": [
+    {
+     "id": "c-p-demo-finn-murphy-0",
+     "authorName": "Rosa Diaz (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "See you on the lawn"
+    },
+    {
+     "id": "c-p-demo-finn-murphy-1",
+     "authorName": "Eli Cohen (synthetic)",
+     "authorColor": "#15aabf",
+     "text": "Count me in for the bike ride"
+    },
+    {
+     "id": "c-p-demo-finn-murphy-2",
+     "authorName": "Ella Hart (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "I'll bring the snacks"
+    }
+   ],
+   "reactionCount": 24,
+   "minutesAgo": 166
+  },
+  {
+   "id": "post-p-demo-ollie-grant",
+   "authorName": "Ollie Grant (synthetic)",
+   "authorColor": "#e64980",
+   "theme": "music_stage",
+   "text": "Practice room 4 has the good piano. You're welcome.",
+   "comments": [
+    {
+     "id": "c-p-demo-ollie-grant-0",
+     "authorName": "Sara Iqbal (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "See you Friday!"
+    },
+    {
+     "id": "c-p-demo-ollie-grant-1",
+     "authorName": "Toby Lane (synthetic)",
+     "authorColor": "#15aabf",
+     "text": "Room 4 forever"
+    },
+    {
+     "id": "c-p-demo-ollie-grant-2",
+     "authorName": "Jade Wu (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "I'll go if you go 🎤"
+    }
+   ],
+   "reactionCount": 24,
+   "minutesAgo": 181
+  },
+  {
+   "id": "post-p-demo-omar-haddad",
+   "authorName": "Omar Haddad (synthetic)",
+   "authorColor": "#e64980",
+   "theme": "home_cooking",
+   "text": "Sourdough starter update: Gary is thriving.",
+   "comments": [
+    {
+     "id": "c-p-demo-omar-haddad-0",
+     "authorName": "Lucy Tran (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "Potluck, yes!"
+    },
+    {
+     "id": "c-p-demo-omar-haddad-1",
+     "authorName": "Ben Weiss (synthetic)",
+     "authorColor": "#15aabf",
+     "text": "Can you teach me to make that?"
+    },
+    {
+     "id": "c-p-demo-omar-haddad-2",
+     "authorName": "Ana Silva (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "Recipe please!!"
+    }
+   ],
+   "reactionCount": 24,
+   "minutesAgo": 186
+  },
+  {
+   "id": "post-p-demo-lena-ortiz",
+   "authorName": "Lena Ortiz (synthetic)",
+   "authorColor": "#e64980",
+   "theme": "night_builders",
+   "text": "New keyboard day. My roommate is not thrilled about the clicky switches.",
+   "comments": [
+    {
+     "id": "c-p-demo-lena-ortiz-0",
+     "authorName": "Sam Okafor (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "Same, I'm here until midnight most days"
+    },
+    {
+     "id": "c-p-demo-lena-ortiz-1",
+     "authorName": "Ivy Chen (synthetic)",
+     "authorColor": "#15aabf",
+     "text": "Teach me git please"
+    },
+    {
+     "id": "c-p-demo-lena-ortiz-2",
+     "authorName": "Theo Park (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "I'm in, saving you a seat!"
+    }
+   ],
+   "reactionCount": 24,
+   "minutesAgo": 196
+  },
+  {
+   "id": "post-p-demo-leo-martin",
+   "authorName": "Leo Martin (synthetic)",
+   "authorColor": "#e64980",
+   "theme": "dinner_company",
+   "text": "Found a cheap noodle place downtown. Need people to go with so I can order more dishes.",
+   "comments": [
+    {
+     "id": "c-p-demo-leo-martin-0",
+     "authorName": "Zoe Adams (synthetic)",
+     "authorColor": "#7950f2",
+     "text": "Count me in for brunch"
+    },
+    {
+     "id": "c-p-demo-leo-martin-1",
+     "authorName": "Kenji Sato (synthetic)",
+     "authorColor": "#15aabf",
+     "text": "Strong agree on the pasta"
+    },
+    {
+     "id": "c-p-demo-leo-martin-2",
+     "authorName": "Mila Novak (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "Saving you a seat 🙌"
+    }
+   ],
+   "reactionCount": 24,
+   "minutesAgo": 196
+  },
+  {
+   "id": "post-p-demo-rosa-diaz",
+   "authorName": "Rosa Diaz (synthetic)",
+   "authorColor": "#7950f2",
+   "theme": "outdoors",
+   "text": "That sunset from the library hill tonight 🌅",
+   "comments": [
+    {
+     "id": "c-p-demo-rosa-diaz-0",
+     "authorName": "Eli Cohen (synthetic)",
+     "authorColor": "#15aabf",
+     "text": "Count me in for the bike ride"
+    },
+    {
+     "id": "c-p-demo-rosa-diaz-1",
+     "authorName": "Ella Hart (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "I'll bring the snacks"
+    }
+   ],
+   "reactionCount": 8,
+   "minutesAgo": 203
+  },
+  {
+   "id": "post-p-demo-sara-iqbal",
+   "authorName": "Sara Iqbal (synthetic)",
+   "authorColor": "#7950f2",
+   "theme": "music_stage",
+   "text": "Wrote a song about the campus shuttle being late. It's a banger.",
+   "comments": [
+    {
+     "id": "c-p-demo-sara-iqbal-0",
+     "authorName": "Toby Lane (synthetic)",
+     "authorColor": "#15aabf",
+     "text": "Room 4 forever"
+    },
+    {
+     "id": "c-p-demo-sara-iqbal-1",
+     "authorName": "Jade Wu (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "I'll go if you go 🎤"
+    }
+   ],
+   "reactionCount": 8,
+   "minutesAgo": 218
+  },
+  {
+   "id": "post-p-demo-lucy-tran",
+   "authorName": "Lucy Tran (synthetic)",
+   "authorColor": "#7950f2",
+   "theme": "home_cooking",
+   "text": "Farmers market haul this morning. Peaches are back!",
+   "comments": [
+    {
+     "id": "c-p-demo-lucy-tran-0",
+     "authorName": "Ben Weiss (synthetic)",
+     "authorColor": "#15aabf",
+     "text": "Can you teach me to make that?"
+    },
+    {
+     "id": "c-p-demo-lucy-tran-1",
+     "authorName": "Ana Silva (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "Recipe please!!"
+    }
+   ],
+   "reactionCount": 8,
+   "minutesAgo": 223
+  },
+  {
+   "id": "post-p-demo-sam-okafor",
+   "authorName": "Sam Okafor (synthetic)",
+   "authorColor": "#7950f2",
+   "theme": "night_builders",
+   "text": "Late-night study room on floor 3 is the best kept secret on campus.",
+   "comments": [
+    {
+     "id": "c-p-demo-sam-okafor-0",
+     "authorName": "Ivy Chen (synthetic)",
+     "authorColor": "#15aabf",
+     "text": "Teach me git please"
+    },
+    {
+     "id": "c-p-demo-sam-okafor-1",
+     "authorName": "Theo Park (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "I'm in, saving you a seat!"
+    }
+   ],
+   "reactionCount": 8,
+   "minutesAgo": 233
+  },
+  {
+   "id": "post-p-demo-zoe-adams",
+   "authorName": "Zoe Adams (synthetic)",
+   "authorColor": "#7950f2",
+   "theme": "dinner_company",
+   "text": "Dessert ranking of every dining hall so far. Fight me in the comments.",
+   "comments": [
+    {
+     "id": "c-p-demo-zoe-adams-0",
+     "authorName": "Kenji Sato (synthetic)",
+     "authorColor": "#15aabf",
+     "text": "Strong agree on the pasta"
+    },
+    {
+     "id": "c-p-demo-zoe-adams-1",
+     "authorName": "Mila Novak (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "Saving you a seat 🙌"
+    }
+   ],
+   "reactionCount": 8,
+   "minutesAgo": 233
+  },
+  {
+   "id": "post-p-demo-eli-cohen",
+   "authorName": "Eli Cohen (synthetic)",
+   "authorColor": "#15aabf",
+   "theme": "outdoors",
+   "text": "Planning a bike ride along the coast next weekend. Slow pace, lots of stops.",
+   "comments": [
+    {
+     "id": "c-p-demo-eli-cohen-0",
+     "authorName": "Ella Hart (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "I'll bring the snacks"
+    },
+    {
+     "id": "c-p-demo-eli-cohen-1",
+     "authorName": "Noah Price (synthetic)",
+     "authorColor": "#12b886",
+     "text": "Down for Saturday!"
+    },
+    {
+     "id": "c-p-demo-eli-cohen-2",
+     "authorName": "Aisha Bello (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "Can a total beginner come?"
+    }
+   ],
+   "reactionCount": 15,
+   "minutesAgo": 240
+  },
+  {
+   "id": "post-p-demo-toby-lane",
+   "authorName": "Toby Lane (synthetic)",
+   "authorColor": "#15aabf",
+   "theme": "music_stage",
+   "text": "Small show at the café Friday night. Come say hi!",
+   "comments": [
+    {
+     "id": "c-p-demo-toby-lane-0",
+     "authorName": "Jade Wu (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "I'll go if you go 🎤"
+    },
+    {
+     "id": "c-p-demo-toby-lane-1",
+     "authorName": "Caleb Stone (synthetic)",
+     "authorColor": "#12b886",
+     "text": "I play bass, let's jam"
+    },
+    {
+     "id": "c-p-demo-toby-lane-2",
+     "authorName": "Maya Lopez (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "Need to hear this song"
+    }
+   ],
+   "reactionCount": 15,
+   "minutesAgo": 255
+  },
+  {
+   "id": "post-p-demo-ben-weiss",
+   "authorName": "Ben Weiss (synthetic)",
+   "authorColor": "#15aabf",
+   "theme": "home_cooking",
+   "text": "Baked way too many cookies. Floor 2 kitchen, come take some.",
+   "comments": [
+    {
+     "id": "c-p-demo-ben-weiss-0",
+     "authorName": "Ana Silva (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "Recipe please!!"
+    },
+    {
+     "id": "c-p-demo-ben-weiss-1",
+     "authorName": "Marco Rossi (synthetic)",
+     "authorColor": "#12b886",
+     "text": "I'll bring dumplings"
+    },
+    {
+     "id": "c-p-demo-ben-weiss-2",
+     "authorName": "Hana Kim (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "Coming over right now"
+    }
+   ],
+   "reactionCount": 15,
+   "minutesAgo": 260
+  },
+  {
+   "id": "post-p-demo-ivy-chen",
+   "authorName": "Ivy Chen (synthetic)",
+   "authorColor": "#15aabf",
+   "theme": "night_builders",
+   "text": "Made a little game where you catch falling stars. Link in comments if you want to try it!",
+   "comments": [
+    {
+     "id": "c-p-demo-ivy-chen-0",
+     "authorName": "Theo Park (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "I'm in, saving you a seat!"
+    },
+    {
+     "id": "c-p-demo-ivy-chen-1",
+     "authorName": "Nia Brooks (synthetic)",
+     "authorColor": "#12b886",
+     "text": "This is so cool, show us at demo night"
+    },
+    {
+     "id": "c-p-demo-ivy-chen-2",
+     "authorName": "Ravi Shah (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "Count me in for the hackathon"
+    }
+   ],
+   "reactionCount": 15,
+   "minutesAgo": 270
+  },
+  {
+   "id": "post-p-demo-kenji-sato",
+   "authorName": "Kenji Sato (synthetic)",
+   "authorColor": "#15aabf",
+   "theme": "dinner_company",
+   "text": "Trying to start a Sunday brunch thing. Low effort, just show up.",
+   "comments": [
+    {
+     "id": "c-p-demo-kenji-sato-0",
+     "authorName": "Mila Novak (synthetic)",
+     "authorColor": "#4c6ef5",
+     "text": "Saving you a seat 🙌"
+    },
+    {
+     "id": "c-p-demo-kenji-sato-1",
+     "authorName": "Jonah Reed (synthetic)",
+     "authorColor": "#12b886",
+     "text": "I'll be there at 6!"
+    },
+    {
+     "id": "c-p-demo-kenji-sato-2",
+     "authorName": "Priya Nair (synthetic)",
+     "authorColor": "#f59f00",
+     "text": "Yes please, I always eat alone on Tuesdays"
+    }
+   ],
+   "reactionCount": 15,
+   "minutesAgo": 270
+  }
+ ]
+}

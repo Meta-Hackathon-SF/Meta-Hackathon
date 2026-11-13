@@ -153,7 +153,13 @@ function QuestionPost({
             {voice.recording ? (
               <div className="spc-listening">
                 <Waveform />
-                <span>Listening… take your time</span>
+                {draft ? (
+                  <p className="spc-live-text" aria-live="polite">
+                    {draft}
+                  </p>
+                ) : (
+                  <span>Listening… take your time</span>
+                )}
               </div>
             ) : (
               <textarea
