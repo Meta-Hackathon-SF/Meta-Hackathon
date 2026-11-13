@@ -22,6 +22,7 @@ import {
   type CycleClient,
 } from "./client";
 import { parseDailyConstellations, parseProposal, parseWeekView } from "./v3";
+import { parseReasoning } from "../operator/reasoning";
 import { toWav } from "./wav";
 
 function key(): string {
@@ -150,6 +151,7 @@ export function createHttpClient(
       }
     },
     nudge: createNudgeRequester(base),
+    reasoning: (signal) => call("GET", "/operator/reasoning?limit=50", parseReasoning, { signal }),
     // PROPOSED routes from docs/PRD-v3.md (contract 3.0.0, D012). Until the producers
     // mount them these calls fail and the UI shows its pending/unavailable state.
     v3: {

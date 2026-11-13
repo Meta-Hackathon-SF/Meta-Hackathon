@@ -470,6 +470,9 @@ export function createFixtureClient(): CycleClient {
       return cycle && cycle.cycleId === cycleId && cycle.status === "revealed" ? FIXTURE_ROOM_ID : null;
     },
     nudge: replayNudge,
+    async reasoning() {
+      return []; // fixture mode never calls Muse
+    },
     v3: v3(),
     clearLocalData() {
       state = { ...state, answers: [], followUps: {} };

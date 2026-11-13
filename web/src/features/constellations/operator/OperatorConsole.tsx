@@ -15,6 +15,7 @@ import { CONSTELLATIONS_PATH, FEATURE_NAME, PLAY_COMMUNITY } from "../daily/comm
 import { FormationDebug } from "../formation";
 import { OperatorNudgePanel } from "../nudges";
 import { CloseDayControl, CustomEventQueue } from "./V3Panels";
+import ReasoningPanel from "./ReasoningPanel";
 import "../daily/daily.css";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -434,6 +435,8 @@ export default function OperatorConsole() {
       />
 
       <CustomEventQueue client={client} />
+
+      <ReasoningPanel client={client} />
 
       <section className="card cst-panel" aria-labelledby="cst-op-formation">
         <h2 id="cst-op-formation" className="cst-card-title">

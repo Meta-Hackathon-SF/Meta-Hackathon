@@ -33,6 +33,7 @@ export type {
 import { parseFormationDebug, type FormationDebugProps } from "../formation";
 import type { NudgeRequester } from "../nudges";
 import type { V3Client } from "./v3";
+import type { ReasoningEntry } from "../operator/reasoning";
 
 export type { FormationDebugProps };
 
@@ -142,6 +143,8 @@ export interface CycleClient {
    * custom-event approval. Absent when this client has none.
    */
   readonly v3?: V3Client;
+  /** Adam's GET /operator/reasoning (PROPOSED): Muse calls and the code verdicts on them. */
+  reasoning?(signal?: AbortSignal): Promise<ReasoningEntry[]>;
   /** Fixture only: forget this tab's answers after "delete my data". */
   clearLocalData?(): void;
   /** Fires when cycle state may have changed (operator action, SSE later). */

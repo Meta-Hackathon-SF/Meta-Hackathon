@@ -2062,3 +2062,47 @@ a.cst-post-title:hover {
     animation: none;
   }
 }
+
+/* ---- operator reasoning trace -------------------------------------------------- */
+.cst-reasoning {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.cst-reasoning > li {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.cst-reasoning-call {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.cst-label.is-ok {
+  background: #e7f3e8;
+  color: var(--cst-ok);
+}
+.cst-label.is-bad {
+  background: #fde8ec;
+  color: var(--cst-danger);
+}
+.cst-reasoning-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.cst-count.is-over {
+  color: var(--cst-danger);
+  font-weight: 700;
+}

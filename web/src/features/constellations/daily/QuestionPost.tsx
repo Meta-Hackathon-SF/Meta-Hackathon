@@ -11,7 +11,7 @@ import { currentUser } from "../../../data/demo";
 import { FEATURE_NAME } from "./communities";
 import ConstellationsMark from "./ConstellationsMark";
 import { SupportCard } from "../privacy";
-import type { CycleClient, DailyAnswer, DailyQuestion, FollowUp } from "./client";
+import { ClientError, type CycleClient, type DailyAnswer, type DailyQuestion, type FollowUp } from "./client";
 import { DAY_NAMES, MAX_CHARS, message } from "./useDaily";
 import { dayStyle } from "./v3";
 import { isLiveSupported, useLiveTranscription } from "./useLiveTranscription";
@@ -48,6 +48,7 @@ function ReplyBox({
   tools,
   onEscape,
   maxLength = MAX_CHARS,
+  softLimit = false,
   avatar = true,
 }: {
   label: string;
@@ -61,10 +62,13 @@ function ReplyBox({
   tools?: ReactNode;
   onEscape?: () => void;
   maxLength?: number;
+  /** Soft limit: never cut the text; show the counter and block sending when over. */
+  softLimit?: boolean;
   avatar?: boolean;
 }) {
   const ref = useAutosize(value);
-  const ready = value.trim().length > 0 && !disabled && !busy;
+  const over = value.length > maxLength;
+  const ready = value.trim().length > 0 && !disabled && !busy && !over;
   return (
     <form
       className="cst-reply"
@@ -80,7 +84,8 @@ function ReplyBox({
           aria-label={label}
           className="cst-reply-input"
           rows={1}
-          maxLength={maxLength}
+          maxLength={softLimit ? undefined : maxLength}
+          aria-invalid={over || undefined}
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
@@ -96,8 +101,9 @@ function ReplyBox({
         />
         <div className="cst-reply-tools">
           {value.length > maxLength - 60 && (
-            <span className="cst-count">
+            <span className={`cst-count${over ? " is-over" : ""}`} aria-live="polite">
               {value.length}/{maxLength}
+              {over && <span className="sr-only"> Too long. Shorten it to send.</span>}
             </span>
           )}
           {tools}
@@ -240,7 +246,10 @@ export default function QuestionPost({
   const sendReply = () =>
     run(async () => {
       if (!answer) return;
-      const combined = `${answer.text} ${reply}`.trim().slice(0, MAX_CHARS);
+      const combined = `${answer.text} ${reply.trim()}`.trim();
+      // Never cut the player's words silently (audit #50, R6): block and say why.
+      if (combined.length > MAX_CHARS)
+        throw new ClientError("INVALID_INPUT", `Your answer and this reply are ${combined.length - MAX_CHARS} characters over the ${MAX_CHARS} limit. Shorten the reply to add it.`);
       const result = await client.edit(cycleId, day, { text: combined, answersFollowUp: true });
       setSupport(result.supportCard);
       setFollowUp(null);
@@ -394,6 +403,7 @@ export default function QuestionPost({
                 submitLabel="Add to my answer"
                 busy={busy}
                 maxLength={Math.max(1, MAX_CHARS - answer.text.length - 1)}
+                softLimit
                 avatar={false}
               />
               <div className="cst-comment-actions">

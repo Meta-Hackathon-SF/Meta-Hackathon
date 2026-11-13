@@ -280,7 +280,7 @@ test("operator runs a full demo week in under 3 minutes; lock closes answers", a
   await expect(page.getByText("Demo timing", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Synthetic top-up" }).click();
   await expect(page.getByTestId("cst-op-status")).toHaveText(/Synthetic player top-up: 8 synthetic players/);
-  await expect(page.getByText("None. Fixture mode never calls Muse.")).toBeVisible();
+  await expect(page.getByText("None. Fixture mode never calls Muse.").first()).toBeVisible();
   for (const [button, state] of [
     ["Advance to Tuesday", "Open · Tuesday"],
     ["Advance to Wednesday", "Open · Wednesday"],
@@ -588,4 +588,24 @@ test("v3 operator: custom-event proposals are approved or rejected and the decis
   await expect(log.locator("li")).toHaveCount(2);
   await expect(log).toContainText("Approved “Saturday dumpling night”");
   await expect(log).toContainText("Rejected “Sunday morning walk and coffee”");
+});
+
+test("follow-up reply is never cut silently: over the limit shows a red counter and blocks sending", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await answer(page, 1, "alone mostly");
+  const card = page.getByTestId("cst-day-1");
+  const box = card.getByRole("textbox", { name: "What made it feel that way this week?" });
+  const long = "x".repeat(400);
+  await box.fill(long);
+  await expect(box).toHaveValue(long); // nothing trimmed
+  await expect(card.locator(".cst-count.is-over")).toBeVisible();
+  await expect(card.getByRole("button", { name: "Add to my answer" })).toBeDisabled();
+});
+
+test("operator reasoning panel: Muse proposes, code enforces (fixture shows none)", async ({ page }) => {
+  await newCycle(page);
+  const panel = page.getByTestId("cst-op-reasoning");
+  await expect(panel.getByRole("heading", { name: "Muse proposes, code enforces" })).toBeVisible();
+  await expect(panel.getByText("None. Fixture mode never calls Muse.")).toBeVisible();
 });

@@ -10,6 +10,8 @@ Branch `will/v3-daily-ui` (from main after #55). Verification: `pytest tests` 88
 - S5 `daily/DailyReveal.tsx`, S6 `daily/WeekDays.tsx`, S15 `operator/V3Panels.tsx` (Close day, custom-event queue with decision log).
 - Local PENDING-3.0.0 types and validators in `daily/v3.ts`; `CycleClient.v3?` (http calls the PRD routes; fixture is TEST-ONLY synthetic placement).
 
+- Audit #50: follow-up reply is a soft limit (never truncated, send blocked when over); reasoning panel mounted from `GET /operator/reasoning`. R6 storage change (reply + its question to M3/M4) still needs a contract decision.
+
 ### Needs from others (exact)
 - @rishibagri: contract 3.0.0 in `contracts/protocol.ts` with `DayColorId`, `DailyConstellationsView`, `WeekView`, `CustomEventProposal`, `WeeklyCycle.answeredToday`; routes `GET /cycles/:id/days/:day/constellations`, `GET /cycles/:id/week` (I can serve `week` days/answers; need his per-day `constellationCount`). Use `CycleService.answered_today` for the count.
 - @beatopia: day-close job behind `POST /operator/cycles/:id/close-day` (my control calls it), SSE `daily.updated` / `day.closed` (UI refetches on client change today).
