@@ -136,10 +136,15 @@ def build_router(
             require_consent(actor)
         return _as_session(actor)
 
-    def operator(session: Session = Depends(session_dependency)) -> Session:
-        if session.isOperator is not True:
-            raise CycleError("FORBIDDEN")
+    # Demo controls (Will's call for the hackathon demo): any signed-in member may
+    # start a demo-timing week and run it (advance, synthetic top-up, reset), so
+    # every account can walk through the game. Real-calendar weeks stay operator-only.
+    def demo_runner(session: Session = Depends(session_dependency)) -> Session:
         return session
+
+    def require_demo_or_operator(session: Session, cycle_id: str) -> None:
+        if session.isOperator is not True and not service.is_demo_cycle(cycle_id):
+            raise CycleError("FORBIDDEN")
 
     call = run_in_threadpool
 
@@ -251,26 +256,31 @@ def build_router(
 
     # ---- operator ("Demo timing") -------------------------------------------
     @router.post("/operator/cycles")
-    async def new_cycle(request: Request, session: Session = Depends(operator)):
+    async def new_cycle(request: Request, session: Session = Depends(demo_runner)):
         body = await _body(request, NewCycleRequest)
         if body.communityId != session.communityId:
             raise CycleError("FORBIDDEN")
+        if session.isOperator is not True and body.demoTiming is not True:
+            raise CycleError("FORBIDDEN")  # only operators start real-calendar weeks
         return _json(await call(service.create_cycle, body), 201)
 
     @router.post("/operator/cycles/{cycle_id}/advance")
-    async def advance(cycle_id: str, request: Request, session: Session = Depends(operator)):
+    async def advance(cycle_id: str, request: Request, session: Session = Depends(demo_runner)):
         body = await _body(request, AdvanceRequest, optional=True)
         await call(service.released_questions, session, cycle_id)  # community check
+        await call(require_demo_or_operator, session, cycle_id)
         return _json(await call(service.advance, cycle_id, body.to))
 
     @router.post("/operator/cycles/{cycle_id}/synthetic-topup")
-    async def topup(cycle_id: str, session: Session = Depends(operator)):
+    async def topup(cycle_id: str, session: Session = Depends(demo_runner)):
         await call(service.released_questions, session, cycle_id)
+        await call(require_demo_or_operator, session, cycle_id)
         return _json(await call(service.synthetic_topup, cycle_id))
 
     @router.post("/operator/cycles/{cycle_id}/reset")
-    async def reset(cycle_id: str, session: Session = Depends(operator)):
+    async def reset(cycle_id: str, session: Session = Depends(demo_runner)):
         await call(service.released_questions, session, cycle_id)
+        await call(require_demo_or_operator, session, cycle_id)
         return _json(await call(service.reset, cycle_id))
 
     return router

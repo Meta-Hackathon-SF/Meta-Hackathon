@@ -111,16 +111,24 @@ def test_happy_path_answer_followup_guess(client, cycle):
     assert client.get(f"/api/v1/cycles/{cid}/answers", headers=as_("maya")).json() == []
 
 
-def test_unauthenticated_and_non_operator_are_rejected(client, cycle):
-    cid = cycle["cycleId"]
+def test_any_member_runs_demo_weeks_but_real_weeks_stay_operator_only(client, cycle):
+    cid = cycle["cycleId"]  # demo timing (the default)
     assert_error(client.get("/api/v1/cycles/current"), 401, "UNAUTHENTICATED")
+    # Demo controls are open to every signed-in member on a demo-timing week.
+    assert client.post(f"/api/v1/operator/cycles/{cid}/synthetic-topup", headers=as_("maya")).status_code == 200
+    assert client.post(f"/api/v1/operator/cycles/{cid}/advance", headers=as_("maya")).json()["currentDay"] == 2
+    assert client.post(f"/api/v1/operator/cycles/{cid}/reset", headers=as_("dev")).json()["currentDay"] == 1
+    made = client.post("/api/v1/operator/cycles", headers=as_("maya"), json={"communityId": "community-demo"})
+    assert made.status_code == 201 and made.json()["demoTiming"] is True
+    # Only operators start a real-calendar week, and only operators may run one.
+    real_body = {"communityId": "community-demo", "demoTiming": False}
+    assert_error(client.post("/api/v1/operator/cycles", headers=as_("maya"), json=real_body), 403, "FORBIDDEN")
+    real = client.post("/api/v1/operator/cycles", headers=as_("op"), json=real_body)
+    assert real.status_code == 201
+    rid = real.json()["cycleId"]
     for path in ("advance", "reset", "synthetic-topup"):
-        assert_error(client.post(f"/api/v1/operator/cycles/{cid}/{path}", headers=as_("maya")), 403, "FORBIDDEN")
-    assert_error(
-        client.post("/api/v1/operator/cycles", headers=as_("maya"), json={"communityId": "community-demo"}),
-        403, "FORBIDDEN",
-    )
-    # An operator of another community cannot create here or touch this cycle.
+        assert_error(client.post(f"/api/v1/operator/cycles/{rid}/{path}", headers=as_("maya")), 403, "FORBIDDEN")
+    # Nobody reaches another community's week or creates in it.
     assert_error(
         client.post("/api/v1/operator/cycles", headers=as_("other-op"), json={"communityId": "community-demo"}),
         403, "FORBIDDEN",

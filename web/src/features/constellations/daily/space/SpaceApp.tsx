@@ -5,13 +5,13 @@
  * chat, reveal and events are labeled previews until contract 3.0.0 producers land.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { MoonStar } from "lucide-react";
 import { currentUser } from "../../../../data/demo";
 import { getPrivacyClient, usePrivacySession, type SessionView } from "../../privacy";
 import type { AnswerResult, CycleClient, CycleDay, FollowUp } from "../client";
 import { getCycleClient } from "../clientContext";
-import { OPERATOR_PATH, PLAY_COMMUNITY } from "../communities";
+import { PLAY_COMMUNITY } from "../communities";
 import { MAX_CHARS, message, useDaily } from "../useDaily";
 import { CANVAS_SCREENS, DARK_SCREENS, SCREENS, weekModel, type Screen } from "./model";
 import { CanvasScreen, ChatScreen, RevealedScreen } from "./dark";
@@ -107,7 +107,7 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
         <strong>Demo week</strong>
         <span className="spc-preview">Demo timing</span>
       </div>
-      <p className="spc-fine">Operator controls move the week. Every day uses the real cycle rules.</p>
+      <p className="spc-fine">Any account can run the demo week. Every step uses the real cycle rules, for everyone in the demo.</p>
       <div className="spc-row is-wrap">
         {cycleId && status !== "closed" ? (
           <button type="button" className="spc-btn spc-btn-gray spc-btn-sm" disabled={busy} onClick={() => void act(() => client.advance(cycleId))} data-testid="spc-demo-next">
@@ -128,9 +128,6 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
             Skip to Sunday (filled week)
           </button>
         )}
-        <Link className="spc-btn spc-btn-gray spc-btn-sm" to={OPERATOR_PATH}>
-          Operator console
-        </Link>
       </div>
       {error && (
         <p className="spc-error" role="alert">
