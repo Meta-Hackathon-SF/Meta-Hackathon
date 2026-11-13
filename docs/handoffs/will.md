@@ -1,8 +1,8 @@
 # will handoff
 Current step: 2-3 (foundation + daily loop) and the operator part of step 8, see docs/PLAN.md
 Status: role tasks 1-7 implemented and fixture-verified. Nothing is composed into a running server, nothing has called Muse, nothing is deployed.
-Branch + commit: `feat/will-daily-ui-polish` @ de922ec (UI redesign, branched from main 3fb4bef at the human's request); `role/will-voice-ui` = main. PR #14 merged as 4437e21, PR #25 merged as ef81f4f.
-Updated: 2026-11-13T03:47Z
+Branch + commit: `feat/will-constellations-feed-ui` @ d52b3ea (human-requested UI branch, open PR); `role/will-voice-ui` = main ea3672f (PR #29 merged).
+Updated: 2026-11-13T04:29Z
 
 ## Completed tasks (docs/roles/will.md)
 1. `server/voice/` restored from the archive, renamed to daily-answer terms, transcript cap 400. Default transcriber is unconfigured (503); typing never depends on it.
@@ -41,8 +41,15 @@ Updated: 2026-11-13T03:47Z
 - Operator console is not gated (operators act through server roles); live-mode 401/403 show plain messages.
 - Checks: web lint 0 errors (2 warnings in my files), build ok, Playwright 38 passed; full `pytest tests` 560 passed. Fixture mode only; not tried on a real phone.
 
+## Facebook-native redesign (2026-11-13T04:29Z, branch `feat/will-constellations-feed-ui`)
+- Home feed card (`daily/FeedCard.tsx`) directly under the composer: Join opens Patrik's `JoinScreen` in the shell `Modal`; joined players answer today's question in place.
+- Left sidebar shortcut "Constellations"; `LeftSidebar` NavLinks now use `end` so only the exact page highlights.
+- Page rebuilt as a Facebook Group page (cover, tabs, About column). Modules split: `useDaily.ts`, `QuestionPost.tsx`, `GuessCard.tsx`, `WeekGraph.tsx` (Obsidian-style force graph, draggable, keyboard-focusable day nodes).
+- Styling uses the shell's tokens (`--blue`, `.card`, `.button-*`, `.post-meta`). My CSS restyles Patrik's `.cstp-card` only where it sits inside my page or my join dialog (spacing, border); his files are unchanged.
+- Checks: web lint 0 errors (warnings only), build ok, Playwright 42 passed; `pytest tests` 560 passed. Fixture mode only; not on a real phone.
+
 ## Shared files touched (claimed)
-- `web/src/App.tsx` (two routes), `web/src/pages/SecondaryPages.tsx` (one link on the Hackathon Builders card), `web/src/components/navigation/Header.tsx` (mobile title uses first path segment).
+- `web/src/App.tsx` (two routes), `web/src/pages/SecondaryPages.tsx` (one link on the Hackathon Builders card), `web/src/components/navigation/Header.tsx` (mobile title uses first path segment), `web/src/pages/HomePage.tsx` (one feed card line), `web/src/components/navigation/navigation.ts` (one sidebar item), `web/src/components/layout/LeftSidebar.tsx` (`end` on NavLink).
 - `docs/DECISIONS.md`: my ACK lines under D005 and D006 only.
 - No change to `contracts/`.
 
