@@ -1,0 +1,84 @@
+body {
+  margin: 0;
+  background: #f4f6fa;
+  font:
+    15px/1.6 "Segoe UI",
+    sans-serif;
+  color: #253047;
+}
+.cst-preview {
+  max-width: 1260px;
+  margin: auto;
+  padding: 24px;
+}
+.cst-preview-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #dce2ed;
+  padding: 8px 0 22px;
+  color: #748097;
+  font-size: 11px;
+}
+.cst-preview-brand {
+  color: #344c7a;
+  font-size: 13px;
+  letter-spacing: 3px;
+  font-weight: 700;
+}
+.cst-preview-title {
+  text-align: center;
+  margin: 44px 0 24px;
+}
+.cst-preview-title h1 {
+  font-size: clamp(30px, 5vw, 50px);
+  letter-spacing: -2px;
+  line-height: 1.15;
+  color: #1a2c4d;
+  margin: 10px 0;
+}
+.cst-preview-title p {
+  font-size: 12px;
+  color: #7b8598;
+}
+.cst-preview-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.cst-preview-tools {
+  margin: 0 0 20px;
+  padding: 12px;
+  background: #eaf0fc;
+  border: 1px dashed #b9c6e1;
+  border-radius: 10px;
+  font-size: 11px;
+}
+.cst-preview-tools summary {
+  cursor: pointer;
+}
+.cst-preview-tools button {
+  font: inherit;
+  background: #fff;
+  color: #425d8c;
+  border: 1px solid #cbd6e9;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: 10px 6px 0 0;
+  cursor: pointer;
+}
+@media (max-width: 850px) {
+  .cst-preview-grid {
+    grid-template-columns: 1fr;
+  }
+  .cst-preview {
+    padding: 14px;
+  }
+  .cst-preview-title {
+    margin: 30px 0 20px;
+  }
+  .cst-preview-title h1 {
+    letter-spacing: -1px;
+  }
+}

@@ -1,0 +1,144 @@
+.cst-sky-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 26px 0;
+  padding: 20px 0;
+  border-top: 1px solid #edf0f5;
+  border-bottom: 1px solid #edf0f5;
+}
+.cst-sky-metrics strong {
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+  color: #24447a;
+}
+.cst-sky-metrics span {
+  display: block;
+  font-size: 11px;
+  color: #6d7890;
+}
+.cst-sky-legend {
+  display: flex;
+  gap: 18px;
+  font-size: 11px;
+  color: #6c7890;
+}
+.cst-sky-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cst-actual-dot,
+.cst-guessed-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6285cc;
+}
+.cst-guessed-dot {
+  background: #b9c5db;
+}
+.cst-themes {
+  padding: 0;
+  list-style: none;
+  margin: 0;
+}
+.cst-themes li {
+  padding: 22px 0;
+  border-bottom: 1px solid #edf0f5;
+}
+.cst-themes h3 {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cst-theme-count {
+  color: #7a8498;
+  font-size: 11px;
+  margin: 5px 0 12px;
+}
+.cst-bar-row {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 42px;
+  gap: 10px;
+  align-items: center;
+  font-size: 11px;
+  margin: 8px 0;
+}
+.cst-bar-row strong {
+  text-align: right;
+  font-size: 13px;
+}
+.cst-bar-track {
+  background: #f0f3f9;
+  border-radius: 20px;
+  overflow: hidden;
+  height: 9px;
+}
+.cst-actual-bar,
+.cst-guessed-bar {
+  height: 100%;
+  background: #6285cc;
+  border-radius: 20px;
+}
+.cst-guessed-bar {
+  background: #b9c5db;
+}
+.cst-sky-headlines {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f0f4ff;
+  border-radius: 12px;
+  color: #385487;
+}
+.cst-sky-headlines p {
+  margin: 0;
+}
+.cst-signals {
+  margin-top: 24px;
+  border: 1px dashed #cad4e6;
+  border-radius: 12px;
+  padding: 16px;
+}
+.cst-signals h3 {
+  font-size: 14px;
+  margin: 0;
+}
+.cst-signals > p,
+.cst-signals small {
+  font-size: 11px;
+  color: #738096;
+}
+.cst-signals > div {
+  border-top: 1px solid #e5eaf3;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.cst-signals > div p {
+  margin: 6px 0;
+  font-size: 13px;
+}
+.cst-signal-label {
+  display: inline-block;
+  font-size: 10px;
+  background: #edf1fa;
+  border-radius: 5px;
+  padding: 2px 7px;
+  color: #536b95;
+}
+.cst-sky-projector {
+  font-size: 20px;
+}
+.cst-sky-projector h2 {
+  font-size: clamp(30px, 5vw, 48px);
+}
+.cst-sky-projector .cst-themes h3 {
+  font-size: 22px;
+}
+.cst-sky-projector .cst-bar-track {
+  height: 15px;
+}
