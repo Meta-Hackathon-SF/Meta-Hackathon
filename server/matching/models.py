@@ -202,6 +202,7 @@ class FormationResult:
     themes: tuple[Theme, ...] = ()
     evidence: tuple[MuseCallEvidence, ...] = ()
     used_fallback: bool = False
+    repaired_groups: int = 0  # internal: groups code fixed after a near-valid M4 proposal
     error: MatchingError | None = None
     timings_ms: Mapping[str, int] = field(default_factory=dict)
 

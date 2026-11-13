@@ -9,15 +9,23 @@ from __future__ import annotations
 
 import asyncio
 import time
+import uuid
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
 from server.matching import prompts
-from server.matching.baseline import baseline_groups, same_group
+from server.matching.baseline import (
+    Similarity,
+    baseline_groups,
+    same_group,
+    similarity_matrix,
+)
 from server.matching.models import (
     COLOR_IDS,
+    FALLBACK_LABEL,
     LOOSE_MATCH_CONFIDENCE,
+    MAX_NAME_CHARS,
     SHAPES_BY_SIZE,
     Constellation,
     FormationResult,
@@ -28,12 +36,14 @@ from server.matching.models import (
     ValidationError,
 )
 from server.matching.ports import MusePortLike, OutputGuardLike, SnapshotSource
+from server.matching.repair import repair_proposal
 from server.matching.validation import violations
 
 DEFAULT_TIMEOUT_S = 45.0
 M4_ATTEMPTS = 2  # first proposal + one re-solve
 FALLBACK_MEANING = "Grouped by shared keywords (Fallback grouping)"
 FALLBACK_CONFIDENCE = 0.0
+FALLBACK_SUFFIX = f" ({FALLBACK_LABEL})"
 
 
 @dataclass(frozen=True)
@@ -46,6 +56,18 @@ def _fallback_name(index: int, size: int) -> tuple[str, str, str]:
     color = COLOR_IDS[index % len(COLOR_IDS)]
     shape = SHAPES_BY_SIZE[size][index % len(SHAPES_BY_SIZE[size])]
     return f"The {color.capitalize()} {shape.split('-')[0].capitalize()}", shape, color
+
+
+def _fallback_grouping_name(index: int, size: int) -> tuple[str, str, str]:
+    """Name for a Fallback grouping constellation: '<Color> <Shape> (Fallback grouping)'.
+
+    isFallback is not a wire field (protocol.ts 2.0.0), so the label rides in the name.
+    """
+    color = COLOR_IDS[index % len(COLOR_IDS)]
+    shape = SHAPES_BY_SIZE[size][index % len(SHAPES_BY_SIZE[size])]
+    base = f"{color.capitalize()} {shape.split('-')[0].capitalize()}"
+    base = base[:MAX_NAME_CHARS - len(FALLBACK_SUFFIX)].rstrip()
+    return f"{base}{FALLBACK_SUFFIX}", shape, color
 
 
 class FormationService:
@@ -103,18 +125,29 @@ class FormationService:
         return parsed or ()
 
     async def _groups(self, snap: FormationSnapshot, themes: Sequence[prompts.RawTheme],
-                      request_id: str, evidence: list[MuseCallEvidence]
-                      ) -> tuple[prompts.RawConstellation, ...] | None:
+                      request_id: str, evidence: list[MuseCallEvidence], sim: Similarity
+                      ) -> tuple[tuple[prompts.RawConstellation, ...], int] | None:
+        """M4 with repair. Returns (proposal, repairedGroups) or None.
+
+        Order per attempt: strict parse -> valid? accept -> near-valid? repair and accept ->
+        otherwise spend the re-solve attempt. Repair keeps Muse's grouping and marks touched
+        groups loose (confidence capped).
+        """
         known = set(snap.refs)
         blocked = snap.blocked_ref_pairs()
         payload = prompts.build_m4_payload(themes, snap.answers, blocked)
 
-        def parse(out: Any) -> tuple[prompts.RawConstellation, ...]:
-            proposal = prompts.parse_m4(out, known)
-            problems = violations([c[0] for c in proposal], known, blocked)
-            if problems:
-                raise ValidationError("output.constellations", ",".join(problems))
-            return proposal
+        def parse(out: Any) -> tuple[tuple[prompts.RawConstellation, ...], int]:
+            proposal = prompts.parse_m4(out, known, allow_unknown_refs=True)
+            clean = tuple(c for c in proposal if all(r in known for r in c[0]))
+            if len(clean) == len(proposal) and not violations(
+                    [c[0] for c in proposal], known, blocked):
+                return proposal, 0
+            fixed = repair_proposal(proposal, sorted(known), blocked, sim)
+            if fixed is None:
+                raise ValidationError("output.constellations", "not repairable")
+            return (tuple(zip(fixed.groups, fixed.meanings, fixed.confidences, strict=False)),
+                    sum(fixed.touched))
 
         return await self._try(
             lambda: self._call("constellation_formation", prompts.PROMPT_VERSION_M4,
@@ -141,13 +174,24 @@ class FormationService:
         evidence.extend(local)
         return named or _fallback_name(index, size)
 
+    def _guarded_fallback_name(self, index: int, size: int,
+                               answer_texts: Sequence[str]) -> tuple[str, str, str]:
+        name, shape, color = _fallback_grouping_name(index, size)
+        verdict = self._guard.check(name, answer_texts)
+        if not isinstance(verdict, Mapping) or verdict.get("ok") is not True:
+            name = FALLBACK_LABEL  # fixed text; still labeled
+        return name, shape, color
+
     # ------------------------------------------------------------ public
 
-    async def form(self, cycle_id: str, request_id: str) -> FormationResult:
+    async def form(self, cycle_id: str, request_id: str | None = None) -> FormationResult:
+        """FormationPort.form(cycleId). request_id is optional (generated when omitted)."""
+        request_id = request_id or f"form-{cycle_id}-{uuid.uuid4().hex[:8]}"
         started = self._clock()
         timings: dict[str, int] = {}
         try:
             snap = FormationSnapshot.from_dict(await self._snapshots.formation_snapshot(cycle_id))
+            sim = similarity_matrix(snap.answers)
             baseline = baseline_groups(snap.answers, snap.blocked_ref_pairs())
         except ValidationError:
             return FormationResult("failed", error=MatchingError(
@@ -159,10 +203,11 @@ class FormationService:
         evidence: list[MuseCallEvidence] = []
         themes = await self._themes(snap, request_id, evidence)
         timings["m3Ms"] = int((self._clock() - started) * 1000)
-        proposal = await self._groups(snap, themes, request_id, evidence)
+        grouped = await self._groups(snap, themes, request_id, evidence, sim)
         timings["m4Ms"] = int((self._clock() - started) * 1000)
 
-        used_fallback = proposal is None
+        used_fallback = grouped is None
+        proposal, repaired = grouped if grouped is not None else ((), 0)
         if used_fallback:
             if not self._allow_fallback:
                 return FormationResult("failed", evidence=tuple(evidence), error=MatchingError(
@@ -170,9 +215,13 @@ class FormationService:
             proposal = tuple((g, FALLBACK_MEANING, FALLBACK_CONFIDENCE) for g in baseline)
 
         answer_texts = [a.text for a in snap.answers]
-        names = await asyncio.gather(*(
-            self._name(i, meaning, len(refs), answer_texts, request_id, evidence)
-            for i, (refs, meaning, _) in enumerate(proposal)))
+        if used_fallback:
+            names = [self._guarded_fallback_name(i, len(refs), answer_texts)
+                     for i, (refs, _, _) in enumerate(proposal)]
+        else:
+            names = await asyncio.gather(*(
+                self._name(i, meaning, len(refs), answer_texts, request_id, evidence)
+                for i, (refs, meaning, _) in enumerate(proposal)))
         timings["totalMs"] = int((self._clock() - started) * 1000)
 
         constellations = tuple(
@@ -195,4 +244,5 @@ class FormationService:
             for i, (_, label, desc, refs) in enumerate(themes))
         return FormationResult("ok", constellations=constellations, themes=theme_objs,
                                evidence=tuple(evidence), used_fallback=used_fallback,
+                               repaired_groups=repaired,
                                timings_ms=timings)

@@ -4,7 +4,7 @@ Main is the mock Facebook shell only (`web/`: React/Vite/TypeScript, local demon
 
 2026-11-12 weekly-game pivot (D005/D006): contract 2.0.0 and `contracts/fixtures/` added; typecheck passes; fixtures parse. Baseline check reported by the audit: `web/` build and lint pass; Playwright browser tests could not launch a browser, so UI regression verification is outstanding.
 
-Muse model note (2026-11-12): `muse-spark-1.3` answered 2 live calls and the provider echoed the model name, through the removed Group Quests adapter. Observed single-call latency was 17 to 24 s at low reasoning effort. Two calls are not a benchmark, and no Constellations code has called the model. Wonder and Ember were not available in the docs read and were not tested. Re-verify on the new adapter.
+Muse model note (2026-11-12): `muse-spark-1.3` answered 2 live calls and the provider echoed the model name, through the removed Group Quests adapter. Observed single-call latency was 17 to 24 s at low reasoning effort. Two calls are not a benchmark, and no Constellations code has called the model. Wonder and Ember were not available in the docs read and were not tested. Re-verified on the 2.0.0 adapter 2026-11-13T02:25Z: one `clarify` (M2) call on a synthetic answer, provider echoed `muse-spark-1.3`, 16.2 s at low effort, first attempt. Three single calls in total across both adapters; still not a benchmark.
 
 Role-branch work from teammates is not claimed integrated here; inspect their latest handoffs and PRs (see [docs/COORDINATION.md](docs/COORDINATION.md)) before declaring a dependency missing.
 
@@ -35,12 +35,12 @@ Role-branch work from teammates is not claimed integrated here; inspect their la
 | Facebook shell (`web/`) | Will | Existing; mock data | Build/lint pass; Playwright rerun outstanding (browser failed to launch) |
 | Contract 2.0.0 + fixtures | all | Authored; typechecks; pending D006 ACK | ACK from all five owners |
 | API composition (`server/app/`) | Kai | Planned (restore from archive) | Registry, health, every owner's router mounted |
-| Muse adapter (`server/providers/`) | Adam | Planned (restore from archive) | 2.0.0 task schemas; live call re-verified; evidence records |
+| Muse adapter (`server/providers/`) | Adam | Implemented for 2.0.0 (M1-M8 validators, one malformed retry, evidence log); offline tests pass; **one live M2 call verified** 2026-11-13T02:25Z (`muse-spark-1.3` echoed, 16.2 s, low effort) | Live calls for M1 and M3-M8; timing under parallel load |
 | Sessions, consent, private storage (`server/privacy/`) | Patrik | Planned (restore from archive) | 403 test; prompt payload test; TTL test |
 | Safety screening + OutputGuard | Patrik | Planned | Seeded distress never appears; no-quote fuzz; red-team 30 |
 | Weekly cycle, daily answers, catch-up, streaks | Will | Planned | Lock test; catch-up rules; streak fixture |
 | Voice boundary (`server/voice/`) | Will | Planned (restore from archive) | Transcription or typed fallback on a phone |
-| Question bank + selection | Adam | Planned | Schema validation; no future-day leak |
+| Question bank + selection, M2 follow-up | Adam | Implemented; offline tests pass against fixtures and test-only guard/cycle doubles; operator router not mounted | Run inside the composed app with the real session and OutputGuard; live M2 call |
 | Semantic formation + validation | Rishi | Planned | week-sample constraints; baseline split example; 30 players timed |
 | Prevalence + SkyStats | Rishi | Planned | Threshold test; numbers equal server counts |
 | Anonymous chat, moderation, report/block | Kai (+Patrik) | Planned | Contact-info rejection; report hides; block |
@@ -48,6 +48,6 @@ Role-branch work from teammates is not claimed integrated here; inspect their la
 | Realtime SSE | Kai | Planned | Reconnect replay by seq; per-player filtering |
 | Sky UI | Kai | Planned | Threshold respected; synthetic labels |
 | Operator console | Will | Planned | Full demo week in under 3 minutes; model chip per call |
-| Event nudges (step 6, cuttable) | Adam | Planned | Allowlist test; guard |
-| Question generation + synthetic signals (step 7, cuttable) | Adam, Rishi | Planned | Operator approval; labels |
+| Event nudges (step 6, cuttable) | Adam | Implemented server side + card; allowlist and guard tests pass offline; nothing posted to a real room; card not mounted | Kai's ChatPort and constellation lookup; a nudge seen in a room |
+| Question generation + synthetic signals (step 7, cuttable) | Adam, Rishi | Generation with operator approval implemented, offline tests pass; approval routes proposed, not in API.md; synthetic signals not started here | ACK of approval routes; aggregate signals from Rishi; live M6 call |
 | User impact | all | Unknown | Actual observations only |

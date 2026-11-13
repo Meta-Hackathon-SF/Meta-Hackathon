@@ -17,6 +17,14 @@ from server.matching.validation import violations
 from tests.matching.adapters import FakeMuse, FixtureGuard, FixtureSnapshotSource, load_week
 
 GOOD = [["p-maya", "p-dev", "p-omar", "p-lee"], ["p-jordan", "p-sam", "p-ren"]]
+CONTRACT_PAYLOAD_KEYS = {  # M3In / M4In / M5In in contracts/protocol.ts 2.0.0
+    "theme_discovery": {"answers", "questions"},
+    "constellation_formation": {"themes", "answers", "blockedPairs"},
+    "constellation_naming": {"sharedMeaning", "size"},
+}
+CONSTELLATION_WIRE_KEYS = {"constellationId", "cycleId", "memberIds", "sharedMeaning",
+                           "confidence", "isLooseMatch", "name", "shapeId", "colorId",
+                           "baselineAgrees"}
 BLOCKED = [["p-maya", "p-dev", "p-jordan", "p-lee"], ["p-omar", "p-sam", "p-ren"]]
 
 
@@ -141,6 +149,9 @@ def test_fallback_grouping_after_two_bad_proposals(mode):
     result = run(service.form("c", "r"))
     assert result.status == "ok" and result.used_fallback
     assert all(c.is_fallback and c.is_loose_match for c in result.constellations)
+    assert all("Fallback grouping" in c.name and len(c.name) <= 40
+               for c in result.constellations)
+    assert all(c.to_wire()["isLooseMatch"] for c in result.constellations)
     assert all(c.shared_meaning == FALLBACK_MEANING for c in result.constellations)
     snap = FormationSnapshot.from_dict(source.snapshot())
     refs = [[source.ref_of[p] for p in c.member_ids] for c in result.constellations]
@@ -177,6 +188,7 @@ def test_prompts_carry_refs_and_text_only():
         assert player["playerId"] not in blob
         assert player["displayName"] not in blob
     for call in muse.calls:
+        assert set(call["payload"]) == CONTRACT_PAYLOAD_KEYS[call["task"]]
         for answer in call["payload"].get("answers", []):
             assert set(answer) == {"id", "text", "weight"}
 
@@ -192,7 +204,8 @@ def test_injection_text_is_data_and_constraints_hold():
     service, muse, _ = build()
     result = run(service.form("c", "r"))
     m4 = next(c for c in muse.calls if c["task"] == "constellation_formation")
-    assert m4["payload"]["instructions"] == prompts.M4_INSTRUCTIONS
+    assert set(m4["payload"]) == CONTRACT_PAYLOAD_KEYS["constellation_formation"]
+    assert all("instructions" not in c["payload"] for c in muse.calls)
     assert result.status == "ok"
     assert not any({"p-omar", "p-ren"} <= g for g in groups_by_player(result))
 
@@ -230,3 +243,20 @@ def test_thirty_synthetic_players_form_with_fallback_quickly():
     result = run(service.form("c", "r"))
     assert result.status == "ok" and len(result.constellations) == 6
     assert result.timings_ms["totalMs"] < 60_000
+
+
+@pytest.mark.parametrize("m4_script", [("good",), ("raise",)])
+def test_constellation_wire_keys_match_contract(m4_script):
+    service, _, _ = build(m4_script=m4_script)
+    result = run(service.form("cycle-demo-w1"))  # request id optional per FormationPort
+    assert result.status == "ok"
+    for c in result.constellations:
+        assert set(c.to_wire()) == CONSTELLATION_WIRE_KEYS
+    wire = result.to_wire("r")
+    assert set(wire) == {"status", "constellations", "evidence"}
+
+
+def test_prompt_text_lives_outside_payloads():
+    assert set(prompts.PROMPT_TEXT) == {prompts.PROMPT_VERSION_M3, prompts.PROMPT_VERSION_M4,
+                                        prompts.PROMPT_VERSION_M5}
+    assert "triangle" in prompts.PROMPT_TEXT[prompts.PROMPT_VERSION_M5]
