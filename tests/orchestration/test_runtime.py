@@ -541,7 +541,61 @@ def test_operator_topup_records_canonical_synthetic_labels():
             assert all(row["communityId"] == COMMUNITY for row in labeled.values())
 
 
-def test_operator_topup_is_operator_only_labeled_and_seeds_the_maya_dev_pair():
+ANSWER = "Synthetic private submission number {} for this week"
+
+
+def test_stage_shows_only_opted_in_players_answers_to_operators():
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        players, cycle_id, _job = formed(env, client)
+        operator, on_stage, private_player = players[:3]
+        assert call(client, on_stage, "GET", "/operator/stage").status_code == 403
+        assert call(client, on_stage, "GET", "/me/stage").json() == {"slot": None}
+        bad = call(client, on_stage, "POST", "/me/stage", json={"slot": "C"})
+        assert bad.status_code in (400, 422)
+        chosen = call(client, on_stage, "POST", "/me/stage", json={"slot": "A"})
+        assert chosen.json() == {"slot": "A"}
+        assert call(client, on_stage, "GET", "/me/stage").json() == {"slot": "A"}
+
+        stage = call(client, operator, "GET", "/operator/stage")
+        assert stage.status_code == 200, stage.json()
+        body = stage.json()
+        a, b = body["panels"]
+        assert (a["slot"], a["joined"], b["joined"]) == ("A", True, False)
+        assert [x["text"] for x in a["answers"]] == [ANSWER.format(1)]
+        assert b["answers"] == [] and b["constellation"] is None
+        assert a["constellation"]["size"] == len(players)
+        assert body["population"]["players"] == len(players)
+        assert body["population"]["answersByDay"][0] == len(players)
+        assert body["formation"]["formed"] is True and body["cycle"]["cycleId"] == cycle_id
+        assert body["calls"] and all("callType" in c for c in body["calls"])
+        # Nobody else's text, ids or private meaning leaves the server.
+        assert "submission number 0" not in stage.text
+        assert "submission number 2" not in stage.text
+        assert private_player.player_id not in stage.text
+        assert on_stage.player_id not in stage.text
+        assert "memberIds" not in stage.text and "sharedMeaning" not in stage.text
+
+        # Opting out removes the text again; a second player can take the slot.
+        left = call(client, on_stage, "POST", "/me/stage", json={"slot": None})
+        assert left.json() == {"slot": None}
+        panels = call(client, operator, "GET", "/operator/stage").json()["panels"]
+        assert panels[0]["answers"] == []
+        call(client, on_stage, "POST", "/me/stage", json={"slot": "B"})
+        call(client, private_player, "POST", "/me/stage", json={"slot": "B"})
+        panels = call(client, operator, "GET", "/operator/stage").json()["panels"]
+        assert [x["text"] for x in panels[1]["answers"]] == [ANSWER.format(2)]
+
+
+def test_stage_without_a_week_is_empty_not_an_error():
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        player = join(client, "operator")
+        grant_operator(env.privacy_store, player.player_id, COMMUNITY)
+        body = call(client, player, "GET", "/operator/stage").json()
+        assert body["cycle"] is None and body["constellations"] == []
+        assert body["population"]["answersByDay"] == [0, 0, 0, 0, 0]
+
+
+def test_topup_needs_a_session_is_labeled_and_seeds_the_maya_dev_pair():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         operator = join(client, "operator")
         grant_operator(env.privacy_store, operator.player_id, COMMUNITY)
@@ -556,8 +610,11 @@ def test_operator_topup_is_operator_only_labeled_and_seeds_the_maya_dev_pair():
         cycle_id = created.json()["cycleId"]
         path = f"/operator/cycles/{cycle_id}/synthetic-topup"
 
-        denied = call(client, player, "POST", path)
-        assert denied.status_code == 403 and denied.json()["error"]["code"] == "FORBIDDEN"
+        # #103: on a demo-timed week every signed-in account may run the demo controls,
+        # so the gate here is the session, not the operator role.
+        client.cookies.clear()
+        denied = client.post("/api/v1" + path, headers={"Idempotency-Key": "no-session"})
+        assert denied.status_code == 401
         with env.privacy_store.tx() as conn:
             assert (
                 conn.execute("SELECT count(*) FROM players WHERE is_synthetic = 1").fetchone()[0]
@@ -587,8 +644,12 @@ def test_operator_topup_is_operator_only_labeled_and_seeds_the_maya_dev_pair():
             )
         # The semantic pair: no shared keywords, same meaning.
         assert "alone" in day_one["p-maya"] and "cooking for one" in day_one["p-dev"]
-        # Still refused for a normal player after the cast exists.
-        assert call(client, player, "POST", path).status_code == 403
+        # A normal player may repeat it on a demo week; it stays labeled and adds nobody new.
+        again = call(client, player, "POST", path)
+        assert again.status_code == 200 and again.json()["label"] == "Synthetic player"
+        with env.privacy_store.tx() as conn:
+            count = conn.execute("SELECT count(*) FROM players WHERE is_synthetic = 1").fetchone()
+        assert count[0] == 38
 
 
 def test_v3_live_routes_serve_indices_only_from_the_verified_session():

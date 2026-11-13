@@ -1,4 +1,5 @@
 /* Light (Facebook-style) Space screens: answer, follow-up, support, events, invite, privacy, join, empty home bar. */
+import { StageOptIn } from "../../stage/StageOptIn";
 import { useState } from "react";
 import { Settings } from "lucide-react";
 import type { ConsentToggles, PrivacyClient, SessionView } from "../../privacy";
@@ -307,6 +308,7 @@ export function SettingsScreen({
             {error}
           </p>
         )}
+        <StageOptIn />
         <div className="spc-card spc-rounded spc-pad-md spc-col is-tight">
           {step === 0 && (
             <button type="button" className="spc-link-danger" onClick={() => setStep(1)}>

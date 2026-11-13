@@ -5,7 +5,7 @@
  * chat, reveal and events are labeled previews until contract 3.0.0 producers land.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { MoonStar } from "lucide-react";
 import type { MutualReveal } from "../../../../../../contracts/protocol";
 import { currentUser } from "../../../../data/demo";
@@ -137,6 +137,9 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
             Skip to Sunday (filled week)
           </button>
         )}
+        <Link className="spc-btn spc-btn-gray spc-btn-sm" to="/space/stage">
+          Stage view
+        </Link>
       </div>
       {error && (
         <p className="spc-error" role="alert">
