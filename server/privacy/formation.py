@@ -34,6 +34,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import errors
+from .activity import ActivityStore
 from .answers import AnswerStore
 from .moderation import ModerationStore
 from .store import PrivacyStore
@@ -61,25 +62,29 @@ class LeasedSnapshot:
 
 
 class PrivacyFormation:
-    def __init__(self, store: PrivacyStore, answers: AnswerStore, moderation: ModerationStore):
+    def __init__(self, store: PrivacyStore, answers: AnswerStore, moderation: ModerationStore,
+                 activity: ActivityStore | None = None):
         self._store = store
         self._answers = answers
         self._moderation = moderation
+        self._activity = activity  # D010: optional; absent -> snapshot has no activity
 
-    def _state(self, cycle_id: str, community_id: str) -> tuple[list, list[list[str]], str]:
+    def _state(self, cycle_id: str, community_id: str) -> tuple[list, list[list[str]], str, dict]:
         rows = self._answers.eligible_answers(cycle_id, community_id)
         players = {r["player_id"] for r in rows}
         pairs = self._moderation.blocked_pairs(community_id, players)
+        signals = self._activity.for_players(community_id, players) if self._activity else {}
         digest = hashlib.sha256(json.dumps({
             "answers": [[r["player_id"], r["answer_id"], r["day"], r["weight"], r["edited_at"], r["consent_version"]]
                         for r in rows],
             "blocks": pairs,
+            "activity": {p: s.wire() for p, s in sorted(signals.items())},
         }, sort_keys=True).encode()).hexdigest()
-        return rows, pairs, f"{community_id}|{digest}"  # opaque to callers
+        return rows, pairs, f"{community_id}|{digest}", dict(signals)  # revision is opaque to callers
 
     def prepare_formation(self, cycle_id: str, community_id: str) -> FormationLease:
         with self._store.tx():
-            rows, pairs, revision = self._state(cycle_id, community_id)
+            rows, pairs, revision, signals = self._state(cycle_id, community_id)
         players = sorted({r["player_id"] for r in rows})
         refs = {p: "r" + secrets.token_hex(4) for p in players}
         while len(set(refs.values())) != len(refs):  # astronomically rare collision
@@ -89,6 +94,8 @@ class PrivacyFormation:
             "idMap": {ref: player for player, ref in refs.items()},
             "blockedPairs": pairs,
         }
+        if signals:  # D010: keyed by the same random refs; omitted entirely when nobody opted in
+            snapshot["activity"] = {refs[p]: s.wire() for p, s in signals.items() if p in refs}
         return FormationLease(cycle_id, community_id, snapshot, revision, frozenset(players))
 
     @contextmanager
@@ -98,7 +105,7 @@ class PrivacyFormation:
         if not sep or not community_id:
             raise errors.stale()
         with self._store.tx():
-            rows, _, current = self._state(cycle_id, community_id)
+            rows, _, current, _ = self._state(cycle_id, community_id)
             if current != revision or not wanted <= {r["player_id"] for r in rows}:
                 raise errors.stale()
             yield
