@@ -1,0 +1,79 @@
+{
+  "contractVersion": "3.0.0",
+  "_note": "S5 DailyConstellationsView. Star indices only; no ids, names, labels or counts other than answeredToday.",
+  "view": {
+    "day": 2,
+    "colorId": "teal",
+    "answeredToday": 142,
+    "placement": "ready",
+    "myStarIndex": 4172,
+    "constellations": [
+      {
+        "constellationId": "dc-teal-01",
+        "starIndices": [
+          4172,
+          88,
+          5310,
+          902
+        ],
+        "brightness": "bright",
+        "anchors": [
+          {
+            "index": 4172,
+            "x": 0.41,
+            "y": 0.52
+          },
+          {
+            "index": 88,
+            "x": 0.46,
+            "y": 0.48
+          },
+          {
+            "index": 5310,
+            "x": 0.38,
+            "y": 0.57
+          },
+          {
+            "index": 902,
+            "x": 0.44,
+            "y": 0.6
+          }
+        ]
+      },
+      {
+        "constellationId": "dc-teal-02",
+        "starIndices": [
+          4172,
+          77,
+          3101
+        ],
+        "brightness": "mid",
+        "anchors": [
+          {
+            "index": 4172,
+            "x": 0.41,
+            "y": 0.52
+          },
+          {
+            "index": 77,
+            "x": 0.35,
+            "y": 0.44
+          },
+          {
+            "index": 3101,
+            "x": 0.33,
+            "y": 0.5
+          }
+        ]
+      }
+    ]
+  },
+  "pending": {
+    "day": 2,
+    "colorId": "teal",
+    "answeredToday": 3,
+    "placement": "pending",
+    "myStarIndex": 4172,
+    "constellations": []
+  }
+}

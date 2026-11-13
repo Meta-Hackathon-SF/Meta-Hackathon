@@ -1,4 +1,4 @@
-"""contract.py must mirror contracts/protocol.ts 2.0.0 and accept the shared fixtures."""
+"""contract.py must mirror contracts/protocol.ts 3.0.0 and accept the shared fixtures."""
 from __future__ import annotations
 
 import json
@@ -37,7 +37,7 @@ def ts_interface_keys(name: str) -> set[str]:
 
 class ProtocolDriftTests(unittest.TestCase):
     def test_contract_version_is_current(self):
-        self.assertIn('CONTRACT_VERSION = "2.2.0"', PROTOCOL)
+        self.assertIn('CONTRACT_VERSION = "3.0.0"', PROTOCOL)
 
     def test_task_list_and_call_types_match_protocol(self):
         tasks = ts_union("MuseTask")

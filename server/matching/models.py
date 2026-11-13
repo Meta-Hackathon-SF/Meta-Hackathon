@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-CONTRACT_VERSION = "2.2.0"
+CONTRACT_VERSION = "3.0.0"
 MIN_CONSTELLATION_SIZE = 3
 MAX_CONSTELLATION_SIZE = 5
 LOOSE_MATCH_CONFIDENCE = 0.5

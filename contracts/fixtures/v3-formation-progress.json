@@ -1,0 +1,46 @@
+{
+  "contractVersion": "3.0.0",
+  "_note": "S10. attempts only involve the viewer's own stars or second-degree neighbours; outcome has no score or reason.",
+  "trace": {
+    "phase": "running",
+    "step": 2,
+    "totalSteps": 6,
+    "source": "trace",
+    "isVisualization": false,
+    "attempts": [
+      {
+        "seq": 1,
+        "fromStarIndex": 4172,
+        "toStarIndex": 88,
+        "outcome": "tried"
+      },
+      {
+        "seq": 2,
+        "fromStarIndex": 4172,
+        "toStarIndex": 5310,
+        "outcome": "kept"
+      },
+      {
+        "seq": 3,
+        "fromStarIndex": 4172,
+        "toStarIndex": 6001,
+        "outcome": "dropped"
+      }
+    ]
+  },
+  "visualization": {
+    "phase": "running",
+    "step": 1,
+    "totalSteps": 6,
+    "source": "visualization",
+    "isVisualization": true,
+    "attempts": [
+      {
+        "seq": 1,
+        "fromStarIndex": 4172,
+        "toStarIndex": 88,
+        "outcome": "tried"
+      }
+    ]
+  }
+}
