@@ -95,6 +95,9 @@ From Will's product notes: streak rewards (`rewards.ts`, `StreakRewards.tsx`; co
 The feature is shown as **Facebook Space**; each person's matched group is still a "constellation". Internal names, contract types and `web/src/features/constellations/` paths are unchanged. Routes: `/space`, `/space/operator`; `/constellations` and the old Group links redirect. `FEATURE_NAME` lives in `daily/communities.ts`. Open: Patrik's `JoinScreen` heading still reads "Join Constellations in {communityName}" (his file; asked on PR #33).
 Shell (same branch): system font stack, sidebar in Facebook order (Meta AI and Gaming are placeholder pages), compact Create story card with story bubbles, floating New message button, compact not-joined feature card.
 
+## Merged 2026-11-13: PR #31 (dd606d4) and PR #33 (19d6cf9)
+Facebook Space UI (feed card, /space page, Constellation tab Examples, streak rewards, event heat, why-this-group) and the Facebook-style shell are on main. Verified on the merged tree (feature branch + main at d1c259d): lint 0 errors, build ok, Playwright 53 passed / 1 skipped (desktop-only test). Rishi's #26 landed between the two merges and touches only server/matching (no overlap). pytest not rerun: no Python, contract or test files changed in #31/#33 and the local venv was not present. D009/D010 remain proposals awaiting ACKs. Adam's comment on #31 not yet answered (Will deferred it).
+
 ## Next action
 Me: when Patrik's store/session and Kai's registry land, write the thin adapters, remove the fixture adapters from live composition, point the web app at `/api/v1`, and test on phones. Then durable cycle storage (Kai's migration order).
 Consumers: Kai mounts `build_router`; Kai's job calls `advance(cycleId, "forming")` then `"revealed"`; Rishi reads `DailyAnswer.weight`/`isCatchUp` via Patrik's snapshot.
