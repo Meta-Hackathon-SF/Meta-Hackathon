@@ -208,3 +208,36 @@ def test_common_draft_variants_are_normalized_within_the_same_limits():
         {**base, "placeId": "v-quad", "time": "14:00", "day": "sa"},
     ):
         assert chat.clean_draft(bad) is None
+
+
+def test_draft_from_flat_fields_or_json_string_and_ids_never_shown_as_text():
+    flat = {
+        "text": "Here is a picnic draft at v-quad, near ev-film-club, bring mk-speaker.",
+        "draftTitle": "Saturday picnic",
+        "draftPlaceId": "v-quad",
+        "draftDay": "Saturday",
+        "draftTime": "2 PM",
+        "draftDescription": "Bring snacks.",
+    }
+    out = MuseChat(CONFIG, send=FakeMuse(flat)).reply({"kind": "create", "context": CONTEXT}, "p1")
+    assert out["draft"] == {
+        "title": "Saturday picnic",
+        "placeId": "v-quad",
+        "day": "Saturday",
+        "time": "14:00",
+        "description": "Bring snacks.",
+    }
+    assert out["text"] == (
+        "Here is a picnic draft at Main Quad, near Film club screening, "
+        "bring Portable Bluetooth speaker."
+    )
+    as_string = {
+        "text": "Draft below.",
+        "draft": json.dumps(
+            {"title": "Movie night", "placeId": "Main Quad", "day": "Fri", "time": "19:00"}
+        ),
+    }
+    out = MuseChat(CONFIG, send=FakeMuse(as_string)).reply(
+        {"kind": "create", "context": CONTEXT}, "p1"
+    )
+    assert out["draft"]["placeId"] == "v-quad" and out["draft"]["day"] == "Friday"
