@@ -13,11 +13,5 @@
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
-  ],
-  "functions": {
-    "api/muse-chat.ts": {
-      "includeFiles": "web/src/data/catalog.json",
-      "maxDuration": 30
-    }
-  }
+  ]
 }

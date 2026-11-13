@@ -1,24 +1,15 @@
 /**
- * POST /api/muse-chat: one short Muse line for the Sunday Messenger group.
- *
- * Runs as a Vercel Function on the deployed demo (repo-root api/, since the
- * Vercel project builds from the repo root; key from the MUSE_API_KEY env var)
- * and inside the Vite dev server (web/museChatPlugin.ts; key from the gitignored
- * server/providers/muse.env). Both read the same web/src/data/catalog.json.
- *
- * The browser sends only a task kind and the last few chat lines, with members
- * already renamed to "Member 1..." and "You". Facts come from the catalog, never
- * from the request. Muse may only point at catalog ids or propose an event draft
- * on an approved venue; ids and drafts are checked here and again in the browser
- * (museHelp.ts), which swaps in a labeled catalog reply if anything is off.
+ * LOCAL DEV ONLY: POST /api/muse-chat on the Vite dev server (web/museChatPlugin.ts),
+ * used when the app runs in fixture mode without a backend. The hosted app calls
+ * the backend route POST /api/v1/muse-chat (server/cycle/muse_chat.py), which keeps
+ * the Muse key on Railway. Keep the two in step: same catalog
+ * (server/cycle/data/catalog.json), same instructions, same checks. The browser
+ * re-checks every reply either way (museHelp.ts).
  */
-
-import fs from "node:fs";
-import path from "node:path";
 
 type Kind = "hangout" | "supplies" | "barter" | "create";
 
-/** The parts of web/src/data/catalog.json this route reads. */
+/** The parts of server/cycle/data/catalog.json this route reads. */
 export interface Catalog {
   venues: { placeId: string; name: string }[];
   items: { itemId: string; title: string; price: string; description: string }[];
@@ -46,13 +37,6 @@ function prepare(catalog: Catalog) {
       vendor: { name: "Campus Cafe", ask: "a table for the group", offer: "bring the coffee set from Marketplace and split the check" },
     },
   };
-}
-
-let cached: Catalog | null = null;
-/** Vercel: the function runs from the repo root and vercel.json ships the JSON with it (includeFiles). */
-function loadCatalog(): Catalog {
-  cached ??= JSON.parse(fs.readFileSync(path.join(process.cwd(), "web/src/data/catalog.json"), "utf8")) as Catalog;
-  return cached;
 }
 
 const INSTRUCTIONS = [
@@ -214,19 +198,4 @@ export async function handleMuseChat(body: unknown, config: MuseConfig | null, c
   } finally {
     clearTimeout(timer);
   }
-}
-
-/** Vercel Function entry (Web handler). */
-export async function POST(request: Request): Promise<Response> {
-  const key = process.env.MUSE_API_KEY || process.env.MODEL_API_KEY || "";
-  const config = key ? { key, model: process.env.MUSE_MODEL || "muse-spark-1.3" } : null;
-  let body: unknown = {};
-  try {
-    body = await request.json();
-  } catch {
-    body = {};
-  }
-  const client = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const result = await handleMuseChat(body, config, loadCatalog(), client);
-  return Response.json(result.body, { status: result.status });
 }

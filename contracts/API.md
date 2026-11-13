@@ -26,6 +26,7 @@ Status codes: 400 `INVALID_INPUT`, 401 `UNAUTHENTICATED`, 403 `FORBIDDEN`/`CONSE
 | PATCH / DELETE /cycles/:id/answers/:day | text / none | updated or deleted; `CYCLE_LOCKED` after Saturday lock |
 | GET /cycles/:id/answers/:day/followup | session | M2 `{needsFollowup, question}`, max one per answer |
 | PUT /cycles/:id/guess | percent 0-100 | stored apart from answers |
+| POST /muse-chat (demo, Sunday Messenger group) | session; `{kind: hangout|supplies|barter|create, context: [{sender: "You"|"Muse"|"Member N", text}] ≤ 6}` | `{text, source:"live", itemIds[], eventIds[], draft|null}`; ids only from the demo catalog (`server/cycle/data/catalog.json`), drafts on approved venues 08:00-22:00; 400 / 429 `RATE_LIMITED` (12/min per player) / 503 when no Muse key. Direct Muse call (like voice), no providers evidence |
 
 ## Questions and nudges (Adam)
 | Route | Input | Output |

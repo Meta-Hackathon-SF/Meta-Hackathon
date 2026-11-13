@@ -1,6 +1,6 @@
 /**
  * Muse helps the Sunday Messenger group plan. Facts come from the demo catalog
- * (src/data/catalog.json): Muse may only point at catalog items and events by
+ * (server/cycle/data/catalog.json): Muse may only point at catalog items and events by
  * id, or propose an event draft on an approved venue. Code checks every reply;
  * a failed, off-catalog or overclaiming reply becomes a labeled catalog reply
  * chosen by code from the same catalog.
@@ -148,6 +148,12 @@ function parseLive(kind: MuseKind, body: unknown): MuseHelp | null {
   };
 }
 
+/** Hosted (live backend): the API route keeps the Muse key on the server. Fixture mode: the dev server route. */
+function museUrl(): string {
+  const base = (import.meta.env.VITE_CONSTELLATIONS_API as string | undefined)?.replace(/\/$/, "");
+  return base ? `${base}/muse-chat` : "/api/muse-chat";
+}
+
 export async function askMuse(kind: MuseKind, context: MuseNote[]): Promise<MuseHelp> {
   const notes = context
     .map((note) => ({ sender: note.sender.slice(0, 20), text: note.text.trim().slice(0, 200) }))
@@ -155,9 +161,11 @@ export async function askMuse(kind: MuseKind, context: MuseNote[]): Promise<Muse
     .slice(-6);
   if (!notes.length) return catalogReply(kind, []);
   try {
-    const response = await fetch("/api/muse-chat", {
+    const response = await fetch(museUrl(), {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      credentials: "include",
+      // The API requires an Idempotency-Key on every POST; the dev route ignores it.
+      headers: { "content-type": "application/json", "Idempotency-Key": crypto.randomUUID() },
       // Facts live on the server; the request carries only the task and anonymous lines.
       body: JSON.stringify({ kind, context: notes }),
     });
