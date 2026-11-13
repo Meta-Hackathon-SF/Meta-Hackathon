@@ -414,7 +414,7 @@ function Joined({ client, view, setView, onDeleted }: { client: CycleClient; vie
       <div key={screen} className={`spc-with-demo spc-enter${DARK_SCREENS.includes(screen) ? " is-dark" : ""}`}>
         {body}
       </div>
-      <DropGate client={client} cycleId={cycleId} day={closedDay ?? null} answerText={closedDay ? week.answers.get(closedDay)?.text ?? "" : ""} onEnter={() => go("main")} />
+      <DropGate client={client} cycleId={cycleId} day={closedDay ?? null} onEnter={(d) => go("daily", d)} />
     </>
   );
 }

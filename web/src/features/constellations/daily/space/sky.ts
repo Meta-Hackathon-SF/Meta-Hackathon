@@ -6,7 +6,7 @@
  * until contract 3.0.0 delivers real DailyConstellationsView anchors.
  */
 
-export type SkyMode = "home" | "daily" | "sky" | "forming" | "main";
+export type SkyMode = "home" | "daily" | "sky" | "forming" | "main" | "drop";
 
 export const SKY_COLORS = ["#4599FF", "#2CC7C0", "#5BD27A", "#F5B841", "#F07196"] as const;
 const RGB = ["69,153,255", "44,199,192", "91,210,122", "245,184,65", "240,113,150"];
@@ -82,6 +82,7 @@ export class SkyRenderer {
   private closeBase: { x: number; y: number }[] = [];
   private days: Record<number, Con[]> = {};
   private second: { d: number; pts: Pt[]; bend: number }[] = [];
+  private reachCache = new WeakMap<Con, number[]>();
   private emap: Record<string, { a: Pt; b: Pt; bend: number; days: number[] }> = {};
   private amb: { pts: { x: number; y: number }[]; edges: Edge[]; per: number; ph: number }[] = [];
   private nb: { x: number; y: number; a: number; col: number; sz: number; f1: number; f2: number; p1: number; p2: number }[] = [];
@@ -398,6 +399,30 @@ export class SkyRenderer {
     }
   }
 
+  /** Dijkstra from the viewer's star (pts[0]) along a constellation's lines; edge cost is its drawn length. */
+  private reach(con: Con): number[] {
+    const cached = this.reachCache.get(con);
+    if (cached) return cached;
+    const n = con.pts.length;
+    const dist = new Array<number>(n).fill(Infinity);
+    const done = new Array<boolean>(n).fill(false);
+    dist[0] = 0;
+    for (let step = 0; step < n; step++) {
+      let u = -1;
+      for (let i = 0; i < n; i++) if (!done[i] && (u < 0 || dist[i] < dist[u])) u = i;
+      if (u < 0 || dist[u] === Infinity) break;
+      done[u] = true;
+      for (const [i, j] of con.edges) {
+        if (i !== u && j !== u) continue;
+        const v = i === u ? j : i;
+        const cost = Math.hypot(con.pts[i].x - con.pts[j].x, con.pts[i].y - con.pts[j].y);
+        if (dist[u] + cost < dist[v]) dist[v] = dist[u] + cost;
+      }
+    }
+    this.reachCache.set(con, dist);
+    return dist;
+  }
+
   private drawCon(ctx: CanvasRenderingContext2D, con: Con, d: number, p: number, alpha: number, ts: number, starA?: number) {
     ctx.strokeStyle = `rgb(${RGB[d - 1]})`;
     ctx.lineWidth = 0.6;
@@ -493,6 +518,41 @@ export class SkyRenderer {
         this.drawMe(ctx, this.cx, this.cy, easeOut((el - 300) / 700), ts);
         hooks.onCount?.(easeOut((el - 300) / 1800));
         settled = el > 1500 + cons.length * 700 + 800;
+        break;
+      }
+      case "drop": {
+        // The day's constellation is found outward from the viewer: each star lights when the
+        // shortest path from "me" reaches it, and each line grows from its nearer end.
+        const vd = input.viewDay, cons = input.emptyDay ? [] : this.days[vd] ?? [];
+        this.drawBg(ctx, 1e6, ts, false, 1);
+        this.drawNb(ctx, ts, 1);
+        this.drawAmbient(ctx, ts, 1);
+        const START = 200, DUR = 3400, FLASH = 650;
+        const far = Math.max(1, ...cons.flatMap((cn) => this.reach(cn).filter((v) => v < Infinity)));
+        const at = (dist: number) => START + (DUR * dist) / far;
+        ctx.strokeStyle = `rgb(${RGB[vd - 1]})`;
+        ctx.lineWidth = 0.8;
+        for (const cn of cons) {
+          const dist = this.reach(cn);
+          for (const [i, j] of cn.edges) {
+            const [a, b] = dist[i] <= dist[j] ? [i, j] : [j, i];
+            if (dist[b] === Infinity) continue;
+            const span = Math.max(1, at(dist[b]) - at(dist[a]));
+            this.seg(ctx, cn.pts[a], cn.pts[b], a === 0 ? 11 : 7, b === 0 ? 11 : 7, easeOut((el - at(dist[a])) / span), 0.6);
+          }
+          cn.pts.forEach((pt, i) => {
+            if (i === 0 || dist[i] === Infinity) return;
+            const since = el - at(dist[i]);
+            if (since <= 0) return;
+            const lit = cl(since / 260), flash = 1 - cl(since / FLASH);
+            const size = pt.id[0] === "c" ? 18 : Math.min(8, pt.sz || 7);
+            if (flash > 0) this.spot(ctx, 2, pt.x, pt.y, size + 10 * flash, 0.55 * flash);
+            this.spot(ctx, 5 + vd, pt.x, pt.y, size, lit * this.lvl(pt, 0, ts, false));
+          });
+        }
+        this.drawMe(ctx, this.cx, this.cy, 1, ts);
+        hooks.onProgress?.(cons.length ? cl((el - START) / DUR) : 0);
+        settled = cons.length > 0 && el > START + DUR + FLASH;
         break;
       }
       case "sky": {

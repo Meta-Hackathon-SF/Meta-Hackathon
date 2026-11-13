@@ -1,117 +1,20 @@
-/*
- * Constellation Drop. The hero moment: near-black indigo, hairline strokes, one sentence.
- * Slow on purpose (rare, emotional, screen-recorded). Transform, opacity and a touch of blur only.
- * Beats: ready (still) -> forming (~6s, stars drift in, lines are drawn) -> payoff (the sentence) -> signal.
- */
+/* Constellation Drop: the day's sky, full screen, drawn by the same renderer as every other Space sky. */
 .spc-drop {
-  --drop-ease: cubic-bezier(0.22, 1, 0.36, 1); /* quick UI feedback */
-  --drop-drift: cubic-bezier(0.3, 0.05, 0.15, 1); /* long, soft arrival for the formation */
-  --drop-ink: #eceefc;
-  --drop-soft: #a7aedc; /* 7.9:1 on the ground */
-  --drop-faint: #8990c4; /* 5.6:1 on the ground */
-  --drop-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  position: fixed; inset: 0; z-index: 200; display: grid; grid-template-rows: minmax(0, 1fr) auto;
-  background: radial-gradient(110% 80% at 50% 36%, #0e1030 0%, #080921 52%, #04051a 100%);
-  color: var(--drop-ink);
-  animation: spc-drop-in 900ms ease-out both;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  background: #03081a;
+  color: #fff;
 }
-.spc-drop-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-
-.spc-drop-sky {
-  width: min(88vw, 56vh); height: min(88vw, 56vh); margin: auto; align-self: center; justify-self: center; overflow: visible;
-  transform: translateY(2vh);
+.spc-drop .spc-stage-ui {
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
 }
-
-.spc-drop-copy {
-  display: grid; justify-items: center; text-align: center; gap: 0;
-  width: min(100%, 30rem); margin: 0 auto;
-  padding: 0 28px calc(44px + env(safe-area-inset-bottom, 0px));
+.spc-drop .spc-stage-ui .spc-btn {
+  width: min(340px, 100%);
 }
-.spc-drop-copy > * { animation: spc-drop-rise 1100ms var(--drop-drift) both; }
-.spc-drop-copy > :nth-child(2) { animation-delay: 700ms; }
-.spc-drop-copy > :nth-child(3) { animation-delay: 1500ms; }
-.spc-drop-copy > :nth-child(4) { animation-delay: 2100ms; }
-.spc-drop-copy > :nth-child(5) { animation-delay: 2600ms; }
-.spc-drop-copy > :nth-child(6) { animation-delay: 3000ms; }
-
-/* The sentence. Serif, light, large enough to read from across a table, never shouting. */
-.spc-drop-copy h2 {
-  margin: 0; outline: none; text-wrap: balance;
-  font-family: var(--drop-serif); font-weight: 400; font-size: clamp(1.75rem, 1.2rem + 2.6vw, 2.5rem);
-  line-height: 1.18; letter-spacing: -0.012em; color: #f4f5ff;
-}
-.spc-drop-copy h2.spc-drop-quiet { font-size: clamp(1.25rem, 1.05rem + 1vw, 1.5rem); color: var(--drop-soft); font-style: italic; }
-.spc-drop[data-phase="ready"] .spc-drop-copy h2 { font-size: clamp(1.5rem, 1.1rem + 1.8vw, 2rem); }
-
-.spc-drop-count { margin: 20px 0 0; color: var(--drop-soft); font-size: 0.9375rem; line-height: 1.5; text-wrap: balance; }
-.spc-drop-meaning { margin: 12px 0 0; max-width: 26rem; font-family: var(--drop-serif); font-style: italic; font-size: 1.125rem; line-height: 1.5; color: #d9dcf6; text-wrap: balance; }
-.spc-drop-note { margin: 24px 0 0; max-width: 24rem; font-size: 0.875rem; line-height: 1.5; color: var(--drop-soft); text-wrap: balance; }
-/* Evidence stays present for honesty but reads as a footnote, not a badge. */
-.spc-drop-chip { margin: 28px 0 0; font-size: 0.75rem; letter-spacing: 0.02em; color: var(--drop-faint); }
-.spc-drop-chip.is-fallback { font-style: italic; }
-
-.spc-drop-you { margin: 22px 0 0; display: flex; gap: 12px; align-items: center; text-align: left; max-width: 100%; }
-.spc-drop-you img { border-radius: 50%; flex: none; opacity: 0.92; }
-.spc-drop-you span { display: block; margin-bottom: 2px; font-size: 0.75rem; letter-spacing: 0.04em; color: var(--drop-faint); }
-.spc-drop-you q { font-family: var(--drop-serif); font-size: 1rem; line-height: 1.4; color: #dfe2fa; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-
-.spc-drop-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 32px; }
-.spc-drop-btn {
-  min-height: 46px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(190, 198, 255, 0.22);
-  background: transparent; color: var(--drop-soft); font: inherit; font-size: 0.9375rem; font-weight: 500; cursor: pointer;
-  transition: transform 160ms var(--drop-ease), background-color 200ms var(--drop-ease), color 200ms var(--drop-ease), border-color 200ms var(--drop-ease);
-}
-.spc-drop-btn.is-primary { background: var(--drop-ink); color: #0a0c2a; border-color: transparent; }
-.spc-drop-btn:active { transform: scale(0.97); }
-.spc-drop-btn:focus-visible, .spc-drop-sound:focus-visible { outline: 2px solid #cfd4ff; outline-offset: 3px; }
-@media (hover: hover) and (pointer: fine) {
-  .spc-drop-btn:hover { background-color: rgba(190, 198, 255, 0.08); color: var(--drop-ink); border-color: rgba(190, 198, 255, 0.4); }
-  .spc-drop-btn.is-primary:hover { background-color: #fff; color: #0a0c2a; }
-}
-.spc-drop-sound {
-  position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; width: 44px; height: 44px; border-radius: 50%;
-  border: 0; background: transparent; color: var(--drop-faint); cursor: pointer; display: grid; place-items: center;
-  transition: color 200ms var(--drop-ease);
-}
-@media (hover: hover) and (pointer: fine) { .spc-drop-sound:hover { color: var(--drop-ink); } }
-
-/* Formation. Hairlines only: no glow filters, strokes thin enough to look drawn with a fine pen. */
-.spc-drop-me { fill: #fff; }
-.spc-drop-me-halo { fill: none; stroke: rgba(190, 198, 255, 0.35); stroke-width: 0.14; transform-box: fill-box; transform-origin: center; animation: spc-drop-breathe 5.2s ease-in-out infinite; }
-.spc-drop-me.is-signal { animation: spc-drop-signal 1400ms var(--drop-drift) both; transform-box: fill-box; transform-origin: center; }
-.spc-drop-star { fill: #d3d8ff; opacity: 0; transform-box: fill-box; transform-origin: center; animation: spc-drop-arrive 2600ms var(--drop-drift) both; }
-.spc-drop-line { fill: none; stroke: #aab3f0; stroke-width: 0.16; stroke-linecap: round; opacity: 0.62; stroke-dasharray: 1; stroke-dashoffset: 1; animation: spc-drop-draw 2200ms var(--drop-drift) both; }
-.spc-drop-line.is-rim { opacity: 0.3; stroke-width: 0.12; }
-.spc-drop-pulse { fill: none; stroke: #fff; stroke-width: 0.26; stroke-linecap: round; stroke-dasharray: 0.05 1; stroke-dashoffset: 0.05; opacity: 0; animation: spc-drop-travel 2200ms ease-in-out 3400ms both; }
-
-@keyframes spc-drop-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes spc-drop-rise { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
-@keyframes spc-drop-arrive {
-  from { opacity: 0; transform: translate(var(--fx), var(--fy)); }
-  35% { opacity: 1; }
-  to { opacity: 1; transform: translate(0, 0); }
-}
-@keyframes spc-drop-draw { to { stroke-dashoffset: 0; } }
-@keyframes spc-drop-travel { 0% { opacity: 0.9; stroke-dashoffset: 0.05; } 100% { opacity: 0; stroke-dashoffset: -1; } }
-@keyframes spc-drop-breathe { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.1); } }
-@keyframes spc-drop-signal { 0% { transform: scale(1); } 45% { transform: scale(1.7); } 100% { transform: scale(1.12); } }
-
-/* Pulses from other members: soft rings on anonymous stars, a count only. */
-.spc-drop-ring { fill: none; stroke: rgba(210, 216, 255, 0.55); stroke-width: 0.14; transform-box: fill-box; transform-origin: center; opacity: 0; animation: spc-drop-ring 2600ms var(--drop-drift) both; }
-@keyframes spc-drop-ring { 0% { opacity: 0.7; transform: scale(1); } 100% { opacity: 0; transform: scale(5); } }
-
-@media (max-width: 420px) {
-  .spc-drop-copy { padding-left: 22px; padding-right: 22px; }
-  .spc-drop-actions { flex-direction: column; align-self: stretch; }
-  .spc-drop-btn { width: 100%; }
-}
-
-/* Reduced motion: the finished picture, shown at once. No drift, no drawing, no rise. */
-@media (prefers-reduced-motion: reduce) {
-  .spc-drop, .spc-drop-copy > *, .spc-drop-star, .spc-drop-line, .spc-drop-me-halo, .spc-drop-me.is-signal, .spc-drop-ring { animation: none; }
-  .spc-drop-star { opacity: 1; }
-  .spc-drop-line { stroke-dashoffset: 0; }
-  .spc-drop-pulse { display: none; }
-  .spc-drop-ring { opacity: 0; }
-  .spc-drop-btn { transition: none; }
+.spc-drop-chip {
+  margin: 0;
+  font-size: 12px;
+  color: #9fb0d6;
 }

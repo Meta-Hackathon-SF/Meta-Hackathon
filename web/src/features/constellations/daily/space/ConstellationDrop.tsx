@@ -1,21 +1,19 @@
 /*
- * Constellation Drop: a full-screen reveal after a day closes and the player's
- * constellation is ready. Four beats: ready -> formation -> payoff -> signal.
- * Other stars are anonymous; only the player's own star and answer are shown.
+ * Constellation Drop: shown once after a day closes and the player's constellation is ready.
+ * It draws that day's sky with the shared SkyRenderer (same stars as the daily and week screens)
+ * and finds the constellation outward from the player's own star. Other stars stay anonymous.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Volume2, VolumeX } from "lucide-react";
-import { currentUser } from "../../../../data/demo";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CycleClient, CycleDay } from "../client";
 import type { DailyConstellation } from "../v3";
+import { DAY_LONG } from "./model";
+import SkyCanvas from "./SkyCanvas";
 import "./drop.css";
 
-type Phase = "ready" | "forming" | "payoff" | "signaled";
-/** Slow on purpose: the last star lands near 5s, the last line settles just after. */
-const FORM_MS = 6200;
-const MIN_OTHERS = 4;
-const MAX_OTHERS = 6;
-const SHARED_MEANING_MIN = 3;
+type Phase = "ready" | "finding" | "found" | "signaled";
+
+/** R2: nothing under 3 members is ever shown as a count or a meaning. */
+const MIN_SHOWN = 3;
 
 const dismissKey = (id: string) => `spc-drop:${id}`;
 const isDismissed = (id: string) => {
@@ -33,100 +31,24 @@ const markDismissed = (id: string) => {
   }
 };
 
-/** Deterministic 0..1 from a string, so a given constellation always forms the same way. */
-function seeded(seed: string) {
-  let h = 2166136261;
-  for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-  return () => {
-    h = Math.imul(h ^ (h >>> 15), 2246822507);
-    h = Math.imul(h ^ (h >>> 13), 3266489909);
-    return ((h ^= h >>> 16) >>> 0) / 4294967296;
-  };
-}
-
-interface Star { x: number; y: number; fromX: number; fromY: number; delay: number; r: number }
-
-function layout(id: string, others: number): Star[] {
-  const rand = seeded(id);
-  return Array.from({ length: others }, (_, i) => {
-    const angle = (i / others) * Math.PI * 2 + rand() * 0.7;
-    const reach = 20 + rand() * 14;
-    const edge = angle + (rand() - 0.5) * 0.5;
-    return {
-      x: 50 + Math.cos(angle) * reach,
-      y: 50 + Math.sin(angle) * reach * 0.78,
-      fromX: Math.cos(edge) * 70,
-      fromY: Math.sin(edge) * 70,
-      delay: 400 + i * 420 + rand() * 160,
-      r: 0.7 + rand() * 0.5,
-    };
-  });
-}
-
-/** A slightly bowed line with a faint tremor, so the constellation reads as drawn by hand rather than ruled. */
-function sketchPath(a: { x: number; y: number }, b: { x: number; y: number }, bow: number) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const c1x = a.x + dx * 0.33 + dy * bow;
-  const c1y = a.y + dy * 0.33 - dx * bow;
-  const c2x = a.x + dx * 0.68 + dy * bow * 0.55;
-  const c2y = a.y + dy * 0.68 - dx * bow * 0.55;
-  const f = (n: number) => n.toFixed(2);
-  return `M${f(a.x)} ${f(a.y)} C${f(c1x)} ${f(c1y)} ${f(c2x)} ${f(c2y)} ${f(b.x)} ${f(b.y)}`;
-}
-
-function useChime() {
-  const [on, setOn] = useState(false);
-  const ctx = useRef<AudioContext | null>(null);
-  const play = useCallback(
-    (freq: number) => {
-      if (!on) return;
-      try {
-        ctx.current ??= new AudioContext();
-        const c = ctx.current;
-        const osc = c.createOscillator();
-        const gain = c.createGain();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, c.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.05, c.currentTime + 0.04);
-        gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 1.2);
-        osc.connect(gain).connect(c.destination);
-        osc.start();
-        osc.stop(c.currentTime + 1.25);
-      } catch {
-        /* audio unavailable: stay silent */
-      }
-    },
-    [on],
-  );
-  useEffect(() => () => void ctx.current?.close().catch(() => undefined), []);
-  return { on, setOn, play };
-}
-
-function usePrefersReducedMotion() {
-  return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
-}
-
 export interface ConstellationDropProps {
   constellation: DailyConstellation;
-  answerText: string;
+  day: CycleDay;
+  /** Opens that day's sky. */
   onEnter: () => void;
   onLater: () => void;
   /** Sends the anonymous pulse to the server; omitted in fixture mode. */
   onSignal?: () => Promise<unknown>;
 }
 
-export function ConstellationDrop({ constellation, answerText, onEnter, onLater, onSignal }: ConstellationDropProps) {
-  const reduced = usePrefersReducedMotion();
+export function ConstellationDrop({ constellation, day, onEnter, onLater, onSignal }: ConstellationDropProps) {
   const [phase, setPhase] = useState<Phase>("ready");
   const [pulses, setPulses] = useState(0); // pulses from others: a count only, never who
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const chime = useChime();
   const members = constellation.memberCount ?? constellation.starIndices.length;
-  const others = Math.min(MAX_OTHERS, Math.max(MIN_OTHERS, members - 1));
-  const stars = useMemo(() => layout(constellation.constellationId, others), [constellation.constellationId, others]);
-  const me = { x: 50, y: 50 };
+  const counted = members >= MIN_SHOWN;
+  const dayName = DAY_LONG[day - 1];
+  const answered = useMemo(() => new Set<number>([day]), [day]);
 
   // Focus management: return focus to whatever opened the Drop when it closes.
   useEffect(() => {
@@ -134,135 +56,96 @@ export function ConstellationDrop({ constellation, answerText, onEnter, onLater,
     return () => previous?.focus?.();
   }, []);
   useEffect(() => headingRef.current?.focus(), [phase]);
-
-  useEffect(() => {
-    if (phase !== "forming") return;
-    const t = window.setTimeout(() => {
-      setPhase("payoff");
-      chime.play(659.25);
-    }, reduced ? 0 : FORM_MS);
-    return () => window.clearTimeout(t);
-  }, [phase, reduced]); // eslint-disable-line react-hooks/exhaustive-deps
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onLater();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onLater]);
 
-  const start = () => {
-    chime.play(392);
-    setPhase("forming");
-  };
   const signal = () => {
-    chime.play(783.99);
     setPhase("signaled");
     void onSignal?.()
       ?.then((r) => {
         const n = (r as { pulses?: number } | undefined)?.pulses;
         if (typeof n === "number") setPulses(Math.max(0, n - 1)); // minus my own
       })
-      .catch(() => undefined); // best effort; the moment never blocks
+      .catch(() => undefined); // best effort; the screen never blocks on it
   };
 
-  const showMeaning = members >= SHARED_MEANING_MIN && !!constellation.sharedMeaning;
   const ev = constellation.museEvidence;
   const evidenceLabel = constellation.isFallback
     ? "Fallback grouping"
     : ev
       ? `${ev.model} · Semantic grouping · ${ev.latencyMs} ms`
       : "Muse Spark · Semantic";
-  const formed = phase === "payoff" || phase === "signaled";
-  const announce =
-    phase === "ready"
-      ? "Your constellation is ready."
-      : phase === "forming"
-        ? "Stars are gathering around yours."
-        : phase === "payoff"
-          ? `You were not the only one. ${members} people landed together.`
-          : "Signal sent. Your room is open for 24 hours.";
+  const found = phase === "found" || phase === "signaled";
 
   return (
     <div className="spc-drop" role="dialog" aria-modal="true" aria-labelledby="spc-drop-title" data-testid="spc-drop" data-phase={phase}>
-      <p className="spc-drop-sr" role="status" aria-live="polite">{announce}</p>
-      <button
-        type="button"
-        className="spc-drop-sound"
-        aria-pressed={chime.on}
-        aria-label={chime.on ? "Mute chime" : "Play a soft chime"}
-        onClick={() => chime.setOn(!chime.on)}
-      >
-        {chime.on ? <Volume2 size={18} aria-hidden="true" /> : <VolumeX size={18} aria-hidden="true" />}
-      </button>
-
-      <svg className={`spc-drop-sky${phase === "forming" ? " is-forming" : ""}${formed ? " is-formed" : ""}`} viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        {phase !== "ready" &&
-          stars.map((s, i) => (
-            <path key={`l${i}`} className="spc-drop-line" d={sketchPath(me, s, i % 2 ? 0.08 : -0.07)} pathLength={1} style={{ animationDelay: `${s.delay + 1300}ms` }} />
-          ))}
-        {phase !== "ready" && stars.length > 1 &&
-          stars.map((s, i) => {
-            const n = stars[(i + 1) % stars.length];
-            return <path key={`r${i}`} className="spc-drop-line is-rim" d={sketchPath(s, n, 0.06)} pathLength={1} style={{ animationDelay: `${s.delay + 1900}ms` }} />;
-          })}
-        {phase !== "ready" && <path className="spc-drop-pulse" d={stars.map((s, i) => sketchPath(i ? stars[i - 1] : me, s, 0.04)).join(" ")} pathLength={1} />}
-        {phase !== "ready" &&
-          stars.map((s, i) => (
-            <circle
-              key={i}
-              className="spc-drop-star"
-              cx={s.x}
-              cy={s.y}
-              r={s.r}
-              style={{ ["--fx" as string]: `${s.fromX - (s.x - 50)}px`, ["--fy" as string]: `${s.fromY - (s.y - 50)}px`, animationDelay: `${s.delay}ms` }}
-            />
-          ))}
-        {phase === "signaled" &&
-          stars.slice(0, Math.min(pulses, stars.length)).map((s, i) => (
-            <circle key={`p${i}`} className="spc-drop-ring" cx={s.x} cy={s.y} r={s.r} style={{ animationDelay: `${400 + i * 420}ms` }} />
-          ))}
-        <circle className={`spc-drop-me${phase === "signaled" ? " is-signal" : ""}`} cx={me.x} cy={me.y} r={1.3} />
-        <circle className="spc-drop-me-halo" cx={me.x} cy={me.y} r={3.4} />
-      </svg>
-
-      <div className="spc-drop-copy">
+      <SkyCanvas
+        input={{ mode: "drop", answered, viewDay: day, emptyDay: phase === "ready", noMatch: false }}
+        hooks={{ onSettled: () => setPhase((p) => (p === "finding" ? "found" : p)) }}
+      />
+      <div className="spc-stage-ui is-in">
         {phase === "ready" && (
           <>
-            <h2 id="spc-drop-title" ref={headingRef} tabIndex={-1}>Your constellation is ready</h2>
-            <figure className="spc-drop-you">
-              <img src={currentUser.avatar} alt="" width={36} height={36} />
-              <figcaption>
-                <span>Your star</span>
-                <q>{answerText}</q>
-              </figcaption>
-            </figure>
-            <div className="spc-drop-actions">
-              <button type="button" className="spc-drop-btn is-primary" onClick={start}>See who landed with you</button>
-              <button type="button" className="spc-drop-btn" onClick={onLater} data-testid="spc-drop-later">Later</button>
-            </div>
+            <h2 id="spc-drop-title" ref={headingRef} tabIndex={-1} className="spc-stage-h">
+              {dayName}&apos;s sky is in
+            </h2>
+            <div className="spc-stage-sub">See who answered close to you.</div>
+            <button type="button" className="spc-btn spc-btn-white spc-btn-lg" onClick={() => setPhase("finding")}>
+              Show me
+            </button>
+            <button type="button" className="spc-btn spc-btn-glass spc-btn-lg" onClick={onLater} data-testid="spc-drop-later">
+              Later
+            </button>
           </>
         )}
-        {phase === "forming" && (
-          <h2 id="spc-drop-title" ref={headingRef} tabIndex={-1} className="spc-drop-quiet">Stars are finding yours</h2>
+        {phase === "finding" && (
+          <h2 id="spc-drop-title" ref={headingRef} tabIndex={-1} className="spc-stage-sub" role="status">
+            Looking outward from your star…
+          </h2>
         )}
-        {formed && (
+        {found && (
           <>
-            <h2 id="spc-drop-title" ref={headingRef} tabIndex={-1}>You were not the only one.</h2>
-            <p className="spc-drop-count">{members >= SHARED_MEANING_MIN ? `${members} people here have been feeling this too.` : "You were not the only one today."}</p>
-            <p className="spc-drop-meaning">{showMeaning ? constellation.sharedMeaning : "You were not the only one today."}</p>
-            <p className={`spc-drop-chip${constellation.isFallback ? " is-fallback" : ""}`} data-testid="spc-drop-evidence">{evidenceLabel}</p>
-            {phase === "payoff" ? (
-              <div className="spc-drop-actions">
-                <button type="button" className="spc-drop-btn is-primary" onClick={signal} data-testid="spc-drop-signal">Send a quiet signal</button>
-                <button type="button" className="spc-drop-btn" onClick={onLater} data-testid="spc-drop-later">Not now</button>
+            {counted && (
+              <div className="spc-big-num" aria-hidden="true">
+                {members}
               </div>
+            )}
+            <h2 id="spc-drop-title" ref={headingRef} tabIndex={-1} className="spc-stage-sub">
+              {counted ? (
+                <>
+                  <span className="sr-only">{members} </span>people answered close to you
+                </>
+              ) : (
+                "You're in today's sky."
+              )}
+            </h2>
+            {counted && constellation.sharedMeaning && <p className="spc-meaning">{constellation.sharedMeaning}</p>}
+            <p className="spc-drop-chip" data-testid="spc-drop-evidence">
+              {evidenceLabel}
+            </p>
+            {phase === "found" ? (
+              <>
+                <button type="button" className="spc-btn spc-btn-white spc-btn-lg" onClick={signal} data-testid="spc-drop-signal">
+                  Send a quiet signal
+                </button>
+                <button type="button" className="spc-btn spc-btn-glass spc-btn-lg" onClick={onLater} data-testid="spc-drop-later">
+                  Not now
+                </button>
+              </>
             ) : (
               <>
-                <p className="spc-drop-note">Your constellation felt that. Your anonymous room is open for 24 hours.</p>
-                <div className="spc-drop-actions">
-                  <button type="button" className="spc-drop-btn is-primary" onClick={onEnter} data-testid="spc-drop-enter">Enter the room</button>
-                  <button type="button" className="spc-drop-btn" onClick={onLater} data-testid="spc-drop-later">Not now</button>
-                </div>
+                <p className="spc-stage-note" role="status">
+                  Sent. They see a pulse, not your name.{pulses > 0 ? ` ${pulses} ${pulses === 1 ? "other has" : "others have"} sent one too.` : ""}
+                </p>
+                <button type="button" className="spc-btn spc-btn-white spc-btn-lg" onClick={onEnter} data-testid="spc-drop-enter">
+                  Open {dayName}&apos;s sky
+                </button>
+                <button type="button" className="spc-btn spc-btn-glass spc-btn-lg" onClick={onLater} data-testid="spc-drop-later">
+                  Done
+                </button>
               </>
             )}
           </>
@@ -277,14 +160,12 @@ export function DropGate({
   client,
   cycleId,
   day,
-  answerText,
   onEnter,
 }: {
   client: CycleClient;
   cycleId: string | null;
   day: CycleDay | null;
-  answerText: string;
-  onEnter: () => void;
+  onEnter: (day: CycleDay) => void;
 }) {
   const [found, setFound] = useState<DailyConstellation | null>(null);
   const [closed, setClosed] = useState(false);
@@ -301,12 +182,19 @@ export function DropGate({
     return () => controller.abort();
   }, [client, cycleId, day]);
 
-  if (!found || closed) return null;
+  if (!found || closed || !day) return null;
   const finish = (after?: () => void) => {
     markDismissed(found.constellationId);
     setClosed(true);
     after?.();
   };
-  return <ConstellationDrop constellation={found} answerText={answerText} onLater={() => finish()} onEnter={() => finish(onEnter)}
-    onSignal={client.v3 && client.mode !== "fixture" ? () => client.v3!.sendQuietSignal(cycleId!, found.constellationId) : undefined} />;
+  return (
+    <ConstellationDrop
+      constellation={found}
+      day={day}
+      onLater={() => finish()}
+      onEnter={() => finish(() => onEnter(day))}
+      onSignal={client.v3 && client.mode !== "fixture" ? () => client.v3!.sendQuietSignal(cycleId!, found.constellationId) : undefined}
+    />
+  );
 }
