@@ -62,7 +62,7 @@ def test_views_use_indices_only_and_main_room_index_is_not_star_index():
     sky = p.my_sky("c1", "g0", {1: "blue", 2: "teal"})
     assert sky["secondDegree"] == [] and "g1" not in str(sky)
     m = p.main_view("c1", "g0", "room-1", "2026-11-15T00:00:00Z", "2026-11-16T00:00:00Z")["main"]
-    assert 3 <= len(m["roomIndices"]) <= 5 and m["myRoomIndex"] in m["roomIndices"]
+    assert len(m["roomIndices"]) >= 5 and m["myRoomIndex"] in m["roomIndices"]
     assert "g1" not in str(m)
     assert p.main_view("c1", "z", "room-2", "a", "b") == {"main": None, "reason": "no_match"}
 

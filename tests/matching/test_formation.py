@@ -48,15 +48,15 @@ def groups_by_player(result):
 
 # ---------------------------------------------------------------- baseline
 
-def test_group_sizes_cover_three_to_five():
-    for n in range(3, 40):
+def test_group_sizes_at_least_five_no_maximum():
+    for n in range(5, 40):
         sizes = group_sizes(n)
-        assert sum(sizes) == n and all(3 <= s <= 5 for s in sizes)
+        assert sum(sizes) == n and all(s >= 5 for s in sizes)
 
 
-def test_group_sizes_rejects_fewer_than_three():
+def test_group_sizes_rejects_fewer_than_five():
     with pytest.raises(MatchingError):
-        group_sizes(2)
+        group_sizes(4)
 
 
 def test_keyword_baseline_splits_maya_and_dev():
@@ -130,7 +130,7 @@ def test_meaning_formation_meets_fixture_constraints():
         assert not any(set(apart) <= g for g in groups)
     placed = set().union(*groups)
     assert not placed & set(expected["excluded"])
-    assert all(3 <= len(g) <= 5 for g in groups)
+    assert all(len(g) >= 5 for g in groups)
     maya_c = next(c for c in result.constellations if "p-maya" in c.member_ids)
     assert maya_c.baseline_agrees is False  # keywords split Maya and Dev; meaning joins them
     assert [e.call_type for e in result.evidence].count("M5") == len(result.constellations)

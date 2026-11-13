@@ -298,7 +298,7 @@ function AboutCard() {
           <Users size={18} aria-hidden="true" />
           <span>
             <b>Sunday: meet your people</b>
-            <small>3–5 people whose answers meant the same thing.</small>
+            <small>5 or more people whose answers meant the same thing.</small>
           </span>
         </li>
         <li>

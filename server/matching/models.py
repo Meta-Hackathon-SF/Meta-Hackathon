@@ -10,8 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 CONTRACT_VERSION = "3.0.0"
-MIN_CONSTELLATION_SIZE = 3
-MAX_CONSTELLATION_SIZE = 5
+MIN_CONSTELLATION_SIZE = 5  # D016: a constellation has at least 5 people; there is no maximum
 LOOSE_MATCH_CONFIDENCE = 0.5
 DEMO_SKY_THRESHOLD = 3
 PRODUCTION_SKY_THRESHOLD = 25

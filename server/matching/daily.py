@@ -21,7 +21,7 @@ from server.matching.models import MatchingError, PromptText, pair
 MIN_VISIBLE = 3  # protocol V3.minVisibleConstellation (R2)
 MAX_DAILY_PER_PLAYER = 3  # V3.maxDailyConstellations
 MAX_DAILY_STARS = 12  # V3.dailyConstellationMaxStars
-MAIN_MIN, MAIN_MAX = 3, 5
+MAIN_MIN = 5  # D016: at least 5, no maximum
 SECOND_DEGREE_MIN_ELIGIBLE = 30
 SECOND_DEGREE_MAX_PER_STAR = 2
 TAGS_PER_ANSWER = 2
@@ -144,7 +144,7 @@ def main_groups(
     answers: Sequence[PromptText] = (),
     blocked_pairs: Iterable[tuple[str, str]] = (),
 ) -> tuple[tuple[Group, ...], tuple[str, ...]]:
-    """Sunday main constellations: 3-5, one per player. Candidates are players who share 2+
+    """Sunday main constellations: 5+, one per player. Candidates are players who share 2+
     constellations or have similar answers. Players with no qualifying match are unplaced."""
     sim = dict(similarity_matrix(answers)) if answers else {}
     closeness = {
