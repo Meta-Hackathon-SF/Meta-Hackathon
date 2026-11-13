@@ -1,7 +1,7 @@
 # patrik handoff
 Current step: 3 (Daily loop), see docs/PLAN.md. Role tasks 1-3 done offline (1-2 merged to main via PR #15); next are tasks 4-5 (M1 screening, OutputGuard).
 Status: implemented + tested offline (fixture/in-memory only). Not mounted in a composed app; no live journey.
-Branch + commit: `role/patrik-privacy`, based on main `6f0b757`. See git log for the checkpoint commit.
+Branch + commit: `role/patrik-privacy`, based on main `0ab9713`. See git log for the checkpoint commit.
 Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
 
 ## Completed tasks
@@ -19,6 +19,7 @@ Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
 - `ChangeNotice` gained kinds `answer_deleted` (with `cycle_id`) and `data_deleted`; `consent_version` is now optional (None for non-consent kinds).
 
 ## Checks run + actual result
+- 2026-11-13 composition: `tests/privacy/test_privacy_cycle_composition.py` runs Will's real `CycleService` (main) with Patrik's real `AnswerStore` + `seed_players` and Adam's real `CycleQuestionPort`: submit, read back as Will's model, edit, guess, delete, revoked consent rejected, synthetic top-up, lock freezes writes, distress fixture excluded. Full `pytest tests` on merged main: **338 passed**. Found and fixed: reads returned privacy's snake_case model; Will's code needs his camelCase model, now injected by the composition root.
 - Task 3 (2026-11-13): `pytest tests/privacy` **98 passed** offline. Combined privacy+matching+planning+providers **191 passed**. Mutation checks: flagged answers reaching formation, removed weight rule, removed lock check, removed consent check, wrong-scope delete-my-data each fail the suite.
 - `server/.venv/bin/python -m pytest tests/privacy -q -p no:cacheprovider`: **68 passed** in 0.16 s, offline. Covers wire drift vs protocol.ts, forged playerId/isOperator/communityId, coercion, control-character names, consent gates, stale/retry, scoping between players, expiry (fake clock), sign-out, synthetic impersonation, cookie flags, no value echo, no-store.
 - Mutation checks: an unscoped consent query fails 24 tests; removing the synthetic-session filter fails 1; removing the join consent gate fails 5.
@@ -32,7 +33,7 @@ All evidence is offline (in-memory SQLite, synthetic names). No model call. No c
 - ACK D005 and D006 (producer shapes) recorded in docs/DECISIONS.md.
 
 ## Blocked on
-- `@willapat` (Will): wire `AnswerStore(store, privacy)` in place of his test-only adapter; call `mark_locked(cycleId, lockedAt)` on Saturday lock (or Kai's `on_locked` hook does). The store accepts his `DailyAnswer` model or a camelCase dict.
+- `@willapat` / `@beatopia`: wire `AnswerStore(store, privacy, answer_model=DailyAnswer, guess_model=PrevalenceGuess)` in place of the test-only adapter; call `mark_locked(cycleId, lockedAt)` on Saturday lock (or Kai's `on_locked` hook does). The store accepts his `DailyAnswer` model or a camelCase dict.
 - `@beatopia` (Kai): ACK of D007 (SQLite storage vs D002) and restored `server/app` registry to mount `build_router` + `actor_dependency`. Independent work continues.
 - `@willapat` (Will): ACK of the join/session response shape in D007.
 

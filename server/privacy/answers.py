@@ -58,9 +58,25 @@ def _row_to_answer(row: sqlite3.Row) -> DailyAnswer:
 
 
 class AnswerStore:
-    def __init__(self, store: PrivacyStore, privacy: PrivacyService):
+    """``answer_model`` / ``guess_model``: optional pydantic classes the caller
+    wants back (e.g. Will's camelCase ``server.cycle.wire.DailyAnswer``), passed
+    in by the composition root so privacy never imports another owner's code.
+    Rows are validated by privacy's own models first, then re-validated into
+    the caller's model from the camelCase wire form."""
+
+    def __init__(self, store: PrivacyStore, privacy: PrivacyService, *,
+                 answer_model: Any = None, guess_model: Any = None):
         self._store = store
         self._privacy = privacy
+        self._answer_model = answer_model
+        self._guess_model = guess_model
+
+    def _out_answer(self, row: sqlite3.Row) -> Any:
+        a = _row_to_answer(row)
+        return self._answer_model.model_validate(a.wire()) if self._answer_model else a
+
+    def _out_guess(self, g: PrevalenceGuess) -> Any:
+        return self._guess_model.model_validate(g.wire()) if self._guess_model else g
 
     def _now(self) -> datetime:
         return self._privacy.now()  # same injected clock as sessions
@@ -92,7 +108,7 @@ class AnswerStore:
                 "SELECT * FROM answers WHERE cycle_id = ? AND player_id = ? AND day = ?",
                 (cycle_id, player_id, day),
             ).fetchone()
-        return _row_to_answer(row) if row else None
+        return self._out_answer(row) if row else None
 
     def list_for_player(self, cycle_id: str, player_id: str) -> list[DailyAnswer]:
         with self._store.tx() as conn:
@@ -100,7 +116,7 @@ class AnswerStore:
                 "SELECT * FROM answers WHERE cycle_id = ? AND player_id = ? ORDER BY day",
                 (cycle_id, player_id),
             ).fetchall()
-        return [_row_to_answer(r) for r in rows]
+        return [self._out_answer(r) for r in rows]
 
     # ---------------------------------------------------------------- writes
     def save(self, answer: Any, flag: SafetyLevel) -> None:
@@ -158,7 +174,9 @@ class AnswerStore:
             row = conn.execute(
                 "SELECT percent FROM guesses WHERE cycle_id = ? AND player_id = ?", (cycle_id, player_id),
             ).fetchone()
-        return PrevalenceGuess(cycle_id=cycle_id, player_id=player_id, percent=row["percent"]) if row else None
+        if row is None:
+            return None
+        return self._out_guess(PrevalenceGuess(cycle_id=cycle_id, player_id=player_id, percent=row["percent"]))
 
     def purge_cycle(self, cycle_id: str) -> None:
         """Operator reset of a fixture cycle (Will checks it is a fixture cycle)."""
