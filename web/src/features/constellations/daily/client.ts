@@ -127,6 +127,8 @@ export interface CycleClient {
   reports(signal?: AbortSignal): Promise<Report[]>;
   /** Rishi's operator-only formation comparison (ids only). Null when there is none. */
   formationDebug(cycleId: string, signal?: AbortSignal): Promise<FormationDebugProps | null>;
+  /** Fixture only: forget this tab's answers and guess after "delete my data". */
+  clearLocalData?(): void;
   /** Fires when cycle state may have changed (operator action, SSE later). */
   subscribe(listener: () => void): () => void;
 }

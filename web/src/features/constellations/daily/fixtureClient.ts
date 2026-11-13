@@ -296,6 +296,10 @@ export function createFixtureClient(): CycleClient {
     async formationDebug() {
       return null; // formation runs on the server; the fixture adapter has none
     },
+    clearLocalData() {
+      state = { ...state, answers: [], guess: null, followUps: {} };
+      save();
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
