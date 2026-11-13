@@ -6,10 +6,10 @@
 export const PREVIEW_DAY_COUNTS = [1912, 1648, 1390, 1275, 1203];
 
 export const PREVIEW_MEMBERS = [
-  { name: "Star 2", hex: "#F5B841" },
-  { name: "Star 3", hex: "#2CC7C0" },
-  { name: "Star 4", hex: "#F07196" },
-  { name: "Star 5", hex: "#5BD27A" },
+  { name: "Star 2", identity: "Maya Chen", hex: "#F5B841" },
+  { name: "Star 3", identity: "Jordan Davis", hex: "#2CC7C0" },
+  { name: "Star 4", identity: "Sofia Patel", hex: "#F07196" },
+  { name: "Star 5", identity: "Daniel Kim", hex: "#5BD27A" },
 ];
 
 export const PREVIEW_MESSAGES: { member: number; text: string }[] = [

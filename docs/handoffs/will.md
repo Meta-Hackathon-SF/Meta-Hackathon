@@ -1,6 +1,13 @@
 # will handoff
-Current step: Facebook Space V4 redesign (home feed card + Space tab), fixture-verified on `role/will-voice-ui`.
-Updated: 2026-11-13T09:50Z
+Current step: Sunday constellation chat promotes into Messenger, with Muse suggestions for a hangout. Fixture-verified; live Muse is the Vite dev route only.
+Updated: 2026-11-13T11:18Z
+
+## Messenger promotion and Muse suggestions, 2026-11-13
+- Keeping the Sunday preview chat (all five votes) reveals Maya Chen, Jordan Davis, Sofia Patel, and Daniel Kim and copies the thread into this browser's Messenger (`sessionStorage` key `fb-space-messenger-demo`). It is not a live multi-phone room.
+- The Sunday thread has Plan a hangout, Find supplies, and Ask a vendor. Each stays off until a message is typed, then sends that note with `@muse`.
+- Muse may only phrase the demo catalog: Library Commons board game night Thursday 7 PM, the Marketplace coffee set or textbook exchange, and a draft ask to Campus Cafe. A live line that says Muse will bring or buy something, or that a table is already held, is dropped and the catalog sentence is shown as Muse · catalog. Nothing is booked or purchased.
+- The key stays in gitignored `server/providers/muse.env`. The browser calls Vite-only `POST /api/muse-chat`. Ordinary Playwright tests mock that route.
+- Verification: `PLAYWRIGHT_CHANNEL=chrome npx playwright test tests/constellations.spec.ts -g "everyone keeping the Sunday chat"` — 2 passed (desktop and mobile). Live Muse replies for hangout, supplies, books, and the cafe ask were checked against the same truth rules and accepted.
 
 ## Space V4 redesign, 2026-11-13
 Source: the V4 phone design ("Artifact sharing request" folder, SpaceV4Phone). Facebook shell unchanged (header, left sidebar, mobile tabs).

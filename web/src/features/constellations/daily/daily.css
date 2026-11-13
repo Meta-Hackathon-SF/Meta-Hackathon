@@ -175,10 +175,9 @@ a.cst-post-title:hover {
   padding: 4px 6px 4px 12px;
   border-radius: 18px;
   background: var(--surface);
-  transition: box-shadow 0.12s;
 }
 .cst-reply-box:focus-within {
-  box-shadow: 0 0 0 2px var(--blue);
+  box-shadow: none;
 }
 .cst-reply-input {
   flex: 1;
@@ -1380,14 +1379,22 @@ a.cst-post-title:hover {
 }
 
 /* ---- focus, breakpoints, motion --------------------------------------------------------------- */
-.cst-feed :focus-visible,
-.cst-page :focus-visible,
-.cst-join-modal :focus-visible {
+.cst-feed :focus-visible:not(input):not(textarea),
+.cst-page :focus-visible:not(input):not(textarea),
+.cst-join-modal :focus-visible:not(input):not(textarea) {
   outline: 2px solid var(--blue);
   outline-offset: 2px;
 }
-.cst-reply-input:focus-visible {
+.cst-reply-input:focus,
+.cst-reply-input:focus-visible,
+.cst-feed :is(input, textarea):focus,
+.cst-feed :is(input, textarea):focus-visible,
+.cst-page :is(input, textarea):focus,
+.cst-page :is(input, textarea):focus-visible,
+.cst-join-modal :is(input, textarea):focus,
+.cst-join-modal :is(input, textarea):focus-visible {
   outline: none;
+  box-shadow: none;
 }
 @media (min-width: 1000px) {
   .cst-columns {
