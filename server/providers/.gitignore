@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+# Local secrets: never commit
+muse.env
+.env
+*.env
+!muse.env.example

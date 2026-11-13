@@ -1,7 +1,7 @@
 # Constellations
-### Everyone thinks they're alone in the dark. Constellations shows you who's been shining next to you the whole time.
+### You're not the only one feeling this. Constellations shows you who's been feeling it right next to you.
 
-A weekly game inside Facebook Groups. Monday to Friday, Muse asks one honest question a day. On Saturday the week locks. On Sunday each player wakes up in a constellation: 3 to 5 people from their Group whose answers meant the same thing, in an anonymous, moderated chat that lasts one week. Names are revealed only when two people both choose to. The Sky shows the whole Group what people guessed about each other next to what was true. Friendship only, 18+.
+Most people our age feel like the only one carrying a private feeling, and they are almost never the only one. Constellations is a weekly game inside Facebook Groups that lets a Group find that out. Monday to Friday, Muse asks one honest question a day. On Saturday the week locks. On Sunday each player wakes up in a constellation: 3 to 5 people from their Group whose answers meant the same thing, in an anonymous, moderated chat that lasts one week. Names are revealed only when two people both choose to. The Sky shows the whole Group what people guessed about each other next to what was true. Friendship only, 18+.
 
 **Current state (2026-11-12):** main holds the mock Facebook web UI (`web/`, labeled "Simulated Facebook"), docs, contract 2.0.0 and shared fixtures. The weekly-game runtime is **not built**. Archived Group Quests server code (FastAPI app, Muse adapter, privacy/session code, voice boundary) lives on `archive/group-quests-before-pivot` and is restored by each owner into their own paths, then retested (build step 2).
 
@@ -32,9 +32,9 @@ Deadline used in planning: November 13, 2026, 10:30 AM PST (team-supplied, not i
 `web/` is the mock Facebook shell. Keep it and its feed tests. Constellations lives in its own UI under `web/src/features/constellations/<area>/`, reached from a Constellations tab inside a Group (Will owns routing). Feature CSS stays scoped. The shell's mock users and localStorage are not the product backend.
 
 ## The problem
-Young adults arriving somewhere new mostly believe everyone else has already found their people. That belief is usually wrong, and it stops them reaching out. Social life happens in public while being alone is invisible, so everyone sees others' best moments. Each person is privately willing to talk but assumes others are less open (pluralistic ignorance).
+Young people tend to feel like the only one feeling something: lonely, pretending to be fine, missing home, behind everyone else, eating alone. Almost nobody says it out loud, so each person sees only other people's public side and assumes their own inner life is unusual. It usually isn't. Many people in the same Group privately feel the same thing, and each of them thinks they are the exception (pluralistic ignorance). That belief keeps people quiet, and quiet keeps it going.
 
-In the same research, first-year students felt they belonged less after viewing highly social photos of peers on Facebook. Facebook shows everyone's best night. Constellations shows everyone's real week.
+The research below shows the same pattern. People consistently underestimate how many peers share their private feelings and experiences. The friend-count study is one example: first-year students believed peers had more friends than they did, and felt they belonged less after seeing highly social photos of peers on Facebook. Facebook shows everyone's best night. Constellations shows everyone's real week.
 
 | Finding | Number | Source |
 | --- | --- | --- |
@@ -197,7 +197,7 @@ Run sheet: [docs/DEMO.md](docs/DEMO.md).
 Real Facebook APIs; romantic matching; showing anyone's answers; counseling; leaderboards or seasons (vision only); any impact claim without measurement.
 
 ## Pitch (30 seconds)
-Nearly half of first-year students believe everyone else already has more friends than they do. Facebook shows them everyone's best night, so nobody reaches out. Constellations shows everyone's real week. Every weekday Muse asks one honest question. On Sunday you wake up in a constellation with the three to five people whose week meant the same thing as yours, in an anonymous chat that lasts seven days. Reveal yourself only when you both want to. Then the whole Group sees the sky: what people guessed about each other, next to what was true.
+Most people our age feel like they're the only one feeling something: lonely, faking fine, missing home, behind. They aren't, but nobody says it out loud. Constellations is a weekly game in Facebook Groups. Every weekday Muse asks one honest question. On Sunday you land in a constellation with the three to five people whose answers meant the same thing as yours, in an anonymous chat that lasts a week. Reveal yourself only when you both want to. Then the Group sees the sky: "You thought 12% felt this. It was 57%."
 
 ## Provenance
 The team referenced the documentation organization of dor-calhacks: shared entry instructions, contracts, role handoffs and an evidence ledger. This project is newly authored; no prior hackathon application code was copied. The Constellations direction comes from the team's PRD of Nov 12, 2026. Archived Group Quests infrastructure on `archive/group-quests-before-pivot` is the team's own earlier hackathon code; reusable parts are restored per owner and retested. The weekly-game direction was approved on Nov 12, 2026 (D005).
