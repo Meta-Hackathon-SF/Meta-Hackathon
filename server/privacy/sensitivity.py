@@ -1,5 +1,5 @@
 """D014 M10 ``sensitivity_screen``: a Muse second gate for public game text.
-PROPOSED for Patrik's review.
+Signed off by Patrik (D014, contract 2.2.0).
 
     register_sensitivity_task(registry)              # Kai, once at startup
     screen = SensitivityScreen(muse)

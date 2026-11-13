@@ -1,5 +1,5 @@
 """D014 M9 ``activity_classification``: Muse labels a player's own opted-in
-posts/comments with allowlisted topics. PROPOSED for Patrik's review.
+posts/comments with allowlisted topics. Signed off by Patrik (D014, contract 2.2.0).
 
     register_activity_task(registry)                 # Kai, once at startup
     topics = ActivityTopics(muse)                    # muse=None -> keyword fallback

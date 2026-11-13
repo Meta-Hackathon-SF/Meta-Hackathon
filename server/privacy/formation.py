@@ -7,10 +7,9 @@
 
 * ``lease.snapshot`` is the contract ``PrivacyPort.formationSnapshot`` shape
   ``{answers, idMap, blockedPairs}``: one random ref per player per lease
-  (shared by that player's answers), the server weight per answer and, PROPOSED
-  with D014 (needs Patrik sign-off and a protocol.ts formationSnapshot update),
-  the answer's stored ``questionId`` (``AnswerText``), plus a top-level
-  ``questions: [{questionId, text}]`` when a ``question_texts`` source is
+  (shared by that player's answers), the server weight per answer and, per
+  D014 (contract 2.2.0, signed off by Patrik), the answer's stored
+  ``questionId`` (``AnswerText``), plus a top-level ``questions: [{questionId, text}]`` when a ``question_texts`` source is
   injected (the texts live in the cycle/planning services, not here), ``idMap``
   ref -> playerId, ``blockedPairs`` as [blockerId, blockedId] player ids among
   the snapshot's players. Only unflagged answers of currently fully consenting,
