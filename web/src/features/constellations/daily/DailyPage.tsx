@@ -12,12 +12,13 @@ import { FEATURE_NAME, JOIN_SCOPE_LABEL, OPERATOR_PATH, PLAY_COMMUNITY } from ".
 import ConstellationPreview from "./ConstellationPreview";
 import ConstellationsMark from "./ConstellationsMark";
 import EventHeat from "./EventHeat";
-import GuessCard from "./GuessCard";
 import MatchReasons from "./MatchReasons";
 import QuestionPost from "./QuestionPost";
 import StreakRewards from "./StreakRewards";
 import { DAY_NAMES, useDaily, when } from "./useDaily";
 import WeekGraph from "./WeekGraph";
+import DailyReveal from "./DailyReveal";
+import WeekDays from "./WeekDays";
 import "./daily.css";
 
 function weekOf(isoDate: string): string {
@@ -122,6 +123,7 @@ function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "con
   }
   const answerFor = (day: number) => data.answers.find((a) => a.day === day);
   const questionFor = (day: number) => data.questions.find((q) => q.day === day as CycleDay);
+  const answersStamp = data.answers.map((a) => `${a.day}:${a.editedAt ?? a.createdAt}`).join("|");
   const past = cycle.status === "open" ? [1, 2, 3, 4, 5].filter((day) => day < cycle.currentDay) : [];
   const catchUpDays = past.filter((day) => !answerFor(day) || answerFor(day)!.isCatchUp);
   const earlierDays = past.filter((day) => answerFor(day) && !answerFor(day)!.isCatchUp);
@@ -158,6 +160,7 @@ function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "con
           <WeekGraph cycle={cycle} answers={data.answers} avatar={currentUser.avatar} onSelectDay={openDay} />
           <p className="cst-graph-caption">Your days this week. Tap a day to answer it.</p>
         </div>
+        <WeekDays client={client} cycleId={cycle.cycleId} stamp={answersStamp} />
         <div className="cst-legend" aria-hidden="true">
           <span>
             <i className="is-answered" /> Answered
@@ -185,6 +188,17 @@ function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "con
       {cycle.status === "open" ? (
         <>
           {current.question && post(current.question.day, "today")}
+          {current.question && answerFor(current.question.day) && (
+            <DailyReveal
+              client={client}
+              cycleId={cycle.cycleId}
+              day={current.question.day}
+              answerStamp={(() => {
+                const a = answerFor(current.question.day)!;
+                return `${a.answerId}:${a.editedAt ?? a.createdAt}`;
+              })()}
+            />
+          )}
 
           {catchUpDays.length > 0 && (
             <section className="cst-group" aria-labelledby="cst-catchup-title">
@@ -202,8 +216,6 @@ function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "con
           )}
 
           <StreakRewards streak={streak} answers={data.answers} />
-
-          <GuessCard key={cycle.cycleId} client={client} cycleId={cycle.cycleId} saved={data.guess} />
 
           {earlierDays.length > 0 && (
             <details className="cst-earlier">

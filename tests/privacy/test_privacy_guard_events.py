@@ -92,12 +92,19 @@ def test_fuzz_no_five_word_answer_window_survives():
     assert checked > 150
 
 
-def test_four_word_fragments_are_allowed():
-    for answer in ANSWERS:
-        tokens = answer.split()
-        for start in range(len(tokens) - 3):
-            text = copy_for("Open mic night") + " " + " ".join(tokens[start:start + 4])
-            assert "quote_5_words" not in guard.check_event_copy(text, ANSWERS)["reasons"]
+def test_four_word_fragments_of_long_answers_are_allowed():
+    """#58 rule (c): 4-word runs count as quotes only against short answers
+    (<= 12 tokens); against longer answers only 5-word runs do."""
+    long_answer = ["I usually grab dinner late after my lab because the dining hall is calmer then"]
+    tokens = long_answer[0].split()
+    for start in range(len(tokens) - 3):
+        text = copy_for("Open mic night") + " " + " ".join(tokens[start:start + 4])
+        assert "quote_5_words" not in guard.check_event_copy(text, long_answer)["reasons"], text
+
+
+def test_four_word_fragments_of_short_answers_are_quotes():
+    short = ["I eat alone in my room"]
+    assert "quote_5_words" in guard.check_event_copy(copy_for("Open mic night") + " alone in my room", short)["reasons"]
 
 
 SENSITIVE_TITLES = [

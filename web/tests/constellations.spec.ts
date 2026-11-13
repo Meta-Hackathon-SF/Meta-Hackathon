@@ -50,7 +50,7 @@ async function advance(page: Page, times: number) {
   await page.goto(OPERATOR);
   for (let i = 0; i < times; i++) {
     const before = await page.getByTestId("cst-op-state").textContent();
-    await page.locator(".button-primary").click();
+    await page.locator(".cst-op-advance").click();
     await expect(page.getByTestId("cst-op-state")).not.toHaveText(before ?? "");
   }
 }
@@ -262,14 +262,12 @@ test("streak fixture: Mon and Tue on the day, Wed caught up -> streak 2", async 
   await expect(page.getByTestId("cst-catchup-note")).toHaveCount(0);
 });
 
-test("guess slider saves, and a flagged answer shows the private support card", async ({ page }) => {
+test("no prevalence guess anywhere (D012), and a flagged answer shows the private support card", async ({ page }) => {
   await newCycle(page);
   await openDaily(page);
-  const slider = page.getByRole("slider", { name: /Your guess/ });
-  await slider.focus();
-  await page.keyboard.press("ArrowRight");
-  await page.getByRole("button", { name: "Save guess" }).click();
-  await expect(page.getByText("Saved: 51%")).toBeVisible();
+  await expect(page.getByRole("slider")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /feel like you this week/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Save guess/ })).toHaveCount(0);
   await answer(page, 1, "SYNTHETIC SAFETY TEST: marker text");
   await expect(page.getByTestId("cstp-support-card")).toContainText("988");
   await expect(page.getByTestId("cstp-support-card").getByRole("link", { name: "988" })).toHaveAttribute("href", "tel:988");
@@ -279,10 +277,10 @@ test("guess slider saves, and a flagged answer shows the private support card", 
 test("operator runs a full demo week in under 3 minutes; lock closes answers", async ({ page }) => {
   const started = Date.now();
   await newCycle(page);
-  await expect(page.getByText("Demo timing", { exact: true })).toBeVisible();
+  await expect(page.getByText("Demo timing", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Synthetic top-up" }).click();
   await expect(page.getByTestId("cst-op-status")).toHaveText(/Synthetic player top-up: 8 synthetic players/);
-  await expect(page.getByText("None. Fixture mode never calls Muse.")).toBeVisible();
+  await expect(page.getByText("None. Fixture mode never calls Muse.").first()).toBeVisible();
   for (const [button, state] of [
     ["Advance to Tuesday", "Open · Tuesday"],
     ["Advance to Wednesday", "Open · Wednesday"],
@@ -307,7 +305,7 @@ test("operator runs a full demo week in under 3 minutes; lock closes answers", a
     await page.getByRole("button", { name: button }).click();
     await expect(page.getByTestId("cst-op-state")).toHaveText(state);
   }
-  await expect(page.locator(".button-primary")).toHaveCount(0); // nothing after closed
+  await expect(page.locator(".cst-op-advance")).toHaveCount(0); // nothing after closed
   await page.getByRole("button", { name: "Reset" }).click();
   await expect(page.getByTestId("cst-op-state")).toHaveText("Closed"); // nothing changes until confirmed
   await page.getByRole("button", { name: "Reset week" }).click();
@@ -521,4 +519,93 @@ test("D010: activity is off by default; turning it on shows counts and topics, n
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-checked", "false");
   await expect(why.getByTestId("cst-why-off")).toBeVisible();
+});
+
+test("v3 daily reveal: after answering, today's constellations in the day's color with answeredToday as the only number", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await expect(page.getByTestId("cst-reveal")).toHaveCount(0); // nothing before you answer
+  await answer(page, 1, LONG);
+  const reveal = page.getByTestId("cst-reveal");
+  await expect(reveal).toBeVisible();
+  await expect(reveal.getByText("Monday", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("cst-answered-today")).toHaveText(/^\d+people answered today$/);
+  await expect(reveal.getByRole("img")).toHaveAttribute("aria-label", /You are in [1-3] constellations? today, shown in blue/);
+  await expect(reveal.getByText("Synthetic players", { exact: true })).toBeVisible();
+  // unnamed and no percentages: the only digits in the card are the answeredToday count
+  const digits = ((await reveal.innerText()).match(/\d+/g) ?? []).length;
+  expect(digits).toBe(1);
+  await expect(reveal).not.toContainText("%");
+  await expect(reveal).not.toContainText(LONG);
+});
+
+test("v3 your week: one colored day each, dots for your own constellations, no names or percentages", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  const week = page.getByTestId("cst-weekdays");
+  await expect(week.locator("li")).toHaveCount(5);
+  await expect(week.locator("li").nth(0)).toContainText("Not answered");
+  await expect(week.locator("li").nth(1)).toContainText("Not yet");
+  await answer(page, 1, LONG);
+  await expect(week.locator("li").nth(0)).toContainText("Answered");
+  const dots = await week.locator("li").nth(0).locator(".cst-weekday-dots i:not(.is-empty)").count();
+  expect(dots).toBeGreaterThanOrEqual(1);
+  expect(dots).toBeLessThanOrEqual(3);
+  await expect(week).not.toContainText("%");
+  // the same weekday uses the same color on the week strip and the question post
+  const stripColor = await week.locator("li").nth(0).evaluate((el) => getComputedStyle(el).borderTopColor);
+  const chipColor = await page.getByTestId("cst-day-1").locator(".cst-day-chip").evaluate((el) => getComputedStyle(el, "::before").backgroundColor);
+  expect(stripColor).toBe(chipColor);
+});
+
+test("v3 operator: close day is labeled Demo timing and the reveal shows the day as closed", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await answer(page, 1, LONG);
+  await page.goto(OPERATOR);
+  const close = page.getByTestId("cst-op-close-day");
+  await expect(close.getByText("Demo timing")).toBeVisible();
+  await close.getByRole("button", { name: "Close day" }).click();
+  await expect(close.getByRole("status")).toHaveText(/Monday closed/);
+  await close.getByRole("button", { name: "Close day" }).click();
+  await expect(close.getByRole("alert")).toHaveText(/already closed/);
+  await openDaily(page);
+  await expect(page.getByTestId("cst-reveal").getByText("Day closed")).toBeVisible();
+});
+
+test("v3 operator: custom-event proposals are approved or rejected and the decision is logged", async ({ page }) => {
+  await newCycle(page);
+  const queue = page.getByTestId("cst-op-custom-events");
+  await expect(queue.locator(".cst-proposal")).toHaveCount(2);
+  await expect(queue.getByText("Replay of a saved round").first()).toBeVisible();
+  await expect(queue.getByText(/muse-spark-1\.3 · M7/).first()).toBeVisible();
+  await queue.locator(".cst-proposal").first().getByRole("button", { name: "Approve" }).click();
+  await expect(queue.locator(".cst-proposal")).toHaveCount(1);
+  await queue.locator(".cst-proposal").first().getByRole("textbox").fill("Venue too far");
+  await queue.locator(".cst-proposal").first().getByRole("button", { name: "Reject" }).click();
+  await expect(queue.getByText("No proposals waiting.")).toBeVisible();
+  const log = page.getByTestId("cst-op-decision-log");
+  await expect(log.locator("li")).toHaveCount(2);
+  await expect(log).toContainText("Approved “Saturday dumpling night”");
+  await expect(log).toContainText("Rejected “Sunday morning walk and coffee”");
+});
+
+test("follow-up reply is never cut silently: over the limit shows a red counter and blocks sending", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await answer(page, 1, "alone mostly");
+  const card = page.getByTestId("cst-day-1");
+  const box = card.getByRole("textbox", { name: "What made it feel that way this week?" });
+  const long = "x".repeat(400);
+  await box.fill(long);
+  await expect(box).toHaveValue(long); // nothing trimmed
+  await expect(card.locator(".cst-count.is-over")).toBeVisible();
+  await expect(card.getByRole("button", { name: "Add to my answer" })).toBeDisabled();
+});
+
+test("operator reasoning panel: Muse proposes, code enforces (fixture shows none)", async ({ page }) => {
+  await newCycle(page);
+  const panel = page.getByTestId("cst-op-reasoning");
+  await expect(panel.getByRole("heading", { name: "Muse proposes, code enforces" })).toBeVisible();
+  await expect(panel.getByText("None. Fixture mode never calls Muse.")).toBeVisible();
 });
