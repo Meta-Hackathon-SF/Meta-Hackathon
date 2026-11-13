@@ -1,9 +1,13 @@
-import { Gamepad2, Home, MonitorPlay, Store, Users } from "lucide-react";
 import {
   AiIcon,
   EventsIcon,
   FeedsIcon,
   FriendsIcon,
+  FriendsTabIcon,
+  GamingTabIcon,
+  HomeTabIcon,
+  MarketplaceTabIcon,
+  VideoTabIcon,
   GroupsIcon,
   MarketplaceIcon,
   MemoriesIcon,
@@ -12,13 +16,28 @@ import {
   SpaceIcon,
   VideoIcon,
 } from "./AppIcons";
+import type { ComponentType } from "react";
+import type { TabIconProps } from "./AppIcons";
+import type { TabIcon } from "./NavigationIcon";
+
+function asTab(icon: ComponentType<TabIconProps>): TabIcon {
+  return Object.assign(icon, { tab: true as const });
+}
+
+export const tabIcons = {
+  home: asTab(HomeTabIcon),
+  friends: asTab(FriendsTabIcon),
+  video: asTab(VideoTabIcon),
+  marketplace: asTab(MarketplaceTabIcon),
+  gaming: asTab(GamingTabIcon),
+};
 
 export const primaryNavigation = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "/friends", label: "Friends", icon: Users },
-  { to: "/watch", label: "Video", icon: MonitorPlay },
-  { to: "/marketplace", label: "Marketplace", icon: Store },
-  { to: "/gaming", label: "Gaming", icon: Gamepad2 },
+  { to: "/", label: "Home", icon: tabIcons.home },
+  { to: "/friends", label: "Friends", icon: tabIcons.friends },
+  { to: "/watch", label: "Video", icon: tabIcons.video },
+  { to: "/marketplace", label: "Marketplace", icon: tabIcons.marketplace },
+  { to: "/gaming", label: "Gaming", icon: tabIcons.gaming },
 ];
 
 /** Left sidebar, in Facebook's order. Feeds ("/") never shows as active, like Facebook. */
