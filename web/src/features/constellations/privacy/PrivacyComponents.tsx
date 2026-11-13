@@ -129,7 +129,7 @@ export function JoinScreen({
       }}
     >
       <FixtureBadge client={client} />
-      <h2>Join Constellations in {communityName}</h2>
+      <h2>Join Facebook Space in {communityName}</h2>
       <p className="cstp-lede">
         One honest question a day, Monday to Friday. On Sunday you meet the people whose answers meant the same thing,
         anonymously.
@@ -305,7 +305,7 @@ export function PrivacySettings({
 }
 
 /**
- * Wrap the Constellations page: shows the join screen until this Group's
+ * Wrap the Facebook Space page: shows the join screen until this Group's
  * session exists with all three consents, then renders ``children`` with a
  * collapsible "Privacy and data" panel. ``onDataDeleted`` lets the page refresh.
  */

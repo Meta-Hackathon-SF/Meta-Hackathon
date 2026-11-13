@@ -1,5 +1,5 @@
 /*
- * Facebook Space (internal name: Constellations) is a Facebook-wide feature,
+ * Facebook Space (code name: constellations) is a Facebook-wide feature,
  * not one Group's. Players see "Facebook Space"; each person's matched group is
  * still called a constellation. The server contract (2.0.0) still scopes a
  * weekly cycle and a session to one communityId, so the UI plays in this

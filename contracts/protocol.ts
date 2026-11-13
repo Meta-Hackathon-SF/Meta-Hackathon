@@ -1,5 +1,5 @@
 /**
- * Constellations wire contract v2.0.0 (weekly game). Supersedes 1.0.0 (hunt rounds).
+ * Facebook Space wire contract v2.0.0 (weekly game). Supersedes 1.0.0 (hunt rounds).
  * Pending D006 ACK from all five owners (see docs/DECISIONS.md).
  * Definitions only: every consumer MUST implement runtime validation
  * (Pydantic on the server, zod or hand validators in the browser).

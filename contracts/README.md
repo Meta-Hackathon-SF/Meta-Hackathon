@@ -1,4 +1,4 @@
-# Shared contracts: Constellations 2.0.0 (weekly game, pending D006 ACK)
+# Shared contracts: Facebook Space 2.0.0 (weekly game, pending D006 ACK)
 Common interface agreement for all five workstreams. Normative design plus TypeScript wire declarations and JSON fixtures. Not a running backend.
 
 ## Files
@@ -18,7 +18,7 @@ Common interface agreement for all five workstreams. Normative design plus TypeS
 | ChatRoom, AnonymousHandle, ChatMessage, Report, RevealRequest, MutualReveal, StreamEvent, ChatPort, API composition | Kai | Will (shell), Patrik (moderation), Adam (nudges) |
 
 ## Validation rules (code enforces, Muse proposes)
-- Constellations: size 3-5; every eligible player placed exactly once; no blocked pair; weak fits get `isLooseMatch`, never dropped silently. Eligible = consented, not flagged, at least one non-deleted answer this cycle.
+- Facebook Space: size 3-5; every eligible player placed exactly once; no blocked pair; weak fits get `isLooseMatch`, never dropped silently. Eligible = consented, not flagged, at least one non-deleted answer this cycle.
 - Weights: server sets `DailyAnswer.weight` (on-day 1.0, catch-up 0.6, +0.1 if follow-up used, max 1.1). Clients never send weight. Catch-up allowed only for missed days of the current cycle and only before Saturday lock. Catch-up never extends a streak.
 - No-quote: no constellation name, theme label, Sky headline, nudge or generated question contains 5+ consecutive words from any answer.
 - Sensitive categories (never in Muse-written public text): health, sexuality, religion, finances, family trauma, home location.

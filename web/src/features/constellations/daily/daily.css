@@ -1,4 +1,4 @@
-/* Constellations (owner: Will). Built on the Simulated Facebook shell's tokens
+/* Facebook Space (owner: Will). Built on the Simulated Facebook shell's tokens
    (--blue, --muted, --surface, --border, --hover, .card, .button-*, .post-meta).
    Every rule is scoped to a .cst- class so the feed and shell are untouched. */
 .cst-feed,

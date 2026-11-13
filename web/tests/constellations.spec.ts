@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /*
- * Constellations daily loop + operator console (Will).
+ * Facebook Space daily loop + operator console (Will).
  * Runs against the in-browser FIXTURE adapter only: no server, no Muse, no
  * speech-to-text. These tests prove UI behavior, not live integration.
  */
@@ -80,7 +80,7 @@ async function answer(page: Page, day: number, text: string) {
   await expect(page.getByTestId(`cst-answer-text-${day}`)).toHaveText(text);
 }
 
-test("Constellations is a Facebook-wide page with truth labels; old Group links redirect", async ({ page }) => {
+test("Facebook Space is a Facebook-wide page with truth labels; old Group links redirect", async ({ page }) => {
   await page.goto("/groups/hackathon-builders/constellations");
   await expect(page).toHaveURL(new RegExp(`${DAILY}$`));
   await expect(page.getByRole("heading", { level: 1, name: "Facebook Space" })).toBeVisible();
@@ -390,7 +390,7 @@ test("week view has no horizontal overflow on a small phone", async ({ page }) =
   expect(opOverflow).toBeLessThanOrEqual(0);
 });
 
-test("home feed: Constellations sits under the composer and works without leaving Home", async ({ page, isMobile }) => {
+test("home feed: Facebook Space sits under the composer and works without leaving Home", async ({ page, isMobile }) => {
   await page.goto("/");
   const feed = page.getByRole("main", { name: "News Feed" });
   const card = feed.getByTestId("cst-feed-card");
@@ -419,7 +419,7 @@ test("home feed: Constellations sits under the composer and works without leavin
   await expect(page).toHaveURL(new RegExp(`${DAILY}$`));
   await expect(page.getByTestId("cst-answer-text-1")).toHaveText(LONG); // same answer, one source of truth
   if (!isMobile) {
-    // Desktop sidebar: only the Constellations shortcut is highlighted, not Groups too.
+    // Desktop sidebar: only the Facebook Space shortcut is highlighted, not Groups too.
     const explore = page.getByRole("navigation", { name: "Explore" });
     await expect(explore.getByRole("link", { name: "Facebook Space" })).toHaveClass(/active/);
     await expect(explore.getByRole("link", { name: "Groups" })).not.toHaveClass(/active/);

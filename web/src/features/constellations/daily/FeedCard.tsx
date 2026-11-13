@@ -1,5 +1,5 @@
 /*
- * Constellations on the home feed, right under "What's on your mind?".
+ * Facebook Space on the home feed, right under "What's on your mind?".
  * Not joined: one card with a Join button (consent opens in a dialog, no page change).
  * Joined: today's question with a private comment box, streak and catch-up count.
  */

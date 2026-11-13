@@ -1,4 +1,4 @@
-"""Privacy service: join + 18+ consent, sessions, operator role (Constellations 2.0.0).
+"""Privacy service: join + 18+ consent, sessions, operator role (Facebook Space 2.0.0).
 
 Ports for other owners (import from ``server.privacy``; never open the store):
 
