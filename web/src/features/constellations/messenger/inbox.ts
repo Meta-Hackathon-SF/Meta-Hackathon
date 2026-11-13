@@ -25,6 +25,8 @@ export interface InboxMessage {
   /** A Muse event draft, and the event id once someone tapped Create. */
   draft?: EventDraft;
   createdEventId?: string;
+  /** When it was added here (local Muse lines are merged with live room messages by time). */
+  at?: string;
 }
 
 export interface InboxThread {
@@ -36,6 +38,8 @@ export interface InboxThread {
   preview: string;
   /** Set on a thread opened with a server-seeded synthetic player. */
   synthetic?: boolean;
+  /** Hosted app: this thread is a view of the real Sunday room (messages sync across accounts). */
+  live?: { cycleId: string; roomId: string };
 }
 
 export interface SundayLine {
@@ -145,6 +149,23 @@ export function promoteSundayChat(lines: SundayLine[], memberNames: string[]) {
 }
 
 /** Opens (or creates) a direct thread with a player after a real mutual reveal. Returns the thread id. */
+/** Hosted app: puts the real Sunday room in Messenger (or refreshes the link to it). */
+export function promoteLiveRoom(cycleId: string, roomId: string) {
+  const existing = threads.find((t) => t.id === SUNDAY_THREAD_ID);
+  if (existing?.live?.roomId === roomId) return;
+  const thread: InboxThread = {
+    id: SUNDAY_THREAD_ID,
+    kind: "group",
+    title: "Sunday constellation",
+    memberNames: [],
+    messages: [],
+    preview: "Your constellation's chat",
+    live: { cycleId, roomId },
+  };
+  threads = [thread, ...threads.filter((t) => t.id !== SUNDAY_THREAD_ID)];
+  emit();
+}
+
 export function openRevealThread(playerId: string, displayName: string, synthetic = false): string {
   const id = `reveal-${playerId}`;
   if (!threads.some((thread) => thread.id === id)) {
@@ -164,6 +185,7 @@ export function addMuseMessage(
     text: help.text,
     mine: false,
     fromMuse: true,
+    at: new Date().toISOString(),
     source: help.source,
     itemIds: help.itemIds,
     eventIds: help.eventIds,
@@ -185,7 +207,7 @@ export function markDraftCreated(threadId: string, messageId: string, eventId: s
           ...thread,
           messages: [
             ...thread.messages.map((m) => (m.id === messageId ? { ...m, createdEventId: eventId } : m)),
-            { id: nextId("out"), senderName: "Alex Morgan", text: `Created ${title}. Register here:`, mine: true, eventIds: [eventId] },
+            { id: nextId("out"), senderName: "Alex Morgan", text: `Created ${title}. Register here:`, mine: true, eventIds: [eventId], at: new Date().toISOString() },
           ],
           preview: `Created ${title}`,
         }
