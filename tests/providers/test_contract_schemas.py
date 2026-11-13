@@ -75,7 +75,7 @@ class FixtureConformanceTests(unittest.TestCase):
             "sharedMeaning": "People who end up eating on their own more than they planned to.",
             "venues": doc["venues"],
             "window": {"start": "2026-11-18T00:00:00Z", "end": "2026-11-21T00:00:00Z"},
-            "campusEvents": doc["campusEvents"],
+            "campusEvents": [{k: e[k] for k in ("title", "placeId", "start")} for e in doc["campusEvents"]],
         }
         validate(payload, c.M7_IN)
         payload["venues"][0]["isPublic"] = False

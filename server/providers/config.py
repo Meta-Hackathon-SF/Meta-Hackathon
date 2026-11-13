@@ -26,12 +26,22 @@ DEFAULT_BASE_URL = "https://api.meta.ai/v1"
 DEFAULT_MODEL = "muse-spark-1.3"
 # Standard-mode model IDs from the official model list. "-contributor" variants
 # allow Meta to train on prompts, so they are rejected for participant data.
-KNOWN_MODELS = frozenset({"muse-spark-1.3", "muse-spark-1.2", "muse-spark-1.1"})
+# Text models listed by GET /v1/models for the team key (2026-11-13). Wonder is in
+# preview (Meta docs). Spark efforts are the ones we have verified live; Wonder and
+# Ember document "minimal" to "max" (provider default "max").
+KNOWN_MODELS = frozenset({"muse-spark-1.3", "muse-spark-1.2", "muse-spark-1.1", "muse-wonder-1.0", "muse-ember-1.0"})
+MODEL_EFFORTS: dict[str, frozenset[str]] = {
+    "muse-spark-1.3": frozenset({"low", "medium", "high"}),
+    "muse-spark-1.2": frozenset({"low", "medium", "high"}),
+    "muse-spark-1.1": frozenset({"low", "medium", "high"}),
+    "muse-wonder-1.0": frozenset({"minimal", "low", "medium", "high", "max"}),
+    "muse-ember-1.0": frozenset({"minimal", "low", "medium", "high", "max"}),
+}
 # Defaults applied when loading from the environment, so a deployed server that
 # sets only MUSE_API_KEY runs with the settings every live check used.
 ENV_DEFAULT_TIMEOUT_S = 60.0
 ENV_DEFAULT_REASONING_EFFORT = "low"
-REASONING_EFFORTS = frozenset({"low", "medium", "high"})  # "none" is rejected by the provider
+REASONING_EFFORTS = frozenset().union(*MODEL_EFFORTS.values())  # "none" is rejected by the provider
 
 
 @dataclass(frozen=True)
@@ -48,7 +58,7 @@ class MuseConfig:
             raise ValueError("api_key is required")
         if self.model not in KNOWN_MODELS:
             raise ValueError(
-                "MUSE_MODEL must be a standard-mode Muse Spark model id "
+                "MUSE_MODEL must be a standard-mode Muse text model id "
                 f"({', '.join(sorted(KNOWN_MODELS))})"
             )
         if not self.base_url.startswith("https://"):
@@ -57,8 +67,9 @@ class MuseConfig:
             raise ValueError("MUSE_TIMEOUT_S must be within [1, 120]")
         if not (1 <= self.max_attempts <= 3):
             raise ValueError("MUSE_MAX_ATTEMPTS must be within [1, 3]")
-        if self.reasoning_effort is not None and self.reasoning_effort not in REASONING_EFFORTS:
-            raise ValueError("MUSE_REASONING_EFFORT must be one of low, medium, high")
+        if self.reasoning_effort is not None and self.reasoning_effort not in MODEL_EFFORTS[self.model]:
+            raise ValueError("MUSE_REASONING_EFFORT must be one of "
+                             + ", ".join(sorted(MODEL_EFFORTS[self.model])) + f" for {self.model}")
 
     def describe(self) -> dict[str, object]:
         """Sanitized description safe for logs/health output (no key)."""
