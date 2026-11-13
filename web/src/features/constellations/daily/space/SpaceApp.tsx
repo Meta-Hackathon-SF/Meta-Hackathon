@@ -131,6 +131,9 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
         <Link className="spc-btn spc-btn-gray spc-btn-sm" to={OPERATOR_PATH}>
           Operator console
         </Link>
+        <Link className="spc-btn spc-btn-gray spc-btn-sm" to="/space/stage">
+          Stage view
+        </Link>
       </div>
       {error && (
         <p className="spc-error" role="alert">

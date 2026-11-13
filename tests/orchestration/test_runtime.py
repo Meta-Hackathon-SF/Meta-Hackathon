@@ -539,3 +539,56 @@ def test_operator_topup_records_canonical_synthetic_labels():
             labeled = state.records["syntheticPlayers"]
             assert len(labeled) == 38  # 8 fixture players + the 30-player demo cast (#84)
             assert all(row["communityId"] == COMMUNITY for row in labeled.values())
+
+
+ANSWER = "Synthetic private submission number {} for this week"
+
+
+def test_stage_shows_only_opted_in_players_answers_to_operators():
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        players, cycle_id, _job = formed(env, client)
+        operator, on_stage, private_player = players
+        assert call(client, on_stage, "GET", "/operator/stage").status_code == 403
+        assert call(client, on_stage, "GET", "/me/stage").json() == {"slot": None}
+        bad = call(client, on_stage, "POST", "/me/stage", json={"slot": "C"})
+        assert bad.status_code in (400, 422)
+        chosen = call(client, on_stage, "POST", "/me/stage", json={"slot": "A"})
+        assert chosen.json() == {"slot": "A"}
+        assert call(client, on_stage, "GET", "/me/stage").json() == {"slot": "A"}
+
+        stage = call(client, operator, "GET", "/operator/stage")
+        assert stage.status_code == 200, stage.json()
+        body = stage.json()
+        a, b = body["panels"]
+        assert (a["slot"], a["joined"], b["joined"]) == ("A", True, False)
+        assert [x["text"] for x in a["answers"]] == [ANSWER.format(1)]
+        assert b["answers"] == [] and b["constellation"] is None
+        assert a["constellation"]["size"] == 3
+        assert body["population"]["players"] == 3 and body["population"]["answersByDay"][0] == 3
+        assert body["formation"]["formed"] is True and body["cycle"]["cycleId"] == cycle_id
+        assert body["calls"] and all("callType" in c for c in body["calls"])
+        # Nobody else's text, ids or private meaning leaves the server.
+        assert "submission number 0" not in stage.text
+        assert "submission number 2" not in stage.text
+        assert private_player.player_id not in stage.text
+        assert on_stage.player_id not in stage.text
+        assert "memberIds" not in stage.text and "sharedMeaning" not in stage.text
+
+        # Opting out removes the text again; a second player can take the slot.
+        left = call(client, on_stage, "POST", "/me/stage", json={"slot": None})
+        assert left.json() == {"slot": None}
+        panels = call(client, operator, "GET", "/operator/stage").json()["panels"]
+        assert panels[0]["answers"] == []
+        call(client, on_stage, "POST", "/me/stage", json={"slot": "B"})
+        call(client, private_player, "POST", "/me/stage", json={"slot": "B"})
+        panels = call(client, operator, "GET", "/operator/stage").json()["panels"]
+        assert [x["text"] for x in panels[1]["answers"]] == [ANSWER.format(2)]
+
+
+def test_stage_without_a_week_is_empty_not_an_error():
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        player = join(client, "operator")
+        grant_operator(env.privacy_store, player.player_id, COMMUNITY)
+        body = call(client, player, "GET", "/operator/stage").json()
+        assert body["cycle"] is None and body["constellations"] == []
+        assert body["population"]["answersByDay"] == [0, 0, 0, 0, 0]
