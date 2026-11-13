@@ -37,6 +37,7 @@ from server.matching.models import (
 )
 from server.matching.ports import MusePortLike, OutputGuardLike, SnapshotSource
 from server.matching.repair import repair_proposal
+from server.matching.sky import formation_debug
 from server.matching.validation import violations
 
 # Live muse-spark-1.3 (Adam, 2026-11-13, 30 players): M3 21.5 s, M4 38.8 s, M5 10-25 s with
@@ -289,7 +290,8 @@ class FormationService:
                 baseline_agrees=same_group(baseline, refs), is_fallback=used_fallback)
             for i, ((refs, meaning, confidence), (name, shape, color))
             in enumerate(zip(proposal, names, strict=False)))
+        debug = formation_debug([tuple(refs) for refs, _, _ in proposal], baseline)
         return FormationResult("ok", constellations=constellations, themes=theme_objs,
                                evidence=tuple(evidence), used_fallback=used_fallback,
-                               repaired_groups=repaired,
+                               repaired_groups=repaired, debug=debug,
                                timings_ms=timings)

@@ -203,6 +203,7 @@ class FormationResult:
     evidence: tuple[MuseCallEvidence, ...] = ()
     used_fallback: bool = False
     repaired_groups: int = 0  # internal: groups code fixed after a near-valid M4 proposal
+    debug: Mapping[str, Any] | None = None  # internal, operator only: ids-only baseline vs Muse
     error: MatchingError | None = None
     timings_ms: Mapping[str, int] = field(default_factory=dict)
 

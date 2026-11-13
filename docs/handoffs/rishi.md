@@ -54,6 +54,13 @@ Fixture versus live evidence: fixture only. FakeMuse is scripted, so tests prove
 - Kai: `form_once` wraps form in `wait_for(60)`. Raise it to about 120 s or every live lock will cancel.
 - Checks: pytest tests/matching -> 66 passed; ruff clean.
 
+## Live rerun + debug getter (added 2026-11-13)
+- Adam live rerun on #26 (one run, 30 players): M3||M4 29.2 s, naming 20.0 s (2 of 6 hit the 20 s cap and got fixed names), formation 49.2 s, Sky 19.8 s after. Under 60 s for formation. Plausible, not benchmarked. Naming cap kept at 20 s: 25 s would exceed 60 s with the first run's M4 time.
+- `MatchingPort.debug(cycleId)` -> `{data: FormationDebugData, evidence, totalMs, usedFallback}`, refs only. Answers Kai's ask on #13/#26.
+- live_eval now goes through MatchingPort (Sky precomputed during naming) with Patrik's real `server.privacy.OutputGuard`. Patrik's `LeasedSnapshot` fits SnapshotSource unchanged.
+- Still missing from Patrik: bulk `prevalence_guesses(cycleId)` (only `get_guess(cycle, player)` exists).
+- Checks: pytest tests/matching -> 69 passed; ruff clean.
+
 ## Interface assumptions (need ACK, not blocking)
 - Patrik `@patrikliska13`: `formationSnapshot` returns `answers[].id` as one random ref per PLAYER (shared by all that player's answers), `weight` per answer, `idMap` ref->playerId, `blockedPairs` as playerIds. Players with any distress/harm flag this cycle are excluded entirely. Prevalence guesses will be needed for computeSky (shape TBD).
 - Adam `@adamzhang06`: Python MusePort is `async run(*, task, requestId, promptVersion, payload, signal=None) -> {"output", "evidence"}` with evidence in MuseCallEvidence wire shape. Formation sends `instructions` inside payload; tell me if the adapter owns system prompts instead.

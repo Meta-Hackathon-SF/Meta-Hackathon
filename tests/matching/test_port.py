@@ -105,3 +105,34 @@ def test_compute_sky_bad_guesses_invalid_input():
     with pytest.raises(MatchingError) as err:
         run(p.computeSky("c", 3))
     assert err.value.code == "INVALID_INPUT"
+
+
+def test_debug_getter_ids_only_after_form():
+    p = port()
+    run(p.form("c"))
+    dbg = p.debug("c")
+    assert set(dbg) == {"data", "evidence", "totalMs", "usedFallback"}
+    assert set(dbg["data"]) == {"baselineGroups", "museGroups", "agreements", "splitByBaseline"}
+    blob = json.dumps(dbg)
+    for a in load_week()["answers"]:
+        assert a["text"] not in blob
+    for player in load_week()["players"]:
+        assert player["playerId"] not in blob
+    assert dbg["data"]["splitByBaseline"]  # Maya and Dev: keywords split, Muse joins
+
+
+def test_debug_getter_unknown_cycle_not_found():
+    with pytest.raises(MatchingError):
+        port().debug("never")
+
+
+def test_real_privacy_output_guard_blocks_quoting_name():
+    from server.privacy import OutputGuard
+
+    source = FixtureSnapshotSource()
+    source.snapshot()
+    muse = SkyMuse(source.ref_of, GOOD, m5_name="I eat in my room so no one")
+    p = build_matching_port(muse=muse, snapshots=source, guesses=FixtureGuesses(),
+                            guard=OutputGuard())
+    raw = run(p.form("c"))
+    assert all("eat in my room" not in c["name"] for c in raw["constellations"])
