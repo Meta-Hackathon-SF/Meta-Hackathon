@@ -18,6 +18,42 @@ from server.providers.fixture import decode_user_message
 from .runtime_helpers import COMMUNITY, runtime_environment
 
 
+def test_composition_uses_approved_router_without_live_calls(monkeypatch):
+    from server.app.config import Settings
+    from server.app.weekly import build_weekly_app
+    from server.privacy import PrivacyStore
+    from server.providers import MuseRouter
+    from tests.orchestration.storage_adapter import TestWorkflowRepository
+
+    monkeypatch.setattr("server.app.weekly.load_muse_config", lambda: None)
+    repository = TestWorkflowRepository()
+    privacy_store = PrivacyStore(":memory:")
+    try:
+        app = build_weekly_app(
+            repository=repository,
+            privacy_store=privacy_store,
+            settings=Settings(environment="test"),
+            start_worker=False,
+        )
+        router = app.state.muse.muse
+        assert isinstance(router, MuseRouter)
+        assert router.route_for("safety_screen").model == "muse-ember-1.0"
+        assert not router.configured
+    finally:
+        repository.close()
+        privacy_store.close()
+
+    with runtime_environment() as env:
+        assert not isinstance(env.app.state.muse.muse, MuseRouter)
+
+
+def test_composition_registers_activity_and_sensitivity_tasks():
+    with runtime_environment() as env:
+        registry = env.app.state.muse.muse._registry
+        assert registry.get("activity_classification", "activity_classification.v1")
+        assert registry.get("sensitivity_screen", "sensitivity_screen.v1")
+
+
 class SyntheticPlayer(SimpleNamespace):
     def __repr__(self):
         return "<SyntheticPlayer>"
@@ -122,6 +158,35 @@ def revealed(env, client):
     response = call(client, players[0], "GET", f"/cycles/{cycle_id}/room")
     assert response.status_code == 200
     return players, cycle_id, job_id, response.json()["roomId"]
+
+
+def test_formation_uses_released_question_context_and_approved_catalog(monkeypatch):
+    import server.app.weekly as weekly
+    from server.planning import VenueCatalog
+
+    actual_factory = weekly.build_matching_port
+    seen_catalogs = []
+
+    def recording_factory(**kwargs):
+        seen_catalogs.append(kwargs["approved_event_ids"])
+        return actual_factory(**kwargs)
+
+    monkeypatch.setattr(weekly, "build_matching_port", recording_factory)
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        formed(env, client)
+        payloads = [
+            decode_user_message(request.user)["input"]
+            for request in env.transport.calls
+            if decode_user_message(request.user)["task"] == "constellation_formation"
+        ]
+        # The per-day sky also calls constellation_formation, without question context.
+        # The weekly formation is the call that must carry the released questions.
+        weekly_payloads = [payload for payload in payloads if payload.get("questions")]
+        assert weekly_payloads
+        question_ids = {q["questionId"] for q in weekly_payloads[0]["questions"]}
+        assert all(answer["questionId"] in question_ids for answer in weekly_payloads[0]["answers"])
+        approved = VenueCatalog.load().event_ids()
+        assert seen_catalogs and all(ids == approved for ids in seen_catalogs)
 
 
 def test_composed_daily_loop_formation_reveal_chat_sky_and_expiry():
@@ -479,6 +544,7 @@ def test_mutual_reveal_updates_sky_count_without_duplicate_narration():
                 for request in env.transport.calls
             )
 
+        assert m8_calls() == 1  # Sky job only; formation does not precompute it.
         assert call(client, a, "GET", f"/cycles/{cycle_id}/sky").json()["mutualReveals"] == 0
         room_a = call(client, a, "GET", f"/cycles/{cycle_id}/room").json()
         room_b = call(client, b, "GET", f"/cycles/{cycle_id}/room").json()

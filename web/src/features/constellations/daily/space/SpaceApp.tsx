@@ -11,6 +11,7 @@ import type { MutualReveal } from "../../../../../../contracts/protocol";
 import { currentUser } from "../../../../data/demo";
 import { getPrivacyClient, usePrivacySession, type SessionView } from "../../privacy";
 import type { AnswerResult, CycleClient, CycleDay, FollowUp } from "../client";
+import { ClientError } from "../client";
 import { getCycleClient } from "../clientContext";
 import { PLAY_COMMUNITY } from "../communities";
 import { MAX_CHARS, message, useDaily } from "../useDaily";
@@ -95,7 +96,19 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
         if (!mine.some((a) => a.day === d)) await client.submit(id, { day: d as CycleDay, text: DEMO_ANSWERS[d - 1], source: "text" });
       cycle = await client.advance(id);
     }
-    while (cycle.status === "locked" || cycle.status === "forming") cycle = await client.advance(id);
+    if (cycle.status === "locked") cycle = await client.advance(id);
+    if (cycle.status === "forming") {
+      const deadline = Date.now() + 120_000;
+      for (;;) {
+        try {
+          cycle = await client.advance(id);
+          break;
+        } catch (err) {
+          if (!(err instanceof ClientError) || err.code !== "PROVIDER_UNAVAILABLE" || Date.now() >= deadline) throw err;
+          await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        }
+      }
+    }
   };
   const act = async (work: () => Promise<unknown>) => {
     setBusy(true);
@@ -134,7 +147,7 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
         )}
         {status !== "revealed" && (
           <button type="button" className="spc-btn spc-btn-primary spc-btn-sm" disabled={busy} onClick={() => void act(skipToSunday)} data-testid="spc-demo-skip">
-            Skip to Sunday (filled week)
+            Skip to Sunday (synthetic players)
           </button>
         )}
         <Link className="spc-btn spc-btn-gray spc-btn-sm" to="/space/stage">
