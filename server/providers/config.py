@@ -27,11 +27,12 @@ DEFAULT_MODEL = "muse-spark-1.3"
 # Standard-mode model IDs from the official model list. "-contributor" variants
 # allow Meta to train on prompts, so they are rejected for participant data.
 # Text models listed by GET /v1/models for the team key (2026-11-13). Wonder is in
-# preview (Meta docs). Spark efforts are the ones we have verified live; Wonder and
-# Ember document "minimal" to "max" (provider default "max").
+# preview (Meta docs). Wonder and Ember document "minimal" to "max" (provider
+# default "max"). Spark 1.3 accepted "minimal" and "max" live on 2026-11-13 (one
+# call each); 1.2/1.1 efforts are the ones we used before and are not re-verified.
 KNOWN_MODELS = frozenset({"muse-spark-1.3", "muse-spark-1.2", "muse-spark-1.1", "muse-wonder-1.0", "muse-ember-1.0"})
 MODEL_EFFORTS: dict[str, frozenset[str]] = {
-    "muse-spark-1.3": frozenset({"low", "medium", "high"}),
+    "muse-spark-1.3": frozenset({"minimal", "low", "medium", "high", "max"}),
     "muse-spark-1.2": frozenset({"low", "medium", "high"}),
     "muse-spark-1.1": frozenset({"low", "medium", "high"}),
     "muse-wonder-1.0": frozenset({"minimal", "low", "medium", "high", "max"}),

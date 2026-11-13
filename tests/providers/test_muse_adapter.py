@@ -332,9 +332,11 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual((cfg.timeout_s, cfg.reasoning_effort), (45.0, "medium"))
 
     def test_unknown_reasoning_effort_rejected(self):
-        for effort in ("none", "max", "LOW"):  # spark: max not verified
+        for effort in ("none", "extreme", "LOW"):
             with self.assertRaises(ValueError):
                 load_muse_config({"MUSE_API_KEY": "k", "MUSE_REASONING_EFFORT": effort})
+        with self.assertRaises(ValueError):  # not verified for 1.2
+            load_muse_config({"MUSE_API_KEY": "k", "MUSE_MODEL": "muse-spark-1.2", "MUSE_REASONING_EFFORT": "max"})
 
     def test_wonder_and_ember_accepted_with_their_effort_range(self):
         for model in ("muse-wonder-1.0", "muse-ember-1.0"):

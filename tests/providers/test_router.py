@@ -111,11 +111,36 @@ class RouterTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Route("muse-spark-1.3-contributor")
         with self.assertRaises(ValueError):
-            Route("muse-spark-1.3", "max")
+            Route("muse-spark-1.2", "max")
+        with self.assertRaises(ValueError):
+            Route("muse-ember-1.0", max_attempts=4)
         with self.assertRaises(ValueError):
             Route("muse-ember-1.0", fallbacks=("muse-ember-1.0",))
         with self.assertRaises(ValueError):
             MuseRouter(TaskRegistry(), BASE, {"rank_group": Route("muse-spark-1.3")})
+
+    def test_measured_routes_are_the_default_and_valid(self):
+        from server.providers.router import DEFAULT_ROUTES, MEASURED_ROUTES, build_muse_router
+
+        self.assertIs(DEFAULT_ROUTES, MEASURED_ROUTES)
+        self.assertEqual(MEASURED_ROUTES["clarify"].model, "muse-ember-1.0")
+        self.assertNotIn("muse-spark-1.3", (MEASURED_ROUTES["sky_narration"].model, *MEASURED_ROUTES["sky_narration"].fallbacks))
+        r = build_muse_router(TaskRegistry(), BASE, adapter_factory=FakeAdapter)
+        self.assertEqual(r.route_for("constellation_formation"), None)  # waits for its eval
+
+    def test_route_attempts_reach_the_adapter_config(self):
+        seen = []
+
+        class Capture(FakeAdapter):
+            def __init__(self, registry, *, config, **kw):
+                seen.append(config.max_attempts)
+                super().__init__(registry, config=config, **kw)
+
+        FakeAdapter.script = {"muse-ember-1.0": [{"ok": 1}]}
+        r = MuseRouter(TaskRegistry(), BASE, {"clarify": Route("muse-ember-1.0", "minimal", 6.0, max_attempts=1)},
+                       adapter_factory=Capture)
+        asyncio.run(r.run(req()))
+        self.assertEqual(seen, [1])
 
     def test_parse_routes(self):
         routes = parse_routes("clarify=muse-ember-1.0:minimal:20>muse-spark-1.3; constellation_formation=muse-spark-1.3:low")

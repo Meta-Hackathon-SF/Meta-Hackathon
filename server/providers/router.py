@@ -42,6 +42,7 @@ class Route:
     effort: str | None = "low"
     timeout_s: float | None = None          # per attempt; None keeps the base config's
     fallbacks: tuple[str, ...] = ()
+    max_attempts: int | None = None         # None keeps the base config's
 
     def __post_init__(self) -> None:
         for m in (self.model, *self.fallbacks):
@@ -53,10 +54,40 @@ class Route:
             raise ValueError("route repeats a model")
         if self.timeout_s is not None and not (1.0 <= self.timeout_s <= 120.0):
             raise ValueError("route timeout_s must be within [1, 120]")
+        if self.max_attempts is not None and not (1 <= self.max_attempts <= 3):
+            raise ValueError("route max_attempts must be within [1, 3]")
 
 
-# Today's behaviour: every task on the base model. Replaced by measured routes.
-DEFAULT_ROUTES: dict[str, Route] = {}
+SPARK, WONDER, EMBER = "muse-spark-1.3", "muse-wonder-1.0", "muse-ember-1.0"
+
+# Measured 2026-11-13 on synthetic inputs through the real services, prompts and
+# OutputGuard (74 live calls, 2-10 per cell; docs/audits/2026-11-13-model-routing.md).
+#  - clarify (M2, interactive, high volume): Ember minimal 10/10 valid, p50 0.9 s,
+#    $0.0001; Spark low p50 7.3 s. Ember low stalled ~68 s on 3 of 10, hence one
+#    short attempt; the service already falls back to the curated hint.
+#  - naming (M5) and Sky narration (M8): Wonder rated clearly best (Spark failed
+#    M8 number/guard checks on 3 of 6 runs: never Spark for M8). Both run between
+#    the Saturday lock and the Sunday reveal; the caller's own deadline still caps
+#    them, so short per-attempt timeouts leave room for the Ember fallback.
+#  - question_generation (M6) and event_nudge (M7): Spark good, Wonder not
+#    clearly better, Ember weaker on nudge fit.
+#  - safety_screen (M1, hot path for every answer and chat message): production
+#    prompt safety.v1, Ember low exact on 56 calls (26 base, 10 hard x3), p50
+#    1.2 s, $0.0002; Spark low missed one indirect distress case. One 8 s attempt
+#    covers Ember's rare stalls; the Spark fallback keeps the screen available.
+#    If both fail, M1 still fails closed in the privacy service.
+# Tasks not listed (M3 themes, M4 grouping) stay on the base model until their
+# evals report.
+MEASURED_ROUTES: dict[str, Route] = {
+    "safety_screen": Route(EMBER, "low", 8.0, (SPARK,), max_attempts=1),
+    "clarify": Route(EMBER, "minimal", 6.0, (SPARK,), max_attempts=1),
+    "question_generation": Route(SPARK, "low", 45.0, (EMBER,)),
+    "event_nudge": Route(SPARK, "low", 45.0, (EMBER,)),
+    "constellation_naming": Route(WONDER, "low", 12.0, (EMBER,), max_attempts=1),
+    "sky_narration": Route(WONDER, "low", 30.0, (EMBER,), max_attempts=1),
+}
+
+DEFAULT_ROUTES: dict[str, Route] = MEASURED_ROUTES
 
 
 def parse_routes(spec: str) -> dict[str, Route]:
@@ -95,7 +126,7 @@ class MuseRouter:
         self.reasoning_trace = adapter_kwargs.pop("reasoning_trace", None) or ReasoningTrace()
         self._factory = adapter_factory or MuseAdapter
         self._adapter_kwargs = adapter_kwargs
-        self._adapters: dict[tuple[str, str | None, float | None], MuseAdapter] = {}
+        self._adapters: dict[tuple[str, str | None, float | None, int | None], MuseAdapter] = {}
 
     @property
     def configured(self) -> bool:
@@ -104,35 +135,37 @@ class MuseRouter:
     def route_for(self, task: str) -> Route | None:
         return self._routes.get(task)
 
-    def _adapter(self, model: str, effort: str | None, timeout_s: float | None) -> MuseAdapter:
-        key = (model, effort, timeout_s)
+    def _adapter(self, model: str, effort: str | None, timeout_s: float | None,
+                 attempts: int | None = None) -> MuseAdapter:
+        key = (model, effort, timeout_s, attempts)
         adapter = self._adapters.get(key)
         if adapter is None:
             config = None
             if self._base is not None:
                 config = replace(self._base, model=model,
                                  reasoning_effort=effort if effort in MODEL_EFFORTS[model] else None,
-                                 timeout_s=timeout_s or self._base.timeout_s)
+                                 timeout_s=timeout_s or self._base.timeout_s,
+                                 max_attempts=attempts or self._base.max_attempts)
             adapter = self._factory(self._registry, config=config, evidence_log=self.evidence_log,
                                     reasoning_trace=self.reasoning_trace, **self._adapter_kwargs)
             self._adapters[key] = adapter
         return adapter
 
-    def _chain(self, task: str) -> list[tuple[str, str | None, float | None]]:
+    def _chain(self, task: str) -> list[tuple[str, str | None, float | None, int | None]]:
         route = self._routes.get(task)
         if route is None:
             base = self._base
-            return [(base.model if base else "muse-spark-1.3", base.reasoning_effort if base else None, None)]
-        chain = [(route.model, route.effort, route.timeout_s)]
+            return [(base.model if base else SPARK, base.reasoning_effort if base else None, None, None)]
+        chain = [(route.model, route.effort, route.timeout_s, route.max_attempts)]
         for m in route.fallbacks:
             effort = route.effort if route.effort in MODEL_EFFORTS[m] else "low"
-            chain.append((m, effort, route.timeout_s))
+            chain.append((m, effort, route.timeout_s, route.max_attempts))
         return chain
 
     async def run(self, request: MuseRequest) -> MuseResult:
         started = self._clock()
         last: ProviderError | None = None
-        for i, (model, effort, timeout_s) in enumerate(self._chain(request.task)):
+        for i, (model, effort, timeout_s, attempts) in enumerate(self._chain(request.task)):
             attempt_request = request
             if request.deadline_s is not None:
                 remaining = request.deadline_s - (self._clock() - started)
@@ -140,7 +173,7 @@ class MuseRouter:
                     break
                 attempt_request = replace(request, deadline_s=remaining)
             try:
-                result = await self._adapter(model, effort, timeout_s).run(attempt_request)
+                result = await self._adapter(model, effort, timeout_s, attempts).run(attempt_request)
             except ProviderError as exc:
                 last = exc
                 if exc.kind not in FALLBACK_KINDS:
