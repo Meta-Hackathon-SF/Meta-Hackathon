@@ -1,0 +1,16 @@
+{
+  "contractVersion": "2.0.0",
+  "label": "Approved public venue allowlist (fictional demo campus). M7 may only pick from here.",
+  "venues": [
+    {"placeId": "v-cafe", "name": "Campus Cafe", "kind": "cafe", "isPublic": true},
+    {"placeId": "v-dining-north", "name": "North Dining Hall", "kind": "dining_hall", "isPublic": true},
+    {"placeId": "v-library-commons", "name": "Library Commons", "kind": "library", "isPublic": true},
+    {"placeId": "v-quad", "name": "Main Quad", "kind": "park", "isPublic": true},
+    {"placeId": "v-rec", "name": "Rec Center Courts", "kind": "rec_center", "isPublic": true}
+  ],
+  "campusEvents": [
+    {"title": "Open mic night", "placeId": "v-cafe", "start": "2026-11-19T03:00:00Z"},
+    {"title": "Pickup soccer", "placeId": "v-rec", "start": "2026-11-18T23:00:00Z"},
+    {"title": "Board game hour", "placeId": "v-library-commons", "start": "2026-11-20T01:00:00Z"}
+  ]
+}

@@ -118,11 +118,16 @@ class ClarifyService:
         cached = self._store.get(answer_id)
         if cached is not None:
             return cached
-        result = await self._decide(question, answer_text, request_id)
+        result = await self.decide(question, answer_text, request_id)
         self._store.put(answer_id, result)
         return result
 
-    async def _decide(self, question: dict[str, Any], answer_text: str, request_id: str) -> ClarifyResult:
+    async def decide(self, question: dict[str, Any], answer_text: str, request_id: str) -> ClarifyResult:
+        """Stateless M2 decision for a caller that enforces once-per-answer and the
+        M1 flag itself (Will's cycle service). ``question`` needs ``text`` and may
+        carry ``followUpHint``."""
+        if not isinstance(answer_text, str) or not (1 <= len(answer_text) <= ANSWER_MAX_CHARS):
+            raise PlanningError("INVALID_INPUT", "answer text must be 1-400 characters")
         payload = {"question": question["text"], "answer": {"id": self._new_id(), "text": answer_text}}
         try:
             result = await self._muse.run(MuseRequest(
