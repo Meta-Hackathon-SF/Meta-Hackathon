@@ -23,8 +23,6 @@ import PostCard from "../components/feed/PostCard";
 import Composer from "../components/feed/Composer";
 import { currentUser, notifications, people, photo } from "../data/demo";
 import { useApp } from "../state/context";
-import { useChat } from "../features/constellations/daily/space/chatStore";
-import { useConnections } from "../features/constellations/daily/space/connections";
 
 export function FriendsPage() {
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -476,13 +474,7 @@ export function NotificationsPage() {
 }
 
 export function MessagesPage() {
-  const space = useChat();
-  const connections = useConnections();
-  const [selected, setSelected] = useState<Author>(() => {
-    const last = connections[connections.length - 1];
-    return last ? { name: last.name, avatar: photo("avatar-jordan") } : people[0];
-  });
-  const [showSpace, setShowSpace] = useState(true);
+  const [selected, setSelected] = useState<Author>(people[0]);
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<Record<string, string[]>>({});
   return (
@@ -492,24 +484,12 @@ export function MessagesPage() {
     >
       <section className="card messenger-page">
         <div className="conversation-list">
-          {space.status === "kept" && (
-            <button
-              className={showSpace ? "selected" : ""}
-              onClick={() => setShowSpace(true)}
-              aria-label="Chat with your constellation"
-              data-testid="messenger-constellation"
-            >
-              <span className="constellation-avatar" aria-hidden="true">★</span>
-              <span>Your constellation</span>
-            </button>
-          )}
-          {[...connections.map((c): Author => ({ name: c.name, avatar: photo("avatar-jordan") })), ...people.slice(0, 4)].map((person) => (
+          {people.slice(0, 4).map((person) => (
             <button
               key={person.name}
               className={selected.name === person.name ? "selected" : ""}
               onClick={() => {
                 setSelected(person);
-                setShowSpace(false);
               }}
               aria-label={`Chat with ${person.name}`}
             >
@@ -518,25 +498,6 @@ export function MessagesPage() {
             </button>
           ))}
         </div>
-        {space.status === "kept" && showSpace ? (
-          <div className="conversation" data-testid="messenger-constellation-thread">
-            <header>
-              <span className="constellation-avatar" aria-hidden="true">★</span>
-              <span>
-                <strong>Your constellation</strong>
-                <small>Kept by all of you · names stay hidden until you both reveal</small>
-              </span>
-            </header>
-            <div className="conversation-body">
-              {space.msgs.map((m, i) => (
-                <p className={m.mine ? "sent-message" : "received-message"} key={i}>
-                  {m.mine ? "" : `Star ${(m.member ?? 0) + 2}: `}
-                  {m.text}
-                </p>
-              ))}
-            </div>
-          </div>
-        ) : (
         <div className="conversation">
           <header>
             <Avatar person={selected} size={36} online />
@@ -590,7 +551,6 @@ export function MessagesPage() {
             </button>
           </form>
         </div>
-        )}
       </section>
     </PageFrame>
   );

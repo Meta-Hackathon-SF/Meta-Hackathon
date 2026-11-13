@@ -1,16 +1,13 @@
 /* Dark Space screens: the animated sky (daily / week / forming / main), the anonymous chat and mutual reveal. */
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { ArrowUp, ChevronLeft, Minimize2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowUp, ChevronLeft } from "lucide-react";
+import type { MutualReveal } from "../../../../../../contracts/protocol";
 import { DAY_LONG, DAY_SHORT, dayHex, type Screen } from "./model";
 import { DemoNote, StarField } from "./parts";
-import { CONTACT_PATTERN } from "./preview";
 import "./reveal.css";
-import { ensureConnection, sendFriendRequest, useConnections } from "./connections";
 import SkyCanvas from "./SkyCanvas";
 import Telescope from "./Telescope";
-import { chat, useChat } from "./chatStore";
-import MessengerSend from "./MessengerSend";
+import { useRoom } from "./useRoom";
 
 type CanvasMode = "daily" | "sky" | "forming" | "main";
 
@@ -205,81 +202,84 @@ export function CanvasScreen(p: CanvasProps) {
 
 // ---------------------------------------------------------------- chat
 
-const MEMBER_HEX = ["#F5B841", "#2CC7C0", "#F07196", "#5BD27A", "#8E8CF5"];
+const keyOf = () => `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+const REPORT_REASONS = [
+  { label: "Harassment", value: "harassment" },
+  { label: "Sharing personal info", value: "personal_info" },
+  { label: "Something else", value: "other" },
+] as const;
 
+/** Anonymous 24-hour room. Everything here comes from the server room via LiveChatSession. */
 export function ChatScreen({
   onBack,
-  memberIndices = [],
-  expiresAt,
-  demo,
+  onRevealed,
+  cycleId,
+  viewerPlayerId,
 }: {
   onBack: () => void;
-  onRevealed: () => void;
-  /** Room-local star indices of the other members, from the main constellation. */
-  memberIndices?: number[];
-  expiresAt?: string;
-  demo?: boolean;
+  onRevealed: (reveal: MutualReveal) => void;
+  cycleId: string;
+  viewerPlayerId: string;
 }) {
-  const members = memberIndices.map((idx, i) => ({ name: `Star ${idx + 1}`, hex: MEMBER_HEX[i % MEMBER_HEX.length] }));
-  const hoursLeft = expiresAt ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 3_600_000)) : null;
-  const store = useChat();
-  const msgs = store.msgs;
-  const keep = store.keep;
+  const { snapshot, actions, live } = useRoom(cycleId, viewerPlayerId, true);
+  const { room, messages } = snapshot;
   const [draft, setDraft] = useState("");
-  const [rejected, setRejected] = useState(false);
-  const [sheet, setSheet] = useState(-1);
+  const [note, setNote] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
-  const [asked, setAsked] = useState<Record<number, boolean>>({});
-  const [reported, setReported] = useState<Record<number, boolean>>({});
-  const [blocked, setBlocked] = useState<Record<number, boolean>>({});
-  const kept = store.status === "kept";
-  useEffect(() => {
-    chat.start();
-    chat.minimize(false);
-  }, []);
-  // Everyone keeping it plays the send-to-Messenger move once, on the transition (not on re-entry).
-  const [sending, setSending] = useState(false);
-  const wasKept = useRef(kept);
-  useEffect(() => {
-    if (kept && !wasKept.current) setSending(true);
-    wasKept.current = kept;
-  }, [kept]);
-
-  const send = () => {
+  const [asked, setAsked] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState(false);
+  const others = room?.members.filter((m) => !m.isSelf) ?? [];
+  const self = room?.members.find((m) => m.isSelf);
+  const hoursLeft = room ? Math.max(0, Math.ceil((new Date(room.expiresAt).getTime() - Date.now()) / 3_600_000)) : null;
+  const expired = room?.status === "expired";
+  const member = sheet ? others.find((m) => m.handle === sheet) ?? null : null;
+  const reveal = snapshot.reveals[0];
+  const run = async (fn: (ctx: { key: string; signal: AbortSignal }) => Promise<unknown>, fail: string) => {
+    setBusy(true);
+    setNote(null);
+    try {
+      await fn({ key: keyOf(), signal: new AbortController().signal });
+      return true;
+    } catch (error) {
+      const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
+      setNote(code === "MESSAGE_REJECTED" ? "This message couldn't be sent." : code === "ROOM_EXPIRED" ? "This room has closed." : fail);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+  const send = async () => {
     const t = draft.trim();
-    if (!t) return;
-    if (CONTACT_PATTERN.test(t)) return setRejected(true);
-    chat.send(t);
-    setDraft("");
-    setRejected(false);
+    if (!t || !actions || busy) return;
+    if (await run((ctx) => actions.send(t, ctx), "The message didn't send. Try again.")) setDraft("");
   };
-  const vote = (k: string) => chat.vote(k, true);
-  const toggleKeep = () => {
-    if (keep.me) return chat.vote("me", false);
-    vote("me");
-  };
-  const member = sheet >= 0 ? (members[sheet] ?? null) : null;
-  const hoursShown = hoursLeft ?? store.hoursLeft;
-  const sendOverlay = sending ? <MessengerSend onDone={() => setSending(false)} /> : null;
-  if (store.status === "expired")
+
+  if (!live || !room || expired)
     return (
-      <div className="spc-screen spc-night" data-testid="spc-chat-expired">
+      <div className="spc-screen spc-night" data-testid="spc-chat-unavailable">
         <StarField dense />
         <div className="spc-expired">
-          <h2>This room has closed</h2>
-          <p className="spc-sub">Not everyone kept it, so it's gone. Nothing was saved.</p>
-          <button type="button" className="spc-btn spc-btn-glass spc-btn-lg" onClick={() => { chat.reset(); onBack(); }}>
+          <h2>{expired ? "This room has closed" : room ? "Chat" : "Your room isn't open"}</h2>
+          <p className="spc-sub">
+            {expired
+              ? "The 24 hours are up. Nothing was saved."
+              : !live
+                ? "Chat needs the live server."
+                : (snapshot.notice ?? (snapshot.status === "unavailable" ? "The chat service is unavailable." : "Connecting to your room."))}
+          </p>
+          <button type="button" className="spc-btn spc-btn-glass spc-btn-lg" onClick={onBack}>
             Back to Space
           </button>
         </div>
       </div>
     );
-  const shown = msgs.filter((m) => m.mine || !(blocked[m.member!] || reported[m.member!]));
-  const memberOf = (i?: number) => (i !== undefined ? members[i] : undefined) ?? { name: "Star", hex: "#9aa4b2" };
+
+  const visible = messages.filter((m) => m.moderation === "visible" && m.kind !== "muse_nudge");
+  const hex = (handle: string) => room.members.find((m) => m.handle === handle)?.starColor ?? "#9aa4b2";
 
   return (
     <div className="spc-screen spc-night" data-testid="spc-chat">
-      {sendOverlay}
       <StarField dense />
       <div className="spc-chat-head">
         <button type="button" className="spc-round is-glass" onClick={onBack} aria-label="Back">
@@ -289,118 +289,92 @@ export function ChatScreen({
           <span className="spc-star-btn" aria-label="You">
             <i style={{ background: "#fff", boxShadow: "0 0 8px #fff" }} />
           </span>
-          {members.map((m, i) => (
+          {others.map((m) => (
             <button
               type="button"
-              key={m.name}
+              key={m.handle}
               className="spc-star-btn"
-              style={{ opacity: blocked[i] ? 0.3 : 1 }}
               onClick={() => {
-                setSheet(i);
+                setSheet(m.handle);
                 setReporting(false);
               }}
-              aria-label={m.name}
+              aria-label={m.handle}
             >
-              <i style={{ background: m.hex, boxShadow: `0 0 8px ${m.hex}` }} />
+              <i style={{ background: m.starColor, boxShadow: `0 0 8px ${m.starColor}` }} />
             </button>
           ))}
         </div>
-        {demo && <DemoNote dark />}
-        <span className="spc-chat-left">{kept ? "Kept" : `${hoursShown} h left`}</span>
-        <button type="button" className="spc-round is-glass spc-chat-min" onClick={() => { chat.minimize(true); onBack(); }} aria-label="Minimise chat">
-          <Minimize2 size={18} />
-        </button>
+        <span className="spc-chat-left">{hoursLeft} h left</span>
       </div>
       <div className="spc-keep">
-        <span className="spc-grow">{kept ? "Everyone kept it. It moved to Messenger." : `Gone in ${hoursShown} h unless everyone keeps it`}</span>
-        <span className="spc-keep-dots" aria-hidden="true">
-          {["me", ...members.map((_, i) => String(i))].map((k) => (
-            <i key={k} className={keep[k] ? "is-on" : ""} />
-          ))}
-        </span>
-        {!kept && (
-          <button type="button" className="spc-keep-btn" onClick={() => chat.expireNow()} data-testid="spc-chat-expire">
-            Demo: run out 24 h
-          </button>
-        )}
-        <button type="button" className={`spc-keep-btn${keep.me ? " is-kept" : ""}`} onClick={toggleKeep} aria-pressed={Boolean(keep.me)}>
-          {keep.me ? "Kept" : "Keep"}
-        </button>
+        <span className="spc-grow">Gone in {hoursLeft} h. Names stay hidden unless you both reveal.</span>
       </div>
-      {kept && (
+      {reveal && (
         <div className="spc-keep-note">
-          <Link to="/messages" data-testid="spc-open-messenger">Open in Messenger</Link>
+          <button type="button" className="spc-keep-btn is-kept" onClick={() => onRevealed(reveal)} data-testid="spc-open-reveal">
+            You both chose to reveal. See who
+          </button>
         </div>
       )}
       <div className="spc-msgs" aria-live="polite">
-        <div className="spc-msgs-time">Sunday 10:00 AM</div>
-        {shown.map((m, i) =>
-          m.mine ? (
-            <div key={i} className="spc-msg is-mine">
+        {visible.map((m) =>
+          m.handle === self?.handle ? (
+            <div key={m.messageId} className="spc-msg is-mine">
               {m.text}
             </div>
           ) : (
-            <div key={i} className="spc-msg-row">
-              <span className="spc-msg-star" style={{ background: `radial-gradient(circle, ${memberOf(m.member).hex} 0 20%, transparent 62%)` }} />
+            <div key={m.messageId} className="spc-msg-row">
+              <span className="spc-msg-star" style={{ background: `radial-gradient(circle, ${hex(m.handle)} 0 20%, transparent 62%)` }} />
               <div>
-                <div className="spc-msg-name" style={{ color: memberOf(m.member).hex }}>
-                  {memberOf(m.member).name}
+                <div className="spc-msg-name" style={{ color: hex(m.handle) }}>
+                  {m.kind === "system" ? "Facebook Space" : m.handle}
                 </div>
                 <div className="spc-msg">{m.text}</div>
               </div>
             </div>
           ),
         )}
-        {shown.length === 0 && <div className="spc-msgs-time">No messages yet. Say hi.</div>}
+        {visible.length === 0 && <div className="spc-msgs-time">No messages yet. Say hi.</div>}
       </div>
       <div className="spc-chat-foot">
-        {rejected && (
+        {(note ?? snapshot.notice) && (
           <div className="spc-rejected" role="alert">
-            This message couldn't be sent. Contact details aren't allowed.
+            {note ?? snapshot.notice}
           </div>
         )}
         <form
           className="spc-row"
           onSubmit={(e) => {
             e.preventDefault();
-            send();
+            void send();
           }}
         >
-          <input
-            className="spc-chat-input"
-            aria-label="Message"
-            placeholder="Message"
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              setRejected(false);
-            }}
-          />
-          <button type="submit" className="spc-send" aria-label="Send">
+          <input className="spc-chat-input" aria-label="Message" placeholder="Message" value={draft} maxLength={500} onChange={(e) => setDraft(e.target.value)} />
+          <button type="submit" className="spc-send" aria-label="Send" disabled={busy || !draft.trim()}>
             <ArrowUp size={18} />
           </button>
         </form>
       </div>
-      {member && (
+      {member && actions && (
         <>
-          <div className="spc-sheet-scrim" onClick={() => setSheet(-1)} />
-          <div className="spc-sheet" role="dialog" aria-label={member.name}>
+          <div className="spc-sheet-scrim" onClick={() => setSheet(null)} />
+          <div className="spc-sheet" role="dialog" aria-label={member.handle}>
             <span className="spc-grabber" aria-hidden="true" />
             <div className="spc-row">
-              <span className="spc-sheet-star" style={{ background: `radial-gradient(circle, ${member.hex} 0 22%, transparent 60%)` }} />
-              <div className="spc-sheet-name">{member.name}</div>
+              <span className="spc-sheet-star" style={{ background: `radial-gradient(circle, ${member.starColor} 0 22%, transparent 60%)` }} />
+              <div className="spc-sheet-name">{member.handle}</div>
             </div>
-            {!reporting && !reported[sheet] && (
+            {!reporting && (
               <>
                 <button
                   type="button"
-                  className={`spc-btn spc-btn-lg ${asked[sheet] ? "spc-btn-glass" : "spc-btn-primary"}`}
-                  onClick={() => {
-                    if (asked[sheet]) return;
-                    setAsked({ ...asked, [sheet]: true });
+                  className={`spc-btn spc-btn-lg ${asked[member.handle] ? "spc-btn-glass" : "spc-btn-primary"}`}
+                  disabled={busy || asked[member.handle]}
+                  onClick={async () => {
+                    if (await run((ctx) => actions.reveal(member.handle, ctx), "Couldn't send that. Try again.")) setAsked({ ...asked, [member.handle]: true });
                   }}
                 >
-                  {asked[sheet] ? "Asked" : "Ask to reveal"}
+                  {asked[member.handle] ? "Asked" : "Ask to reveal"}
                 </button>
                 <p className="spc-sheet-note">Names only show if you both ask.</p>
                 <div className="spc-row">
@@ -410,12 +384,12 @@ export function ChatScreen({
                   <button
                     type="button"
                     className="spc-btn spc-btn-glass spc-grow is-danger"
-                    onClick={() => {
-                      setBlocked({ ...blocked, [sheet]: !blocked[sheet] });
-                      setSheet(-1);
+                    disabled={busy}
+                    onClick={async () => {
+                      if (await run((ctx) => actions.block(member.handle, ctx), "Couldn't block. Try again.")) setSheet(null);
                     }}
                   >
-                    {blocked[sheet] ? "Unblock" : "Block"}
+                    Block
                   </button>
                 </div>
               </>
@@ -423,22 +397,26 @@ export function ChatScreen({
             {reporting && (
               <>
                 <p className="spc-sheet-q">What's going on?</p>
-                {["Harassment", "Sharing personal info", "Something else"].map((label) => (
+                {REPORT_REASONS.map((r) => (
                   <button
                     type="button"
-                    key={label}
+                    key={r.value}
                     className="spc-reason"
-                    onClick={() => {
-                      setReporting(false);
-                      setReported({ ...reported, [sheet]: true });
+                    disabled={busy}
+                    onClick={async () => {
+                      const target = [...messages].reverse().find((m) => m.handle === member.handle);
+                      if (!target) return setNote("Nothing from them to report yet.");
+                      if (await run((ctx) => actions.report(target.messageId, member.handle, r.value, ctx), "Couldn't send the report. Try again.")) {
+                        setReporting(false);
+                        setSheet(null);
+                      }
                     }}
                   >
-                    {label}
+                    {r.label}
                   </button>
                 ))}
               </>
             )}
-            {!reporting && reported[sheet] && <p className="spc-sheet-q">Reported. Their messages are hidden for you. They won't be told.</p>}
           </div>
         </>
       )}
@@ -446,11 +424,9 @@ export function ChatScreen({
   );
 }
 
-const PERSON = { id: "star-3", name: "Jordan Lee" };
-
-export function RevealedScreen({ onBack }: { onBack: () => void }) {
-  const navigate = useNavigate();
-  const requested = useConnections().some((c) => c.id === PERSON.id && c.requested);
+/** Names come only from a server `reveal.mutual` event for this pair. */
+export function RevealedScreen({ reveal, viewerPlayerId, onBack }: { reveal: MutualReveal; viewerPlayerId: string; onBack: () => void }) {
+  const other = reveal.players.find((p) => p.playerId !== viewerPlayerId);
   return (
     <div className="spc-screen spc-night spc-revealed">
       <StarField dense />
@@ -465,33 +441,12 @@ export function RevealedScreen({ onBack }: { onBack: () => void }) {
         <span />
         <i className="is-them" />
       </div>
-      <p className="spc-reveal-sub">You and Star 3 both chose to reveal</p>
-      <div className="spc-reveal-avatar" aria-hidden="true" />
-      <h2 className="spc-reveal-name">{PERSON.name}</h2>
-      <p className="spc-reveal-note">Only you two can see this. Everyone else still sees Star 3.</p>
+      <p className="spc-reveal-sub">You both chose to reveal</p>
+      <div className="spc-reveal-avatar" aria-hidden="true" style={other?.avatarColor ? { background: other.avatarColor } : undefined} />
+      <h2 className="spc-reveal-name">{other?.displayName ?? "Your match"}</h2>
+      <p className="spc-reveal-note">Only you two can see this.</p>
       <div className="spc-flex" />
       <div className="spc-col spc-reveal-actions">
-        <div className="spc-reveal-pair">
-          <button
-            type="button"
-            className="spc-btn spc-btn-primary spc-btn-lg"
-            disabled={requested}
-            onClick={() => sendFriendRequest(PERSON.id, PERSON.name)}
-          >
-            {requested ? "Request sent" : "Add friend"}
-          </button>
-          <button
-            type="button"
-            className="spc-btn spc-btn-primary spc-btn-lg"
-            onClick={() => {
-              ensureConnection(PERSON.id, PERSON.name);
-              navigate("/messages");
-            }}
-          >
-            Message on Messenger
-          </button>
-          <p className="spc-reveal-sim">Simulated Facebook</p>
-        </div>
         <button type="button" className="spc-btn spc-btn-glass spc-btn-lg" onClick={onBack}>
           Back to chat
         </button>

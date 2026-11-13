@@ -228,14 +228,8 @@ test("weekend: lock closes answers, week sky and formation are labeled previews,
   await expect(page.getByTestId("spc-weekend-sun")).toContainText("Your constellation is ready");
   await page.getByRole("button", { name: "View constellation" }).click();
   await page.getByRole("button", { name: "Open chat" }).click();
-  const chat = page.getByTestId("spc-chat");
-  await expect(chat.getByText("Preview", { exact: true })).toBeVisible();
-  await chat.getByRole("textbox", { name: "Message" }).fill("text me 765 555 0142");
-  await chat.getByRole("button", { name: "Send", exact: true }).click();
-  await expect(chat.getByRole("alert")).toContainText("couldn't be sent");
-  await expect(chat.getByText("765 555 0142")).toHaveCount(0); // never posted, stays in the box only
-  await chat.getByRole("button", { name: "Star 3" }).click();
-  await expect(page.getByRole("dialog", { name: "Star 3" }).getByText("Names only show if you both ask.")).toBeVisible();
+  // Fixture mode has no live room: the chat says so instead of faking one.
+  await expect(page.getByTestId("spc-chat-unavailable")).toContainText("Chat needs the live server");
 });
 
 test("privacy: turning matching off shows it on Sunday; delete my data returns to Join", async ({ page }) => {
@@ -451,8 +445,7 @@ async function toSundayChat(page: Page) {
   await openSpace(page);
   await answer(page, 1, LONG);
   await advance(page, 7); // Tue..Fri, lock, forming, revealed
-  await page.goto(`${DAILY}?s=main`);
-  await page.getByRole("button", { name: "Open chat" }).click();
+  await page.goto(`${DAILY}?s=chat`);
   return page.getByTestId("spc-chat");
 }
 
@@ -470,32 +463,9 @@ test("v3 sky: entering the sky plays the telescope zoom; Sunday draws the Meta l
   await expect(page.getByTestId("spc-canvas-main")).toBeVisible();
 });
 
-test("v3 chat: minimise to the dock, reopen, and a room not everyone kept disappears", async ({ page }) => {
+test("v3 chat: without the live server the room is honestly unavailable", async ({ page }) => {
   const chat = await toSundayChat(page);
-  await chat.getByRole("button", { name: "Minimise chat" }).click();
-  const dock = page.getByTestId("spc-chat-dock");
-  await expect(dock).toBeVisible();
-  await page.evaluate(() => { window.history.pushState({}, "", "/messages"); window.dispatchEvent(new PopStateEvent("popstate")); });
-  await expect(dock).toBeVisible(); // follows the player around the shell
-  await expect(page.getByTestId("messenger-constellation")).toHaveCount(0); // not kept: not in Messenger
-  await dock.click();
-  await expect(page.getByTestId("spc-chat")).toBeVisible();
-  await page.getByTestId("spc-chat-expire").click(); // demo: run out the 24 h without everyone keeping
-  await expect(page.getByTestId("spc-chat-expired")).toContainText("This room has closed");
-  await page.evaluate(() => { window.history.pushState({}, "", "/messages"); window.dispatchEvent(new PopStateEvent("popstate")); });
-  await expect(page.getByTestId("messenger-constellation")).toHaveCount(0);
+  await expect(chat).toHaveCount(0);
+  await expect(page.getByTestId("spc-chat-unavailable")).toContainText("Chat needs the live server");
   await expect(page.getByTestId("spc-chat-dock")).toHaveCount(0);
-});
-
-// No live source for other members' keep votes yet; re-enable when the chat route delivers them.
-test.fixme("v3 chat: if everyone keeps it, it moves into Messenger", async ({ page }) => {
-  const chat = await toSundayChat(page);
-  await chat.getByRole("button", { name: "Keep", exact: true }).click(); // the others follow
-  await expect(page.getByTestId("spc-send-messenger")).toBeVisible({ timeout: 6000 }); // fold + fly animation
-  await expect(page.getByTestId("spc-send-messenger")).toHaveCount(0, { timeout: 6000 });
-  await expect(chat.getByText("Everyone kept it. It moved to Messenger.")).toBeVisible();
-  await chat.getByTestId("spc-open-messenger").click();
-  await expect(page).toHaveURL(/\/messages/);
-  await expect(page.getByTestId("messenger-constellation-thread")).toContainText("Your constellation");
-  await expect(page.getByTestId("messenger-constellation-thread")).toContainText("same. tuesday's question got me");
 });
