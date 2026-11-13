@@ -176,7 +176,7 @@ const list = <T>(v: unknown, parse: (x: unknown) => T, max = 1000): T[] =>
   Array.isArray(v) && v.length <= max ? v.map(parse) : bad();
 const day = (v: unknown): CycleDay => int(v, 1, 5) as CycleDay;
 const isoTime = (v: unknown): string =>
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(str(v)) ? (v as string) : bad();
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]00:00)$/.test(str(v)) ? (v as string) : bad();
 const STAR_MAX = 1_000_000;
 
 const MUSE_CALL_TYPES = ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10"] as const;
@@ -288,8 +288,8 @@ export function parseMain(v: unknown): MainConstellationResponse {
   }
   if (reason !== null) bad();
   const m = rec(o.main);
-  const roomIndices = list(m.roomIndices, (i) => int(i, 0, 99), 5);
-  const myRoomIndex = int(m.myRoomIndex, 0, 99);
+  const roomIndices = list(m.roomIndices, (i) => int(i, 0, 499), 500); // D016: no maximum size
+  const myRoomIndex = int(m.myRoomIndex, 0, 499);
   if (roomIndices.length < 3 || !roomIndices.includes(myRoomIndex)) bad();
   const brightnessRaw = rec(m.brightness);
   const brightness: Record<number, Brightness> = {};
@@ -306,8 +306,8 @@ export function parseMain(v: unknown): MainConstellationResponse {
       roomIndices,
       anchors: list(m.anchors, (x) => {
         const a = rec(x);
-        return { index: int(a.index, 0, 99), t: unit(a.t) };
-      }, 5),
+        return { index: int(a.index, 0, 499), t: unit(a.t) };
+      }, 500),
       brightness,
       sharedMeaning: m.sharedMeaning === null || m.sharedMeaning === undefined ? null : str(m.sharedMeaning),
       revealedAt: isoTime(m.revealedAt),
