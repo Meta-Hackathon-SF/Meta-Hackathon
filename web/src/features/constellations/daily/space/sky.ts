@@ -77,6 +77,7 @@ export class SkyRenderer {
   private cy = 0;
   private me!: Pt;
   private close: Pt[] = [];
+  private closeBase: { x: number; y: number }[] = [];
   private days: Record<number, Con[]> = {};
   private second: { d: number; pts: Pt[]; bend: number }[] = [];
   private emap: Record<string, { a: Pt; b: Pt; bend: number; days: number[] }> = {};
@@ -154,6 +155,7 @@ export class SkyRenderer {
     const sc = Math.min(1.25, Math.max(0.8, Math.min(W / 390, H / 700)));
     this.me = { x: cx, y: cy, id: "me" };
     this.close = ([[-74, -104], [92, -66], [70, 96], [-100, 60]] as const).map(([dx, dy], k) => ({ x: cx + dx * sc, y: cy + dy * sc, id: "c" + k, k, ...tw(0.2, 0.45), a: 1 }));
+    this.closeBase = this.close.map((c) => ({ x: c.x, y: c.y }));
     const ok = (x: number, y: number) => x > 14 && x < W - 14 && y > 96 && y < H - 130;
     const shuffle = <T,>(a: T[]) => {
       for (let i = a.length - 1; i > 0; i--) {
@@ -538,6 +540,13 @@ export class SkyRenderer {
         this.drawBg(ctx, 1e6, ts, false, 0.8);
         this.drawAmbient(ctx, ts, 0.8);
         for (let d = 1; d <= 5; d++) if (ans.has(d)) this.days[d].forEach((cn) => this.drawCon(ctx, cn, d, 1, 0.16, ts, 0.3));
+        // Matches gather around "me": the close stars drift inward as the search settles.
+        const pull = 0.4 * easeOut(fp);
+        this.close.forEach((c, k) => {
+          const base = this.closeBase[k];
+          c.x = this.cx + (base.x - this.cx) * (1 - pull);
+          c.y = this.cy + (base.y - this.cy) * (1 - pull);
+        });
         const N = this.attempts.length, w = 3 / N;
         // Each star's energy follows the search: a probe flashes it, a path that survives brightens and
         // grows it, a dead end drains it again. Capped well below the viewer's own star.
