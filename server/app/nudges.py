@@ -94,7 +94,7 @@ class GuardedNudges:
         ):
             raise ServiceError("PROVIDER_UNAVAILABLE")
         members = set(room.members)
-        if not members <= lease.player_ids or not 3 <= len(members) <= 5:
+        if not members <= lease.player_ids or len(members) < 3:  # D016: no maximum size
             raise ServiceError("NOT_FOUND")
         texts = [
             a["text"]
