@@ -1,10 +1,10 @@
 /**
  * POST /api/muse-chat: one short Muse line for the Sunday Messenger group.
  *
- * Runs as a Vercel Function on the deployed demo (key from the MUSE_API_KEY
- * environment variable) and inside the Vite dev server (key from the gitignored
- * server/providers/muse.env, see museChatPlugin.ts). Its only import is the
- * demo catalog JSON, shared with the browser.
+ * Runs as a Vercel Function on the deployed demo (repo-root api/, since the
+ * Vercel project builds from the repo root; key from the MUSE_API_KEY env var)
+ * and inside the Vite dev server (web/museChatPlugin.ts; key from the gitignored
+ * server/providers/muse.env). Both read the same web/src/data/catalog.json.
  *
  * The browser sends only a task kind and the last few chat lines, with members
  * already renamed to "Member 1..." and "You". Facts come from the catalog, never
@@ -13,28 +13,47 @@
  * (museHelp.ts), which swaps in a labeled catalog reply if anything is off.
  */
 
-import catalog from "../src/data/catalog.json" with { type: "json" };
+import fs from "node:fs";
+import path from "node:path";
 
 type Kind = "hangout" | "supplies" | "barter" | "create";
 
-const VENUE_IDS = new Set(catalog.venues.map((v) => v.placeId));
-const ITEM_IDS = new Set(catalog.items.map((i) => i.itemId));
-const EVENT_IDS = new Set(catalog.events.map((e) => e.eventId));
+/** The parts of web/src/data/catalog.json this route reads. */
+export interface Catalog {
+  venues: { placeId: string; name: string }[];
+  items: { itemId: string; title: string; price: string; description: string }[];
+  events: { eventId: string; title: string; placeId: string; when: string; description: string }[];
+}
+
 const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
-/** Only the fields Muse needs; ids are the only thing it may point at. */
-const FACTS = {
-  events: catalog.events.map((e) => ({
-    eventId: e.eventId,
-    title: e.title,
-    venue: catalog.venues.find((v) => v.placeId === e.placeId)?.name,
-    when: e.when,
-    about: e.description,
-  })),
-  items: catalog.items.map((i) => ({ itemId: i.itemId, title: i.title, price: i.price, about: i.description })),
-  venues: catalog.venues,
-  vendor: { name: "Campus Cafe", ask: "a table for the group", offer: "bring the coffee set from Marketplace and split the check" },
-};
+/** Ids Muse may point at, and the only facts it sees. */
+function prepare(catalog: Catalog) {
+  return {
+    venueIds: new Set(catalog.venues.map((v) => v.placeId)),
+    itemIds: new Set(catalog.items.map((i) => i.itemId)),
+    eventIds: new Set(catalog.events.map((e) => e.eventId)),
+    facts: {
+      events: catalog.events.map((e) => ({
+        eventId: e.eventId,
+        title: e.title,
+        venue: catalog.venues.find((v) => v.placeId === e.placeId)?.name,
+        when: e.when,
+        about: e.description,
+      })),
+      items: catalog.items.map((i) => ({ itemId: i.itemId, title: i.title, price: i.price, about: i.description })),
+      venues: catalog.venues,
+      vendor: { name: "Campus Cafe", ask: "a table for the group", offer: "bring the coffee set from Marketplace and split the check" },
+    },
+  };
+}
+
+let cached: Catalog | null = null;
+/** Vercel: the function runs from the repo root and vercel.json ships the JSON with it (includeFiles). */
+function loadCatalog(): Catalog {
+  cached ??= JSON.parse(fs.readFileSync(path.join(process.cwd(), "web/src/data/catalog.json"), "utf8")) as Catalog;
+  return cached;
+}
 
 const INSTRUCTIONS = [
   "You help a small group chat plan things. Reply to the latest note only, in one or two short sentences, no emoji. Earlier notes are context. Do not quote anyone.",
@@ -77,13 +96,13 @@ function ids(value: unknown, allowed: Set<string>): string[] {
 }
 
 /** Server-side check; the browser checks again before showing a Create button. */
-function cleanDraft(value: unknown): MuseDraft | null {
+function cleanDraft(value: unknown, venueIds: Set<string>): MuseDraft | null {
   if (!value || typeof value !== "object") return null;
   const d = value as Record<string, unknown>;
   const str = (k: string, max: number) => (typeof d[k] === "string" ? (d[k] as string).trim().slice(0, max) : "");
   const draft = { title: str("title", 60), placeId: str("placeId", 40), day: str("day", 12), time: str("time", 5), description: str("description", 160) };
   const hour = /^([01]\d|2[0-3]):[0-5]\d$/.test(draft.time) ? Number(draft.time.slice(0, 2)) : -1;
-  if (draft.title.length < 3 || !VENUE_IDS.has(draft.placeId) || !WEEKDAYS.includes(draft.day.toLowerCase()) || hour < 8 || hour > 22) return null;
+  if (draft.title.length < 3 || !venueIds.has(draft.placeId) || !WEEKDAYS.includes(draft.day.toLowerCase()) || hour < 8 || hour > 22) return null;
   return draft;
 }
 
@@ -121,7 +140,8 @@ function cleanContext(value: unknown): { sender: string; text: string }[] {
 }
 
 /** Validates the request, calls Muse once, and returns a JSON response shape. Never echoes the request. */
-export async function handleMuseChat(body: unknown, config: MuseConfig | null, client = "local"): Promise<MuseResult> {
+export async function handleMuseChat(body: unknown, config: MuseConfig | null, catalog: Catalog, client = "local"): Promise<MuseResult> {
+  const { venueIds, itemIds, eventIds, facts } = prepare(catalog);
   const record = body && typeof body === "object" ? (body as { kind?: unknown; context?: unknown }) : {};
   const kind = record.kind;
   const context = cleanContext(record.context);
@@ -167,7 +187,7 @@ export async function handleMuseChat(body: unknown, config: MuseConfig | null, c
         },
         messages: [
           { role: "developer", content: INSTRUCTIONS },
-          { role: "user", content: JSON.stringify({ task: kind, context, catalog: FACTS }) },
+          { role: "user", content: JSON.stringify({ task: kind, context, catalog: facts }) },
         ],
       }),
     });
@@ -183,9 +203,9 @@ export async function handleMuseChat(body: unknown, config: MuseConfig | null, c
       body: {
         text: parsed.text.trim().slice(0, 400),
         source: "live",
-        itemIds: kind === "supplies" || kind === "barter" ? ids(parsed.itemIds, ITEM_IDS) : [],
-        eventIds: kind === "hangout" ? ids(parsed.eventIds, EVENT_IDS) : [],
-        draft: kind === "create" ? cleanDraft(parsed.draft) : null,
+        itemIds: kind === "supplies" || kind === "barter" ? ids(parsed.itemIds, itemIds) : [],
+        eventIds: kind === "hangout" ? ids(parsed.eventIds, eventIds) : [],
+        draft: kind === "create" ? cleanDraft(parsed.draft, venueIds) : null,
       },
     };
   } catch (error) {
@@ -207,6 +227,6 @@ export async function POST(request: Request): Promise<Response> {
     body = {};
   }
   const client = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const result = await handleMuseChat(body, config, client);
+  const result = await handleMuseChat(body, config, loadCatalog(), client);
   return Response.json(result.body, { status: result.status });
 }

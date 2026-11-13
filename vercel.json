@@ -10,11 +10,15 @@
       "destination": "https://constellations-api-production.up.railway.app/api/v1/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ],
   "functions": {
+    "api/muse-chat.ts": {
+      "includeFiles": "web/src/data/catalog.json",
+      "maxDuration": 30
+    },
     "api/muse/**/*.js": {
       "maxDuration": 60
     }
