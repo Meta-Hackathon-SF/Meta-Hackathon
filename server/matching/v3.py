@@ -25,6 +25,7 @@ from typing import Any, Protocol
 
 from server.matching import prompts
 from server.matching.baseline import tokens
+from server.matching.adaptive import adaptive_weights
 from server.matching.closeness import bands_for_viewer, pair_closeness
 from server.matching.daily import (
     SECOND_DEGREE_MIN_ELIGIBLE,
@@ -141,7 +142,7 @@ class FormationV3:
         self, cycle: str, day: int, snap: FormationSnapshot, tags, final: bool
     ) -> DayRecord:
         groups, _unplaced = daily_groups(snap.answers, _ref_blocks(snap), tags)
-        close = pair_closeness(snap, snap.refs)
+        close = pair_closeness(snap, snap.refs, adaptive_weights(snap))
         out = []
         for g in groups:
             ids = tuple(sorted(snap.id_map[r] for r in g))
