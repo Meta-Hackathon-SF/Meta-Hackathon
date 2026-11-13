@@ -236,6 +236,38 @@ def _has_headcount(flat: str, bucket: str | None) -> bool:
     return False
 
 
+# --------------------------------------------------- redaction before Muse
+# D014 sign-off (Patrik): a player's own post/comment text may reach Muse M9
+# only after code removes details about OTHER people and contact routes.
+MODEL_TEXT_MAX_CHARS = 2000
+_REDACTIONS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}", re.I), "[email]"),
+    (re.compile(r"\b[a-z0-9._%+-]+\s*[\[(]?\s*at\s*[\])]?\s*[a-z0-9-]+\s*[\[(]?\s*dot\s*[\])]?\s*"
+                r"(?:com|edu|net|org|io)\b", re.I), "[email]"),
+    (re.compile(r"\b(?:https?://|www\.)\S+", re.I), "[link]"),
+    (re.compile(r"\b[a-z0-9-]+\.(?:com|net|org|io|me|gg|ly|co|app|link|xyz|edu)\b(?:/\S*)?", re.I), "[link]"),
+    (re.compile(r"\b\d{3}[-\s]\d{2}[-\s]\d{4}\b"), "[number]"),
+    (re.compile(r"\b(?:\d[ -]?){13,19}\b"), "[number]"),
+    (re.compile(r"(?<!\d)(?:\+?\d{1,2}[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}(?!\d)"), "[phone]"),
+    (re.compile(r"(?<![\d:])\d{3}[\s.-]\d{4}(?![\d])"), "[phone]"),
+    (re.compile(r"\b\d{1,5}\s+(?:[a-z0-9]+\s+){0,3}(?:street|st|avenue|ave|road|rd|boulevard|blvd|"
+                r"lane|ln|drive|dr|court|ct|way|place|pl|terrace|parkway|pkwy)\b", re.I), "[address]"),
+    (re.compile(r"(?<![a-z0-9])@[a-z0-9_.]{2,}", re.I), "@user"),
+]
+
+
+def redact_for_model(text: str) -> str:
+    """Replace emails, links, phone and id-like numbers, street addresses and
+    @mentions with fixed placeholders, then cap the length. Used on every
+    player text before it is sent to Muse for classification (M9)."""
+    if not isinstance(text, str):
+        raise TypeError("text must be a string")
+    out = text
+    for pattern, placeholder in _REDACTIONS:
+        out = pattern.sub(placeholder, out)
+    return out[:MODEL_TEXT_MAX_CHARS]
+
+
 class OutputGuard:
     """Stateless; one instance can be shared across owners and threads."""
 
