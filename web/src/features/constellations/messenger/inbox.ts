@@ -1,11 +1,15 @@
 /**
  * Demo Messenger inbox for the Facebook shell. Session-only, separate from the
- * feed's localStorage. Direct threads only: a Space room never moves here,
- * because the server has no keep-room action yet.
+ * feed's localStorage. A Sunday constellation lands here once every member
+ * agrees to keep the temporary chat.
  */
 import { useSyncExternalStore } from "react";
+import type { EventDraft } from "../../catalog/catalog";
 
 const STORAGE_KEY = "fb-space-messenger-demo";
+
+export const SUNDAY_THREAD_ID = "sunday-constellation";
+export const JORDAN_THREAD_ID = "jordan-davis";
 
 export interface InboxMessage {
   id: string;
@@ -15,8 +19,12 @@ export interface InboxMessage {
   fromMuse?: boolean;
   /** "live" is a Muse reply. "catalog" is the allowlisted fallback when Muse does not answer. */
   source?: "live" | "catalog";
-  linkHref?: string;
-  linkLabel?: string;
+  /** Catalog ids Muse pointed at; rendered as Marketplace / Event cards. */
+  itemIds?: string[];
+  eventIds?: string[];
+  /** A Muse event draft, and the event id once someone tapped Create. */
+  draft?: EventDraft;
+  createdEventId?: string;
 }
 
 export interface InboxThread {
@@ -26,6 +34,12 @@ export interface InboxThread {
   memberNames: string[];
   messages: InboxMessage[];
   preview: string;
+}
+
+export interface SundayLine {
+  senderName: string;
+  text: string;
+  mine: boolean;
 }
 
 function direct(id: string, name: string, text: string): InboxThread {
@@ -42,7 +56,7 @@ function direct(id: string, name: string, text: string): InboxThread {
 function seed(): InboxThread[] {
   return [
     direct("maya-chen", "Maya Chen", "See you at the hackathon!"),
-    direct("jordan-davis", "Jordan Davis", "How is the build going?"),
+    direct(JORDAN_THREAD_ID, "Jordan Davis", "How is the build going?"),
     direct("sofia-patel", "Sofia Patel", "Sent you a photo"),
     direct("daniel-kim", "Daniel Kim", "Want to grab a table later?"),
   ];
@@ -72,11 +86,7 @@ function validThread(value: unknown): value is InboxThread {
 function load(): InboxThread[] {
   try {
     const saved: unknown = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "null");
-    if (Array.isArray(saved) && saved.every(validThread)) {
-      // Older sessions may hold a simulated group thread; only direct threads are kept.
-      const directOnly = saved.filter((thread) => thread.kind === "direct");
-      if (directOnly.length) return directOnly;
-    }
+    if (Array.isArray(saved) && saved.length && saved.every(validThread)) return saved;
   } catch {
     /* A private window or an older demo shape falls back to the seed. */
   }
@@ -105,10 +115,34 @@ export function useInbox(): InboxThread[] {
   return useSyncExternalStore(subscribe, () => threads, () => serverThreads);
 }
 
-/**
- * Simulated Facebook: opens an empty direct thread for a person named by a real server
- * mutual reveal. Nothing is sent to that person; the thread lives in this browser session.
- */
+export function isSundayPromoted(): boolean {
+  return threads.some((thread) => thread.id === SUNDAY_THREAD_ID);
+}
+
+let seq = 0;
+const nextId = (prefix: string) => `${prefix}-${Date.now()}-${++seq}`;
+
+export function promoteSundayChat(lines: SundayLine[], memberNames: string[]) {
+  if (isSundayPromoted() || lines.length === 0) return;
+  const messages = lines.map((line, index) => ({
+    id: `sun-${index}`,
+    senderName: line.senderName,
+    text: line.text,
+    mine: line.mine,
+  }));
+  const thread: InboxThread = {
+    id: SUNDAY_THREAD_ID,
+    kind: "group",
+    title: "Sunday constellation",
+    memberNames,
+    messages,
+    preview: messages[messages.length - 1]?.text ?? "Names are visible",
+  };
+  threads = [thread, ...threads];
+  emit();
+}
+
+/** Opens (or creates) a direct thread with a player after a real mutual reveal. Returns the thread id. */
 export function openRevealThread(playerId: string, displayName: string): string {
   const id = `reveal-${playerId}`;
   if (!threads.some((thread) => thread.id === id)) {
@@ -120,23 +154,39 @@ export function openRevealThread(playerId: string, displayName: string): string 
 
 export function addMuseMessage(
   threadId: string,
-  text: string,
-  source: "live" | "catalog",
-  link?: { href: string; label: string },
+  help: { text: string; source: "live" | "catalog"; itemIds: string[]; eventIds: string[]; draft: EventDraft | null },
 ) {
   const message: InboxMessage = {
-    id: `muse-${Date.now()}`,
+    id: nextId("muse"),
     senderName: "Muse",
-    text,
+    text: help.text,
     mine: false,
     fromMuse: true,
-    source,
-    linkHref: link?.href,
-    linkLabel: link?.label,
+    source: help.source,
+    itemIds: help.itemIds,
+    eventIds: help.eventIds,
+    draft: help.draft ?? undefined,
   };
   threads = threads.map((thread) =>
     thread.id === threadId
-      ? { ...thread, messages: [...thread.messages, message], preview: text }
+      ? { ...thread, messages: [...thread.messages, message], preview: help.text }
+      : thread,
+  );
+  emit();
+}
+
+/** Records that a draft was turned into an event, and shares the event card in the thread. */
+export function markDraftCreated(threadId: string, messageId: string, eventId: string, title: string) {
+  threads = threads.map((thread) =>
+    thread.id === threadId
+      ? {
+          ...thread,
+          messages: [
+            ...thread.messages.map((m) => (m.id === messageId ? { ...m, createdEventId: eventId } : m)),
+            { id: nextId("out"), senderName: "Alex Morgan", text: `Created ${title}. Register here:`, mine: true, eventIds: [eventId] },
+          ],
+          preview: `Created ${title}`,
+        }
       : thread,
   );
   emit();
@@ -146,7 +196,7 @@ export function sendInboxMessage(threadId: string, text: string) {
   const trimmed = text.trim();
   if (!trimmed) return;
   const message: InboxMessage = {
-    id: `out-${Date.now()}`,
+    id: nextId("out"),
     senderName: "Alex Morgan",
     text: trimmed,
     mine: true,

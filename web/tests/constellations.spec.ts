@@ -452,3 +452,53 @@ test("v3 chat: without the live server the room is honestly unavailable", async 
   await expect(page.getByTestId("spc-chat-unavailable")).toContainText("Chat needs the live server");
   await expect(page.getByTestId("spc-chat-dock")).toHaveCount(0);
 });
+
+test("Marketplace and Events use one demo catalog: item pages, register, and a Muse-created event", async ({ page }) => {
+  await page.goto("/marketplace");
+  await page.getByRole("link", { name: /Coffee set for your next study session/ }).click();
+  await expect(page).toHaveURL(/\/marketplace\/mk-coffee-set$/);
+  const item = page.getByTestId("cat-item-detail");
+  await expect(item.getByRole("heading", { name: "Coffee set for your next study session" })).toBeVisible();
+  await expect(item).toContainText("$20");
+  await expect(item).toContainText("Demo listing. Nothing is sold");
+  await page.goto("/events");
+  const row = page.getByTestId("cat-event-row-ev-open-mic");
+  await expect(row).toContainText("41 going");
+  await row.getByRole("button", { name: "Register for Open mic night" }).click();
+  await expect(row).toContainText("42 going");
+  await expect(page.getByRole("heading", { name: "You're going" })).toBeVisible();
+  await page.reload(); // registration survives a reload in this browser
+  await page.getByRole("link", { name: /Open mic night/ }).first().click();
+  await expect(page).toHaveURL(/\/events\/ev-open-mic$/);
+  const detail = page.getByTestId("cat-event-detail");
+  await expect(detail).toContainText("Campus Cafe");
+  await detail.getByRole("button", { name: /Registered for Open mic night/ }).click();
+  await expect(detail.getByRole("button", { name: "Register for Open mic night" })).toBeVisible();
+  await page.goto("/marketplace/not-real");
+  await expect(page.getByRole("heading", { name: "Listing not found" })).toBeVisible();
+  // Without Muse, code still picks exact catalog entries and builds a checked draft.
+  const fallback = await page.evaluate(async () => {
+    const m = await import("/src/features/constellations/messenger/museHelp.ts");
+    const you = (text: string) => [{ sender: "You", text }];
+    return {
+      create: m.catalogReply("create", you("@muse create a picnic on saturday at 2pm")).draft,
+      supplies: m.catalogReply("supplies", you("we need a speaker for the quad @muse")).itemIds,
+      hangout: m.catalogReply("hangout", you("anyone into movies outside? @muse")).eventIds,
+      kinds: ["create a movie night friday", "@muse create a picnic on saturday", "we need snacks", "can the cafe hold a table", "what should we do"].map(m.inferKind),
+    };
+  });
+  expect(fallback.create).toMatchObject({ title: "Picnic", placeId: "v-quad", day: "Saturday", time: "14:00" });
+  expect(fallback.supplies[0]).toBe("mk-speaker");
+  expect(fallback.hangout[0]).toBe("ev-film-club");
+  expect(fallback.kinds).toEqual(["create", "create", "supplies", "barter", "hangout"]);
+  // Catalog events that share an id with Adam's approved campus events use the same venue and start.
+  const drift = await page.evaluate(async () => {
+    const { BASE_EVENTS } = await import("/src/features/catalog/catalog.ts");
+    const { APPROVED_EVENTS } = await import("/src/features/constellations/nudges/venues.ts");
+    return APPROVED_EVENTS.flatMap((a) => {
+      const c = BASE_EVENTS.find((e) => e.eventId === a.eventId);
+      return !c || c.placeId !== a.placeId || c.start !== a.start ? [a.eventId] : [];
+    });
+  });
+  expect(drift).toEqual([]);
+});

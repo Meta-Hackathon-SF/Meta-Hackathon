@@ -9,6 +9,14 @@
       "source": "/api/v1/:path*",
       "destination": "https://constellations-api-production.up.railway.app/api/v1/:path*"
     },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/muse/**/*.js": {
+      "maxDuration": 60
+    }
+  }
 }

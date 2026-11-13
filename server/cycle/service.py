@@ -68,6 +68,7 @@ ERRORS: dict[str, tuple[int, str, bool]] = {
     "CYCLE_LOCKED": (409, "This week is locked. Answers can no longer change.", False),
     "CONSENT_REQUIRED": (403, "Current consent is required.", False),
     "PROVIDER_UNAVAILABLE": (503, "The requested service is not available. Try again later.", True),
+    "RATE_LIMITED": (429, "Too many requests. Try again in a minute.", True),
 }
 
 

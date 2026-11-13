@@ -192,6 +192,7 @@ export function DistressScreen({ onBack }: { onBack: () => void }) {
 }
 
 // ---------------------------------------------------------------- events / invite
+
 export function EventsScreen({ onBack, eventsOn, enable }: { onBack: () => void; eventsOn: boolean; enable: () => void }) {
   return (
     <div className="spc-screen">

@@ -2657,3 +2657,11 @@ a.spc-keep-btn {
   .spc-with-demo.spc-enter { animation: none; }
   .spc-btn:active, .spc-round:active { transform: none; }
 }
+.spc-event-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.spc-event-wrap .cat-card {
+  max-width: none;
+}

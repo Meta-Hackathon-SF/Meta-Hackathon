@@ -1,6 +1,46 @@
 # Hosting and deployment plan (Facebook Space)
 
-Status: **plan only. Nothing is deployed.** Proposed by Will on 2026-11-13. Kai owns server manifests and migration order (D002) and Patrik owns the privacy store (D007), so both review this before anything goes live. Update this file once a real deployment is verified.
+Status: **deployed and partly verified (2026-11-13).** The "Live deployment" section below is what actually runs and was written by Adam after a live test run. Everything after it is Will's original plan from before the deploy; where the two differ, the live section is correct (web is on Vercel, API and Postgres are on Railway, not Supabase).
+
+## Live deployment (verified 2026-11-13T15:05Z)
+
+| Part | Where | How it deploys |
+| --- | --- | --- |
+| Web | Vercel project `constellations-demo`, https://constellations-demo-zeta.vercel.app | Every merge to `main`. Builds from the repo root `vercel.json`. PR previews are behind Vercel login, so they cannot be tested with curl or scripts. |
+| API | Railway project `constellations-demo` (workspace "kai's Projects"), service `constellations-api`, region `sfo`, https://constellations-api-production.up.railway.app | Every merge to `main`. Builder is the repo `Dockerfile`; the start command lives in the Railway service settings. |
+| Database | Railway `Postgres` (workflow) + a SQLite privacy file on a Railway volume (`CST_PRIVACY_DB`) | n/a |
+| Muse | `api.meta.ai`, reached through the relay at `/api/muse/v1` on Vercel | Part of the web deploy (`api/_museRelay.js`) |
+
+Request path: browser → Vercel `/api/v1/*` (rewrite) → Railway API → Vercel `/api/muse/v1/*` (relay function) → `api.meta.ai`.
+
+Railway variables on `constellations-api`: `CONSTELLATIONS_ENV=production`, `CONSTELLATIONS_ALLOWED_ORIGINS=https://constellations-demo-zeta.vercel.app`, `CONSTELLATIONS_WORKFLOW_DSN`, `CST_PRIVACY_DB`, `CST_DEMO_HOST_SECRET`, `MUSE_API_KEY`, `MUSE_BASE_URL=https://constellations-demo-zeta.vercel.app/api/muse/v1`. `MUSE_MODEL` is unset; the per-task router (`server/providers/router.py`) picks models.
+
+### What was verified live
+
+In a real browser against the Vercel URL, with a synthetic test player: join (201), operator starts a week (201), Monday question shown, a labeled synthetic answer accepted (202 in 1.7 s, with Muse reached through the Vercel relay). **Not yet verified live:** Skip to Sunday, formation, naming, chat, SSE through the Vercel rewrite, the event nudge, and the synthetic top-up.
+
+### Issues we hit, and what fixed them
+
+1. **Railway was not deploying `main`.** Deploys were snapshots from one laptop (`railway up`), so merged PRs were not live. Fix: connected the service to the GitHub repo and committed the `Dockerfile` (#89). In the Railway UI a source change does nothing until you click **Apply**.
+2. **Join failed on the live site ("unexpected error").** The web build calls the relative path `/api/v1`, but Vercel had no rule for it, so the calls hit the static site. The session cookie is `HttpOnly; Secure; SameSite=Lax; path=/api`, so the API must be same-site. Fix: the `/api/v1/:path*` rewrite to Railway in `vercel.json` (#91). Keep it above the SPA fallback.
+3. **Every Muse call failed from Railway with `invalid_request`.** Cause: `api.meta.ai` returns an **empty model list** to our key when the request comes from Railway's IPs (`GET /models` 200 with `[]`, chat 404 `model_not_found`). The same key lists 10 models from a laptop and from Vercel. It is not the key (same SHA-256 on both sides), the code, the routes, or the region. Fix: the Vercel relay (#93). It forwards only `GET /v1/models` and `POST /v1/chat/completions`, only when the caller's bearer token hashes to our key (no key is stored in it), and logs nothing. If the key is rotated, update `KEY_SHA256` in `api/_museRelay.js`.
+   - Our error label hid the cause: `invalid_request` covers 400, 404, 413 and 422. To see the provider's real message, run a small script in the container that prints the status and error body with the key redacted.
+   - `python -m server.providers.route_check --live` in the container (about $0.01) checks every task end to end.
+4. **Operator actions return 403 for a newly joined player.** By design the operator role is never granted over HTTP. Grant it in the container with `server.privacy.fixtures.grant_operator(PrivacyStore(os.environ["CST_PRIVACY_DB"]), "<playerId>", "facebook-space")`. The player ID comes from `GET /api/v1/session` in that browser. Each demo browser needs this once.
+5. **A redeploy erases the current week.** Weeks live in `InMemoryCycleRepository` (`server/cycle/service.py`); players and sessions persist. Every merge to `main` and every Railway variable change redeploys. **Do not merge or change variables during the demo; start the demo week after the last deploy.**
+6. **`railway ssh` needs a registered key** (`railway ssh keys add`) and an interactive terminal for a passphrase-protected key; agents cannot run it. To run a script in the container without copying files: `railway ssh --service constellations-api -- sh -c "echo $(base64 < script.py | tr -d '\n') | base64 -d | python"`.
+7. **`api/` on Vercel is ES modules** (`api/package.json` has `"type": "module"`). CommonJS `require` in a function there fails at load.
+8. **Tracked `.pyc` files and a missing `.dockerignore`** made builds noisy; fixed in #89. `**/*.env` is excluded from the image, so secrets only come from Railway variables.
+
+### Known gaps on the live site
+
+- The v3 per-viewer routes are not composed in `server/app/weekly.py`: `/days/{n}/constellations`, `/events`, `/me/nudges` and custom events return 404. After answering, the sky screen therefore shows "0 people answered today" with a "Preview · synthetic" badge.
+- "Skip to Sunday" on the live site answers only for the current player. The 38 labeled synthetic players come from `POST /operator/cycles/{id}/synthetic-topup`, which refuses unless the week is a fixture week and only fills days already reached. Not yet run against production.
+- Privacy `InterestBucket` uses `6-10`/`11+`; the contract and matching use `6-9`/`10+`.
+
+## Original plan (pre-deploy, by Will)
+
+The sections below are the plan as written before the deploy. They are kept for the reasoning about cookies and hosts.
 
 ## Decisions
 

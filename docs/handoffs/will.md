@@ -9,6 +9,11 @@ Updated: 2026-11-13T11:18Z
 - The key stays in gitignored `server/providers/muse.env`. The browser calls Vite-only `POST /api/muse-chat`. Ordinary Playwright tests mock that route.
 - Verification: `PLAYWRIGHT_CHANNEL=chrome npx playwright test tests/constellations.spec.ts -g "everyone keeping the Sunday chat"` — 2 passed (desktop and mobile). Live Muse replies for hangout, supplies, books, and the cafe ask were checked against the same truth rules and accepted.
 
+## Messenger follow-up, 2026-11-13
+- Product decision (Will): keeping the Sunday chat is the consent to show names. The button reads "Keep & show names"; names show only once all five keep it. @patrikliska13 please confirm the privacy copy.
+- Muse in the Sunday group: hosted app calls `POST /api/v1/muse-chat` on the Railway backend (`server/cycle/muse_chat.py`, mounted by the cycle router, session + Idempotency-Key, 12/min per player), so the Muse key stays on Railway. Fixture/local mode uses the dev twin `web/museChat.ts` via `web/museChatPlugin.ts`. Catalog lives at `server/cycle/data/catalog.json` (the API image ships `server/`, not `web/`). No Vercel function and no Vercel key needed.
+- Messenger UX: mention @muse in the normal composer (code picks hangout/supplies/vendor), chips only fill the box; Preview labels on the group and "Same vibe"; in-app links; unique message ids; member names come from the constellation.
+
 ## Space V4 redesign, 2026-11-13
 Source: the V4 phone design ("Artifact sharing request" folder, SpaceV4Phone). Facebook shell unchanged (header, left sidebar, mobile tabs).
 - Home feed card (`daily/FeedCard.tsx`): night-sky question block, streak + answered-today row, answer like a comment (Enter posts), your answer shows as your own private comment. "Open Space" is the only way in.
