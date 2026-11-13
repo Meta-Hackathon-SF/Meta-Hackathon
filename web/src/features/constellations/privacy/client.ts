@@ -84,6 +84,7 @@ export interface PrivacyClient {
   /** null when there is no session for this Group (not joined, expired, signed out). */
   session(communityId: string, signal?: AbortSignal): Promise<SessionView | null>;
   join(communityId: string, displayName: string, toggles: ConsentToggles): Promise<SessionView>;
+  hostLogin(password: string): Promise<SessionView>;
   updateConsent(expectedVersion: number, toggles: ConsentToggles): Promise<Consent>;
   signOut(): Promise<void>;
   deleteMyData(): Promise<void>;
@@ -185,6 +186,9 @@ export function httpPrivacyClient(base: string): PrivacyClient {
       const body = JSON.stringify({ displayName, ...toggles });
       return parseSession(await call(`/communities/${encodeURIComponent(communityId)}/join`, { method: "POST", body }));
     },
+    async hostLogin(password) {
+      return parseSession(await call("/operator/login", { method: "POST", body: JSON.stringify({ password }) }));
+    },
     async updateConsent(expectedVersion, toggles) {
       const body = JSON.stringify({ expectedVersion, ...toggles });
       return parseConsent(await call("/me/consent", { method: "PATCH", body }));
@@ -254,6 +258,9 @@ export function fixturePrivacyClient(): PrivacyClient {
         isOperator: false,
       });
       return view!;
+    },
+    async hostLogin() {
+      throw new PrivacyError("PROVIDER_UNAVAILABLE", "Host login requires the live server.");
     },
     async updateConsent(expectedVersion, toggles) {
       if (!view) throw new PrivacyError("UNAUTHENTICATED", "Join Facebook Space to continue.");

@@ -17,6 +17,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from starlette.requests import HTTPConnection
 
 from .errors import PrivacyError
@@ -29,6 +30,11 @@ from .topics import ActivityTopics
 from .wire import ApiError, ApiErrorBody, BlockRequest, EventSignalsRequest, JoinRequest, UpdateConsentRequest
 
 SESSION_COOKIE = "cst_session"
+
+
+class DemoHostLogin(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    password: StrictStr = Field(min_length=1, max_length=1024)
 
 
 def _cookie_secure() -> bool:
@@ -136,6 +142,15 @@ def build_router(
     @router.get("/session")
     def get_session(actor: ActorDep) -> dict:
         return service.session_view(actor).wire()
+
+    @router.post("/operator/login")
+    def operator_login(body: DemoHostLogin, actor: ActorDep, response: Response) -> dict:
+        token = service.authenticate_demo_host(actor, body.password)
+        response.set_cookie(
+            SESSION_COOKIE, token, httponly=True, secure=_cookie_secure(), samesite="lax",
+            max_age=int(service.session_ttl.total_seconds()), path="/api",
+        )
+        return service.session_view(service.require_session(token)).wire()
 
     @router.delete("/session", status_code=204)
     def delete_session(actor: ActorDep) -> Response:

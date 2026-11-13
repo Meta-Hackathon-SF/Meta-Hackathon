@@ -153,7 +153,7 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
         )}
         {status !== "revealed" && (
           <button type="button" className="spc-btn spc-btn-primary spc-btn-sm" disabled={busy} onClick={() => void act(skipToSunday)} data-testid="spc-demo-skip">
-            Skip to Sunday (filled week)
+            Skip to Sunday (synthetic players)
           </button>
         )}
         <Link className="spc-btn spc-btn-gray spc-btn-sm" to="/space/stage">

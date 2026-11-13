@@ -29,6 +29,7 @@ class ServiceRegistration:
     router: APIRouter
     authorize: Callable[..., object]
     ready: Callable[[], Awaitable[bool]]
+    operator_login_bootstrap: bool = False
 
 
 def require_idempotency_key(request: Request) -> None:
@@ -46,6 +47,8 @@ def register_services(app: FastAPI, registrations: Sequence[ServiceRegistration]
             raise ValueError("Unknown or duplicate service owner")
         if not callable(registration.authorize) or not callable(registration.ready):
             raise ValueError("A service requires authorization and readiness adapters")
+        if registration.operator_login_bootstrap and registration.owner != "privacy":
+            raise ValueError("Only privacy may enable operator login bootstrap")
         if not registration.router.routes:
             raise ValueError("A service registration must include routes")
         seen_owners.add(registration.owner)
@@ -55,11 +58,12 @@ def register_services(app: FastAPI, registrations: Sequence[ServiceRegistration]
             if not isinstance(route, APIRoute):
                 raise ValueError("Only HTTP API routes may be registered in this baseline")
             is_join = re.fullmatch(r"/communities/\{[^}]+\}/join", route.path) is not None
-            if is_join and "POST" in route.methods:
+            is_login = route.path == "/operator/login" and registration.operator_login_bootstrap
+            if is_login and route.methods != {"POST"}:
+                raise ValueError("Operator login bootstrap requires POST only")
+            if (is_join or is_login) and "POST" in route.methods:
                 if registration.owner != "privacy" or route.methods != {"POST"}:
-                    raise ValueError(
-                        "Only privacy may register POST /communities/{id}/join bootstrap"
-                    )
+                    raise ValueError("Only privacy may register an authentication bootstrap route")
                 bootstrap_routes.append(route)
             else:
                 protected_routes.append(route)
@@ -70,7 +74,7 @@ def register_services(app: FastAPI, registrations: Sequence[ServiceRegistration]
                     raise ValueError("Duplicate service method/path registration")
                 seen_routes.add(identity)
         # Keep the owner's lifespan handlers once; do not mutate its router or remove
-        # route-level dependencies. Only the reviewed community-join route skips
+        # route-level dependencies. Only reviewed, explicit bootstrap routes skip
         # the global verified-session dependency, so a new browser can obtain one.
         protected_router = copy(registration.router)
         protected_router.routes = protected_routes
