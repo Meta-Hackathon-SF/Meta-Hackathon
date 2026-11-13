@@ -1,0 +1,81 @@
+/* Constellations privacy UI (owner: Patrik). Every rule uses the .cstp- prefix,
+   so the Simulated Facebook shell, feed and Will's .cst- styles are untouched. */
+.cstp-card {
+  --cstp-ink: #14162b;
+  --cstp-line: #dfe1ee;
+  --cstp-accent: #1b1f4a;
+  --cstp-star: #f2b84b;
+  max-width: 640px;
+  margin: 16px auto;
+  padding: 20px;
+  border: 1px solid var(--cstp-line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--cstp-ink);
+}
+.cstp-card h2 { font-size: 22px; margin: 0 0 8px; line-height: 1.25; }
+.cstp-card h3 { font-size: 15px; margin: 20px 0 6px; }
+.cstp-lede { margin: 0 0 16px; line-height: 1.45; color: #3a3d52; }
+.cstp-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 16px; }
+.cstp-split section { border: 1px solid var(--cstp-line); border-radius: 10px; padding: 12px; }
+.cstp-split h3 { margin: 0 0 6px; }
+.cstp-split ul, .cstp-support ul { margin: 0; padding-left: 18px; line-height: 1.45; font-size: 14px; list-style: disc; }
+.cstp-split li + li, .cstp-support li + li { margin-top: 4px; }
+.cstp-label { display: block; font-weight: 600; margin: 8px 0 4px; }
+.cstp-hint { color: #5b5f78; font-size: 13px; font-weight: 400; }
+.cstp-input {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 16px;
+  border: 1px solid var(--cstp-line); border-radius: 8px;
+}
+.cstp-toggles { list-style: none; margin: 16px 0 8px; padding: 0; display: grid; gap: 12px; }
+.cstp-switch {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 0; border: 0;
+  background: none; font: inherit; font-weight: 600; text-align: left; cursor: pointer; color: inherit;
+}
+.cstp-switch:disabled { cursor: default; opacity: 0.6; }
+.cstp-switch-track {
+  flex: none; width: 44px; height: 26px; border-radius: 13px; background: #c9ccdb; position: relative;
+  transition: background 0.15s;
+}
+.cstp-switch-thumb {
+  position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  transition: transform 0.15s;
+}
+.cstp-switch[aria-checked="true"] .cstp-switch-track { background: var(--cstp-accent); }
+.cstp-switch[aria-checked="true"] .cstp-switch-thumb { transform: translateX(18px); }
+.cstp-detail { margin: 4px 0 0; font-size: 13px; color: #5b5f78; line-height: 1.4; }
+.cstp-toggles .cstp-detail { margin-left: 56px; }
+.cstp-switch:focus-visible, .cstp-card button:focus-visible, .cstp-input:focus-visible, .cstp-panel summary:focus-visible {
+  outline: 3px solid var(--cstp-star); outline-offset: 2px;
+}
+.cstp-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.cstp-primary, .cstp-secondary, .cstp-danger {
+  padding: 10px 16px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; min-height: 44px;
+}
+.cstp-primary { background: var(--cstp-accent); color: #fff; border: 0; margin-top: 12px; }
+.cstp-secondary { background: #fff; color: var(--cstp-ink); border: 1px solid var(--cstp-line); }
+.cstp-danger { background: #fff; color: #a1262c; border: 1px solid #e3b6b8; }
+.cstp-primary:disabled, .cstp-secondary:disabled, .cstp-danger:disabled { opacity: 0.5; cursor: default; }
+.cstp-status { font-weight: 600; margin: 0 0 4px; }
+.cstp-warn { color: #8a5a00; font-size: 14px; }
+.cstp-ok { color: #1d6b3a; font-size: 14px; }
+.cstp-error { color: #a1262c; font-size: 14px; }
+.cstp-signout { margin-top: 20px; border-top: 1px solid var(--cstp-line); padding-top: 12px; }
+.cstp-fixture {
+  display: inline-block; margin: 0 0 10px; padding: 2px 8px; border-radius: 999px; font-size: 12px;
+  background: #fff4d6; color: #6b4e00; border: 1px solid #f2d68a;
+}
+.cstp-support {
+  max-width: 640px; margin: 12px auto; padding: 14px 16px; border-radius: 10px;
+  background: #f3f5ff; border: 1px solid #cfd5f5; color: #14162b;
+}
+.cstp-support p { margin: 6px 0 8px; line-height: 1.45; }
+.cstp-support a { color: #1b4fd1; font-weight: 600; }
+.cstp-panel { max-width: 640px; margin: 16px auto; }
+.cstp-panel summary { cursor: pointer; color: #3a3d52; font-weight: 600; padding: 8px 0; }
+.cstp-panel .cstp-card { margin-top: 4px; }
+.cstp-loading { max-width: 640px; margin: 24px auto; color: #5b5f78; }
+@media (max-width: 560px) {
+  .cstp-split { grid-template-columns: 1fr; }
+  .cstp-card { margin: 12px; padding: 16px; }
+}

@@ -13,4 +13,4 @@ const venue = parseVenue(venuePayload)   // null unless isPublic is true
 - The card renders nothing without an approved public venue whose `placeId` matches the nudge.
 - A nudge whose evidence says `source: "replay"` always shows "Replay of a saved cycle".
 - `showEvidence` adds call type, model and latency for operator views.
-- Status: built and type-checked. Not mounted on any route and not yet seen with server data.
+- Status: built, type-checked and viewed once in Chrome at 360 px and 900 px through a temporary preview page (live and replay variants, long title, no horizontal overflow, invalid nudge parsed to null). Not mounted on any route, no committed browser test, not yet seen inside the chat or with server data.

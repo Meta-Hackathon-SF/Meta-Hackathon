@@ -9,7 +9,7 @@ Status (2026-11-12): **implemented and offline-tested against fixtures and label
 | `questions.py` | `QuestionBank.load / from_doc`, `question_problems`, `load_default_bank()`. A bad row stops the load. |
 | `data/question-bank.json` | Curated bank, 32 questions. Superset of `contracts/fixtures/question-bank.json`, row for row. |
 | `selection.py` | `QuestionService.select_week` (QuestionPort), `released`, `question_for_day`, `pick_week`, `InMemorySelectionStore`. |
-| `clarify.py` | `ClarifyService.follow_up` (M2), prompt `clarify.v1`, `InMemoryClarifyStore`. |
+| `clarify.py` | `ClarifyService.follow_up` (M2), prompt `clarify.v2`, `InMemoryClarifyStore`. |
 | `venues.py`, `data/venues.json` | `VenueCatalog`: the approved public venue allowlist (same rows as the shared fixture). |
 | `nudges.py` | `NudgeService.propose` (NudgePort), `propose_and_post`, prompt `event_nudge.v1`. |
 | `generation.py` | `QuestionGenerator.generate / pending / approve / reject` (M6), prompt `question_generation.v1`. |
@@ -43,7 +43,7 @@ res.evidence  # MuseCallEvidence when Muse answered, else None
 - One follow-up max: the first decision for an `answer_id` is stored and returned on every later call without another Muse call; `follow_up_used=True` returns none.
 - `safety_flag` other than `"none"` returns no follow-up and makes no Muse call. Call M1 first.
 - The prompt holds the question text, a random per-call id and the answer text. Nothing else.
-- A proposal must be a single question of at most 140 characters and pass `OutputGuard.check(text, [])`. The reader is the answer's own author, so the no-quote list is empty; sensitive-term, PII and contact checks still apply.
+- A proposal must be a single open question (not yes/no) of at most 140 characters and pass `OutputGuard.check(text, [])`. The reader is the answer's own author, so the no-quote list is empty; sensitive-term, PII and contact checks still apply.
 - Provider failure, invalid JSON after the one retry, or a rejected proposal falls back to the curated `followUpHint` (itself guarded) or to no follow-up, with `source: "fallback"` and no evidence. The answer flow never blocks on Muse. A malformed guard verdict or a guard that raises counts as a rejection.
 
 ## M7 event nudges (step 6, cuttable)
@@ -99,7 +99,22 @@ Routes (paths without `/api/v1`): `GET /operator/questions` (`active`, `category
 
 ## Not done / needs other owners
 - The router is tested on a bare FastAPI app with a test-only session stand-in. It has not run inside Kai's composed app or behind Patrik's real session.
-- `OutputGuardPort`, `WeekStartLookup`, `ConstellationContext`, `ChatPostPort` and the selection/clarify/nudge stores and the pending-question queue are satisfied in tests by `tests/planning/doubles.py` (TEST ONLY) and the in-memory stores. Durable stores belong to orchestration.
+- `OutputGuardPort` is now satisfied by the real `server.privacy.OutputGuard` (drop-in; verified offline and in 4 live calls). `WeekStartLookup`, `ConstellationContext`, `ChatPostPort` and the selection/clarify/nudge stores and the pending-question queue are satisfied in tests by `tests/planning/doubles.py` (TEST ONLY) and the in-memory stores. Durable stores belong to orchestration.
+
+## Live check (manual, paid)
+`python3 -m tests.planning.live_check [m2-vague m2-specific m7 m6]` runs the real prompts once each on synthetic fixture input through the live adapter, with a hard cap of 6 provider calls. It uses the real `OutputGuard` when `server.privacy` is importable and names the guard in its output. First pass 2026-11-13, with the test-only double (5 calls, all `muse-spark-1.3`, `reasoning_effort=low`):
+
+| Call | Prompt | Result | Latency |
+| --- | --- | --- | --- |
+| M2, vague answer | `clarify.v1` | passed validators, but a generic yes/no follow-up; led to `clarify.v2` and the yes/no check | 25.0 s |
+| M2, vague answer | `clarify.v2` | one specific open follow-up, passed | 18.3 s |
+| M2, specific answer | `clarify.v1` | correctly no follow-up | 10.6 s |
+| M7 | `event_nudge.v1` | picked the fixture board-game event at an allowlisted venue inside the window; title, why and chat line passed | 23.9 s |
+| M6, count 3 | `question_generation.v1` | 3 of 3 proposals valid and pending, 0 rejected | 19.8 s |
+
+Second pass 2026-11-13T03:00Z with **Patrik's real `server.privacy.OutputGuard`** (4 calls): M2 vague gave one specific open follow-up (13.1 s), M2 specific gave none (4.6 s), M7 picked the fixture board-game event and its chat line passed (18.4 s), M6 kept 3 of 3 (11.7 s). `tests/planning/test_real_guard.py` runs the same services against the real guard offline, including the 32 curated questions and their hints.
+
+Nine single calls: enough to show the prompts and validators work with live output, not a benchmark of quality or latency. A follow-up takes 10-25 s, so the answer flow must not wait on it.
 
 ## Tests
 ```sh
