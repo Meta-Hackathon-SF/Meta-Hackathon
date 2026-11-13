@@ -1553,30 +1553,25 @@ h3 {
   display: grid;
   place-items: center;
 }
-.campus-placeholder,
 .event-card,
 .memory-card {
   overflow: hidden;
   max-width: 850px;
 }
-.campus-placeholder > img,
 .event-card > img,
 .memory-card > img {
   width: 100%;
   height: 280px;
 }
-.campus-placeholder > div,
 .event-card > div,
 .memory-card > div {
   padding: 24px;
 }
-.campus-placeholder p,
 .event-card p,
 .memory-card p {
   margin: 12px 0;
   line-height: 1.5;
 }
-.campus-placeholder .button-primary,
 .event-card button,
 .memory-card a {
   margin-top: 8px;
@@ -2295,12 +2290,10 @@ h3 {
   .location-label svg {
     display: none;
   }
-  .campus-placeholder > img,
   .event-card > img,
   .memory-card > img {
     height: 190px;
   }
-  .campus-placeholder > div,
   .event-card > div,
   .memory-card > div {
     padding: 20px;

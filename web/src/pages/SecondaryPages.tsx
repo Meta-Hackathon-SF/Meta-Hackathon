@@ -160,15 +160,6 @@ export function GroupsPage() {
                   "Join group"
                 )}
               </button>
-              {group.name === "Hackathon Builders Community" && (
-                <Link
-                  className="button-soft"
-                  style={{ marginTop: 8 }}
-                  to="/groups/hackathon-builders/constellations"
-                >
-                  Constellations
-                </Link>
-              )}
             </div>
           </article>
         ))}

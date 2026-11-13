@@ -2,7 +2,6 @@ import {
   Bookmark,
   CalendarDays,
   Clapperboard,
-  GraduationCap,
   History,
   Home,
   LayoutList,
@@ -22,11 +21,16 @@ export const primaryNavigation = [
 ];
 
 export const sidebarNavigation = [
-  { to: "/campus", label: "Campus", icon: GraduationCap, color: "blue" },
   { to: "/friends", label: "Friends", icon: Users, color: "blue" },
   { to: "/memories", label: "Memories", icon: History, color: "cyan" },
   { to: "/saved", label: "Saved", icon: Bookmark, color: "purple" },
   { to: "/groups", label: "Groups", icon: UsersRound, color: "blue" },
+  {
+    to: "/constellations",
+    label: "Constellations",
+    icon: Sparkles,
+    color: "purple",
+  },
   { to: "/watch", label: "Video", icon: Clapperboard, color: "pink" },
   { to: "/marketplace", label: "Marketplace", icon: Store, color: "cyan" },
   { to: "/events", label: "Events", icon: CalendarDays, color: "red" },

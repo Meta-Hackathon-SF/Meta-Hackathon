@@ -1,8 +1,8 @@
 # will handoff
 Current step: 2-3 (foundation + daily loop) and the operator part of step 8, see docs/PLAN.md
 Status: role tasks 1-7 implemented and fixture-verified. Nothing is composed into a running server, nothing has called Muse, nothing is deployed.
-Branch + commit: `feat/will-daily-ui-polish` @ de922ec (UI redesign, branched from main 3fb4bef at the human's request); `role/will-voice-ui` = main. PR #14 merged as 4437e21, PR #25 merged as ef81f4f.
-Updated: 2026-11-13T03:47Z
+Branch + commit: `feat/will-constellations-feed-ui` @ d52b3ea (human-requested UI branch, open PR); `role/will-voice-ui` = main ea3672f (PR #29 merged).
+Updated: 2026-11-13T04:29Z
 
 ## Completed tasks (docs/roles/will.md)
 1. `server/voice/` restored from the archive, renamed to daily-answer terms, transcript cap 400. Default transcriber is unconfigured (503); typing never depends on it.
@@ -41,8 +41,21 @@ Updated: 2026-11-13T03:47Z
 - Operator console is not gated (operators act through server roles); live-mode 401/403 show plain messages.
 - Checks: web lint 0 errors (2 warnings in my files), build ok, Playwright 38 passed; full `pytest tests` 560 passed. Fixture mode only; not tried on a real phone.
 
+## Facebook-native redesign (2026-11-13T04:29Z, branch `feat/will-constellations-feed-ui`)
+- Home feed card (`daily/FeedCard.tsx`) directly under the composer: Join opens Patrik's `JoinScreen` in the shell `Modal`; joined players answer today's question in place.
+- Left sidebar shortcut "Constellations"; `LeftSidebar` NavLinks now use `end` so only the exact page highlights.
+- Page rebuilt as a Facebook Group page (cover, tabs, About column). Modules split: `useDaily.ts`, `QuestionPost.tsx`, `GuessCard.tsx`, `WeekGraph.tsx` (Obsidian-style force graph, draggable, keyboard-focusable day nodes).
+- Styling uses the shell's tokens (`--blue`, `.card`, `.button-*`, `.post-meta`). My CSS restyles Patrik's `.cstp-card` only where it sits inside my page or my join dialog (spacing, border); his files are unchanged.
+- Checks: web lint 0 errors (warnings only), build ok, Playwright 42 passed; `pytest tests` 560 passed. Fixture mode only; not on a real phone.
+
+## Product direction from Will (human), 2026-11-13T04:38Z: needs a team decision, not yet proposed
+- Constellations is a Facebook-wide feature, not one Group's. The UI now lives at `/constellations`; until the contract changes it plays in `PLAY_COMMUNITY` ("hackathon-builders") because cycles and sessions are community-scoped in 2.0.0 / D007.
+- A constellation is you plus the people whose answers are most similar; the closer the match, the brighter their star. People who share your Groups may get a brighter signal.
+- "Sky" and "Constellation" are one view; the UI has no separate Sky tab.
+- Implications for owners (unacked): Rishi would publish per-member closeness (0-1) for each constellation and a shared-Group boost; Kai's reveal view would draw it; Patrik's sessions and Will's cycles would become global or multi-community. The Constellation tab shows only a labeled Example until that data exists.
+
 ## Shared files touched (claimed)
-- `web/src/App.tsx` (two routes), `web/src/pages/SecondaryPages.tsx` (one link on the Hackathon Builders card), `web/src/components/navigation/Header.tsx` (mobile title uses first path segment).
+- `web/src/App.tsx` (`/constellations` routes plus redirects from the old Group paths), `web/src/pages/SecondaryPages.tsx` (per-Group link added earlier, now removed), `web/src/components/navigation/Header.tsx` (mobile title uses first path segment), `web/src/pages/HomePage.tsx` (one feed card line), `web/src/components/navigation/navigation.ts` (one sidebar item), `web/src/components/layout/LeftSidebar.tsx` (`end` on NavLink).
 - `docs/DECISIONS.md`: my ACK lines under D005 and D006 only.
 - No change to `contracts/`.
 
@@ -71,6 +84,8 @@ All fixture. Server tests use `server/cycle/testing.py` (TEST-ONLY stand-ins for
 - `@patrikliska13`: `server/privacy/answers.py` (AnswerStore) and M1 `screen` on main; they are on his branch or planned. Open question: does `purge_cycle` clear `mark_locked` so an operator reset of a demo cycle can accept answers again?
 - `@adamzhang06`: nothing blocking. `SyncClarify` needs a live Muse and Patrik's real OutputGuard before the follow-up is live.
 - `@rishibagri`: nothing blocking. Confirm the formation-debug response envelope.
+
+- D009 constellation brightness (PR #31 comment https://github.com/Meta-Hackathon-SF/Meta-Hackathon/pull/31#issuecomment-6844535941): needs ACK from `@rishibagri` (per-member closeness banded bright/mid/faint), `@beatopia` (carry it on room members, reveal view), `@patrikliska13` (privacy sign-off). Until then the Constellation tab shows a labeled Example only.
 
 ## Next action
 Me: when Patrik's store/session and Kai's registry land, write the thin adapters, remove the fixture adapters from live composition, point the web app at `/api/v1`, and test on phones. Then durable cycle storage (Kai's migration order).

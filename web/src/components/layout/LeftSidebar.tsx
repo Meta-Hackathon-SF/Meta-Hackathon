@@ -15,7 +15,7 @@ export default function LeftSidebar() {
           <span>{currentUser.name}</span>
         </Link>
         {sidebarNavigation.map(({ to, label, icon: Icon, color }) => (
-          <NavLink to={to} key={to} className="sidebar-row">
+          <NavLink to={to} key={to} className="sidebar-row" end>
             <span className={`sidebar-icon nav-color-${color}`}>
               <Icon size={29} strokeWidth={2.1} />
             </span>
@@ -47,10 +47,6 @@ export default function LeftSidebar() {
       <Link className="sidebar-row" to="/groups">
         <img className="shortcut-image" src={photo("team")} alt="" />
         <span>Hackathon Builders</span>
-      </Link>
-      <Link className="sidebar-row" to="/campus">
-        <img className="shortcut-image" src={photo("campus")} alt="" />
-        <span>Campus Community</span>
       </Link>
       <Link className="sidebar-row" to="/groups">
         <img className="shortcut-image" src={photo("headset")} alt="" />

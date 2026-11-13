@@ -3,6 +3,7 @@ import { Search, Users } from "lucide-react";
 import LeftSidebar from "../components/layout/LeftSidebar";
 import RightSidebar from "../components/layout/RightSidebar";
 import Composer from "../components/feed/Composer";
+import ConstellationsFeedCard from "../features/constellations/daily/FeedCard";
 import PostCard from "../components/feed/PostCard";
 import Stories from "../components/stories/Stories";
 import { useApp } from "../state/context";
@@ -27,6 +28,7 @@ export default function HomePage() {
       <main id="main-content" className="feed" aria-label="News Feed">
         <h1 className="sr-only">News Feed</h1>
         <Composer />
+        {!query && !postId && <ConstellationsFeedCard />}
         {!query && !postId && <Stories />}
         {(query || postId) && (
           <div className="card search-summary">

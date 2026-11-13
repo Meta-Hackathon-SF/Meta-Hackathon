@@ -1,8 +1,7 @@
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import DailyPage from "./features/constellations/daily/DailyPage";
 import OperatorConsole from "./features/constellations/operator/OperatorConsole";
 import AppLayout from "./layouts/AppLayout";
-import CampusPage from "./pages/CampusPage";
 import HomePage from "./pages/HomePage";
 import AppProvider from "./state/AppProvider";
 import {
@@ -25,16 +24,18 @@ export default function App() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route index element={<HomePage />} />
-          <Route path="campus" element={<CampusPage />} />
           <Route path="friends" element={<FriendsPage />} />
           <Route path="groups" element={<GroupsPage />} />
+          <Route path="constellations" element={<DailyPage />} />
+          <Route path="constellations/operator" element={<OperatorConsole />} />
+          {/* Earlier Group-scoped links keep working. */}
           <Route
             path="groups/:communityId/constellations"
-            element={<DailyPage />}
+            element={<Navigate to="/constellations" replace />}
           />
           <Route
             path="groups/:communityId/constellations/operator"
-            element={<OperatorConsole />}
+            element={<Navigate to="/constellations/operator" replace />}
           />
           <Route path="marketplace" element={<MarketplacePage />} />
           <Route path="watch" element={<WatchPage />} />
