@@ -76,10 +76,16 @@ SPARK, WONDER, EMBER = "muse-spark-1.3", "muse-wonder-1.0", "muse-ember-1.0"
 #    1.2 s, $0.0002; Spark low missed one indirect distress case. One 8 s attempt
 #    covers Ember's rare stalls; the Spark fallback keeps the screen available.
 #    If both fail, M1 still fails closed in the privacy service.
+#  - activity_classification (M9) and sensitivity_screen (M10): Ember low was
+#    F1 0.98 with 34/34 sensitive texts flagged (M9) and 113/114 recall with 1/70
+#    false positives (M10, Spark 114/114 but one 72.8 s call). Callers run after
+#    OutputGuard, which stays as the code backstop; Spark is the fallback.
 # Tasks not listed (M3 themes, M4 grouping) stay on the base model until their
 # evals report.
 MEASURED_ROUTES: dict[str, Route] = {
     "safety_screen": Route(EMBER, "low", 8.0, (SPARK,), max_attempts=1),
+    "activity_classification": Route(EMBER, "low", 20.0, (SPARK,)),
+    "sensitivity_screen": Route(EMBER, "low", 15.0, (SPARK,), max_attempts=1),
     "clarify": Route(EMBER, "minimal", 6.0, (SPARK,), max_attempts=1),
     "question_generation": Route(SPARK, "low", 45.0, (EMBER,)),
     "event_nudge": Route(SPARK, "low", 45.0, (EMBER,)),

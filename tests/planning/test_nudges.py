@@ -274,3 +274,26 @@ class ChatSystemPosterTests(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             ChatSystemPoster(TestOnlyChat())
+
+
+class NudgeSensitivityTests(unittest.TestCase):
+    def test_sensitive_nudge_text_is_refused_and_screen_errors_fail_closed(self):
+        class Screen:
+            def __init__(self, ok=True, boom=False):
+                self.ok, self.boom, self.seen = ok, boom, []
+
+            async def allowed(self, texts):
+                self.seen.append(list(texts))
+                if self.boom:
+                    raise RuntimeError("down")
+                return [self.ok] * len(texts)
+
+        for screen, expected in ((Screen(ok=True), "ok"), (Screen(ok=False), "sensitive_text"), (Screen(boom=True), "sensitive_text")):
+            transport = ScriptedTransport().queue("event_nudge", GOOD)
+            muse = FixtureMuse(register_planning_tasks(TaskRegistry()), transport)
+            ids = iter(f"{i:032x}" for i in range(1, 100))
+            svc = NudgeService(muse, TestOnlyOutputGuard(), VenueCatalog.load(), Context(), TestOnlyChat(),
+                               now=lambda: NOW, new_id=lambda: next(ids), sensitivity=screen)
+            out = run(svc.propose_detailed("c-1"))
+            self.assertEqual(out.reason, expected)
+            self.assertEqual(screen.seen, [[GOOD["title"], GOOD["why"]]])
