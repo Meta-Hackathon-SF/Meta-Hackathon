@@ -90,7 +90,8 @@ function Phone({ panel, view }: { panel: StagePanel; view: StageView }) {
                 <MoonStar size={18} aria-hidden />
                 <div>
                   <small>{status === "revealed" ? "Their constellation" : "Placed, not yet revealed"}</small>
-                  <strong>{panel.constellation.name ?? "Unnamed constellation"}</strong>
+                  {/* Names that fail the privacy check arrive as null; leave the line out instead of a placeholder. */}
+                  {panel.constellation.name && <strong>{panel.constellation.name}</strong>}
                   <span>
                     {panel.constellation.size} people{panel.constellation.isLooseMatch ? " · loose match" : ""}
                   </span>

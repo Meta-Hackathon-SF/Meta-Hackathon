@@ -1,8 +1,9 @@
 """Demo stage view: what the presenter's big screen may show.
 
 Two players may opt in to a stage slot ("A" or "B") from their own session.
-Only then, and only to an operator, does ``GET /operator/stage`` return those
-two players' own answer text. Everyone else appears as counts.
+Only then does ``GET /operator/stage`` return those two players' own answer
+text. Any signed-in member of the community may open the stage (demo: every
+account can present). Everyone else appears as counts.
 
 Rules kept here:
 - A slot is set only by the player it shows (``POST /me/stage``); an operator
@@ -77,8 +78,7 @@ def build_stage_router(*, repository, privacy, answers, cycles, guard, calls):
 
     @router.get("/operator/stage")
     def stage(request: Request):
-        actor = request.state.cst_actor
-        privacy.require_operator(actor)
+        actor = request.state.cst_actor  # signed-in member; scoped to their own community below
         community = actor.community_id
         try:
             cycle = cycles.current(community)
