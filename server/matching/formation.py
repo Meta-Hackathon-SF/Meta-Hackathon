@@ -117,11 +117,18 @@ def _fallback_grouping_name(index: int, size: int) -> tuple[str, str, str]:
     """Name for a Fallback grouping constellation: '<Color> <Shape> (Fallback grouping)'.
 
     isFallback is not a wire field (protocol.ts 2.0.0), so the label rides in the name.
+    Names must not repeat within one formation (a 100-person week makes about 20 groups).
+    The shape steps once per pass through the colors, so every color and shape pair is used
+    before any repeats; after that a round number keeps later names apart.
     """
-    color = COLOR_IDS[index % len(COLOR_IDS)]
-    shape = shapes_for(size)[index % len(shapes_for(size))]
+    shapes = shapes_for(size)
+    color_index, color_pass = index % len(COLOR_IDS), index // len(COLOR_IDS)
+    color = COLOR_IDS[color_index]
+    shape = shapes[(color_index + color_pass) % len(shapes)]
+    round_number = color_pass // len(shapes) + 1
+    numbered = f" {round_number}" if round_number > 1 else ""
     base = f"{color.capitalize()} {shape.split('-')[0].capitalize()}"
-    base = base[:MAX_NAME_CHARS - len(FALLBACK_SUFFIX)].rstrip()
+    base = base[:MAX_NAME_CHARS - len(FALLBACK_SUFFIX) - len(numbered)].rstrip() + numbered
     return f"{base}{FALLBACK_SUFFIX}", shape, color
 
 

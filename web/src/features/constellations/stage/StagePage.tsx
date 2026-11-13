@@ -13,6 +13,15 @@ import { fetchStage, stageAvailable, StageError, type Slot, type StageCall, type
 import "./stage.css";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+// The server marks a backup group inside its name (server/matching/models.py FALLBACK_LABEL).
+// The stage says so once per place instead of repeating the label on every name.
+const FALLBACK_LABEL = "Fallback grouping";
+const isBackup = (name: string | null): boolean => !!name && name.includes(FALLBACK_LABEL);
+function shortName(name: string | null): string | null {
+  if (!name) return null;
+  const short = name.replace(`(${FALLBACK_LABEL})`, "").trim();
+  return short && short !== FALLBACK_LABEL ? short : null;
+}
 const POLL_MS = 1500;
 
 type Step = { types: string[]; title: string; muse: string; code: string };
@@ -91,9 +100,10 @@ function Phone({ panel, view }: { panel: StagePanel; view: StageView }) {
                 <div>
                   <small>{status === "revealed" ? "Their constellation" : "Placed, not yet revealed"}</small>
                   {/* Names that fail the privacy check arrive as null; leave the line out instead of a placeholder. */}
-                  {panel.constellation.name && <strong>{panel.constellation.name}</strong>}
+                  {shortName(panel.constellation.name) && <strong>{shortName(panel.constellation.name)}</strong>}
                   <span>
-                    {panel.constellation.size} people{panel.constellation.isLooseMatch ? " · loose match" : ""}
+                    {panel.constellation.size} people
+                    {isBackup(panel.constellation.name) ? " · backup grouping" : panel.constellation.isLooseMatch ? " · loose match" : ""}
                   </span>
                 </div>
               </div>
@@ -185,13 +195,18 @@ function Pipeline({ view, fresh }: { view: StageView; fresh: Set<string> }) {
                   ))}
                 </div>
               )}
-              {step.types[0] === "M5" && view.constellations.some((c) => c.name) && (
+              {step.types[0] === "M5" && view.constellations.some((c) => isBackup(c.name)) && (
+                <p className="stg-note" data-testid="stage-backup-note">
+                  Backup grouping: Muse's grouping was not used this time. Code grouped people by shared keywords and named the groups.
+                </p>
+              )}
+              {step.types[0] === "M5" && view.constellations.some((c) => shortName(c.name)) && (
                 <div className="stg-tags">
                   {view.constellations
-                    .filter((c) => c.name)
+                    .filter((c) => shortName(c.name))
                     .map((c, i) => (
                       <span key={i} className={`stg-tag${slotOf(c.slots)}`}>
-                        {c.name}
+                        {shortName(c.name)}
                       </span>
                     ))}
                 </div>
