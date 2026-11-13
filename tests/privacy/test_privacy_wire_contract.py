@@ -38,13 +38,25 @@ def py_fields(model) -> set[str]:
     return {f.alias or n for n, f in model.model_fields.items()}
 
 
+# Fields agreed in D012 (v3, contract 3.0.0) that Rishi's 3.0.0 draft has not yet
+# added to contracts/protocol.ts. Remove an entry once protocol.ts carries it.
+PENDING_3_0_0 = {"Consent": {"eventSignals"}}
+
+
 @pytest.mark.parametrize("ts_name,model", [
     ("Player", wire.Player), ("Consent", wire.Consent), ("ApiError", wire.ApiError),
     ("DailyAnswer", wire.DailyAnswer), ("PrevalenceGuess", wire.PrevalenceGuess),
     ("Block", wire.Block), ("Report", wire.Report),
 ])
 def test_fields_match_protocol(ts_name, model):
-    assert py_fields(model) == ts_fields(ts_name)
+    pending = PENDING_3_0_0.get(ts_name, set())
+    assert py_fields(model) - pending == ts_fields(ts_name)
+
+
+def test_pending_fields_are_still_missing_from_protocol():
+    """Fails as a reminder once protocol.ts adds a pending field: drop it from PENDING_3_0_0."""
+    for ts_name, fields in PENDING_3_0_0.items():
+        assert not fields & ts_fields(ts_name), f"{ts_name} now has {fields & ts_fields(ts_name)}"
 
 
 def test_api_error_body_and_codes_match_protocol():
@@ -65,7 +77,7 @@ def test_consent_toggles_are_the_consent_booleans():
 def test_join_round_trips_camel_case():
     req = wire.JoinRequest.model_validate(join_body("  Maya  "))
     assert req.display_name == "Maya"
-    assert req.wire() == join_body("Maya")
+    assert req.wire() == {**join_body("Maya"), "eventSignals": False}  # D012: optional, default off
 
 
 @pytest.mark.parametrize("mutate,why", [

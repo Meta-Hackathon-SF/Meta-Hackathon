@@ -199,6 +199,30 @@ def _validate(text: object, against_answers: object) -> tuple[str, list[str]]:
     return text, answers
 
 
+_NUMBER_WORDS = ("one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+                 "a dozen|dozens|several|a few|a couple|a handful")
+_PEOPLE = r"(?:people|persons|players|others|friends|members|stars|students|folks|of you|of them|are going|going|attending|interested)"
+_HEADCOUNT = re.compile(r"\b(\d+(?:\s*(?:-|–|to)\s*\d+)?\+?|" + _NUMBER_WORDS + r")\s+(?:\w+\s+){0,2}?" + _PEOPLE + r"\b")
+
+
+def _mentions_name(flat: str, names: Sequence[str]) -> bool:
+    for name in names:
+        tokens = words(name.replace("(synthetic)", ""))
+        if tokens and re.search(r"(?<![a-z0-9])" + r"\s+".join(map(re.escape, tokens)) + r"(?![a-z0-9])", flat):
+            return True
+    return False
+
+
+def _has_headcount(flat: str, bucket: str | None) -> bool:
+    allowed = normalize(bucket).replace("–", "-").replace(" ", "") if bucket else None
+    for m in _HEADCOUNT.finditer(flat):
+        count = m.group(1).replace("–", "-").replace(" ", "")
+        if allowed and count == allowed:
+            continue
+        return True
+    return False
+
+
 class OutputGuard:
     """Stateless; one instance can be shared across owners and threads."""
 
@@ -264,6 +288,28 @@ class OutputGuard:
         """Chat messages (Kai): quotes and PII always; contact info until mutual reveal."""
         text, answers = _validate(text, against_answers)
         return self._verdict(text, answers, sensitive=False, contact=not revealed)
+
+    def check_event_copy(
+        self,
+        text: str,
+        against_answers: Sequence[str],
+        *,
+        names: Sequence[str] = (),
+        bucket: str | None = None,
+    ) -> dict:
+        """D012 v3: nudge and custom-event copy (Adam's M7 output, templated).
+        Everything ``check`` rejects, plus (reported as ``pii``, since they can
+        identify people): any player name in ``names``, and any headcount other
+        than the allowed ``bucket`` label ("3-5", "6-10", "11+"). Times like
+        "7-9pm" are fine; "2 people", "seven friends going" are not."""
+        text, answers = _validate(text, against_answers)
+        verdict = self._verdict(text, answers, sensitive=True, contact=True)
+        reasons = list(verdict["reasons"])
+        flat = normalize(text)
+        if "pii" not in reasons and (_mentions_name(flat, names) or _has_headcount(flat, bucket)):
+            reasons.append("pii")
+            reasons.sort(key=REASON_ORDER.index)
+        return {"ok": not reasons, "reasons": reasons}
 
     def text_guard(self) -> Callable[[str], bool]:
         """Will's TextGuard for M2 follow-up questions (no answers to compare)."""

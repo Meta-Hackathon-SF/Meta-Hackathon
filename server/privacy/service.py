@@ -68,7 +68,8 @@ class Actor:
             raise TypeError("Actor must come from PrivacyService.require_session")
 
 
-ChangeKind = Literal["consent_granted", "consent_revoked", "answer_deleted", "data_deleted"]
+ChangeKind = Literal["consent_granted", "consent_revoked", "answer_deleted", "data_deleted",
+                     "event_signals_revoked"]
 
 
 @dataclass(frozen=True)
@@ -104,7 +105,26 @@ def _consent(row: sqlite3.Row) -> Consent:
         version=row["version"],
         revoked_at=row["revoked_at"],
         use_activity=bool(row["use_activity"]) if "use_activity" in row.keys() else False,
+        event_signals=bool(row["event_signals"]) if "event_signals" in row.keys() else False,
     )
+
+
+def _event_change(row: sqlite3.Row, req: UpdateConsentRequest) -> bool:
+    """True when the request flips eventSignals (None means leave it as is)."""
+    return req.event_signals is not None and bool(row["event_signals"]) != req.event_signals
+
+
+def drop_event_data(conn: sqlite3.Connection, player_id: str, community_id: str | None = None) -> None:
+    """Delete every event interest and RSVP of a player (opt-out, delete-my-data)."""
+    scope, params = ("AND community_id = ?", (player_id, community_id)) if community_id else ("", (player_id,))
+    conn.execute(f"DELETE FROM event_interests WHERE player_id = ? {scope}", params)
+    conn.execute(f"DELETE FROM event_signal_optins WHERE player_id = ? {scope}", params)
+    if community_id:
+        conn.execute(
+            "DELETE FROM event_invite_recipients WHERE player_id = ? AND invite_id IN"
+            " (SELECT invite_id FROM event_invites WHERE community_id = ?)", (player_id, community_id))
+    else:
+        conn.execute("DELETE FROM event_invite_recipients WHERE player_id = ?", (player_id,))
 
 
 def _same_toggles(row: sqlite3.Row, toggles: ConsentToggles) -> bool:
@@ -229,6 +249,11 @@ class PrivacyService:
                 " is_adult, created_at) VALUES (?, ?, 1, 1, 1, 1, ?)",
                 (player_id, community_id, now),
             )
+            if req.event_signals:
+                conn.execute(
+                    "INSERT INTO event_signal_optins (player_id, community_id, updated_at) VALUES (?, ?, ?)",
+                    (player_id, community_id, now),
+                )
             token = self._issue_session(conn, player_id, community_id)
             row = self._resolve_row(conn, token)
             actor = Actor(player_id, row["session_id"], community_id, False, _ACTOR_KEY)
@@ -241,7 +266,9 @@ class PrivacyService:
     def _own_consent_row(conn: sqlite3.Connection, actor: Actor) -> sqlite3.Row:
         row = conn.execute(
             "SELECT c.*, EXISTS (SELECT 1 FROM activity_signals a WHERE a.player_id = c.player_id"
-            " AND a.community_id = c.community_id) AS use_activity"
+            " AND a.community_id = c.community_id) AS use_activity,"
+            " EXISTS (SELECT 1 FROM event_signal_optins e WHERE e.player_id = c.player_id"
+            " AND e.community_id = c.community_id) AS event_signals"
             " FROM current_consents c WHERE c.player_id = ? AND c.community_id = ?",
             (actor.player_id, actor.community_id),
         ).fetchone()
@@ -277,10 +304,12 @@ class PrivacyService:
         with self._store.tx() as conn:
             current = self._own_consent_row(conn, actor)
             if current["version"] != req.expected_version:
-                if current["version"] == req.expected_version + 1 and _same_toggles(current, req):
+                if (current["version"] == req.expected_version + 1 and _same_toggles(current, req)
+                        and not _event_change(current, req)):
                     return _consent(current)  # retried request
                 raise errors.stale()
-            if _same_toggles(current, req):
+            event_change = _event_change(current, req)
+            if _same_toggles(current, req) and not event_change:
                 return _consent(current)  # no-op: no new revision
             withdrawn = (
                 (current["match_answers"] and not req.match_answers)
@@ -295,10 +324,25 @@ class PrivacyService:
                 (actor.player_id, actor.community_id, req.expected_version + 1, int(req.match_answers),
                  int(req.anonymous_chat), int(req.is_adult), revoked_at, now),
             )
+            if event_change and req.event_signals:
+                conn.execute(
+                    "INSERT OR IGNORE INTO event_signal_optins (player_id, community_id, updated_at) VALUES (?, ?, ?)",
+                    (actor.player_id, actor.community_id, now),
+                )
+            elif event_change:
+                drop_event_data(conn, actor.player_id, actor.community_id)  # interests and RSVPs go too
             consent = _consent(self._own_consent_row(conn, actor))
         # granted = playable again; anything short of all three is a revocation.
+        if _same_toggles(current, req):  # only eventSignals changed
+            if not consent.event_signals:
+                self._notify(ChangeNotice("event_signals_revoked", actor.player_id, actor.community_id,
+                                          consent.version, now))
+            return consent
         kind: ChangeKind = "consent_granted" if consent.grants_play else "consent_revoked"
         self._notify(ChangeNotice(kind, actor.player_id, actor.community_id, consent.version, now))
+        if event_change and not consent.event_signals:
+            self._notify(ChangeNotice("event_signals_revoked", actor.player_id, actor.community_id,
+                                      consent.version, now))
         return consent
 
     def require_consent(self, actor: Actor) -> Consent:
