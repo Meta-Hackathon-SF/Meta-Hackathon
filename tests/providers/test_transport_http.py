@@ -98,7 +98,8 @@ class TransportTests(unittest.IsolatedAsyncioTestCase):
             await MetaChatCompletionsTransport(cfg).complete(self.request)
         self.assertIn(ctx.exception.kind, ("unavailable", "timeout"))
         if ctx.exception.kind == "unavailable":
-            self.assertIn("connection_refused", ctx.exception.message)
+            # macOS/Linux refuse a closed loopback port; Windows drops the SYN and times out.
+            self.assertRegex(ctx.exception.message, r"\((connection_refused|connect_timeout)\)$")
 
     def test_network_cause_labels(self):
         import socket
