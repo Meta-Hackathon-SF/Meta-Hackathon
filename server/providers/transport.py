@@ -20,6 +20,7 @@ import socket
 import ssl
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -27,6 +28,7 @@ from .config import MuseConfig
 from .errors import ProviderError
 
 MAX_RESPONSE_BYTES = 1_000_000
+_POOL = ThreadPoolExecutor(max_workers=64, thread_name_prefix="muse-http")
 
 
 @dataclass(frozen=True)
@@ -143,14 +145,21 @@ class MetaChatCompletionsTransport:
         except TimeoutError:
             raise ProviderError("timeout", "provider request timed out") from None
         except (urllib.error.URLError, OSError) as exc:
-            raise ProviderError("unavailable", f"provider unreachable ({network_cause(exc)})") from None
+            cause = network_cause(exc)
+            if cause == "connect_timeout":  # urllib wraps socket timeouts in URLError
+                raise ProviderError("timeout", "provider connect timed out") from None
+            raise ProviderError("unavailable", f"provider unreachable ({cause})") from None
         if len(raw) > MAX_RESPONSE_BYTES:
             raise ProviderError("malformed_output", "provider response too large")
         return parse_chat_completion(raw)
 
     async def complete(self, request: ChatRequest) -> ChatResponse:
+        # Dedicated pool: the default to_thread pool (min(32, cpu+4)) queued bursts on
+        # small hosts, and queue time ate into the model timeout (audit 2: a false
+        # Ember timeout at 9 s on a 2-vCPU emulation).
+        loop = asyncio.get_running_loop()
         return await asyncio.wait_for(
-            asyncio.to_thread(self._send, request), timeout=request.timeout_s + 1.0
+            loop.run_in_executor(_POOL, self._send, request), timeout=request.timeout_s + 1.0
         )
 
 
