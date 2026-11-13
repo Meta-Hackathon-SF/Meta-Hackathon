@@ -21,3 +21,5 @@ Format: UTC timestamp | branch/commit | phase/status | interfaces/files | checks
 2026-11-13T05:40Z | role/patrik-privacy | step 4/5: role task 6 formationSnapshot lease + publish_guard, block/report storage | server/privacy/formation.py, moderation.py, db/privacy/003_blocks_reports.sql, POST /me/blocks, reentrant store tx | pytest tests 527 passed; 3 mutation checks fail as expected | D007 ACK from Kai copied; DELIVERED on #13 | Kai to ACK seams and wire resolve_handle
 
 2026-11-13T05:55Z | main 70a08ea (PR #24 merged) | tasks 1-6 on main | answer store, OutputGuard, M1, formation lease + publish guard, blocks/reports | 555 passed on merged head before merge | DELIVERED to Kai on #13 | next: task 7 UI
+
+2026-11-13T06:30Z | role/patrik-privacy | step 3/8: role task 7 privacy UI implemented, fixture-verified | web/src/features/constellations/privacy/* | lint/tsc/build pass; Playwright flow on temporary local mount 2/2 passed; existing e2e 32 passed | DELIVERED to Will on PR | Will to mount PrivacyGate
