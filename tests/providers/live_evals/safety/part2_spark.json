@@ -1,0 +1,40 @@
+{
+ "muse-spark-1.3": {
+  "reps": [
+   {
+    "recall": "49/49",
+    "fp": "0/35",
+    "injection_blocked": "4/4",
+    "category_exact": "52/53",
+    "missed": [],
+    "false_pos": [],
+    "wall_s": [
+     8.2,
+     7.9,
+     8.2,
+     7.3
+    ],
+    "errors": []
+   },
+   {
+    "recall": "49/49",
+    "fp": "0/35",
+    "injection_blocked": "4/4",
+    "category_exact": "52/53",
+    "missed": [],
+    "false_pos": [],
+    "wall_s": [
+     10.1,
+     7.0,
+     14.1,
+     9.2
+    ],
+    "errors": []
+   }
+  ],
+  "calls": 8,
+  "cost": 0.050701,
+  "usd_per_100_items": 0.02881,
+  "items": 176
+ }
+}

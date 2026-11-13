@@ -6,7 +6,7 @@ import type { EventNudge, MuseCallEvidence, Venue } from '../../../../../contrac
  * 2.0.0 contract exactly is dropped and the card is not rendered.
  */
 
-const CALL_TYPES = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8']
+const CALL_TYPES = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', 'M10']
 const VENUE_KINDS = ['cafe', 'dining_hall', 'library', 'park', 'rec_center', 'campus_event']
 const UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/
 
