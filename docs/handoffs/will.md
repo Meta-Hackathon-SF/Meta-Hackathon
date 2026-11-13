@@ -48,8 +48,14 @@ Updated: 2026-11-13T04:29Z
 - Styling uses the shell's tokens (`--blue`, `.card`, `.button-*`, `.post-meta`). My CSS restyles Patrik's `.cstp-card` only where it sits inside my page or my join dialog (spacing, border); his files are unchanged.
 - Checks: web lint 0 errors (warnings only), build ok, Playwright 42 passed; `pytest tests` 560 passed. Fixture mode only; not on a real phone.
 
+## Product direction from Will (human), 2026-11-13T04:38Z: needs a team decision, not yet proposed
+- Constellations is a Facebook-wide feature, not one Group's. The UI now lives at `/constellations`; until the contract changes it plays in `PLAY_COMMUNITY` ("hackathon-builders") because cycles and sessions are community-scoped in 2.0.0 / D007.
+- A constellation is you plus the people whose answers are most similar; the closer the match, the brighter their star. People who share your Groups may get a brighter signal.
+- "Sky" and "Constellation" are one view; the UI has no separate Sky tab.
+- Implications for owners (unacked): Rishi would publish per-member closeness (0-1) for each constellation and a shared-Group boost; Kai's reveal view would draw it; Patrik's sessions and Will's cycles would become global or multi-community. The Constellation tab shows only a labeled Example until that data exists.
+
 ## Shared files touched (claimed)
-- `web/src/App.tsx` (two routes), `web/src/pages/SecondaryPages.tsx` (one link on the Hackathon Builders card), `web/src/components/navigation/Header.tsx` (mobile title uses first path segment), `web/src/pages/HomePage.tsx` (one feed card line), `web/src/components/navigation/navigation.ts` (one sidebar item), `web/src/components/layout/LeftSidebar.tsx` (`end` on NavLink).
+- `web/src/App.tsx` (`/constellations` routes plus redirects from the old Group paths), `web/src/pages/SecondaryPages.tsx` (per-Group link added earlier, now removed), `web/src/components/navigation/Header.tsx` (mobile title uses first path segment), `web/src/pages/HomePage.tsx` (one feed card line), `web/src/components/navigation/navigation.ts` (one sidebar item), `web/src/components/layout/LeftSidebar.tsx` (`end` on NavLink).
 - `docs/DECISIONS.md`: my ACK lines under D005 and D006 only.
 - No change to `contracts/`.
 
