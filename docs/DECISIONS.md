@@ -87,7 +87,7 @@ Contract version / migration: 2.0.0 unchanged (Streak shape unchanged); contract
 Verification: Will's streak fixture tests.
 
 ## D009: Brightness in the constellation (proposed by Will)
-ID / UTC timestamp: D009 / 2026-11-13T04:00Z (proposed)
+ID / UTC timestamp: D009 / 2026-11-13T04:45Z (proposed)
 Decision and rationale: Product direction from Will (human): a constellation shows you and the players whose answers meant the most similar things; the more similar, the closer and brighter their star. Shared Groups may add a small boost. Proposal, kept additive so 2.0.0 consumers keep working:
 1. Additive optional field on `AnonymousHandle`: `brightness?: "bright" | "mid" | "faint"` (PUBLIC to room members). Rishi's formation computes a private per-member closeness 0..1 and the server bands it into three levels, so members never see exact scores and a score can't be used to infer anyone's answers. `isSelf` handles omit it.
 2. Shared-Group boost is applied inside the private closeness score only. No field says that two players share a Group, because that would leak membership.
