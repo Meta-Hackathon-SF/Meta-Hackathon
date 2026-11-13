@@ -28,9 +28,7 @@ def create_configured_app():
     store = PrivacyStore(privacy_path)
     try:
         transcriber = build_transcriber() if load_muse_stt_config() is not None else None
-        app = build_weekly_app(
-            repository=repository, privacy_store=store, transcriber=transcriber
-        )
+        app = build_weekly_app(repository=repository, privacy_store=store, transcriber=transcriber)
     except Exception:
         store.close()
         repository.close()
