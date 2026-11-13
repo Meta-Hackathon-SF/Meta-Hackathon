@@ -34,8 +34,8 @@ MAX_THEMES = 12
 # short context-dependent answers, questionId + questions raised M4 pairwise P/R from
 # ~0.5-0.8 to 1.0 on Spark, Ember and Wonder.
 QUESTION_CONTEXT = (
-    "Each answer carries a questionId; questions gives the question text. Read every answer "
-    "as a reply to its question: a short answer such as 'nobody' or 'every day' means "
+    "When an answer carries a questionId, questions gives that question's text: read the "
+    "answer as a reply to its question; a short answer such as 'nobody' or 'every day' means "
     "different things under different questions. Group by what each answer means in the "
     "context of its question, not by shared words. Never quote questions or answers in "
     "sharedMeaning."
