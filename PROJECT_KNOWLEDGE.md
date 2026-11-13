@@ -1,53 +1,53 @@
 # Shared project knowledge
 ## Evidence baseline
-Main is the mock Facebook shell only (`web/`: React/Vite/TypeScript, local demonstration state, feed components, secondary routes, Playwright tests), plus documentation and `contracts/protocol.ts`. Date of this baseline: 2026-11-12 (Constellations pivot and repo reset). Main was reset to the shell; the earlier Group Quests server code, tests, database files and provider adapter were removed. They survive only on branch `archive/group-quests-before-pivot` as reference. Nothing is reused, merged, live-verified or fixture-verified on main. Earlier test counts and lint/build results from the Group Quests era no longer describe main and are not claimed. Constellations is a fresh build.
+Main is the mock Facebook shell only (`web/`: React/Vite/TypeScript, local demonstration state, feed components, secondary routes, Playwright tests), plus documentation and `contracts/protocol.ts`. Date of this baseline: 2026-11-12 (Constellations pivot and repo reset). Main was reset to the shell; the earlier Group Quests server code, tests, database files and provider adapter were removed. They survive only on branch `archive/group-quests-before-pivot` as reference. Under D005 owners restore reusable pieces (FastAPI app, Muse adapter, privacy/session code, voice boundary) into their own paths and retest them against contract 2.0.0; nothing restored counts as verified until its tests pass on main. Earlier Group Quests test counts are not claimed.
+
+2026-11-12 weekly-game pivot (D005/D006): contract 2.0.0 and `contracts/fixtures/` added; typecheck passes; fixtures parse. Baseline check reported by the audit: `web/` build and lint pass; Playwright browser tests could not launch a browser, so UI regression verification is outstanding.
 
 Muse model note (2026-11-12): `muse-spark-1.3` answered 2 live calls and the provider echoed the model name, through the removed Group Quests adapter. Observed single-call latency was 17 to 24 s at low reasoning effort. Two calls are not a benchmark, and no Constellations code has called the model. Wonder and Ember were not available in the docs read and were not tested. Re-verify on the new adapter.
 
 Role-branch work from teammates is not claimed integrated here; inspect their latest handoffs and PRs (see [docs/COORDINATION.md](docs/COORDINATION.md)) before declaring a dependency missing.
 
 ## Locked decisions
-- Product name: Constellations (pivot from Group Quests, 2026-11-12). Muse is Muse acting as game master. Muse denotes model family only.
-- Existing Facebook mock UI is the host shell, labeled "Simulated Facebook". Feature UI will live under `web/src/features/constellations/`.
-- Five engineering owners and branch names are in AGENTS.md. Constellations role assignments are PROPOSED under D001 and need acknowledgment.
-- Friendship only, 18+, public places only for quests. Groups of 3 to 5.
-- Muse proposes, code enforces. Deterministic guards validate every Muse output. Only orchestration executes durable effects.
-- Individual answers are never shown to other players. Prompts carry random player IDs only.
-- Sky themes show only at 3+ players in the demo (25+ in production).
-- Synthetic players, accelerated unlocks and cached responses are always labeled.
-- Contract: `contracts/protocol.ts`, `CONTRACT_VERSION = "1.0.0"`, the first Constellations contract, pending producer/consumer ACK (D003).
-- Coordination: check PRs/issues for tags first; when blocked, stop, push, open a `[BLOCKED]` draft PR with a `Needs from @<handle>` block and continue only with a labeled test-only adapter (docs/COORDINATION.md, D004).
-- Existing frontend stack stays. FastAPI + PostgreSQL/Supabase is a proposed server baseline (D002).
-- Never cut: consent, safety triage, no-quote guard, Sky threshold, labels. Cut order if time runs out: P2 vision, Meetup, clue veto, voice (text always works).
-- Standing human authorization allows safe squash PR integration after current-head validation; see AGENTS.md. Keep active role branches and synchronize them with main at checkpoints. No unattended merge bot is configured.
+- Product: Constellations weekly game (D005). Daily questions Mon-Fri, catch-up until Saturday 12:00 lock, streaks (on-day only), Sunday 10:00 reveal, anonymous moderated chat expiring at next lock, mutual reveal, event nudges, thresholded Sky with labeled synthetic signals.
+- Removed: hunt mechanics, clues, found codes, Keeper, Ritual, society branding. Terms: constellation (not society), daily answer (not confession), weekly cycle (not round).
+- Existing Facebook mock UI is the host shell, labeled "Simulated Facebook"; feed tests stay green. Feature UI under `web/src/features/constellations/<area>/`.
+- Ownership (D005): Rishi formation/validation/prevalence; Adam Muse adapter/questions/nudges; Will cycle/daily answers/voice/streaks/operator; Patrik verification/sessions/storage/safety/guards; Kai chat/expiry/reveal/realtime/API composition/Sky UI.
+- Contract: `contracts/protocol.ts` 2.0.0 (D006, pending ACK). Fixtures in `contracts/fixtures/`.
+- Friendship only, 18+, public places only. Constellations of 3 to 5.
+- Muse proposes, code enforces. OutputGuard on every Muse public text and chat message.
+- Answers never shown to other players. Identity only on mutual reveal.
+- Sky themes only at 3+ (demo) / 25+ (production).
+- Server sets answer weights (on-day 1.0, catch-up 0.6, +0.1 follow-up, max 1.1).
+- Never cut: consent, safety screening, OutputGuard, Sky threshold, chat moderation, labels. First cuts: event nudges (step 6), question generation + synthetic signals (step 7).
+- Coordination: check tags first; when blocked, push, open a `[BLOCKED]` draft PR and continue behind a labeled test-only adapter (docs/COORDINATION.md, D004).
 
 ## Confirm
 - **Organizer confirmation of the Muse model** (Spark, Wonder or Ember). `muse-spark-1.3` worked in 2 earlier live calls; Wonder and Ember are untested. Open.
 - Latency plan: confirm parallel calls bring formation for 30 players under 60 s given 17 to 24 s per call. Top technical risk.
 - Backend hosting, database/auth setup, public venue allowlist, demo Group, submission rules.
 - Deadline used in planning: November 13, 2026 at 10:30 AM PST, supplied by the team, not independently verified. Feature freeze 04:30 AM.
-- Acknowledgment from all five owners of D001 (product and ownership), D002 (server baseline), D003 (contract 1.0.0) and D004 (coordination protocol).
+- Acknowledgment from all five owners of D005 (weekly game and ownership) and D006 (contract 2.0.0).
 
 ## Evidence ledger
-| Capability | Status | Required evidence |
-| --- | --- | --- |
-| Facebook shell (`web/`) | Existing implementation; mock data only | Relevant UI checks rerun on main before any claim |
-| Shared instructions and contract (`contracts/protocol.ts` 1.0.0) | Authored, pending ACK | Link and interface consistency review; D001 to D004 acknowledgments |
-| Backend composition (`server/app/`) | Planned | Registry, health, owner registrations, database readiness |
-| Muse adapter (`server/providers/`) | Planned | Constellations job schemas; re-verified live call; parallel-call timing |
-| Privacy (`server/privacy/`) | Planned | Consent, answer access 403 test, prompt-builder test |
-| Formation (`server/matching/`) | Planned | Meaning-based constellations; baseline vs Muse example |
-| Orchestration (`server/orchestration/`) | Planned | Round lifecycle, idempotent confirm, retry tests |
-| Voice capture (`server/voice/`) | Planned | Real transcription or text fallback on a phone |
-| Join and Confession (F1, F2) | Planned | Phone join under 30 s; no answer before consent |
-| Safety triage (F9) | Planned | Seeded distress answer never appears |
-| Formation (F3) | Planned | 30 players under 60 s; every constellation validated |
-| Search clues (F4) | Planned | No-quote fuzz test; red-team list of 30 answers |
-| Found code and confirm (F5) | Planned | Mutual idempotent confirm; wrong code reveals nothing |
-| Sky (F7) | Planned | Threshold test; numbers match server counts |
-| Operator console (F8) | Planned | Model metadata and latency per call |
-| Meetup (F6, P1) | Planned | 3+ approvals; venue allowlist test |
-| Hosting | Planned | Host acceptance |
-| User impact | Unknown | Actual observations, no invented metrics |
-
-Each owner updates their own handoff while working. After merge, update this ledger with exact commit, command and outcome. Do not embed private data.
+| Capability | Owner | Status | Required evidence |
+| --- | --- | --- | --- |
+| Facebook shell (`web/`) | Will | Existing; mock data | Build/lint pass; Playwright rerun outstanding (browser failed to launch) |
+| Contract 2.0.0 + fixtures | all | Authored; typechecks; pending D006 ACK | ACK from all five owners |
+| API composition (`server/app/`) | Kai | Planned (restore from archive) | Registry, health, every owner's router mounted |
+| Muse adapter (`server/providers/`) | Adam | Planned (restore from archive) | 2.0.0 task schemas; live call re-verified; evidence records |
+| Sessions, consent, private storage (`server/privacy/`) | Patrik | Planned (restore from archive) | 403 test; prompt payload test; TTL test |
+| Safety screening + OutputGuard | Patrik | Planned | Seeded distress never appears; no-quote fuzz; red-team 30 |
+| Weekly cycle, daily answers, catch-up, streaks | Will | Planned | Lock test; catch-up rules; streak fixture |
+| Voice boundary (`server/voice/`) | Will | Planned (restore from archive) | Transcription or typed fallback on a phone |
+| Question bank + selection | Adam | Planned | Schema validation; no future-day leak |
+| Semantic formation + validation | Rishi | Planned | week-sample constraints; baseline split example; 30 players timed |
+| Prevalence + SkyStats | Rishi | Planned | Threshold test; numbers equal server counts |
+| Anonymous chat, moderation, report/block | Kai (+Patrik) | Planned | Contact-info rejection; report hides; block |
+| Expiry + mutual reveal | Kai | Planned | ROOM_EXPIRED; one-sided reveal leaks nothing |
+| Realtime SSE | Kai | Planned | Reconnect replay by seq; per-player filtering |
+| Sky UI | Kai | Planned | Threshold respected; synthetic labels |
+| Operator console | Will | Planned | Full demo week in under 3 minutes; model chip per call |
+| Event nudges (step 6, cuttable) | Adam | Planned | Allowlist test; guard |
+| Question generation + synthetic signals (step 7, cuttable) | Adam, Rishi | Planned | Operator approval; labels |
+| User impact | all | Unknown | Actual observations only |

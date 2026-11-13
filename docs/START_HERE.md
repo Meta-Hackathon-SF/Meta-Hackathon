@@ -1,36 +1,34 @@
-# Launch your coding agent: Constellations
-Start with the [execution map](phases/README.md) and your [per-person phased build checklist](phases/README.md). These define P0-P6 tasks on the re-based timeline (P0 16:00 PST, freeze 04:30, deadline 10:30 AM PST) with dependencies and completion evidence. The product is Constellations (D001). Your first P0 item is checking tags (see [COORDINATION.md](COORDINATION.md) §1), then your D001/D003 ACK. Read the playbook alongside your role assignment before writing code.
+# Launch your coding agent: Constellations weekly game
+Each teammate clones the repo, switches to their branch, and pastes the master prompt below into their coding agent, replacing NAME.
 
-Each teammate clones this repository locally and checks out their branch. The common AGENTS.md is on every branch. All shared contracts remain visible to everyone. Cross-owner requests follow [COORDINATION.md](COORDINATION.md).
-
-| Person | Branch | Read next |
+| Person | Branch | Tasks |
 | --- | --- | --- |
-| rishi | `role/rishi-matching` | [assignment](roles/rishi.md) |
-| adam | `role/adam-planning` | [assignment](roles/adam.md) |
-| will | `role/will-voice-ui` | [assignment](roles/will.md) |
-| patrik | `role/patrik-privacy` | [assignment](roles/patrik.md) |
-| kai | `role/kai-orchestration` | [assignment](roles/kai.md) |
+| rishi | `role/rishi-matching` | [roles/rishi.md](roles/rishi.md) |
+| adam | `role/adam-planning` | [roles/adam.md](roles/adam.md) |
+| will | `role/will-voice-ui` | [roles/will.md](roles/will.md) |
+| patrik | `role/patrik-privacy` | [roles/patrik.md](roles/patrik.md) |
+| kai | `role/kai-orchestration` | [roles/kai.md](roles/kai.md) |
 
-Paste this, substituting your name:
-> I am NAME. Read AGENTS.md, PROJECT_KNOWLEDGE.md, docs/COORDINATION.md, docs/DECISIONS.md (D001, D003), contracts/protocol.ts (v1.0.0, pending ACK), and docs/roles/NAME.md and docs/phases/NAME.md. FIRST check open PRs/issues for tags addressed to me (COORDINATION §1) and answer them before anything else; then record my D001/D003 ACK. Switch to my assigned role branch only if the checkout is clean; otherwise preserve work and use a separate worktree. Implement my first incomplete checkpoint within my ownership boundaries. Build against the shared interfaces and coordinate any change through docs/DECISIONS.md. If I am blocked on another owner's interface, contract change, data shape, ACK or endpoint: stop at the phase boundary, push, open or update a `[BLOCKED]` draft PR tagging that owner's handle with the exact request block (COORDINATION §2), and continue only with a labeled test-only adapter; never invent their interface. Update my handoff with exact verification and dependencies. The web app is a mock Facebook shell; Constellations feature UI lives at web/src/features/constellations/. Muse proposes, code enforces; label every synthetic element.
-
-Product in one line: a campus constellation game inside Facebook Groups where Muse  turns private weekly confessions into constellations of 3-5 matched by meaning, who find each other in person.
-
-## Keeping shared knowledge current
 ```sh
-git fetch origin
-git merge origin/main
+git clone https://github.com/willapat/Meta-Hackathon.git && cd Meta-Hackathon
+git fetch origin && git switch --track origin/role/NAME-BRANCH   # or: git switch <branch> && git merge origin/main
 ```
-Run from your clean role branch. Do not use reset --hard to sync. If another role's interface is not merged yet, inspect their remote branch and coordinate; don't blindly cherry-pick unrelated work.
-Example: `git show origin/role/adam-planning:docs/handoffs/adam.md`.
 
-## Parallel agents on one machine
-Use one worktree per role to avoid checkout interference:
-```sh
-git fetch origin
-git worktree add ../constellations-rishi role/rishi-matching
+## Master prompt
+```text
+I am NAME on the Constellations team (repo: willapat/Meta-Hackathon). The product pivoted to a WEEKLY GAME on 2026-11-12 (decisions D005 and D006). Work only on my role branch and only in my owned paths.
+
+1. Sync: run `git fetch origin`, confirm `git rev-parse --abbrev-ref HEAD` is my role branch (from AGENTS.md), confirm `git status --short` is clean, then `git merge origin/main`. If the checkout has someone else's uncommitted work, use a separate git worktree; never stash, reset or discard it.
+2. Tags first: check open PRs, issues and PR comments that mention my GitHub handle (docs/COORDINATION.md §1). Answer each with ACK / CHANGE: / DELIVERED: before my own work. Then post my ACK of D005 and D006 (docs/DECISIONS.md).
+3. Read, in order: AGENTS.md, README.md, PROJECT_KNOWLEDGE.md, docs/PLAN.md (eight-step build order), docs/roles/NAME.md (my tasks, owned paths, interfaces, acceptance checks), contracts/README.md, contracts/protocol.ts (2.0.0), contracts/API.md, contracts/WORKFLOW.md, contracts/PRIVACY.md, contracts/fixtures/*.json, docs/handoffs/NAME.md.
+4. Build: do the first incomplete task in docs/roles/NAME.md. Task 1 for server owners is restoring my area's archived code from `origin/archive/group-quests-before-pivot` (e.g. `git checkout origin/archive/group-quests-before-pivot -- <my paths>`), renaming it to 2.0.0 terms (constellation, daily answer, weekly cycle; no clues, found codes, hunts, Keeper, Ritual or society), and re-running its tests. Mirror protocol.ts shapes exactly (camelCase) with real runtime validators. Develop against contracts/fixtures/ through a clearly labeled test-only adapter until the owning teammate's port lands. Never edit another owner's paths and never change contracts/ without a DECISIONS.md entry plus producer and consumer ACK.
+5. Rules that never bend: Muse proposes, code enforces. No player ever sees another player's answers. Every Muse public text and every chat message passes OutputGuard. Sky themes only at count >= threshold (3 demo). Identity only on mutual reveal. Safety-flagged content never reaches any output. Label everything synthetic ("Simulated Facebook", "Synthetic player", "Synthetic signal", "Demo timing", "Replay of a saved cycle", "Fallback grouping"). No secrets, real participant data or full prompts in commits or logs. Ordinary tests never call the live model.
+6. When blocked on another owner's interface, data, endpoint or ACK: stop at the task boundary, push my verified work, open or update a draft PR titled `[BLOCKED] <step>: <what I need>` tagging their real handle with the "Needs from" block (docs/COORDINATION.md §2), record it in my handoff, and continue only with independent work behind a labeled test-only adapter.
+7. Verify: run the acceptance checks listed in my role file (pytest for my server paths; `npm run lint && npm run build && npm run test:e2e` in web/ for UI work). Report real results, including failures. Never call fixture results live or a plan implemented.
+8. Checkpoint every meaningful task: commit with conventional messages (feat:, fix:, test:, docs:), update docs/handoffs/NAME.md and append docs/updates/NAME.md with timestamp, commit, files, checks, blockers and next consumer action, push my role branch, and open a small PR to main. Never force-push. Never merge another owner's PR without their readiness signal.
+
+Start now with step 1 and keep going task by task. Steps 6 (event nudges) and 7 (question generation, synthetic signals) in docs/PLAN.md are the first scope cuts; feature freeze is 04:30 AM PST Nov 13.
 ```
-This example assumes the local role branch exists and is not already checked out; otherwise create a tracking branch from origin first. Never reuse a worktree containing another agent's dirty files.
 
-## Shared-file changes
-Record proposed contract change, producer, consumers, and compatibility implications in docs/DECISIONS.md. Get their ACK in the PR discussion or decision entry. Merge the contract change to main, sync role branches, then implement consumers. Keep changes small enough to integrate every 2-3 hours.
+## Keeping current
+Run `git fetch origin && git merge origin/main` from your clean role branch after every teammate merge. Inspect others' progress with `git show origin/role/<branch>:docs/handoffs/<name>.md`. One worktree per role if several agents share a machine: `git worktree add ../constellations-<name> <branch>`.

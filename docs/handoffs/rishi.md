@@ -1,17 +1,17 @@
 # rishi handoff
-Current phase: P0 (not started)
-Status: planned
-Branch + commit: role/rishi-matching (no Constellations commits yet)
-Completed deliverables: none
+Current step: 2 (see docs/PLAN.md)
+Status: not started on contract 2.0.0
+Branch + commit: role branch, sync with main first
+Completed tasks: none
 Changed interfaces and files: none
 Checks run + actual result: none
 Fixture versus live evidence: none
 
 ## Requests answered
-(none yet; see docs/COORDINATION.md §1)
+(none)
 
 ## Blocked on
-(none yet; when blocked, open a [BLOCKED] draft PR tagging the owner and list it here; see docs/COORDINATION.md §2)
+(none; when blocked open a [BLOCKED] draft PR per docs/COORDINATION.md §2 and list it here)
 
-## Next consumer + exact action
-ACK D001 and D003 in the D001 PR, then start docs/phases/rishi.md P0.
+## Next action
+ACK D006 in the D006 PR or issue, then start task 1 in docs/roles/rishi.md.

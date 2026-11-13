@@ -1,0 +1,20 @@
+{
+  "contractVersion": "2.0.0",
+  "label": "Example anonymous room for UI development (synthetic).",
+  "room": {
+    "roomId": "room-orion", "constellationId": "c-1", "cycleId": "cycle-demo-w1", "status": "open",
+    "opensAt": "2026-11-15T18:00:00Z", "expiresAt": "2026-11-21T20:00:00Z",
+    "members": [
+      {"roomId": "room-orion", "handle": "Star 1", "starColor": "#7c9cff", "isSelf": true},
+      {"roomId": "room-orion", "handle": "Star 2", "starColor": "#ffb86b", "isSelf": false},
+      {"roomId": "room-orion", "handle": "Star 3", "starColor": "#6be3c1", "isSelf": false},
+      {"roomId": "room-orion", "handle": "Star 4", "starColor": "#c9a7ff", "isSelf": false}
+    ]
+  },
+  "messages": [
+    {"messageId": "m-0", "roomId": "room-orion", "handle": "Muse", "text": "You four answered this week in a way that rhymes. Say hi.", "createdAt": "2026-11-15T18:00:01Z", "moderation": "visible", "kind": "system"},
+    {"messageId": "m-1", "roomId": "room-orion", "handle": "Star 2", "text": "ok this is weirdly comforting", "createdAt": "2026-11-15T18:02:00Z", "moderation": "visible", "kind": "player"},
+    {"messageId": "m-2", "roomId": "room-orion", "handle": "Star 3", "text": "text me at 555-0100", "createdAt": "2026-11-15T18:03:00Z", "moderation": "removed", "kind": "player"},
+    {"messageId": "m-3", "roomId": "room-orion", "handle": "Muse", "text": "Open mic at the campus cafe Thursday 7-9pm. Low stakes, easy to leave. Go if 3 of you are in.", "createdAt": "2026-11-16T15:00:00Z", "moderation": "visible", "kind": "muse_nudge"}
+  ]
+}

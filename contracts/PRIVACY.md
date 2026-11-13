@@ -1,32 +1,35 @@
-# Privacy and access contract (Constellations)
-Owner: Patrik. All owners enforce this at their boundaries. No player ever sees another player's words; only clues, constellation identities and aggregate patterns. Enforced in server code, not by the model.
+# Privacy and access contract (Constellations 2.0.0)
+Owner: Patrik. Every owner enforces it at their boundary. No player ever sees another player's answers. Players see their constellation's name and anonymous handles, chat messages that passed moderation, aggregate Sky patterns, and real identities only after a mutual reveal. Enforced by server code, not by the model.
 
-| Data | Self | Constellation members | Authorized server | Model provider |
+| Data | Self | Room members | Server | Model provider |
 | --- | --- | --- | --- | --- |
-| Answer text (voice transcript included) | Own, edit/delete before lock | Never | Yes | Answer text + random per-call ID only |
-| Guess | Own | Never | Aggregation only | Never (only aggregate counts) |
-| Safety flag | Never shown as a flag; support card only | Never | Yes | M1 output only |
-| Findable details | Own | Via clues only | Yes | Needed items only (M6) |
-| Consent, session, blocks | Own | Never | Auth/privacy only | Never |
-| Constellation card and found code | Own constellation | Constellation only | Yes | M5 output |
-| Clues | Seeker only, released levels | Never target's own | Yes | M6 output, must never quote |
-| Display name after confirmed find | Yes | Confirmed finds only | Yes | Never |
-| Sky aggregate | Everyone | Everyone | Yes | Counts only (M8), threshold applied |
-| Venue / quest | Constellation | Constellation | Public places only | M7 input list |
-| Operator trace | Sanitized | Never | Sanitized metadata | No secrets |
+| Daily answer (incl. transcript) | Own, edit/delete until lock | Never | Yes | Text + random per-call id only |
+| Weight, streak, catch-up state | Own | Never | Yes | Never |
+| Prevalence guess | Own | Never | Aggregation only | Never |
+| Safety flag | Support card only | Never | Yes | M1 output |
+| Consent, session, blocks, reports | Own | Never | Privacy/operator only | Never |
+| Constellation name, shape, color | Own constellation | Yes | Yes | M5 output |
+| Anonymous handle | Own | Yes | Yes (mapping private) | Never |
+| Chat message | Own | Yes, if visible | Yes | Message text only for M1 |
+| Real identity | Own | Only after mutual reveal, only that pair | Yes | Never |
+| Sky aggregate | Everyone in community | Everyone | Yes | Counts only (M8) |
+| Event nudge | Room | Room | Yes | Venue list + sharedMeaning (M7) |
+| Operator trace | n/a | Never | Sanitized metadata | No secrets |
 
 ## Rules
-- Auth from the server session; client cannot choose live/demo mode or act as another player. Browser never gets service credentials; if Supabase is directly reachable, enforce row policies and test with non-service credentials.
-- Answers readable by author and server only; another session gets 403 on any answer endpoint. Guesses are stored separately from answers.
-- Prompts contain only random player IDs and answer text. Prompt builder strips profile fields. Unit test on every prompt payload.
-- Clues, names, themes and headlines never contain 5+ consecutive words from any answer. No sensitive categories (health, sexuality, religion, finances, family trauma, home location). Model self-check is advisory; code filters decide.
-- Sky shows a theme only at or above threshold (3 demo, 25 production). No line or stat identifies an answer.
-- Search and quests only in public places; clues use only self-approved findable details.
-- Consent is three toggles (matchAnswers, writeClues, isAdult 18+). Missing or revoked consent excludes the player from jobs; revocation invalidates in-flight jobs and checks again at publish.
-- Retention: delete anytime before lock; answers expire 14 days after the round (TTL job). Deleted answers are absent from any re-run. No zero-retention provider promise.
-- Distress/harm: flagged answers are excluded everywhere; the player sees only the private support card with campus counseling and the 988 Suicide and Crisis Lifeline (US). The game never counsels.
-- Blocks: blocked players are never placed in one constellation.
-- Raw answers are never in shared tables, telemetry or logs. Label synthetic players ("Synthetic player").
+- Identity from the server session. Browser never gets provider or service credentials.
+- Answers readable by author and server only. Guesses stored apart from answers.
+- Prompt builder strips everything except random ids and text. Unit test on every prompt payload.
+- OutputGuard on every Muse public text and every chat message: no 5+ word quote of any answer, no sensitive category, no PII, no contact info before mutual reveal. Model self-checks are advisory; code decides.
+- Sky threshold 3 demo / 25 production; suppressed themes reveal only a count.
+- Consent toggles: matchAnswers, anonymousChat, isAdult (18+). All required to play. Revocation removes the player from future jobs and from the open room.
+- Retention: delete anytime; answers, guesses and chat text expire 14 days after cycle lock. Deleted data absent from any re-run.
+- Distress or harm (answers or chat): excluded from every output; the player sees a private card with campus counseling and the 988 Suicide and Crisis Lifeline (US). The game never counsels.
+- Block: blocked pair never shares a constellation; blocker stops seeing the handle's messages.
+- Report: hidden for reporter immediately; operator review; repeat reports auto-hide.
+- Mutual reveal only when both asked; a one-sided request leaks nothing.
+- Synthetic players and signals always labeled; never counted as real participants.
+- No raw answers or chat text in logs or telemetry.
 
 ## Required tests
-Another player's session gets 403 on any answer endpoint; unit test on every prompt payload (random IDs and text only); fuzz test of no-quote checker with known answers; red-team list of 30 answers for sensitive terms; theme with 2 members never renders; seeded distress answer never appears anywhere; deleted answer absent from re-run; TTL expiry after 14 days; vetoed clue never sent (P1); quest outside venue allowlist rejected; constellation with blocked pair rejected and re-solved; forged playerId; client-set mode escalation; service credential leakage; wrong found code reveals nothing. Disable a flow rather than bypass authorization to make the demo work.
+Another session gets 403 on any answer route; prompt payload unit tests; no-quote fuzz; 30-item sensitive red-team list; 2-member theme never renders; seeded distress answer and distress chat message never appear; deleted answer absent from re-run; TTL expiry; forged playerId; client-set demo mode; contact info in chat before reveal rejected; one-sided reveal leaks nothing; blocked pair rejected and re-solved; venue outside allowlist rejected.

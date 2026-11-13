@@ -1,0 +1,18 @@
+{
+  "contractVersion": "2.0.0",
+  "label": "Curated question bank (synthetic fixture, safe for tests)",
+  "questions": [
+    {"questionId": "q-routine-meals", "text": "Where did you eat most of your meals this week, and who was usually around?", "category": "routine", "sensitivity": "low", "signalTags": ["meals", "solitude", "routine"], "followUpHint": "Was that by choice?", "source": "curated", "active": true},
+    {"questionId": "q-belonging-pretend", "text": "What's something you pretended to be fine with this week?", "category": "belonging", "sensitivity": "medium", "signalTags": ["masking", "belonging"], "followUpHint": null, "source": "curated", "active": true},
+    {"questionId": "q-joys-small-win", "text": "What small thing made your day better recently?", "category": "small_joys", "sensitivity": "low", "signalTags": ["joy", "routine"], "followUpHint": "What made it stick with you?", "source": "curated", "active": true},
+    {"questionId": "q-interests-teach", "text": "What could you teach someone in ten minutes?", "category": "interests", "sensitivity": "low", "signalTags": ["skills", "interests"], "followUpHint": null, "source": "curated", "active": true},
+    {"questionId": "q-hopes-weekend", "text": "If this weekend went perfectly, what would you be doing?", "category": "hopes", "sensitivity": "low", "signalTags": ["hopes", "activity"], "followUpHint": "Who would be there?", "source": "curated", "active": true},
+    {"questionId": "q-challenges-hard-part", "text": "What's the hardest part of being new here that nobody talks about?", "category": "challenges", "sensitivity": "medium", "signalTags": ["newness", "belonging", "solitude"], "followUpHint": null, "source": "curated", "active": true},
+    {"questionId": "q-values-good-friend", "text": "What does a good friend do that most people forget?", "category": "values", "sensitivity": "low", "signalTags": ["friendship", "values"], "followUpHint": null, "source": "curated", "active": true},
+    {"questionId": "q-routine-late-night", "text": "What are you usually doing at 11pm on a weeknight?", "category": "routine", "sensitivity": "low", "signalTags": ["night", "routine", "solitude"], "followUpHint": null, "source": "curated", "active": true},
+    {"questionId": "q-interests-rabbit-hole", "text": "What rabbit hole have you fallen into lately?", "category": "interests", "sensitivity": "low", "signalTags": ["interests", "curiosity"], "followUpHint": "What pulled you in?", "source": "curated", "active": true},
+    {"questionId": "q-belonging-home", "text": "What do you miss about where you came from?", "category": "belonging", "sensitivity": "medium", "signalTags": ["home", "newness"], "followUpHint": null, "source": "curated", "active": true},
+    {"questionId": "q-joys-comfort", "text": "What's your go-to thing to do when you need to recharge?", "category": "small_joys", "sensitivity": "low", "signalTags": ["recharge", "solitude", "joy"], "followUpHint": null, "source": "curated", "active": true},
+    {"questionId": "q-hopes-try", "text": "What's one thing you want to try this semester but haven't yet?", "category": "hopes", "sensitivity": "low", "signalTags": ["hopes", "activity"], "followUpHint": "What's stopping you?", "source": "curated", "active": true}
+  ]
+}

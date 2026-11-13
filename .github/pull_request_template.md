@@ -9,7 +9,7 @@ Next consumer action:
 
 ## Tags / requests
 Protocol: docs/COORDINATION.md. Use real handles only (see its table).
-One block per owner you need, headed `### Needs from @<handle> (<Owner>)`; omit if not blocked (title the draft `[BLOCKED] <phase>: <what you need>`):
+One block per owner you need, headed `### Needs from @<handle> (<Owner>)`; omit if not blocked (title the draft `[BLOCKED] <step>: <what you need>`):
 - What:
 - Why:
 - Proposed shape:

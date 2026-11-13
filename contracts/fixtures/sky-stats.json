@@ -1,0 +1,15 @@
+{
+  "contractVersion": "2.0.0",
+  "label": "Example SkyStats for UI development. Numbers are synthetic.",
+  "sky": {
+    "cycleId": "cycle-demo-w1", "threshold": 3, "eligiblePlayers": 7, "constellations": 2, "mutualReveals": 1,
+    "themes": [
+      {"themeId": "t-eat-alone", "label": "Eating alone more than they let on", "count": 4, "actualPercent": 57, "guessedPercentMedian": 12},
+      {"themeId": "t-late-arrival", "label": "Feeling like they arrived after friendships formed", "count": 3, "actualPercent": 43, "guessedPercentMedian": 18}
+    ],
+    "suppressedThemes": 1,
+    "headlines": ["4 of 7 people here eat alone more than they let on. They guessed 12%."],
+    "syntheticSignals": [{"signalId": "s-national-lonely", "label": "Synthetic campus: share who skipped a social plan this week", "percent": 38, "sampleSize": 500, "source": "synthetic"}],
+    "evidence": [{"callType": "M8", "model": "muse-spark-1.3", "source": "replay", "generatedAt": "2026-11-15T18:00:05Z", "latencyMs": 18400}]
+  }
+}

@@ -14,7 +14,7 @@ GitHub handles:
 
 ## 1. Before starting any work session: check for tags
 
-Run these before reading your phase playbook or writing code:
+Run these before reading your role task file or writing code:
 
 ```sh
 git fetch origin --prune
@@ -30,14 +30,14 @@ For every request addressed to you:
 
 1. **Answer first.** A teammate is blocked on you. Unblocking them comes before your own next deliverable.
 2. Reply in the same PR thread. Write `ACK`, `CHANGE: <exact proposal>`, or `DELIVERED: <commit/PR + interface>`.
-3. If you need longer than your current phase allows, reply with what you will deliver and when, then continue.
+3. If you need longer than your current step allows, reply with what you will deliver and when, then continue.
 4. Record the request and your answer in your handoff (`docs/handoffs/<name>.md`) under "Requests answered".
 
 Then read `docs/handoffs/*.md` on the other owners' remote branches (`git show origin/<branch>:docs/handoffs/<name>.md`) for anything not yet tagged.
 
 ## 2. When you need something from someone else: stop and tag
 
-You are blocked when your next phase deliverable needs any of these, and it does not yet exist on main or on the owner's branch:
+You are blocked when your next task needs any of these, and it does not yet exist on main or on the owner's branch:
 
 - another owner's interface or port
 - a contract change
@@ -47,9 +47,9 @@ You are blocked when your next phase deliverable needs any of these, and it does
 
 When you are blocked:
 
-1. **Stop at the phase boundary.** Do not invent the missing interface, do not edit the other owner's paths, and do not silently change `contracts/`.
+1. **Stop at the task boundary.** Do not invent the missing interface, do not edit the other owner's paths, and do not silently change `contracts/`.
 2. **Push what you have.** Commit and push your verified work to your role branch.
-3. **Open or update a draft PR** from your role branch to `main` titled `[BLOCKED] <phase>: <what you need>`. Put the request in the body, using this exact block:
+3. **Open or update a draft PR** from your role branch to `main` titled `[BLOCKED] <step>: <what you need>`. Put the request in the body, using this exact block:
 
    ```text
    ### Needs from @<handle> (<Owner>)
