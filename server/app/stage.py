@@ -91,16 +91,19 @@ def build_stage_router(*, repository, privacy, privacy_store, answers, cycles, g
             ).fetchall()
         return [(r["player_id"], r["display_name"]) for r in rows]
 
-    def resolve(state, community: str, viewer: str | None) -> dict[str, str]:
+    def resolve(state, recent, viewer: str | None, community: str) -> dict[str, str]:
         """slot -> playerId. Pinned slots first, then the newest joiners fill the rest
-        (the older of the two becomes A). The viewing account is never a phone."""
+        (the older of the two becomes A). The viewing account is never a phone.
+
+        Lock order: ``recent`` must be read from the privacy store BEFORE the workflow
+        transaction is opened. Reveal and answer paths hold the privacy lock while
+        they take the workflow row lock, so querying privacy inside a workflow
+        transaction deadlocks the server (seen live 2026-11-13)."""
         pinned = dict(state.records.get("stageSlots", {}).get(community, {}))
         off = set(state.records.get("stageOff", {}).get(community, []))
         taken = set(pinned.values())
         candidates = [
-            pid
-            for pid, _ in recent_players(community)
-            if pid != viewer and pid not in off and pid not in taken
+            pid for pid, _ in recent if pid != viewer and pid not in off and pid not in taken
         ]
         free = [slot for slot in SLOTS if slot not in pinned]
         picks = list(reversed(candidates[: len(free)]))  # older first
@@ -120,8 +123,9 @@ def build_stage_router(*, repository, privacy, privacy_store, answers, cycles, g
         return {r["player_id"]: r["display_name"] for r in rows}
 
     def pin(community: str, viewer: str) -> dict[str, str]:
+        recent = recent_players(community)  # privacy first, never inside the transaction
         with repository.transaction() as state:
-            slots = resolve(state, community, viewer)
+            slots = resolve(state, recent, viewer, community)
             state.records.setdefault("stageSlots", {})[community] = dict(slots)
         return slots
 
@@ -164,8 +168,9 @@ def build_stage_router(*, repository, privacy, privacy_store, answers, cycles, g
     def view(actor) -> dict:
         community = actor.community_id
         cycle = current(community)
+        recent = recent_players(community)  # privacy first, never inside the transaction
         with repository.transaction() as state:
-            slots = resolve(state, community, actor.player_id)
+            slots = resolve(state, recent, actor.player_id, community)
             entry = None
             job_status = None
             started = ""
