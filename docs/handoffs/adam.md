@@ -2,12 +2,12 @@
 Current step: 7 (question generation) done offline. All six tasks in docs/roles/adam.md are implemented offline; what remains is live verification and integration with other owners
 Status: Muse adapter restored for 2.0.0; question bank, weekly selection, M2 follow-up, M7 event nudges, the nudge card and M6 question generation implemented. Offline-verified only.
 Branch + commit: `role/adam-planning`; PRs #12 and #17 merged to main; question generation in the follow-up PR. PR #12 merged to main (655903a); nudges in the follow-up PR.
-Updated: 2026-11-13T02:30Z
+Updated: 2026-11-13T02:35Z
 
 ## Completed tasks
 1. `server/providers/` restored from `archive/group-quests-before-pivot`, renamed, extended to the 2.0.0 `MuseTask` list (M1-M8), retested. **Live call re-verified 2026-11-13T02:25Z**: `python3 -m server.providers.smoke` -> ok, `clarify` (M2), provider echoed `muse-spark-1.3`, 16.2 s, attempt 1, `reasoning_effort=low`.
 2. Question bank loader + validation; `QuestionService.select_week`, `released`, `question_for_day`.
-3. M2 clarify: `ClarifyService.follow_up`, prompt `clarify.v1`.
+3. M2 clarify: `ClarifyService.follow_up`, prompt `clarify.v2` (v1 produced a generic yes/no follow-up live; v2 plus a code check for yes/no openings fixed it in one recheck).
 4. M7 event nudges: `VenueCatalog`, `NudgeService.propose` / `propose_and_post`, prompt `event_nudge.v1`; `NudgeCard` in `web/src/features/constellations/nudges/`. Mid-week schedule and operator button NOT wired (need Kai).
 6. Muse voice block: `server/providers/voice.py` (`MUSE_VOICE`).
 
@@ -33,7 +33,7 @@ Not done: live calls beyond the one M2 smoke; anything running inside the compos
 - `python3 -m server.providers.smoke`: exit 0, live M2 call ok (2026-11-13T02:25Z). Earlier the same day: exit 2, `not_configured`, before the key was added.
 
 ## Fixture versus live evidence
-One live Muse call exists: the M2 smoke call above, on a synthetic answer. Everything else is fixture evidence. Muse outputs come from `FixtureMuse` (labeled `source: "replay"`, model `fixture:scripted-muse`). OutputGuard, cycle lookup and chat are test-only doubles. No route mounted, no durable storage, no live call for M1 or M3-M8, and no live call through `ClarifyService`, `NudgeService` or `QuestionGenerator` (the smoke uses its own prompt).
+One live Muse call exists: the M2 smoke call above, on a synthetic answer. Everything else is fixture evidence. Muse outputs come from `FixtureMuse` (labeled `source: "replay"`, model `fixture:scripted-muse`). OutputGuard, cycle lookup and chat are test-only doubles. No route mounted, no durable storage, no live call for M1 or M3-M8, and plus five live calls through the real services on synthetic fixture input (2026-11-13T02:29-02:31Z, `python3 -m tests.planning.live_check`): M2 x3, M7 x1, M6 x1, all passed validators with the TEST-ONLY guard; table in server/planning/README.md. Observed latency 10-25 s per call.
 
 ## Requests answered
 - 2026-11-12: no open PR, issue or comment mentioned `@adamzhang06` at session start.
@@ -47,6 +47,9 @@ Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
 - `@patrikliska13`: real `OutputGuard.check`; operator session check for my routes.
 - `@beatopia`: router registry for my routes; durable `SelectionStore`/`ClarifyStore`; `ChatPort.postSystem`; the `ConstellationContext` lookup for nudges; mid-week job + operator button calling `NudgeService.propose_and_post`; placing `NudgeCard` in chat.
 - `@willapat`: nothing further; his cycle service overwrites dates, so the weekStart lookup is only needed for the operator select-week route on a cycle that was not created through his service.
+
+## API budget
+Adam's Muse key has a $100 cap for the whole event including the demo. Six live calls so far (1 smoke + 5 live check). Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
 
 ## Next action
 - Me: no unblocked build task left in my role file; then verify the router inside Kai's composed app once #13 lands.

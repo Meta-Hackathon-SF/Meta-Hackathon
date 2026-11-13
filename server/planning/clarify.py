@@ -4,7 +4,7 @@ Will's follow-up route calls ``ClarifyService.follow_up``. Muse proposes; this
 module decides whether anything is shown:
   - a flagged answer (M1 distress/harm) never reaches Muse and gets no follow-up
   - the answer goes out under a random per-call id, never its answerId
-  - the proposal must be one short question and pass OutputGuard
+  - the proposal must be one short open question (not yes/no) and pass OutputGuard
   - the first decision for an answer is final: asking again returns the same
     result with no second Muse call, and nothing once the follow-up was used
   - provider failure or a rejected proposal falls back to the curated
@@ -21,8 +21,9 @@ from server.providers import MUSE_VOICE, MusePort, MuseRequest, ProviderError, T
 
 from .errors import PlanningError
 from .ports import OutputGuardPort, guard_allows
+from .questions import YES_NO_OPENING
 
-CLARIFY_PROMPT_VERSION = "clarify.v1"
+CLARIFY_PROMPT_VERSION = "clarify.v2"
 FOLLOW_UP_MAX_CHARS = 140
 ANSWER_MAX_CHARS = 400
 
@@ -37,6 +38,9 @@ Rules:
 - needsFollowup true only for a short or vague answer where one gentle question
   would open it up. Then question is a single open question, at most 120
   characters, ending with "?". It must be answerable in a sentence.
+- The question starts with What, When, Where, Who, How or Which, and picks up
+  the specific thing the player mentioned (the topic, not their wording).
+  Never a yes/no question, and never a generic "would you like to share more".
 - Never ask about health, sexuality, religion, money, family trouble or where
   someone lives. Never give advice. Never ask why they feel something.
 - Do not copy the player's wording into the question.
@@ -82,7 +86,8 @@ class InMemoryClarifyStore:
         self._results[answer_id] = result
 
 
-def follow_up_problems(text: Any) -> list[str]:
+def follow_up_problems(text: Any, *, curated: bool = False) -> list[str]:
+    """``curated`` hints were written by a person and may be yes/no; Muse proposals may not."""
     if not isinstance(text, str) or not text.strip():
         return ["empty"]
     problems = []
@@ -92,6 +97,8 @@ def follow_up_problems(text: Any) -> list[str]:
         problems.append("whitespace")
     if not text.endswith("?") or text.count("?") != 1:
         problems.append("not_one_question")
+    if not curated and YES_NO_OPENING.match(text):
+        problems.append("yes_no")
     return problems
 
 
@@ -146,6 +153,6 @@ class ClarifyService:
 
     def _fallback(self, question: dict[str, Any]) -> ClarifyResult:
         hint = question.get("followUpHint")
-        if not follow_up_problems(hint) and guard_allows(self._guard, hint, []):
+        if not follow_up_problems(hint, curated=True) and guard_allows(self._guard, hint, []):
             return ClarifyResult({"needsFollowup": True, "question": hint}, "fallback")
         return ClarifyResult(dict(NO_FOLLOW_UP), "fallback")
