@@ -167,7 +167,7 @@ export default function QuestionPost({
   });
   useEffect(() => () => transcription.current?.abort(), []);
 
-  // Live mode (PROPOSED, D012): words appear while the player talks. Falls back to
+  // Live mode (PROPOSED, D013): words appear while the player talks. Falls back to
   // the record-then-transcribe flow above when the live route is unavailable.
   const [liveOff, setLiveOff] = useState(false);
   const liveUrl = !liveOff && isLiveSupported() ? (client.liveTranscriptionUrl?.() ?? null) : null;

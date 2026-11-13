@@ -116,7 +116,7 @@ export interface CycleClient {
   remove(cycleId: string, day: CycleDay): Promise<void>;
   followUp(cycleId: string, day: CycleDay, signal?: AbortSignal): Promise<FollowUp>;
   transcribe(audio: Blob, signal?: AbortSignal): Promise<Transcript>;
-  /** PROPOSED (D012): WebSocket URL for live speech-to-text, or null when this
+  /** PROPOSED (D013): WebSocket URL for live speech-to-text, or null when this
    *  client has none (fixture mode). The server may still lack the route; the
    *  UI then falls back to ``transcribe``. */
   liveTranscriptionUrl?(): string | null;
