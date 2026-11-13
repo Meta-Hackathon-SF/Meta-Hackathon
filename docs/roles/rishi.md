@@ -17,7 +17,7 @@ Until those land, use a labeled test-only adapter over `contracts/fixtures/week-
 
 ## Tasks
 1. Restore and adapt from `archive/group-quests-before-pivot`: `server/matching/{feasibility,evaluation,eval_cli}.py` patterns only where they fit; rename to Constellations terms; retest.
-2. Pydantic models mirroring protocol.ts 2.0.0 (camelCase aliases) for Theme, Constellation, SkyStats.
+2. Frozen Python dataclasses (standard library, no Pydantic) mirroring protocol.ts 2.0.0 for Theme, Constellation, SkyStats, with hand-written `from_dict` validators and camelCase `to_wire()`. Chosen so matching runs without installed dependencies; output is plain JSON and passes Kai's Pydantic wire validators.
 3. Baseline grouper (keyword/TF-IDF or embeddings) with weights. Must split Maya and Dev in `week-sample.json` so the demo shows Muse joining them.
 4. M3 theme discovery + M4 formation prompts (group by meaning, not keywords; weights as confidence hints; blocked pairs listed). Strict JSON, schema validation.
 5. Validator: size 3-5, everyone placed once, no blocked pair, distress excluded, loose-match label, one re-solve then deterministic fallback labeled "Fallback grouping".

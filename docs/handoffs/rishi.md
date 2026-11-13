@@ -4,7 +4,7 @@ Status: implementing (fixture-verified only; no live Muse call, no real snapshot
 Branch + commit: role/rishi-matching (see PR "feat: semantic formation core")
 Completed tasks (docs/roles/rishi.md):
 - 1 Archive reviewed: Group Quests matching (time windows, budgets) does not fit 2.0.0; only patterns reused (strict JSON parsing, exact-key checks, one retry, payloads never logged). No archived files restored.
-- 2 Stdlib frozen-dataclass models with validators mirroring protocol.ts 2.0.0 (camelCase `to_wire`): PromptText, FormationSnapshot, MuseCallEvidence, Theme, Constellation, FormationResult. Stdlib only so it runs before Kai's pyproject lands.
+- 2 Frozen Python dataclasses (not Pydantic; see docs/roles/rishi.md task 2) with hand-written validators mirroring protocol.ts 2.0.0 (camelCase `to_wire`): PromptText, FormationSnapshot, MuseCallEvidence, Theme, Constellation, FormationResult. Stdlib only so it runs before Kai's pyproject lands.
 - 3 Keyword baseline (weighted bag of words, cosine) + constrained backtracking partition (3-5, once each, blocks). Splits Maya and Dev on week-sample.
 - 4 M3/M4 payload builders and strict parsers; FormationService pipeline.
 - 5 Validator; one M4 re-solve; deterministic "Fallback grouping" (labeled, isLooseMatch) or retryable PROVIDER_UNAVAILABLE when fallback disabled.
