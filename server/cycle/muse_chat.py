@@ -75,10 +75,13 @@ _DRAFT_FIELDS = ("draftTitle", "draftPlaceId", "draftDay", "draftTime", "draftDe
 
 
 def _schema(kind: str) -> dict[str, Any]:
-    """For create, every draft field is required: live tests showed optional ones were skipped."""
-    if kind != "create":
-        return _SCHEMA
-    return {**_SCHEMA, "required": ["text", *_DRAFT_FIELDS]}
+    """Required fields per task: live tests showed Muse skips optional ones."""
+    extra = {
+        "hangout": ["eventIds"],
+        "supplies": ["itemIds"],
+        "create": list(_DRAFT_FIELDS),
+    }.get(kind, [])
+    return {**_SCHEMA, "required": ["text", *extra]}
 
 
 class MuseChatError(Exception):

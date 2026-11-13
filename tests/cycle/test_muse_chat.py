@@ -264,7 +264,7 @@ def test_create_requests_require_every_draft_field_in_the_schema():
         "draftTime",
         "draftDescription",
     ]
-    assert hangout == ["text"]
+    assert hangout == ["text", "eventIds"]
 
 
 def test_one_retry_on_a_transient_failure_but_not_on_a_client_error():
@@ -293,3 +293,14 @@ def test_one_retry_on_a_transient_failure_but_not_on_a_client_error():
     except MuseChatError:
         pass
     assert len(bad_key.calls) == 1  # no retry on a client error
+
+
+def test_supplies_requires_item_ids_and_barter_requires_only_text():
+    fake = FakeMuse({"text": "ok"})
+    for kind in ("supplies", "barter"):
+        MuseChat(CONFIG, send=fake).reply({"kind": kind, "context": CONTEXT}, "p1")
+    supplies, barter = (
+        c["body"]["response_format"]["json_schema"]["schema"]["required"] for c in fake.calls
+    )
+    assert supplies == ["text", "itemIds"]
+    assert barter == ["text"]
