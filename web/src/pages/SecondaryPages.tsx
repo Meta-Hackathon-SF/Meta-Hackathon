@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { Author } from "../types/feed";
 import { Link } from "react-router";
 import {
   Bookmark,
@@ -13,7 +12,6 @@ import {
   Pencil,
   Play,
   Plus,
-  Send,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -22,6 +20,7 @@ import Avatar from "../components/common/Avatar";
 import PostCard from "../components/feed/PostCard";
 import Composer from "../components/feed/Composer";
 import { currentUser, notifications, people, photo } from "../data/demo";
+import MessengerInbox from "../features/constellations/messenger/MessengerInbox";
 import { useApp } from "../state/context";
 
 export function FriendsPage() {
@@ -474,84 +473,12 @@ export function NotificationsPage() {
 }
 
 export function MessagesPage() {
-  const [selected, setSelected] = useState<Author>(people[0]);
-  const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<Record<string, string[]>>({});
   return (
     <PageFrame
       title="Messenger"
-      description="A local chat preview. Messages stay in this page."
+      description="A temporary Sunday group moves here once everyone agrees to keep it."
     >
-      <section className="card messenger-page">
-        <div className="conversation-list">
-          {people.slice(0, 4).map((person) => (
-            <button
-              key={person.name}
-              className={selected.name === person.name ? "selected" : ""}
-              onClick={() => {
-                setSelected(person);
-              }}
-              aria-label={`Chat with ${person.name}`}
-            >
-              <Avatar person={person} online />
-              <span>{person.name}</span>
-            </button>
-          ))}
-        </div>
-        <div className="conversation">
-          <header>
-            <Avatar person={selected} size={36} online />
-            <span>
-              <strong>{selected.name}</strong>
-              <small>Demo conversation</small>
-            </span>
-          </header>
-          <div className="conversation-body">
-            <Avatar person={selected} size={56} />
-            <h2>{selected.name}</h2>
-            <p className="muted">
-              You're connected in the hackathon community.
-            </p>
-            <p className="received-message">
-              Hey! See you at the next build session? 👋
-            </p>
-            {messages[selected.name]?.map((text, index) => (
-              <p className="sent-message" key={index}>
-                {text}
-              </p>
-            ))}
-          </div>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!draft.trim()) return;
-              setMessages((previous) => ({
-                ...previous,
-                [selected.name]: [
-                  ...(previous[selected.name] || []),
-                  draft.trim(),
-                ],
-              }));
-              setDraft("");
-            }}
-          >
-            <input
-              aria-label="Message"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Aa"
-              maxLength={2000}
-            />
-            <button
-              type="submit"
-              aria-label="Send message"
-              disabled={!draft.trim()}
-            >
-              <Send size={21} />
-            </button>
-          </form>
-        </div>
-      </section>
+      <MessengerInbox />
     </PageFrame>
   );
 }

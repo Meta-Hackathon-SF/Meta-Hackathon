@@ -552,8 +552,11 @@
 .spc-textarea::placeholder {
   color: #8a8d91;
 }
-.spc-composer:focus-within {
-  box-shadow: 0 0 0 2px var(--spc-blue) inset;
+.spc-composer:focus-within,
+.spc-composer textarea:focus,
+.spc-composer textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 .spc-float {
   position: absolute;
@@ -826,8 +829,10 @@
 .spc-textarea.is-short {
   height: 120px;
 }
-.spc-textarea:focus {
-  box-shadow: 0 0 0 2px var(--spc-blue) inset;
+.spc-textarea:focus,
+.spc-textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 .spc-fu-q {
   margin: 8px 0 0;
@@ -1169,6 +1174,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 8px 14px;
   background: rgba(255, 255, 255, 0.06);
@@ -1204,6 +1210,11 @@
 }
 .spc-keep-btn.is-kept {
   background: rgba(255, 255, 255, 0.14);
+}
+a.spc-keep-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 .spc-msgs {
   position: relative;
@@ -1284,8 +1295,10 @@
 .spc-chat-input::placeholder {
   color: #8c9bc2;
 }
-.spc-chat-input:focus {
-  box-shadow: 0 0 0 2px var(--spc-blue);
+.spc-chat-input:focus,
+.spc-chat-input:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 .spc-send {
   display: grid;
@@ -1581,8 +1594,11 @@
   border-radius: 20px;
   background: var(--spc-bg);
 }
-.spc-feed-box:focus-within {
-  box-shadow: 0 0 0 2px var(--spc-blue) inset;
+.spc-feed-box:focus-within,
+.spc-feed-box textarea:focus,
+.spc-feed-box textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 .spc-feed-box textarea {
   height: 64px;

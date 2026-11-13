@@ -57,8 +57,7 @@ from server.privacy import (
 )
 from server.privacy import build_router as privacy_router
 from server.privacy.fixtures import seed_players
-from server.providers import KeywordMusePort, TaskRegistry, load_muse_config
-from server.providers.router import build_muse_router
+from server.providers import KeywordMusePort, TaskRegistry, build_muse_router, load_muse_config
 
 VERIFIED_TOKEN = contextvars.ContextVar("verified_session_token", default=None)
 
@@ -119,6 +118,7 @@ def build_weekly_app(
     base_muse = (
         muse_factory(registry)
         if muse_factory is not None
+        # Measured per-task models (server/providers/router.py), MUSE_ROUTES can override.
         else build_muse_router(registry, load_muse_config())
     )
     muse = ScopedMuse(base_muse, repository)

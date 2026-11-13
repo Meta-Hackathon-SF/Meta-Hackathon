@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("home renders 44 posts with local images and no runtime errors", async ({
+test("home renders 44 posts (14 + 30 demo population) with local images and no runtime errors", async ({
   page,
 }) => {
   const errors: string[] = [];

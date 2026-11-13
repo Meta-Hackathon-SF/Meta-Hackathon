@@ -139,9 +139,10 @@ Verification: `tests/voice/test_live.py` 12 offline tests against a fake Muse re
 ID / UTC timestamp: D015 / 2026-11-13T08:10Z (first filed as D013, which Patrik's live speech-to-text decision already held; renumbered by Rishi)
 Decision and rationale: D010 point 4 says event heat counts only events from the approved catalog, but catalog events had no id to match against (issue #44). Each `campusEvents` entry in `contracts/fixtures/venues.json` (and `server/planning/data/venues.json`, which must equal it) now carries `eventId`, unique, shaped `ev-<name>`. The ids follow Will's UI: `ev-open-mic`, `ev-volleyball`, `ev-board-games`, `ev-film-club`. "Pickup soccer" became "Pickup volleyball", and "Film club screening" at `v-quad` was added to match. `VenueCatalog.event_ids()` is the allowlist to pass to `event_heat(..., approved_event_ids)`. Muse's M7 input is unchanged: `events_between` still returns only `{title, placeId, start}` (M7In in protocol.ts).
 Owner and affected: Adam (catalog, producer); Rishi (`event_heat` allowlist, consumer: ACK on #44, implemented at 59ce86a); Will (UI ids, consumer: ACK on #44); Patrik (optional: reject unapproved `eventIds` at `PUT /me/activity`).
-Contract version / migration: additive fixture field, no protocol.ts type change, so it stays 2.1.0. The web copy is `APPROVED_EVENTS` in `web/src/features/constellations/nudges/venues.ts`, and `tests/planning/test_web_venues.py` fails on drift.
+Contract version / migration: additive fixture field, no protocol.ts type change. The web copy is `APPROVED_EVENTS` in `web/src/features/constellations/nudges/venues.ts`, and `tests/planning/test_web_venues.py` fails on drift.
 ACK `@rishibagri` 2026-11-13T07:12Z (#44). ACK `@willapat` 2026-11-13T07:07Z (#44).
 Verification: `python -m pytest tests/planning tests/providers tests/orchestration/test_nudges.py` passed; web build passes.
+Addendum 2026-11-13T10:00Z (Adam): every catalog event also carries an explicit `end` (validated: after `start`, at most 3 h), so 3.0.0 `EventView.endsAt` is never guessed. This is additive and the same values are in the web `APPROVED_EVENTS`. M7In events stay `{title, placeId, start}`. Proposed on #68 (item 1).
 
 ## D014: Muse sees the questions and the activity; two new Muse tasks (proposed by Adam, at the human's direction)
 ID / UTC timestamp: D014 / 2026-11-13T09:00Z (proposed)

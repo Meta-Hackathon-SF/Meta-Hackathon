@@ -537,7 +537,7 @@ def test_operator_topup_records_canonical_synthetic_labels():
         assert response.status_code == 200
         with env.repository.transaction() as state:
             labeled = state.records["syntheticPlayers"]
-            assert len(labeled) == 38
+            assert len(labeled) == 38  # 8 fixture players + the 30-player demo cast (#84)
             assert all(row["communityId"] == COMMUNITY for row in labeled.values())
 
 

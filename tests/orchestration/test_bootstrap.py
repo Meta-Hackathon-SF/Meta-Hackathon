@@ -44,3 +44,28 @@ def test_configured_backend_readiness_tracks_voice_configuration(
         assert response.status_code == status
         assert response.json()["services"]["voice"] == voice
         assert client.post("/api/v1/voice/transcribe").status_code == 401
+
+
+def test_configured_backend_routes_each_task_to_its_measured_model(monkeypatch, tmp_path):
+    """The deployed app must use the per-task router, not one model for every task."""
+    from server.providers import MuseRouter
+    from server.providers.router import EMBER, SPARK, WONDER
+
+    monkeypatch.setenv("CONSTELLATIONS_ENV", "production")
+    monkeypatch.setenv("CONSTELLATIONS_ALLOWED_ORIGINS", "https://demo.example")
+    monkeypatch.setenv("CONSTELLATIONS_WORKFLOW_DSN", "test-only-dsn")
+    monkeypatch.setenv("CST_PRIVACY_DB", str(tmp_path / "privacy.sqlite"))
+    monkeypatch.setenv("MUSE_API_KEY", "test-key")
+    monkeypatch.delenv("MUSE_ROUTES", raising=False)
+    monkeypatch.setattr(
+        "server.app.bootstrap.PostgresWorkflowRepository", lambda _dsn: TestWorkflowRepository()
+    )
+
+    app = create_configured_app()
+    with TestClient(app):
+        router = app.state.muse.muse
+        assert isinstance(router, MuseRouter) and router.configured
+        assert router.route_for("safety_screen").model == EMBER
+        assert router.route_for("constellation_formation").model == EMBER
+        assert router.route_for("question_generation").model == SPARK
+        assert router.route_for("sky_narration").model == WONDER

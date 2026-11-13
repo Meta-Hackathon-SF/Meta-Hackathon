@@ -121,3 +121,26 @@ Nine single calls: enough to show the prompts and validators work with live outp
 pytest tests/planning tests/providers
 ```
 Offline only. Results against the doubles are fixture evidence, not integration evidence.
+
+
+## v3 events, nudges and custom events (contract 3.0.0, PRD S13/S14)
+Built behind the 3.0.0 shapes. These are offline-tested and not yet composed by Kai's app. M7 copy shapes and the `custom_event` naming were proposed on #68 (items 2 and 3) and await Rishi's ACK.
+
+| Piece | Module | What it does |
+| --- | --- | --- |
+| `EventsService` | `events.py` | `EventView[]`: approved catalog (D015) plus approved custom events. `constellationInterestBucket` comes from Rishi's port and is validated to `3-5 / 6-9 / 10+`, else "none". `myInterest` comes from Patrik's port. A failing port degrades to none/False and never invents a value. |
+| `EventNudgeService` | `nudge_copy.py` | `EventNudgeView`. Copy is M7 `event_nudge_copy.v1` from aggregate input only: one line, ≤140 chars, mentions the event or venue, no digits or links, passes OutputGuard and **M10 (required)**, else a labeled template. Copy is shared per (event, bucket) and cached 1 h. Cadence: ≤2 active, ≤1 per 48 h, ≤2 per 7 days, never the same event twice, upcoming within 7 days only. `dismiss`, and `forget` on consent revoke. |
+| `CustomEventService` | `custom_events.py` | `CustomEventProposal`. M7 `custom_event.v1` from Rishi's `cluster_aggregate` (size and allowlisted tags only), a city-level `area` from config, and offered windows. Code checks: approved venue, inside a window, ≤3 h, no digits or links, OutputGuard plus **M10 (required)**. Proposals stay pending until an operator decides. An approved proposal becomes an `EventView` of kind "custom" (`ev-custom-<id>`), and `on_approved` lets Patrik issue invites. |
+
+Routes, each mounted only when its service is passed to `PlanningRuntime`:
+- `GET /events?window=week`, `GET /events/:eventId` (verified player);
+- `GET /me/nudges`, `POST /nudges/:nudgeId/dismiss` (own only);
+- operator: `GET /operator/events/nudges` (counts per bucket), `POST /operator/events/:eventId/nudge-preview`, `GET /operator/custom-events`, `POST /operator/custom-events/:proposalId/decision`.
+
+`PUT /events/:eventId/interest` and invites stay with Patrik.
+
+**Kai wiring:**
+- `EventsService(catalog, interest_buckets=<HourlyInterest over Rishi's constellation_interest>, my_interests=<Patrik EventSignals>, custom_events=custom.approved_events)`
+- `EventNudgeService(muse, guard, catalog, sensitivity=SensitivityScreen(muse), approved_events=custom.approved_events, trace=...)`. Call `propose_for(playerId, nudge_eligible rows, now=...)` from the nudge job, with the R3 delay.
+- `CustomEventService(..., area=<community config>, sensitivity=..., on_approved=<Patrik invites>)`
+- `PlanningRuntime(..., events=, event_nudges=, custom_events=, now=<effective_now>)`

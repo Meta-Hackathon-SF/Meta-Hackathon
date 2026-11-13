@@ -7,6 +7,8 @@ import { DemoNote, StarField } from "./parts";
 import "./reveal.css";
 import SkyCanvas from "./SkyCanvas";
 import Telescope from "./Telescope";
+import { ChatHttpError } from "../../chat/client";
+import { SUPPORT_RESOURCES } from "./preview";
 import { useRoom } from "./useRoom";
 
 type CanvasMode = "daily" | "sky" | "forming" | "main";
@@ -229,6 +231,7 @@ export function ChatScreen({
   const [reporting, setReporting] = useState(false);
   const [asked, setAsked] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
+  const [support, setSupport] = useState(false);
   const others = room?.members.filter((m) => !m.isSelf) ?? [];
   const self = room?.members.find((m) => m.isSelf);
   const hoursLeft = room ? Math.max(0, Math.ceil((new Date(room.expiresAt).getTime() - Date.now()) / 3_600_000)) : null;
@@ -238,12 +241,23 @@ export function ChatScreen({
   const run = async (fn: (ctx: { key: string; signal: AbortSignal }) => Promise<unknown>, fail: string) => {
     setBusy(true);
     setNote(null);
+    setSupport(false);
     try {
       await fn({ key: keyOf(), signal: new AbortController().signal });
       return true;
     } catch (error) {
+      // The server decides: M1 moderation rejects, the room clock expires, the limiter throttles.
       const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
-      setNote(code === "MESSAGE_REJECTED" ? "This message couldn't be sent." : code === "ROOM_EXPIRED" ? "This room has closed." : fail);
+      setSupport(error instanceof ChatHttpError && error.supportAvailable);
+      setNote(
+        code === "MESSAGE_REJECTED"
+          ? "Message not sent. Keep contact details and private answers out of chat."
+          : code === "ROOM_EXPIRED"
+            ? "This room has closed."
+            : code === "RATE_LIMITED"
+              ? "Wait a moment before sending another message."
+              : fail,
+      );
       return false;
     } finally {
       setBusy(false);
@@ -340,6 +354,16 @@ export function ChatScreen({
         {(note ?? snapshot.notice) && (
           <div className="spc-rejected" role="alert">
             {note ?? snapshot.notice}
+          </div>
+        )}
+        {support && (
+          <div className="spc-rejected" data-testid="spc-chat-support">
+            Need to talk to someone?{" "}
+            {SUPPORT_RESOURCES.map((r) => (
+              <a key={r.name} className="spc-link" href={r.href}>
+                {r.name}
+              </a>
+            ))}
           </div>
         )}
         <form
