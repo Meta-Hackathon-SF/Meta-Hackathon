@@ -59,6 +59,14 @@ def changed(**over):
 
 
 class VenueCatalogTests(unittest.TestCase):
+    def test_event_ids_are_the_approved_allowlist(self):
+        catalog = VenueCatalog.load()
+        self.assertEqual(catalog.event_ids(), {"ev-open-mic", "ev-volleyball", "ev-board-games", "ev-film-club"})
+        self.assertEqual(catalog.event("ev-open-mic")["placeId"], "v-cafe")
+        self.assertIsNone(catalog.event("ev-invented"))
+        for e in catalog.events_between(datetime(2026, 11, 1, tzinfo=timezone.utc), datetime(2026, 12, 1, tzinfo=timezone.utc)):
+            self.assertEqual(set(e), {"title", "placeId", "start"})
+
     def test_default_catalog_equals_shared_fixture(self):
         catalog = VenueCatalog.load()
         self.assertEqual(list(catalog.venues), VENUES_DOC["venues"])
@@ -78,8 +86,12 @@ class VenueCatalogTests(unittest.TestCase):
         bad = [
             doc(contractVersion="1.0.0"), doc(venues=[]), doc(venues=private), doc(venues=addressed),
             doc(venues=VENUES_DOC["venues"] + [VENUES_DOC["venues"][0]]),
-            doc(campusEvents=[{"title": "House party", "placeId": "v-someones-flat", "start": "2026-11-19T03:00:00Z"}]),
-            doc(campusEvents=[{"title": "Open mic", "placeId": "v-cafe", "start": "Thursday evening"}]),
+            doc(campusEvents=[{"eventId": "ev-party", "title": "House party", "placeId": "v-someones-flat", "start": "2026-11-19T03:00:00Z"}]),
+            doc(campusEvents=[{"eventId": "ev-mic", "title": "Open mic", "placeId": "v-cafe", "start": "Thursday evening"}]),
+            doc(campusEvents=[{"title": "Open mic", "placeId": "v-cafe", "start": "2026-11-19T03:00:00Z"}]),           # no id
+            doc(campusEvents=[{"eventId": "Open Mic!", "title": "Open mic", "placeId": "v-cafe", "start": "2026-11-19T03:00:00Z"}]),
+            doc(campusEvents=[{"eventId": "ev-a", "title": "A", "placeId": "v-cafe", "start": "2026-11-19T03:00:00Z"},
+                              {"eventId": "ev-a", "title": "B", "placeId": "v-rec", "start": "2026-11-19T04:00:00Z"}]),  # duplicate id
         ]
         for d in bad:
             with self.assertRaises(BankError):
@@ -110,7 +122,9 @@ class NudgeTests(unittest.TestCase):
         self.assertEqual(set(payload), {"sharedMeaning", "venues", "window", "campusEvents"})
         self.assertEqual(payload["venues"], VENUES_DOC["venues"])
         self.assertEqual(payload["window"], {"start": "2026-11-18T18:00:00Z", "end": "2026-11-21T18:00:00Z"})
-        self.assertEqual(payload["campusEvents"], VENUES_DOC["campusEvents"])
+        self.assertEqual(payload["campusEvents"],
+                         [{k: e[k] for k in ("title", "placeId", "start")} for e in VENUES_DOC["campusEvents"]
+                          if "2026-11-18T18:00:00Z" <= e["start"] < "2026-11-21T18:00:00Z"])
         for answer in ANSWERS:
             self.assertNotIn(answer, sent.user + sent.developer)
         for private in ("room-orion", "c-1", "p-maya"):

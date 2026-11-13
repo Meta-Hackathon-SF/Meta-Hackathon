@@ -141,7 +141,7 @@ export function parseEvidence(value: unknown): MuseCallEvidence {
     "generatedAt",
     "latencyMs",
   ]);
-  oneOf(row.callType, ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8"]);
+  oneOf(row.callType, ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10"]);
   oneOf(row.source, ["live", "replay"]);
   text(row.model);
   utc(row.generatedAt);

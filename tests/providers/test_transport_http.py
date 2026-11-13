@@ -129,3 +129,15 @@ class TransportTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UsageParsingTests(unittest.TestCase):
+    def test_usage_reduced_to_counts(self):
+        from server.providers.transport import parse_chat_completion
+
+        raw = json.dumps({"model": "muse-ember-1.0", "choices": [{"message": {"content": "{}"}, "finish_reason": "stop"}],
+                          "usage": {"prompt_tokens": 12, "completion_tokens": 30, "extra": "x",
+                                    "completion_tokens_details": {"reasoning_tokens": 20}}}).encode()
+        self.assertEqual(parse_chat_completion(raw).usage, {"inputTokens": 12, "outputTokens": 30, "reasoningTokens": 20})
+        raw = json.dumps({"choices": [{"message": {"content": "{}"}}], "usage": {"prompt_tokens": "12", "completion_tokens": -1}}).encode()
+        self.assertIsNone(parse_chat_completion(raw).usage)
