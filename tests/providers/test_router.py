@@ -7,7 +7,7 @@ import unittest
 from server.providers import ProviderError, TaskRegistry
 from server.providers.config import MuseConfig
 from server.providers.port import MuseRequest, MuseResult
-from server.providers.router import MuseRouter, Route, parse_routes
+from server.providers.router import MEASURED_ROUTES, MuseRouter, Route, parse_routes
 
 BASE = MuseConfig(api_key="k-test", model="muse-spark-1.3", timeout_s=30.0, reasoning_effort="low")
 
@@ -126,8 +126,13 @@ class RouterTests(unittest.TestCase):
         self.assertEqual(MEASURED_ROUTES["clarify"].model, "muse-ember-1.0")
         self.assertNotIn("muse-spark-1.3", (MEASURED_ROUTES["sky_narration"].model, *MEASURED_ROUTES["sky_narration"].fallbacks))
         r = build_muse_router(TaskRegistry(), BASE, adapter_factory=FakeAdapter)
-        self.assertEqual(r.route_for("theme_discovery"), None)  # not compared head to head
         self.assertEqual(r.route_for("constellation_formation").model, "muse-ember-1.0")
+        # Audit 3 fixes: every task routed; M3 Ember; M10 Spark first; M2 10 s.
+        from server.providers.port import TASKS
+        self.assertEqual(set(MEASURED_ROUTES), set(TASKS))
+        self.assertEqual(r.route_for("theme_discovery").model, "muse-ember-1.0")
+        self.assertEqual(r.route_for("sensitivity_screen").model, "muse-spark-1.3")
+        self.assertEqual(r.route_for("clarify").timeout_s, 10.0)
 
     def test_route_attempts_reach_the_adapter_config(self):
         seen = []
@@ -142,6 +147,33 @@ class RouterTests(unittest.TestCase):
                        adapter_factory=Capture)
         asyncio.run(r.run(req()))
         self.assertEqual(seen, [1])
+
+    def test_env_override_merges_over_measured_routes_and_rejects_bad_specs(self):
+        from server.providers.router import MEASURED_ROUTES, routes_from_env
+
+        routes = routes_from_env({"MUSE_ROUTES": "clarify=muse-spark-1.3:low:12:2"})
+        self.assertEqual(routes["clarify"], Route("muse-spark-1.3", "low", 12.0, (), max_attempts=2))
+        self.assertEqual(routes["safety_screen"], MEASURED_ROUTES["safety_screen"])
+        self.assertEqual(routes_from_env({}), MEASURED_ROUTES)
+        for bad in ("clarify=gpt-4o", "nope=muse-spark-1.3", "clarify=muse-spark-1.3:low:12:9"):
+            with self.assertRaises(ValueError):
+                routes_from_env({"MUSE_ROUTES": bad})
+
+    def test_route_check_reports_served_model_and_fallbacks(self):
+        from server.providers.route_check import check, ping_registry, route_table
+
+        routes = {"clarify": Route("muse-ember-1.0", "minimal", 6.0, ("muse-spark-1.3",), max_attempts=1),
+                  "safety_screen": Route("muse-ember-1.0", "low", 8.0, ("muse-spark-1.3",), max_attempts=1)}
+        FakeAdapter.script = {"muse-ember-1.0": [{"ok": True}, ProviderError("timeout", "t")] + [{"ok": True}] * 20,
+                              "muse-spark-1.3": [{"ok": True}] * 20}
+        FakeAdapter.calls = []
+        r = MuseRouter(ping_registry(), BASE, routes, adapter_factory=FakeAdapter)
+        rows = {row["task"]: row for row in asyncio.run(check(r, routes))}
+        self.assertTrue(rows["clarify"]["onPrimary"])
+        self.assertEqual((rows["safety_screen"]["served"], rows["safety_screen"]["fellBack"],
+                          rows["safety_screen"]["onPrimary"]), ("muse-spark-1.3", True, False))
+        table = {row["task"]: row for row in route_table(routes, "muse-spark-1.3")}
+        self.assertFalse(table["sky_narration"]["routed"])
 
     def test_parse_routes(self):
         routes = parse_routes("clarify=muse-ember-1.0:minimal:20>muse-spark-1.3; constellation_formation=muse-spark-1.3:low")
