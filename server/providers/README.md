@@ -36,7 +36,7 @@ Source: Meta's official Meta Model API docs at dev.meta.ai, read 2026-11-12 (`/d
 | Errors | 400/401/402/403/404/413/429(`Retry-After`)/500/503(`Retry-After`)/504 | mapped in `transport.classify_status` |
 | Reasoning | Muse Spark always reasons; default `reasoning_effort` "high"; `"none"` returns 400 | optional `MUSE_REASONING_EFFORT` pass-through |
 | Audio | `input_audio` content parts (1.3 audio "not fully supported"); separate `muse-voice-transcribe-1.0` STT at `POST /v1/asr/transcribe` | not used here (Will owns transcription) |
-| Timeouts | not stated | 30 s/attempt code default; example config uses 60 s with low effort (see live evidence) |
+| Timeouts | not stated | from the environment: 60 s/attempt and `reasoning_effort=low` by default (the settings every live check and formation timing run used); override with `MUSE_TIMEOUT_S` / `MUSE_REASONING_EFFORT` (low, medium, high) |
 
 Not verified: latency under load, structured-output adherence on the 2.0.0 schemas, rate limits for the team key, and whether `strict: true` accepts our schema keywords.
 

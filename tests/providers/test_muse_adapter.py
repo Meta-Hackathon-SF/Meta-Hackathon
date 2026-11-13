@@ -271,6 +271,21 @@ class ConfigTests(unittest.TestCase):
         self.assertNotIn("secret-value", repr(cfg))
         self.assertNotIn("secret-value", json.dumps(cfg.describe()))
 
+    def test_env_defaults_are_the_live_tested_settings(self):
+        # A deployed server that sets only the key must not fall back to the
+        # provider's "high" effort with a 30 s timeout (timed out live).
+        cfg = load_muse_config({"MUSE_API_KEY": "k"})
+        assert cfg is not None
+        self.assertEqual((cfg.timeout_s, cfg.reasoning_effort, cfg.max_attempts), (60.0, "low", 2))
+        cfg = load_muse_config({"MUSE_API_KEY": "k", "MUSE_TIMEOUT_S": "45", "MUSE_REASONING_EFFORT": "medium"})
+        assert cfg is not None
+        self.assertEqual((cfg.timeout_s, cfg.reasoning_effort), (45.0, "medium"))
+
+    def test_unknown_reasoning_effort_rejected(self):
+        for effort in ("none", "max", "LOW"):
+            with self.assertRaises(ValueError):
+                load_muse_config({"MUSE_API_KEY": "k", "MUSE_REASONING_EFFORT": effort})
+
     def test_contributor_and_unknown_models_rejected(self):
         for model in ("muse-spark-1.3-contributor", "gpt-4o"):
             with self.assertRaises(ValueError):
