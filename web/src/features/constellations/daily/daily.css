@@ -17,6 +17,19 @@
   gap: 8px;
   padding: 12px 16px 0;
 }
+.cst-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--cst-gradient);
+  box-shadow: inset 0 0 0 1px #0000000d;
+}
+.cst-mark svg {
+  width: 72%;
+  height: 72%;
+}
 .cst-group-avatar {
   width: 40px;
   height: 40px;
@@ -165,6 +178,8 @@ a.cst-post-title:hover {
   line-height: 1.35;
   resize: none;
   outline: none;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 .cst-reply-input::placeholder {
   color: var(--muted);
@@ -594,9 +609,29 @@ a.cst-post-title:hover {
 }
 .cst-cover {
   height: 180px;
-  background-size: cover;
-  background-position: center 35%;
-  background-color: #dfe3ea;
+  overflow: hidden;
+  background: var(--cst-gradient);
+}
+.cst-cover svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.cst-cover-lines line {
+  stroke: rgb(255 255 255 / 45%);
+  stroke-width: 1.4;
+}
+.cst-cover-stars circle {
+  fill: #fff;
+  opacity: 0.9;
+}
+.cst-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.cst-title-row .muted {
+  margin: 4px 0 0;
 }
 .cst-group-id {
   padding: 16px 16px 8px;
@@ -649,6 +684,8 @@ a.cst-post-title:hover {
   scrollbar-width: none;
 }
 .cst-tab {
+  background: none;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -659,6 +696,10 @@ a.cst-post-title:hover {
   font-size: 15px;
   font-weight: 600;
   white-space: nowrap;
+}
+.cst-tab:hover:not(.is-active) {
+  background: var(--surface);
+  border-radius: 6px 6px 0 0;
 }
 .cst-tab.is-active {
   border-bottom-color: var(--blue);
@@ -753,6 +794,91 @@ a.cst-post-title:hover {
   border-radius: 8px;
   background: radial-gradient(circle, #dfe3ea 1px, transparent 1.2px) 0 0 / 18px 18px, #fafbfc;
   border: 1px solid var(--border);
+}
+.cst-graph-caption {
+  margin: 0;
+  padding: 0 12px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cst-icon-circle.is-small {
+  width: 28px;
+  height: 28px;
+}
+/* Constellation tab: you, nearby people as stars; closer = brighter. */
+.cst-sky {
+  position: relative;
+  margin-top: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 50%, #241a6b 0%, #120d3a 70%, #0b0826 100%);
+}
+.cst-sky-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.cst-dust {
+  fill: #fff;
+  opacity: 0.35;
+}
+.cst-sky-link {
+  stroke: #c9b8ff;
+  stroke-linecap: round;
+}
+.cst-sky-star {
+  fill: #fff;
+}
+.cst-sky-label {
+  fill: #d9d0ff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.cst-sky-you {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  transform: translate(-50%, -30%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.cst-sky-you .avatar {
+  box-shadow: 0 0 0 3px #fff, 0 0 24px 6px #b9a4ff;
+  border-radius: 50%;
+}
+.cst-sky-points {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.cst-sky-points li {
+  display: flex;
+  gap: 12px;
+}
+.cst-sky-points strong {
+  display: block;
+  font-size: 15px;
+}
+.cst-sky-points .muted {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.cst-sky-dot {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 18%, #b9a4ff55 19% 60%, transparent 61%), #ece7ff;
+}
+.cst-sky-dot.is-bright {
+  background: radial-gradient(circle, #fff 0 22%, #8f73ff 23% 62%, transparent 63%), #e6dcff;
 }
 .cst-legend {
   display: flex;

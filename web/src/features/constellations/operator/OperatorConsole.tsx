@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link } from "react-router";
 import LeftSidebar from "../../../components/layout/LeftSidebar";
 import { Activity, CalendarDays, Flag, RotateCcw, Sparkles, UserPlus, Users } from "lucide-react";
 import {
@@ -11,7 +11,7 @@ import {
   type WeeklyCycle,
 } from "../daily/client";
 import { getCycleClient } from "../daily/clientContext";
-import { COMMUNITIES } from "../daily/communities";
+import { CONSTELLATIONS_PATH, PLAY_COMMUNITY } from "../daily/communities";
 import { FormationDebug } from "../formation";
 import "../daily/daily.css";
 
@@ -74,7 +74,7 @@ function median(values: number[]): number {
 type Confirm = "reset" | "new" | null;
 
 export default function OperatorConsole() {
-  const { communityId = "" } = useParams();
+  const communityId = PLAY_COMMUNITY;
   const client = getCycleClient(communityId);
   const [current, setCurrent] = useState<CurrentCycle | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -141,18 +141,6 @@ export default function OperatorConsole() {
     }
   }
 
-  if (!COMMUNITIES[communityId]) {
-    return (
-      <div className="secondary-layout cst-op-layout">
-        <LeftSidebar />
-        <main className="cst-page cst-op" id="main-content">
-          <section className="card cst-empty">
-            <h1>Group not found</h1>
-          </section>
-        </main>
-      </div>
-    );
-  }
 
   const cycle = current?.cycle ?? null;
   const next = cycle ? nextStep(cycle) : null;
@@ -167,7 +155,7 @@ export default function OperatorConsole() {
       <header className="card cst-group-header">
         <div className="cst-group-id">
           <p className="cst-crumb">
-            <Link to={`/groups/${communityId}/constellations`}>Constellations · {COMMUNITIES[communityId]}</Link>
+            <Link to={CONSTELLATIONS_PATH}>Constellations</Link>
           </p>
           <h1>Operator console</h1>
           <p className="muted">Run the week by hand for the demo. Same rules as real time: forward only, one step at a time.</p>

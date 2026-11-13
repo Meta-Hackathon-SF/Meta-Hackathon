@@ -255,7 +255,7 @@ export default function WeekGraph({
       className={`cst-graph cst-graph-${variant}`}
       viewBox={`0 0 ${W} ${height}`}
       role={interactive ? "group" : undefined}
-      aria-label={interactive ? "Your week as a constellation" : undefined}
+      aria-label={interactive ? "Your week, one node per day" : undefined}
       aria-hidden={interactive ? undefined : true}
       focusable="false"
       onPointerMove={(event) => {

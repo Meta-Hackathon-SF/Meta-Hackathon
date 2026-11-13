@@ -28,7 +28,7 @@ export const sidebarNavigation = [
   { to: "/saved", label: "Saved", icon: Bookmark, color: "purple" },
   { to: "/groups", label: "Groups", icon: UsersRound, color: "blue" },
   {
-    to: "/groups/hackathon-builders/constellations",
+    to: "/constellations",
     label: "Constellations",
     icon: Sparkles,
     color: "purple",

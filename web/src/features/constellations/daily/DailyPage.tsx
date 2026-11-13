@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link } from "react-router";
 import { Flame, Lock, MessageCircle, MoonStar, Settings2, Sparkles, Users } from "lucide-react";
 import LeftSidebar from "../../../components/layout/LeftSidebar";
-import { currentUser, photo } from "../../../data/demo";
+import { currentUser } from "../../../data/demo";
 import { getPrivacyClient, PrivacyGate } from "../privacy";
 import type { CycleClient, CycleDay, WeeklyCycle } from "./client";
 import { getCycleClient } from "./clientContext";
-import { COMMUNITIES } from "./communities";
+import { JOIN_SCOPE_LABEL, OPERATOR_PATH, PLAY_COMMUNITY } from "./communities";
+import ConstellationPreview from "./ConstellationPreview";
+import ConstellationsMark from "./ConstellationsMark";
 import GuessCard from "./GuessCard";
 import QuestionPost from "./QuestionPost";
 import { DAY_NAMES, useDaily, when } from "./useDaily";
@@ -40,7 +42,7 @@ function openDay(day: number) {
   target.querySelector<HTMLTextAreaElement>("textarea")?.focus({ preventScroll: true });
 }
 
-function DailyContent({ client, communityName }: { client: CycleClient; communityName: string }) {
+function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "constellation" }) {
   const { data, error, refresh } = useDaily(client);
 
   if (error)
@@ -79,6 +81,7 @@ function DailyContent({ client, communityName }: { client: CycleClient; communit
     );
 
   const { cycle, catchUp, streak } = current;
+  if (tab === "constellation") return <ConstellationPreview revealsAt={cycle.status === "open" || cycle.status === "locked" || cycle.status === "forming" ? cycle.revealsAt : null} />;
   const answerFor = (day: number) => data.answers.find((a) => a.day === day);
   const questionFor = (day: number) => data.questions.find((q) => q.day === day as CycleDay);
   const past = cycle.status === "open" ? [1, 2, 3, 4, 5].filter((day) => day < cycle.currentDay) : [];
@@ -94,7 +97,6 @@ function DailyContent({ client, communityName }: { client: CycleClient; communit
         item={item}
         answer={answerFor(day)}
         kind={kind}
-        communityName={communityName}
         onChanged={() => void refresh()}
       />
     ) : null;
@@ -116,6 +118,7 @@ function DailyContent({ client, communityName }: { client: CycleClient; communit
         </header>
         <div className="cst-graph-wrap">
           <WeekGraph cycle={cycle} answers={data.answers} avatar={currentUser.avatar} onSelectDay={openDay} />
+          <p className="cst-graph-caption">Your days this week. Tap a day to answer it.</p>
         </div>
         <div className="cst-legend" aria-hidden="true">
           <span>
@@ -196,7 +199,7 @@ function DailyContent({ client, communityName }: { client: CycleClient; communit
   );
 }
 
-function About({ operator, communityId }: { operator: boolean; communityId: string }) {
+function About({ operator }: { operator: boolean }) {
   return (
     <aside className="cst-side" aria-label="About Constellations">
       <section className="card cst-panel">
@@ -217,7 +220,10 @@ function About({ operator, communityId }: { operator: boolean; communityId: stri
             </span>
             <div>
               <strong>Sunday: meet your constellation</strong>
-              <p className="muted">Muse matches 3 to 5 people by what your answers mean, not keywords.</p>
+              <p className="muted">
+                The 3 to 5 people whose answers meant the most similar things. The closer the match, the brighter their
+                star.
+              </p>
             </div>
           </li>
           <li>
@@ -234,12 +240,11 @@ function About({ operator, communityId }: { operator: boolean; communityId: stri
       <section className="card cst-panel">
         <h2 className="cst-side-title">Privacy</h2>
         <p className="muted">
-          <Lock size={13} aria-hidden="true" /> Nobody ever reads your answers. Group patterns appear in the Sky only
-          when 3 or more people share them.
+          <Lock size={13} aria-hidden="true" /> Nobody ever reads your answers. Patterns across players appear only when 3 or more people share them.
         </p>
       </section>
       {operator && (
-        <Link className="card cst-side-link" to={`/groups/${communityId}/constellations/operator`}>
+        <Link className="card cst-side-link" to={OPERATOR_PATH}>
           <span className="cst-icon-circle" aria-hidden="true">
             <Settings2 size={16} />
           </span>
@@ -254,40 +259,41 @@ function About({ operator, communityId }: { operator: boolean; communityId: stri
 }
 
 export default function DailyPage() {
-  const { communityId = "" } = useParams();
-  const communityName = COMMUNITIES[communityId];
+  const communityId = PLAY_COMMUNITY;
   const client = getCycleClient(communityId);
   const [epoch, setEpoch] = useState(0);
-
-  if (!communityName) {
-    return (
-      <div className="secondary-layout">
-        <LeftSidebar />
-        <main className="cst-page" id="main-content">
-          <section className="card cst-empty">
-            <h1>Group not found</h1>
-            <p className="muted">This Group doesn't have Constellations, or the link is wrong.</p>
-            <Link className="button-primary" to="/groups">
-              Back to Groups
-            </Link>
-          </section>
-        </main>
-      </div>
-    );
-  }
+  const [tab, setTab] = useState<"week" | "constellation">("week");
 
   return (
     <div className="secondary-layout cst-layout">
       <LeftSidebar />
       <main className="cst-page" id="main-content">
         <header className="card cst-group-header">
-          <div className="cst-cover" style={{ backgroundImage: `url(${photo("team")})` }} />
+          <div className="cst-cover" aria-hidden="true">
+            <svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMid slice">
+              <g className="cst-cover-lines">
+                <line x1="140" y1="120" x2="230" y2="70" />
+                <line x1="230" y1="70" x2="330" y2="110" />
+                <line x1="330" y1="110" x2="300" y2="160" />
+                <line x1="520" y1="60" x2="610" y2="100" />
+                <line x1="610" y1="100" x2="690" y2="50" />
+                <line x1="610" y1="100" x2="640" y2="150" />
+              </g>
+              <g className="cst-cover-stars">
+                {[[140, 120, 3], [230, 70, 4], [330, 110, 3], [300, 160, 2.5], [520, 60, 3], [610, 100, 4.5], [690, 50, 3], [640, 150, 2.5], [60, 40, 1.5], [420, 30, 1.5], [460, 170, 1.5], [760, 140, 1.5], [90, 170, 1.2], [380, 60, 1.2]].map(([x, y, r]) => (
+                  <circle key={`${x}-${y}`} cx={x} cy={y} r={r} />
+                ))}
+              </g>
+            </svg>
+          </div>
           <div className="cst-group-id">
-            <p className="cst-crumb">
-              <Link to="/groups">{communityName}</Link>
-            </p>
-            <h1>Constellations</h1>
-            <p className="muted">Weekly game · Private answers · Anonymous matching</p>
+            <div className="cst-title-row">
+              <ConstellationsMark size={56} />
+              <div>
+                <h1>Constellations</h1>
+                <p className="muted">A weekly game across Facebook · Private answers · Anonymous matching</p>
+              </div>
+            </div>
             <p className="cst-labels">
               <span className="cst-label">Simulated Facebook</span>
               {client.mode === "fixture" && (
@@ -297,34 +303,47 @@ export default function DailyPage() {
               )}
             </p>
           </div>
-          <nav className="cst-tabs" aria-label="Constellations sections">
-            <span className="cst-tab is-active" aria-current="page">
+          <div className="cst-tabs" role="tablist" aria-label="Constellations sections">
+            <button
+              type="button"
+              role="tab"
+              id="cst-tab-week"
+              aria-selected={tab === "week"}
+              aria-controls="cst-tabpanel"
+              className={`cst-tab${tab === "week" ? " is-active" : ""}`}
+              onClick={() => setTab("week")}
+            >
               This week
-            </span>
-            <span className="cst-tab is-disabled" aria-disabled="true" title="Opens with Sunday's reveal">
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="cst-tab-constellation"
+              aria-selected={tab === "constellation"}
+              aria-controls="cst-tabpanel"
+              className={`cst-tab${tab === "constellation" ? " is-active" : ""}`}
+              onClick={() => setTab("constellation")}
+            >
               Constellation <small>Sun</small>
-            </span>
-            <span className="cst-tab is-disabled" aria-disabled="true" title="Opens with Sunday's reveal">
-              Sky <small>Sun</small>
-            </span>
-          </nav>
+            </button>
+          </div>
         </header>
 
         <div className="cst-columns">
-          <div className="cst-main">
+          <div className="cst-main" role="tabpanel" id="cst-tabpanel" aria-labelledby={tab === "week" ? "cst-tab-week" : "cst-tab-constellation"}>
             <PrivacyGate
               client={getPrivacyClient()}
               communityId={communityId}
-              communityName={communityName}
+              communityName={JOIN_SCOPE_LABEL}
               onDataDeleted={() => {
                 client.clearLocalData?.(); // fixture only; the server deletes in live mode
                 setEpoch((value) => value + 1);
               }}
             >
-              <DailyContent key={epoch} client={client} communityName={communityName} />
+              <DailyContent key={epoch} client={client} tab={tab} />
             </PrivacyGate>
           </div>
-          <About operator={client.isOperator} communityId={communityId} />
+          <About operator={client.isOperator} />
         </div>
 
         <p className="secondary-prototype-note">Unofficial hackathon prototype · Fictional demo content</p>

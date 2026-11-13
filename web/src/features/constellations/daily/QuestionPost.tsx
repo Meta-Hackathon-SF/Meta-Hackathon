@@ -7,7 +7,8 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { Lock, Mic, Send, Sparkles, Square } from "lucide-react";
 import Avatar from "../../../components/common/Avatar";
 import Modal from "../../../components/common/Modal";
-import { currentUser, photo } from "../../../data/demo";
+import { currentUser } from "../../../data/demo";
+import ConstellationsMark from "./ConstellationsMark";
 import { SupportCard } from "../privacy";
 import type { CycleClient, DailyAnswer, DailyQuestion, FollowUp } from "./client";
 import { DAY_NAMES, MAX_CHARS, message } from "./useDaily";
@@ -27,6 +28,7 @@ function useAutosize(value: string) {
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 220)}px`;
+    el.style.overflowY = el.scrollHeight > 220 ? "auto" : "hidden";
   }, [value]);
   return ref;
 }
@@ -97,7 +99,7 @@ function ReplyBox({
           )}
           {tools}
           <button type="submit" className="cst-send" aria-label={submitLabel} title={submitLabel} disabled={!ready}>
-            <Send size={18} aria-hidden="true" />
+            <Send size={18} fill="currentColor" strokeWidth={1.5} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -113,7 +115,6 @@ export default function QuestionPost({
   kind,
   onChanged,
   framed = true,
-  communityName,
   backdrop,
 }: {
   client: CycleClient;
@@ -124,7 +125,6 @@ export default function QuestionPost({
   onChanged: () => void;
   /** false = render inside another card (the home feed card supplies its own header). */
   framed?: boolean;
-  communityName: string;
   /** Decorative layer drawn behind the question on the colored panel. */
   backdrop?: ReactNode;
 }) {
@@ -269,10 +269,10 @@ export default function QuestionPost({
       )}
       {framed && kind === "today" && (
         <header className="cst-post-head">
-          <img className="cst-group-avatar" src={photo("team")} alt="" width={40} height={40} />
+          <ConstellationsMark />
           <div className="cst-post-who">
             <span className="cst-post-title">
-              Constellations <span className="cst-post-in">· {communityName}</span>
+              Constellations
             </span>
             <span className="post-meta">
               <span>

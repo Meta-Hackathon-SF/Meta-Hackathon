@@ -7,26 +7,26 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { ChevronRight, Flame, Lock, MoonStar } from "lucide-react";
 import Modal from "../../../components/common/Modal";
-import { photo } from "../../../data/demo";
 import { allOn, getPrivacyClient, JoinScreen, usePrivacySession } from "../privacy";
 import type { CycleClient } from "./client";
 import { getCycleClient } from "./clientContext";
-import { COMMUNITIES } from "./communities";
+import { CONSTELLATIONS_PATH, JOIN_SCOPE_LABEL, PLAY_COMMUNITY } from "./communities";
+import ConstellationsMark from "./ConstellationsMark";
 import QuestionPost from "./QuestionPost";
 import { DAY_NAMES, useDaily, when } from "./useDaily";
 import WeekGraph from "./WeekGraph";
 import "./daily.css";
 
-const COMMUNITY = "hackathon-builders";
-const PAGE = `/groups/${COMMUNITY}/constellations`;
+const COMMUNITY = PLAY_COMMUNITY;
+const PAGE = CONSTELLATIONS_PATH;
 
 function Header({ streak, meta }: { streak: number | null; meta: string }) {
   return (
     <header className="cst-post-head">
-      <img className="cst-group-avatar" src={photo("team")} alt="" width={40} height={40} />
+      <ConstellationsMark />
       <div className="cst-post-who">
         <Link to={PAGE} className="cst-post-title">
-          Constellations <span className="cst-post-in">· {COMMUNITIES[COMMUNITY]}</span>
+          Constellations
         </Link>
         <span className="post-meta">
           {meta} <span aria-hidden="true">·</span> <Lock size={12} aria-label="Private answers" />
@@ -82,7 +82,6 @@ function JoinedCard({ client }: { client: CycleClient }) {
             answer={data.answers.find((a) => a.day === question.day)}
             kind="today"
             framed={false}
-            communityName={COMMUNITIES[COMMUNITY]}
             onChanged={() => void refresh()}
           />
         </div>
@@ -123,7 +122,7 @@ export default function ConstellationsFeedCard() {
   const paused = state.status === "ready";
   return (
     <section className="card cst-feed" aria-label="Constellations" data-testid="cst-feed-card">
-      <Header streak={null} meta="Weekly game · Hackathon Builders" />
+      <Header streak={null} meta="Weekly game" />
       <div className="cst-feed-promo">
         <div className="cst-bg-post">
         <div className="cst-bg-backdrop" aria-hidden="true">
@@ -169,7 +168,7 @@ export default function ConstellationsFeedCard() {
           <JoinScreen
             client={privacy}
             communityId={COMMUNITY}
-            communityName={COMMUNITIES[COMMUNITY]}
+            communityName={JOIN_SCOPE_LABEL}
             onJoined={(view) => {
               setJoining(false);
               set(view);

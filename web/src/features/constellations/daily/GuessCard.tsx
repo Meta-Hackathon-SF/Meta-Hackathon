@@ -30,7 +30,7 @@ export default function GuessCard({ client, cycleId, saved }: { client: CycleCli
         </span>
         <div>
           <h2 id="cst-guess-title">How many people here feel like you this week?</h2>
-          <p className="muted">Private guess · revealed in Sunday's Sky next to the real number</p>
+          <p className="muted">Private guess · on Sunday you see it next to the real number</p>
         </div>
       </header>
       <div className="cst-guess">

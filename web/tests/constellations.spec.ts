@@ -5,7 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
  * Runs against the in-browser FIXTURE adapter only: no server, no Muse, no
  * speech-to-text. These tests prove UI behavior, not live integration.
  */
-const DAILY = "/groups/hackathon-builders/constellations";
+const DAILY = "/constellations";
 const OPERATOR = `${DAILY}/operator`;
 const LONG = "Mostly the dining hall with my floor, loud but good";
 
@@ -80,9 +80,8 @@ async function answer(page: Page, day: number, text: string) {
   await expect(page.getByTestId(`cst-answer-text-${day}`)).toHaveText(text);
 }
 
-test("Groups links to the Constellations tab with truth labels", async ({ page }) => {
-  await page.goto("/groups");
-  await page.locator(".discovery-card").getByRole("link", { name: "Constellations" }).click();
+test("Constellations is a Facebook-wide page with truth labels; old Group links redirect", async ({ page }) => {
+  await page.goto("/groups/hackathon-builders/constellations");
   await expect(page).toHaveURL(new RegExp(`${DAILY}$`));
   await expect(page.getByRole("heading", { level: 1, name: "Constellations" })).toBeVisible();
   await expect(page.getByText("Simulated Facebook", { exact: true })).toBeVisible();
@@ -93,8 +92,40 @@ test("Groups links to the Constellations tab with truth labels", async ({ page }
   await join(page);
   await expect(page.getByRole("heading", { name: "No week is running yet" })).toBeVisible();
   await expect(page.getByTestId("cstp-panel")).toBeVisible();
-  await page.goto("/groups/not-a-group/constellations");
-  await expect(page.getByRole("heading", { name: "Group not found" })).toBeVisible();
+  await page.goto("/groups/any-group/constellations/operator");
+  await expect(page).toHaveURL(new RegExp(`${OPERATOR}$`));
+});
+
+test("Constellation tab explains the idea with a labeled example; there is no separate Sky", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  const tabs = page.getByRole("tablist", { name: "Constellations sections" });
+  await expect(tabs.getByRole("tab")).toHaveCount(2);
+  await expect(tabs.getByRole("tab", { name: /Sky/ })).toHaveCount(0);
+  await expect(tabs.getByRole("tab", { name: "This week" })).toHaveAttribute("aria-selected", "true");
+  await tabs.getByRole("tab", { name: /Constellation/ }).click();
+  await expect(tabs.getByRole("tab", { name: /Constellation/ })).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel");
+  await expect(panel.getByRole("heading", { name: "Your constellation" })).toBeVisible();
+  await expect(panel.getByText("Example", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("img", { name: /closer people shine brighter/ })).toBeVisible();
+  await tabs.getByRole("tab", { name: "This week" }).click();
+  await expect(page.getByTestId("cst-day-1")).toBeVisible();
+});
+
+test("answer box grows with text and never shows a scrollbar for normal answers", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  const box = page.getByTestId("cst-day-1").getByRole("textbox", { name: "Your answer" });
+  await box.fill("one line");
+  const one = await box.evaluate((el) => ({ h: el.clientHeight, sh: el.scrollHeight, o: getComputedStyle(el).overflowY }));
+  expect(one.o).toBe("hidden");
+  expect(one.sh).toBeLessThanOrEqual(one.h + 1);
+  await box.fill("line\n".repeat(4) + "last line");
+  const five = await box.evaluate((el) => ({ h: el.clientHeight, sh: el.scrollHeight, o: getComputedStyle(el).overflowY }));
+  expect(five.h).toBeGreaterThan(one.h);
+  expect(five.o).toBe("hidden");
+  expect(five.sh).toBeLessThanOrEqual(five.h + 1);
 });
 
 test("typed answer, one follow-up, edit and delete, by keyboard", async ({ page }) => {
@@ -341,7 +372,7 @@ test("week graph: day nodes are keyboard reachable and open their question", asy
   await newCycle(page);
   await advance(page, 2); // Wednesday
   await openDaily(page);
-  const graph = page.getByRole("group", { name: "Your week as a constellation" });
+  const graph = page.getByRole("group", { name: "Your week, one node per day" });
   await expect(graph).toBeVisible();
   const monday = graph.getByRole("button", { name: /^Monday: Catch up/ });
   await monday.focus();
