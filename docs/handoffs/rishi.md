@@ -40,6 +40,12 @@ Fixture versus live evidence: fixture only. FakeMuse is scripted, so tests prove
 - `FormationResult.repaired_groups` (internal) counts groups code fixed; not a wire field.
 - Checks: pytest tests/matching -> 57 passed; ruff clean.
 
+## MatchingPort for Kai (added 2026-11-13)
+- server/matching/port.py: `build_matching_port(muse=, snapshots=, guesses=, guard=)` -> object with `form(cycleId) -> dict` (exact FormationSuccess/FormationFailure wire, never raises for provider trouble) and `computeSky(cycleId, threshold) -> SkyStats dict`. Private themes stay in a ThemeStore inside matching (in-memory default; durable store pluggable).
+- Verified against Kai's real `server.orchestration.wire.FormationSuccess/FormationFailure` and `domain.validate_partition` from origin/role/kai-orchestration (scratch copy, not a committed test): normal, re-solve, fallback and failure paths all pass.
+- Needs from Patrik: `prevalence_guesses(cycleId) -> {playerId: percent}` (GuessSource), `formation_snapshot(cycleId)`, OutputGuard `check`.
+- Checks: pytest tests/matching -> 64 passed; ruff clean.
+
 ## Interface assumptions (need ACK, not blocking)
 - Patrik `@patrikliska13`: `formationSnapshot` returns `answers[].id` as one random ref per PLAYER (shared by all that player's answers), `weight` per answer, `idMap` ref->playerId, `blockedPairs` as playerIds. Players with any distress/harm flag this cycle are excluded entirely. Prevalence guesses will be needed for computeSky (shape TBD).
 - Adam `@adamzhang06`: Python MusePort is `async run(*, task, requestId, promptVersion, payload, signal=None) -> {"output", "evidence"}` with evidence in MuseCallEvidence wire shape. Formation sends `instructions` inside payload; tell me if the adapter owns system prompts instead.
