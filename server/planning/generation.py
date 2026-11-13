@@ -35,7 +35,7 @@ from server.providers import MUSE_VOICE, MusePort, MuseRequest, NullTrace, Provi
 from server.providers.contract import QUESTION_CATEGORIES
 
 from .errors import BankError, PlanningError
-from .ports import OutputGuardPort, guard_allows
+from .ports import OutputGuardPort, guard_allows, sensitivity_allows
 from .clarify import follow_up_problems
 from .questions import question_problems
 from .selection import QuestionService
@@ -53,7 +53,7 @@ with you your yours this week today day
 
 # Reason codes for refused proposals (fixed vocabulary; never model text).
 REASONS = ("invalid_question", "duplicate", "near_duplicate", "guard_text", "guard_hint",
-           "category_not_requested", "over_category_quota", "over_count")
+           "category_not_requested", "over_category_quota", "over_count", "sensitive_text")
 # Not refusals: a model-written follow-up hint that is yes/no or badly shaped is
 # removed (set to null) and the question kept. Curated bank hints are exempt
 # from the yes/no rule because a person wrote them; generated ones are not.
@@ -176,9 +176,11 @@ def normalize_signals(signals: Any) -> list[dict[str, Any]]:
 class QuestionGenerator:
     def __init__(self, muse: MusePort, guard: OutputGuardPort, questions: QuestionService,
                  pending: InMemoryPendingQuestions | None = None, *,
-                 new_id: Callable[[], str] = lambda: uuid.uuid4().hex, trace: Any = None) -> None:
+                 new_id: Callable[[], str] = lambda: uuid.uuid4().hex, trace: Any = None,
+                 sensitivity: Any = None) -> None:
         self._muse = muse
         self._trace = trace if trace is not None else NullTrace()
+        self._sensitivity = sensitivity  # D014 M10 port, optional; runs after OutputGuard
         self._guard = guard
         self._questions = questions
         self._pending = pending if pending is not None else InMemoryPendingQuestions()
@@ -226,6 +228,10 @@ class QuestionGenerator:
                 row["followUpHint"] = None
                 hints_dropped += 1
             reason = self._refusal(row, taken, seen_words, quota, used)
+            if reason is None:
+                texts = [row["text"]] + ([row["followUpHint"]] if row["followUpHint"] else [])
+                if not await sensitivity_allows(self._sensitivity, texts):
+                    reason = "sensitive_text"
             if reason is not None:
                 reasons[reason] += 1
                 continue

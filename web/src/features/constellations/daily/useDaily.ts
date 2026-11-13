@@ -22,7 +22,6 @@ export interface Loaded {
   current: CurrentCycle | null;
   questions: DailyQuestion[];
   answers: DailyAnswer[];
-  guess: number | null;
 }
 
 /** Loads the current week for the signed-in player; newer loads supersede older ones. */
@@ -35,15 +34,11 @@ export function useDaily(client: CycleClient) {
     const id = ++request.current;
     try {
       const current = await client.current();
-      const [questions, answers, guess] = current
-        ? await Promise.all([
-            client.questions(current.cycle.cycleId),
-            client.myAnswers(current.cycle.cycleId),
-            client.myGuess(current.cycle.cycleId),
-          ])
-        : [[], [], null];
+      const [questions, answers] = current
+        ? await Promise.all([client.questions(current.cycle.cycleId), client.myAnswers(current.cycle.cycleId)])
+        : [[], []];
       if (id !== request.current) return;
-      setData({ current, questions, answers, guess });
+      setData({ current, questions, answers });
       setError(null);
     } catch (err) {
       if (id !== request.current) return;

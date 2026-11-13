@@ -156,9 +156,9 @@ def test_ttl_purges_fourteen_days_after_lock(service, answers, clock):
     clock.advance(days=3)
     answers.mark_locked(CYCLE, "2026-11-14T17:00:00Z")
     clock.advance(days=14, seconds=-1)
-    assert answers.purge_expired() == {"answers": 0, "guesses": 0}
+    assert answers.purge_expired() == {"answers": 0, "guesses": 0, "eventInterests": 0, "invites": 0}
     clock.advance(seconds=1)
-    assert answers.purge_expired() == {"answers": 1, "guesses": 1}
+    assert answers.purge_expired() == {"answers": 1, "guesses": 1, "eventInterests": 0, "invites": 0}
     assert answers.get(CYCLE, p.player_id, 1) is None and answers.get_guess(CYCLE, p.player_id) is None
     assert answers.get("cycle-next", p.player_id, 1) is not None  # unlocked cycle untouched
 

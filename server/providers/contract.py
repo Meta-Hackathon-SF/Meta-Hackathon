@@ -1,4 +1,4 @@
-"""Runtime validators for the Muse job I/O in contracts/protocol.ts 2.0.0 (M1-M8).
+"""Runtime validators for the Muse job I/O in contracts/protocol.ts 2.2.0 (M1-M10).
 
 TypeScript declarations are not runtime validation, so each ``MxIn`` / ``MxOut``
 is mirrored here as a schema in the subset enforced by ``schema.py``. Field
@@ -58,6 +58,13 @@ PROMPT_TEXT = _obj(
     {"id": _ID, "text": _str(500), "weight": {"type": "number", "minimum": 0, "maximum": 1.1}},
     optional=("weight",),
 )
+# D014: answers to M3/M4 may say which question they reply to.
+ANSWER_TEXT = _obj(
+    {"id": _ID, "text": _str(500), "weight": {"type": "number", "minimum": 0, "maximum": 1.1},
+     "questionId": _ID},
+    optional=("weight", "questionId"),
+)
+_QUESTIONS = _arr(_obj({"questionId": _ID, "text": _str(300)}), 10)
 TIME_WINDOW = _obj({"start": _ISO_TIME, "end": _ISO_TIME})
 VENUE = _obj({
     "placeId": _ID,
@@ -88,16 +95,22 @@ M2_OUT = _obj({
 })
 
 M3_IN = _obj({
-    "answers": _arr(PROMPT_TEXT, MAX_ANSWERS, 1),
-    "questions": _arr(_obj({"questionId": _ID, "text": _str(300)}), 10),
+    "answers": _arr(ANSWER_TEXT, MAX_ANSWERS, 1),
+    "questions": _QUESTIONS,
 })
 M3_OUT = _obj({"themes": _THEMES})
 
 M4_IN = _obj({
     "themes": _THEMES,
-    "answers": _arr(PROMPT_TEXT, MAX_ANSWERS, 1),
+    "answers": _arr(ANSWER_TEXT, MAX_ANSWERS, 1),
     "blockedPairs": _arr(_arr(_ID, 2, 2), 2000),
-})
+    "questions": _QUESTIONS,
+    # D010 opt-in soft hints, server-computed: pairs of refs and a small count only.
+    "affinity": _arr(_obj({
+        "memberIds": _arr(_ID, 2, 2),
+        "shared": {"type": "integer", "minimum": 1, "maximum": 50},
+    }), 4000),
+}, optional=("questions", "affinity"))
 M4_OUT = _obj({
     "constellations": _arr(_obj({
         "memberIds": _arr(_ID, MAX_ANSWERS, 1),
@@ -156,15 +169,41 @@ M8_IN = _obj({
 })
 M8_OUT = _obj({"headlines": _arr(_str(200), 6)})
 
+# D014 M9: activity topics. Values from the live eval (scratch B-topics, 2026-11-13).
+ACTIVITY_TOPICS = ("ai", "coding", "design", "music", "gaming", "vr", "study", "coffee",
+                   "food", "outdoors", "sports", "film", "art", "books")
+STANCES = ("positive", "neutral", "negative")
+_SHORT_ID = _str(16)
+M9_IN = _obj({"texts": _arr(_obj({"id": _SHORT_ID, "text": _str(2000)}), 10, 1)})
+M9_OUT = _obj({"results": _arr(_obj({
+    "id": _SHORT_ID,
+    "sensitive": {"type": "boolean"},
+    "labels": _arr(_obj({
+        "topic": {"type": "string", "enum": list(ACTIVITY_TOPICS)},
+        "stance": {"type": "string", "enum": list(STANCES)},
+    }), 3),
+}), 10)})
+
+# D014 M10: sensitivity of public game text. Code blocks anything but "none".
+SENSITIVITY_CATEGORIES = ("none", "health", "mental_health", "sexuality", "religion", "money",
+                          "family", "location", "identity", "substance", "violence")
+M10_IN = _obj({"items": _arr(_obj({"id": _SHORT_ID, "text": _str(300)}), 40, 1)})
+M10_OUT = _obj({"results": _arr(_obj({
+    "id": _SHORT_ID,
+    "category": {"type": "string", "enum": list(SENSITIVITY_CATEGORIES)},
+}), 40)})
+
 IN_SCHEMAS: dict[str, dict[str, Any]] = {
     "safety_screen": M1_IN, "clarify": M2_IN, "theme_discovery": M3_IN,
     "constellation_formation": M4_IN, "constellation_naming": M5_IN,
     "question_generation": M6_IN, "event_nudge": M7_IN, "sky_narration": M8_IN,
+    "activity_classification": M9_IN, "sensitivity_screen": M10_IN,
 }
 OUT_SCHEMAS: dict[str, dict[str, Any]] = {
     "safety_screen": M1_OUT, "clarify": M2_OUT, "theme_discovery": M3_OUT,
     "constellation_formation": M4_OUT, "constellation_naming": M5_OUT,
     "question_generation": M6_OUT, "event_nudge": M7_OUT, "sky_narration": M8_OUT,
+    "activity_classification": M9_OUT, "sensitivity_screen": M10_OUT,
 }
 assert set(IN_SCHEMAS) == set(OUT_SCHEMAS) == set(TASKS)
 

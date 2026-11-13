@@ -30,6 +30,7 @@ from typing import Any, Callable
 from .config import MuseConfig
 from .errors import ProviderError
 from .port import CALL_TYPES, MuseCallEvidence, MuseRequest, MuseResult, TaskRegistry
+from .pricing import estimate_cost_usd
 from .trace import ReasoningTrace
 from .schema import SchemaViolation, validate
 from .transport import ChatRequest, ChatTransport, MetaChatCompletionsTransport
@@ -162,16 +163,33 @@ class MuseAdapter:
             result = await self._run(request, started, record)
         except ProviderError as exc:
             record.update(outcome=exc.kind, status=exc.status, latencyMs=self._elapsed_ms(started))
+            self._finish_cost(record)
             self._emit(record)
             raise
         except asyncio.CancelledError:
             record.update(outcome="cancelled", latencyMs=self._elapsed_ms(started))
+            self._finish_cost(record)
             self._emit(record)
             raise
         record.update(outcome="ok", latencyMs=result.evidence["latencyMs"], model=result.evidence["model"])
+        self._finish_cost(record)
         self._emit(record)
         self.evidence_log.append(result.evidence, request.request_id)
         return result
+
+    @staticmethod
+    def _add_usage(record: dict[str, Any], usage: dict[str, int] | None) -> None:
+        """Sum token counts across attempts (a rejected attempt is still billed)."""
+        if not usage:
+            return
+        for key in ("inputTokens", "outputTokens", "reasoningTokens"):
+            if isinstance(usage.get(key), int):
+                record[key] = record.get(key, 0) + usage[key]
+
+    def _finish_cost(self, record: dict[str, Any]) -> None:
+        cost = estimate_cost_usd(record.get("model"), record.get("inputTokens"), record.get("outputTokens"))
+        if cost is not None:
+            record["estCostUsd"] = cost
 
     def _elapsed_ms(self, started: float) -> int:
         return max(0, int(round((self._clock() - started) * 1000)))
@@ -223,6 +241,7 @@ class MuseAdapter:
                     response = await self._transport.complete(chat)
                 except (asyncio.TimeoutError, TimeoutError):
                     raise ProviderError("timeout", "provider attempt timed out") from None
+                self._add_usage(record, getattr(response, "usage", None))
                 output = self._parse(response.text, spec.output_schema)
             except ProviderError as exc:
                 exc.attempts = attempt

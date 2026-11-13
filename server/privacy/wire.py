@@ -26,7 +26,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-CONTRACT_VERSION = "2.1.0"
+CONTRACT_VERSION = "2.2.0"
 
 
 class Wire(BaseModel):
@@ -100,6 +100,7 @@ class Consent(Wire):
     version: StrictInt = Field(ge=1)
     revoked_at: IsoTime | None
     use_activity: StrictBool = False  # D010; stored apart from the versioned toggles
+    event_signals: StrictBool = False  # D012 v3 (contract 3.0.0, pending): opt-in for event interest/RSVP
 
     @property
     def grants_play(self) -> bool:
@@ -130,10 +131,12 @@ class ConsentToggles(WireRequest):
 
 class JoinRequest(ConsentToggles):
     display_name: DisplayName
+    event_signals: StrictBool = False  # D012 v3: optional, default off
 
 
 class UpdateConsentRequest(ConsentToggles):
     expected_version: StrictInt = Field(ge=1)
+    event_signals: StrictBool | None = None  # D012 v3: None = leave unchanged
 
 
 class SessionView(Wire):
@@ -217,3 +220,37 @@ class BlockRequest(WireRequest):
 
     room_id: Id
     handle: Handle
+
+
+# ---------------------------------------------------------------------------
+# D012 v3 events (S2, S13, S14). Interest and RSVP are PRIVATE to the player.
+# ---------------------------------------------------------------------------
+InterestBucket = Literal["none", "3-5", "6-10", "11+"]
+RsvpChoice = Literal["going", "not_going"]
+InviteStatus = Literal["pending", "confirmed", "cancelled"]
+MAX_EVENT_IDS = 50
+
+
+class EventSignalsRequest(WireRequest):
+    """PUT /me/event-signals: the full set of approved events I'm interested in."""
+
+    event_ids: list[Id] = Field(max_length=MAX_EVENT_IDS)
+
+
+class InterestRequest(WireRequest):
+    interested: StrictBool
+
+
+class RsvpRequest(WireRequest):
+    rsvp: RsvpChoice
+
+
+class InviteState(Wire):
+    """The player's own view of one invite: their RSVP and the status only.
+    Never a count, never who else was invited or is going."""
+
+    invite_id: Id
+    event_id: Id
+    rsvp: Literal["none", "going", "not_going"]
+    status: InviteStatus
+    confirm_at_count: Literal[3] = 3

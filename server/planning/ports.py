@@ -34,3 +34,22 @@ class ChatPostPort(Protocol):
 
 # Will's cycle data: weekStart (YYYY-MM-DD, a Monday) for a cycle id.
 WeekStartLookup = Callable[[str], Awaitable[str]]
+
+
+class SensitivityPort(Protocol):
+    """Patrik's ``SensitivityScreen`` (D014 M10): ``await allowed(texts)`` returns one
+    bool per text, True only for a clean "none". Runs after OutputGuard, never
+    instead of it. Fails closed on provider errors (the screen returns False)."""
+
+    async def allowed(self, texts: list[str]) -> list[bool]: ...
+
+
+async def sensitivity_allows(screen: "SensitivityPort | None", texts: list[str]) -> bool:
+    """True when no screen is configured or every text is allowed. Any error blocks."""
+    if screen is None:
+        return True
+    try:
+        verdicts = await screen.allowed(list(texts))
+    except Exception:
+        return False
+    return isinstance(verdicts, list) and len(verdicts) == len(texts) and all(v is True for v in verdicts)
