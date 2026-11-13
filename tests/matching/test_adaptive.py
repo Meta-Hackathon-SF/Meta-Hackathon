@@ -24,3 +24,14 @@ def test_activity_trust_follows_optin_coverage():
     none = adaptive_weights(snap(["a b c"] * 4))
     half = adaptive_weights(snap(["a b c"] * 4, activity=["r0", "r1"]))
     assert none.activity == 0.0 and half.activity == 1.0 and half.optin_coverage == 0.5
+
+
+def test_cold_start_user_trusts_keywords_and_activity_less():
+    from server.matching.adaptive import pair_user_weights, user_weights
+
+    new = user_weights(answers=1, median_tokens=2, has_activity=False)
+    old = user_weights(answers=5, median_tokens=8, has_activity=True)
+    assert new.keyword < old.keyword == 1.0
+    assert new.keyword >= 0.3 and new.activity == 0.0 and old.activity == 1.0
+    assert new.muse > old.muse
+    assert pair_user_weights(new, old).keyword == new.keyword

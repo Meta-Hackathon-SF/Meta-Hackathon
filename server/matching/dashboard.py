@@ -1,11 +1,12 @@
-# ruff: noqa: E501  (embedded HTML page)
-"""Live backend dashboard: runs the real v3 matching pipeline on SYNTHETIC players in a loop and
-streams every stage (timing, counts, signal weights) to a page over SSE.
+# ruff: noqa: E501
+"""Matching dashboard: one pair of SYNTHETIC answers walked through Muse and Code, plus a typed log.
 
-    python -m server.matching.dashboard --port 5290
+    python -m server.matching.dashboard --port 5291          # offline: Muse is not called
+    python -m server.matching.dashboard --port 5291 --live   # calls Muse (spends); needs a key in env
 
-Offline and labeled: no Muse call is made (tags fall back to keywords), no real player data exists
-here, and nothing is persisted. Private ids never appear: only counts, timings and ref-free stats.
+Log kinds: READ (input given to Muse), REASON (recorded reasoning trace, not hidden chain of
+thought), OUTPUT (what Muse returned), CODE (a guarantee our code enforced). Counts and codes only:
+no answer text from the formation run is logged. Stdlib only; nothing is persisted.
 """
 
 from __future__ import annotations
@@ -14,286 +15,176 @@ import argparse
 import asyncio
 import json
 import queue
-import random
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any
 
-from server.matching import extras
-from server.matching.adaptive import adaptive_weights
-from server.matching.baseline import baseline_groups, similarity_matrix
-from server.matching.models import FormationSnapshot, PromptText
-from server.matching.v3 import FormationV3, InMemoryDayStore
+from server.matching.adaptive import UserWeights, pair_user_weights, user_weights
+from server.matching.baseline import cosine, player_vectors, tokens
+from server.matching.closeness import (
+    EVENT_BOOST,
+    EVENT_CAP,
+    FAINT_FLOOR,
+    GROUP_BOOST,
+    GROUP_CAP,
+    MAX_BOOST,
+)
+from server.matching.dashboard_page import PAGE
+from server.matching.live_eval import _Guesses, _Snapshots, build_port, synthetic_snapshot
+from server.matching.models import MAX_CONSTELLATION_SIZE, MIN_CONSTELLATION_SIZE, PromptText
+from server.matching.port import build_matching_port
+from server.privacy import OutputGuard
 
-THEMES = {
-    "dining": "eating alone in the dining hall headphones in before class",
-    "major": "scared that changing my major late means falling behind everyone",
-    "home": "missing home and family more than i admit during midterms",
-    "gym": "the gym is the only place my head gets quiet",
-    "lab": "late night robotics lab with people who get it",
-    "walk": "long walks at night with music to decompress",
-}
-# Each synthetic day has a different input profile, so the weights visibly move.
-PROFILES = {
-    1: ("short answers, nobody opted in", 0.0, "short"),
-    2: ("short answers, some opted in", 0.35, "short"),
-    3: ("richer answers, half opted in", 0.5, "mid"),
-    4: ("rich answers, most opted in", 0.8, "rich"),
-    5: ("rich answers, everyone opted in", 1.0, "rich"),
-}
-SHORT = {
-    "dining": "eating alone",
-    "major": "scared about my major",
-    "home": "missing home",
-    "gym": "the gym helps",
-    "lab": "robotics lab",
-    "walk": "night walks",
-}
-MID = {k: v.split(" before")[0].split(" during")[0] for k, v in THEMES.items()}
+PLAYERS = 30
+HISTORY = 120
+# (label, player ids). Same-topic players share a theme but few words; the other pair does not.
+SCENARIOS = (
+    ("same meaning, different words", "I eat dinner alone in my room most nights", "cooking for one feels lonely and quiet"),
+    ("different meaning", "I eat dinner alone in my room most nights", "pickup soccer is the best part of my week"),
+)
 
-
-bus: queue.Queue[dict] = queue.Queue()
-history: list[dict] = []
-subscribers: list[queue.Queue[dict]] = []
+bus: list[dict[str, Any]] = []
+subscribers: list[queue.Queue] = []
 lock = threading.Lock()
 
 
-def emit(kind: str, **data) -> None:
-    ev = {"t": round(time.time(), 3), "kind": kind, **data}
+def emit(**event: Any) -> None:
     with lock:
-        history.append(ev)
-        del history[:-400]
+        bus.append(event)
+        del bus[:-HISTORY]
         for q in subscribers:
-            q.put(ev)
+            q.put(event)
 
 
-class _Src:
-    def __init__(self, texts, activity=None):
-        self.texts, self.activity = texts, activity or {}
-
-    async def day_snapshot(self, cycle_id, day):
-        refs = list(self.texts)
-        snap = {
-            "answers": [{"id": "r-" + p, "text": t, "weight": 1.0} for p, t in self.texts.items()],
-            "idMap": {"r-" + p: p for p in refs},
-            "blockedPairs": [],
-        }
-        if self.activity:
-            snap["activity"] = self.activity
-        return snap
+def log(kind: str, msg: str, meta: str = "") -> None:
+    emit(k=kind, msg=msg, meta=meta)
+    time.sleep(0.35)
 
 
-def _population(rng, n, style, coverage):
-    keys = list(THEMES)
-    bank = SHORT if style == "short" else MID if style == "mid" else THEMES
-    texts, activity = {}, {}
-    for i in range(n):
-        k = rng.choice(keys)
-        texts[f"p{i}"] = bank[k] + f" {rng.choice(['lately', 'again'])}"
-        if rng.random() < coverage:
-            activity[f"r-p{i}"] = {
-                "groupIds": [f"g-{k}"],
-                "eventIds": [],
-                "friendIds": [],
-                "topics": [],
-            }
-    return texts, activity
+def _boost(groups: int, events: int) -> float:
+    return min(MAX_BOOST, min(GROUP_CAP, groups * GROUP_BOOST) + min(EVENT_CAP, events * EVENT_BOOST))
 
 
-async def run_cycle(seed: int, n: int) -> None:
-    rng = random.Random(seed)
-    cycle = f"demo-{seed}"
-    emit(
-        "cycle",
-        cycle=cycle,
-        players=n,
-        note="SYNTHETIC players. Muse is not called in this dashboard.",
-    )
-    store = InMemoryDayStore()
-    for day in range(1, 6):
-        label, coverage, style = PROFILES[day]
-        texts, activity = _population(rng, n, style, coverage)
-        port = FormationV3(None, _Src(texts, activity), store)
-        snap = FormationSnapshot.from_dict(await _Src(texts, activity).day_snapshot(cycle, day))
-        emit("weights", day=day, profile=label, **adaptive_weights(snap).to_dict())
-        answers = [PromptText("r-" + p, t) for p, t in texts.items()]
-
-        t0 = time.perf_counter()
-        base = baseline_groups(answers, [])
-        emit(
-            "stage",
-            day=day,
-            stage="keyword baseline",
-            ms=round((time.perf_counter() - t0) * 1000, 1),
-            detail=f"{len(base)} fallback groups of 3-5 from keyword cosine",
-        )
-
-        t0 = time.perf_counter()
-        sim = similarity_matrix(answers)
-        top = sorted(sim.values(), reverse=True)
-        emit(
-            "stage",
-            day=day,
-            stage="pairwise similarity",
-            ms=round((time.perf_counter() - t0) * 1000, 1),
-            detail=f"{len(sim)} pairs scored; strongest {top[0]:.2f}, median {top[len(top) // 2]:.2f}",
-        )
-
-        t0 = time.perf_counter()
-        placed = await port.dailyPlace(cycle, day, "p0")
-        emit(
-            "stage",
-            day=day,
-            stage="instant daily placement",
-            ms=round((time.perf_counter() - t0) * 1000, 1),
-            detail=f"placement={placed['placement']} (code only, no model call)",
-        )
-
-        t0 = time.perf_counter()
-        closed = await port.closeDay(cycle, day)
-        emit(
-            "stage",
-            day=day,
-            stage="day close",
-            ms=round((time.perf_counter() - t0) * 1000, 1),
-            detail=f"{closed['constellations']} constellations, {closed['unplaced']} unplaced; "
-            f"Muse tags: {'used' if closed['evidence'] else 'skipped (keyword tags)'}",
-        )
-        await asyncio.sleep(0.4)
-
-    t0 = time.perf_counter()
-    graph = await port.weekGraph(cycle)
-    emit(
-        "stage",
-        day="week",
-        stage="co-membership graph",
-        ms=round((time.perf_counter() - t0) * 1000, 1),
-        detail=f"{graph['players']} players, {graph['edges']} weighted edges",
-    )
-    t0 = time.perf_counter()
-    main = await port.mainConstellation(cycle)
-    emit(
-        "stage",
-        day="week",
-        stage="Sunday main constellations",
-        ms=round((time.perf_counter() - t0) * 1000, 1),
-        detail=f"{main['groups']} groups of 3-5, {main['unplaced']} unplaced",
-    )
-    t0 = time.perf_counter()
-    sky = await port.skyLayout(cycle)
-    emit(
-        "stage",
-        day="week",
-        stage="sky layout",
-        ms=round((time.perf_counter() - t0) * 1000, 1),
-        detail=f"{sky['stars']['count']} star positions; second degree "
-        f"{'on' if sky['secondDegree'] else 'off (under 30 eligible)'}",
-    )
-    weeks = [{(a, b): 1 for a in range(6) for b in range(a + 1, 6)}]
-    weeks = [{(f"p{a}", f"p{b}"): 1 for a in range(7) for b in range(a + 1, 7)}] * 3
-    emit(
-        "stage",
-        day="week",
-        stage="custom-event cluster finder",
-        ms=0.0,
-        detail=f"{len(extras.find_clusters(weeks))} repeat-match cluster(s) found over 3 weeks",
-    )
-    emit("done", cycle=cycle)
+def _closeness(cos: float, w: UserWeights, boost: float) -> float:
+    return min(1.0, cos * w.keyword + w.activity * boost)
 
 
-def loop(n: int) -> None:
-    seed = 1
+def pair_walkthrough(label: str, text_a: str, text_b: str) -> dict[str, Any]:
+    """Real tokens, cosine and weights for one pair. Established = same words, 5 answers + activity."""
+    vecs = player_vectors([PromptText("a", text_a), PromptText("b", text_b)])
+    cos = cosine(vecs["a"], vecs["b"])
+    shared = sorted(set(tokens(text_a)) & set(tokens(text_b)))
+    med = float(min(len(tokens(text_a)), len(tokens(text_b))))
+    new = pair_user_weights(user_weights(1, med, False), user_weights(1, med, False))
+    est = pair_user_weights(user_weights(5, med, True), user_weights(5, med, True))
+    boost = _boost(1, 1)
+    ce, cn = _closeness(cos, est, boost), _closeness(cos, new, boost)
+    return {
+        "k": "pair", "scenario": label, "a": text_a, "b": text_b, "shared": shared,
+        "cosine": cos, "wn": new.to_dict(), "we": est.to_dict(), "boost": boost, "cn": cn, "ce": ce,
+        "nsub": "1 answer today, no history, no activity opt-in.",
+        "esub": "5 answers this week, activity opted in. Same words.",
+        "band": "faint" if ce < FAINT_FLOOR else ("bright" if ce >= 0.5 else "visible"),
+    }
+
+
+def _trace_entries(port: Any) -> list[dict]:
+    trace = getattr(getattr(port, "_muse", None), "reasoning_trace", None)
+    return list(reversed(trace.list())) if trace is not None else []
+
+
+def _code_checks(raw: dict, snap: dict) -> list[tuple[str, str, str]]:
+    groups = [c["memberIds"] for c in raw["constellations"]]
+    players = set(snap["idMap"].values())
+    placed = [m for g in groups for m in g]
+    blocked = {frozenset(p) for p in snap.get("blockedPairs", [])}
+    clash = sum(1 for g in groups for a in g for b in g if a < b and frozenset((a, b)) in blocked)
+    sizes = sorted({len(g) for g in groups})
+    return [
+        ("Group sizes kept inside the allowed range.", f"allowed {MIN_CONSTELLATION_SIZE}-{MAX_CONSTELLATION_SIZE} · seen {sizes}", "size"),
+        ("Everyone is placed at most once.", f"{len(placed)} placed · {len(set(placed))} unique · {len(players)} players", "everyone_once"),
+        ("Blocked pairs are never put together.", f"{len(blocked)} blocked pair(s) · {clash} clash(es)", "blocked_pair"),
+        ("Public text is checked so no answer is quoted.", f"{len(groups)} shared-meaning labels through OutputGuard", "no_quote"),
+    ]
+
+
+async def formation_run(live: bool, a_id: str = "syn-2", b_id: str = "syn-8") -> dict[str, Any]:
+    snap = synthetic_snapshot(PLAYERS)
+    port = build_port(live, PLAYERS)
+    answers = len(snap["answers"])
+    log("READ", "Muse is given every player's answers to cluster by meaning.",
+        f"{answers} answers · {len(snap['idMap'])} players · task constellation_formation · text sent, not logged")
+    matching = build_matching_port(muse=port, snapshots=_Snapshots(snap),
+                                   guesses=_Guesses(list(snap["idMap"].values())),
+                                   guard=OutputGuard(), precompute_threshold=3)
+    started = time.monotonic()
+    raw = await matching.form("dash-cycle")
+    wall = int((time.monotonic() - started) * 1000)
+    if raw["status"] != "ok":
+        log("CODE", "Formation failed closed.", str(raw.get("error", {}).get("code", "unknown")))
+        return {"called": live, "matched": None}
+    by_task: dict[str, list[dict]] = {}
+    for e in _trace_entries(port):
+        by_task.setdefault(str(e.get("task", "task")), []).append(e)
+    for task, entries in by_task.items():
+        e = entries[0]
+        replay = e.get("source") == "replay"
+        who = "Scripted fixture stood in for Muse" if replay else "Muse worked"
+        times = f" ×{len(entries)}" if len(entries) > 1 else ""
+        log("REASON", f"{who} on {task.replace('_', ' ')}{times}: {e.get('outcome', 'ok')}.",
+            f"recorded reasoning trace · prompt {e.get('promptVersion', '?')} · model {e.get('model', '?')} · attempts {e.get('attempts', '?')} · {max(x.get('latencyMs', 0) for x in entries)} ms max")
+        for c in e.get("checks", []):
+            log("CODE", f"Code check after Muse: {str(c['code']).replace('_', ' ')} ({c['stage']}).", f"count {c['count']}")
+    cons = raw["constellations"]
+    conf = [c["confidence"] for c in cons if c.get("confidence") is not None]
+    log("OUTPUT", f"Muse returned {len(cons)} constellations." if live else f"Scripted fixture returned {len(cons)} constellations. Muse not called (offline).",
+        f"mean confidence {sum(conf) / len(conf):.2f} · {len(conf)} scored · {wall} ms wall" if conf else f"{wall} ms wall")
+    for msg, meta, _code in _code_checks(raw, snap):
+        log("CODE", msg, meta)
+    both = next((c for c in cons if a_id in c["memberIds"] and b_id in c["memberIds"]), None)
+    return {"called": live, "matched": (both is not None) if live else None,
+            "meaning": both["sharedMeaning"] if both else None,
+            "confidence": both["confidence"] if both else None}
+
+
+async def run_cycle(live: bool, n: int) -> None:
+    walk = pair_walkthrough(*SCENARIOS[n % len(SCENARIOS)])
+    emit(k="mode", msg="live Muse (spends)" if live else "offline, Muse not called")
+    result = await formation_run(live)
+    emit(**walk, muse=result)
+
+
+def loop(live: bool, pause: float) -> None:
+    n = 0
     while True:
-        asyncio.run(run_cycle(seed, n))
-        seed += 1
-        time.sleep(6)
-
-
-PAGE = """<!doctype html><meta charset=utf-8><title>Facebook Space backend</title>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<style>
-:root{color-scheme:dark;--bg:#0c0f15;--card:#151a24;--line:#262d3b;--tx:#eef1f6;--sub:#9aa3b5;--blue:#4c9bff;--teal:#35d0b0;--amber:#f2b84b}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,sans-serif}
-header{padding:20px 28px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;border-bottom:1px solid var(--line)}
-h1{font-size:20px;margin:0 8px 0 0}.pill{padding:3px 10px;border:1px solid var(--line);border-radius:99px;color:var(--sub);font-size:13px}
-.live{color:var(--teal);border-color:#1d5a4c}
-main{max-width:1100px;margin:0 auto;padding:24px 28px;display:grid;gap:20px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
-h2{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--sub);margin:0 0 4px}
-.lead{color:var(--sub);margin:0 0 16px;font-size:15px}
-.sig{display:grid;grid-template-columns:200px 1fr 56px;gap:14px;align-items:center;margin:14px 0}
-.sig b{font-weight:600}.sig small{display:block;color:var(--sub);font-weight:400;font-size:13px}
-.bar{height:12px;background:#1d2330;border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;border-radius:6px;transition:width .6s ease}
-.num{text-align:right;font-variant-numeric:tabular-nums;font-size:18px;font-weight:600}
-.inputs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
-.chip{background:#1d2330;border-radius:8px;padding:6px 12px;font-size:14px}.chip b{color:var(--tx)}.chip{color:var(--sub)}
-.now{font-size:17px;margin:6px 0 14px}
-.days{display:flex;gap:6px;margin-top:16px}.d{flex:1;height:8px;border-radius:4px;background:#1d2330}.d.on{background:var(--blue)}.d.cur{background:var(--teal)}
-.fixed{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
-.fx{background:#1d2330;border-radius:10px;padding:12px 14px}.fx b{display:block;font-size:20px}.fx span{color:var(--sub);font-size:13px}
-#log .row{display:grid;grid-template-columns:70px 1fr 80px;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);align-items:baseline}
-.ms{text-align:right;color:var(--teal);font-variant-numeric:tabular-nums}.sub{color:var(--sub);font-size:14px}
-.cyc{color:var(--blue);padding:10px 0;font-weight:600}
-</style>
-<header><h1>Facebook Space · how matching works</h1><span class=pill>Synthetic players</span><span class=pill>Muse not called here</span><span id=st class="pill live">connecting</span></header>
-<main>
-<section class=card><h2>Signals that move with the input</h2>
-<p class=lead>Muse decides groups by meaning. These are the weights our code adapts to the data, used for brightness and tie-breaks.</p>
-<div class=now id=now>Waiting for the first day…</div>
-<div class=inputs id=inputs></div>
-<div class=sig><b>Keyword evidence<small>trusted more when answers are longer</small></b><div class=bar><i id=bk style="background:var(--blue);width:0"></i></div><div class=num id=nk>–</div></div>
-<div class=sig><b>Activity signals<small>Groups, Events, topics; trusted when enough people opted in</small></b><div class=bar><i id=ba style="background:var(--amber);width:0"></i></div><div class=num id=na>–</div></div>
-<div class=days id=days></div></section>
-<section class=card><h2>Always the same</h2><p class=lead>These never move. They are the guarantees.</p>
-<div class=fixed>
-<div class=fx><b>Meaning first</b><span>Muse groups by what answers mean</span></div>
-<div class=fx><b>3 to 5</b><span>people per constellation, everyone placed once</span></div>
-<div class=fx><b>Answers dominate</b><span>activity boosts capped at +0.30</span></div>
-<div class=fx><b>0.6 / +0.1</b><span>catch-up answer weight / follow-up bonus</span></div>
-<div class=fx><b>No quotes</b><span>blocked pairs and thresholds enforced by code</span></div></div></section>
-<section class=card><h2>Pipeline, live</h2><p class=lead>Each step runs on the real code. Times are measured.</p><div id=log></div></section>
-</main>
-<script>
-const log=document.getElementById('log'),st=document.getElementById('st');
-const days=document.getElementById('days');days.innerHTML=[1,2,3,4,5].map(()=>'<div class=d></div>').join('');
-const pct=v=>Math.round(v*100)+'%';
-function weights(e){
- document.getElementById('now').textContent=`Day ${e.day}: ${e.profile}`;
- document.getElementById('inputs').innerHTML=`<span class=chip>Players <b>${e.players}</b></span><span class=chip>Median answer <b>${e.medianTokens} words</b></span><span class=chip>Opted in <b>${pct(e.optinCoverage)}</b></span>`;
- document.getElementById('bk').style.width=pct(e.keyword);document.getElementById('nk').textContent=e.keyword.toFixed(2);
- document.getElementById('ba').style.width=pct(e.activity);document.getElementById('na').textContent=e.activity.toFixed(2);
- [...days.children].forEach((d,i)=>d.className='d'+(i+1<e.day?' on':i+1===e.day?' cur':''));}
-function add(e){
- if(e.kind==='weights'){weights(e);return}
- const d=document.createElement('div');
- if(e.kind==='stage'){d.className='row';d.innerHTML=`<span class=sub>${e.day==='week'?'week':'day '+e.day}</span><span>${e.stage}<div class=sub>${e.detail}</div></span><span class=ms>${e.ms} ms</span>`}
- else{d.className='cyc';d.textContent=e.kind==='cycle'?`${e.cycle} · ${e.players} synthetic players`:`${e.cycle} complete`}
- log.prepend(d);while(log.children.length>60)log.lastChild.remove()}
-const es=new EventSource('/events');es.onopen=()=>st.textContent='live';es.onerror=()=>st.textContent='reconnecting';
-es.onmessage=m=>add(JSON.parse(m.data));
-</script>"""
+        try:
+            asyncio.run(run_cycle(live, n))
+        except Exception as exc:  # keep the dashboard alive; show the error class only
+            emit(k="CODE", msg="Run failed.", meta=type(exc).__name__)
+        n += 1
+        time.sleep(pause)
 
 
 class Handler(BaseHTTPRequestHandler):
-    def log_message(self, *a):  # quiet
+    def log_message(self, *_: Any) -> None:
         pass
 
-    def do_GET(self):
-        if self.path.startswith("/events"):
+    def do_GET(self) -> None:  # noqa: N802
+        if self.path == "/events":
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-cache")
             self.end_headers()
-            q: queue.Queue[dict] = queue.Queue()
+            q: queue.Queue = queue.Queue()
             with lock:
-                for ev in history[-60:]:
+                for ev in bus:
                     q.put(ev)
                 subscribers.append(q)
             try:
                 while True:
                     try:
-                        ev = q.get(timeout=15)
-                        self.wfile.write(f"data: {json.dumps(ev)}\n\n".encode())
+                        self.wfile.write(f"data: {json.dumps(q.get(timeout=15))}\n\n".encode())
                     except queue.Empty:
                         self.wfile.write(b": keepalive\n\n")
                     self.wfile.flush()
@@ -314,10 +205,12 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=5290)
-    ap.add_argument("--players", type=int, default=120)
+    ap.add_argument("--port", type=int, default=5291)
+    ap.add_argument("--live", action="store_true", help="call Muse (spends money); needs a key in env")
     a = ap.parse_args()
-    threading.Thread(target=loop, args=(a.players,), daemon=True).start()
+    if a.live:
+        build_port(True, 1)  # fail fast if no key
+    threading.Thread(target=loop, args=(a.live, 90.0 if a.live else 25.0), daemon=True).start()
     ThreadingHTTPServer(("127.0.0.1", a.port), Handler).serve_forever()
 
 
