@@ -65,8 +65,8 @@ def assert_private_fields_absent(value):
             assert_private_fields_absent(item)
 
 
-def prepare_locked(env, client):
-    players = [join(client, f"player {index}") for index in range(5)]
+def prepare_locked(env, client, count=5):
+    players = [join(client, f"player {index}") for index in range(count)]
     grant_operator(env.privacy_store, players[0].player_id, COMMUNITY)
     response = call(
         client,
@@ -100,8 +100,8 @@ def prepare_locked(env, client):
     return players, cycle_id
 
 
-def formed(env, client):
-    players, cycle_id = prepare_locked(env, client)
+def formed(env, client, count=5):
+    players, cycle_id = prepare_locked(env, client, count)
     response = call(
         client, players[0], "POST", f"/operator/cycles/{cycle_id}/form", key="form-once", json={}
     )
@@ -688,3 +688,23 @@ def test_v3_scheduler_closes_days_and_forms_main_from_cycle_hooks():
         day = store.load_days(cycle_id).get(1)
         assert day is not None and day.final  # closed by the hook, no operator close-day call
         assert store.load_main(cycle_id) is not None
+
+
+def test_a_constellation_larger_than_five_forms_saves_and_reveals():
+    # D016 removed the maximum size in matching; the stored wire shape, the partition
+    # check and the nudge guard still capped it at 5, so any group of 6+ failed on Sunday.
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        players, cycle_id, _job = formed(env, client, count=7)
+        with env.repository.transaction() as state:
+            saved = state.records["formations"][cycle_id]["privateFormation"]["wire"]
+        assert [len(c["memberIds"]) for c in saved["constellations"]] == [7]
+        response = call(
+            client,
+            players[0],
+            "POST",
+            f"/operator/cycles/{cycle_id}/advance",
+            json={"to": "revealed"},
+        )
+        assert response.status_code == 200, response.json()
+        room = call(client, players[6], "GET", f"/cycles/{cycle_id}/room")
+        assert room.status_code == 200 and len(room.json()["members"]) == 7

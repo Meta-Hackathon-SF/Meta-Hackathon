@@ -1,6 +1,6 @@
 /* Dark Space screens: the animated sky (daily / week / forming / main), the anonymous chat and mutual reveal. */
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ArrowUp, ChevronLeft } from "lucide-react";
 import type { MutualReveal } from "../../../../../../contracts/protocol";
 import { DAY_LONG, DAY_SHORT, dayHex, type Screen } from "./model";
@@ -9,8 +9,9 @@ import "./reveal.css";
 import SkyCanvas from "./SkyCanvas";
 import Telescope from "./Telescope";
 import { ChatHttpError } from "../../chat/client";
-import { openRevealThread } from "../../messenger/inbox";
+import { openRevealThread, promoteLiveRoom, SUNDAY_THREAD_ID } from "../../messenger/inbox";
 import { SUPPORT_RESOURCES } from "./preview";
+import { rememberAsked, useRoomNames } from "./roomNames";
 import { useRoom } from "./useRoom";
 
 type CanvasMode = "daily" | "sky" | "forming" | "main";
@@ -268,6 +269,8 @@ export function ChatScreen({
 }) {
   const { snapshot, actions, live } = useRoom(cycleId, viewerPlayerId, true);
   const { room, messages } = snapshot;
+  const roomNames = useRoomNames(room, snapshot.reveals, actions, viewerPlayerId);
+  const label = (handle: string) => roomNames.names[handle]?.displayName ?? handle;
   const [draft, setDraft] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [sheet, setSheet] = useState<string | null>(null);
@@ -285,7 +288,7 @@ export function ChatScreen({
   const hoursLeft = room ? Math.max(0, Math.ceil((new Date(room.expiresAt).getTime() - now) / 3_600_000)) : null;
   const expired = room?.status === "expired";
   const member = sheet ? others.find((m) => m.handle === sheet) ?? null : null;
-  const reveal = snapshot.reveals[0];
+  const reveals = snapshot.reveals.filter((r) => r.roomId === room?.roomId);
   const run = async (fn: (ctx: { key: string; signal: AbortSignal }) => Promise<unknown>, fail: string) => {
     setBusy(true);
     setNote(null);
@@ -309,6 +312,19 @@ export function ChatScreen({
       return false;
     } finally {
       setBusy(false);
+    }
+  };
+  const askedHandles = room ? new Set([...roomNames.asked, ...Object.keys(asked).filter((h) => asked[h])]) : new Set<string>();
+  const keptAll = others.length > 0 && others.every((m) => askedHandles.has(m.handle));
+  /** "Keep & show names" (Will's call): a real reveal request to every other member. */
+  const keepAll = async () => {
+    if (!room || !actions) return;
+    for (const m of others) {
+      if (askedHandles.has(m.handle)) continue;
+      if (await run((ctx) => actions.reveal(m.handle, ctx), "Couldn't keep the chat. Try again.")) {
+        rememberAsked(room.roomId, m.handle);
+        setAsked((prev) => ({ ...prev, [m.handle]: true }));
+      }
     }
   };
   const send = async () => {
@@ -360,7 +376,8 @@ export function ChatScreen({
                 setSheet(m.handle);
                 setReporting(false);
               }}
-              aria-label={m.handle}
+              aria-label={label(m.handle)}
+              title={label(m.handle)}
             >
               <i style={{ background: m.starColor, boxShadow: `0 0 8px ${m.starColor}` }} />
             </button>
@@ -369,13 +386,46 @@ export function ChatScreen({
         <span className="spc-chat-left">{hoursLeft} h left</span>
       </div>
       <div className="spc-keep">
-        <span className="spc-grow">Closes in {hoursLeft} h. Names stay hidden unless you both reveal.</span>
+        <span className="spc-grow">
+          {keptAll
+            ? "You kept it. Each person's name shows once they keep it too."
+            : `Closes in ${hoursLeft} h. Keep it to share your name; names show only for people who keep it too.`}
+        </span>
+        <button
+          type="button"
+          className={`spc-keep-btn${keptAll ? " is-kept" : ""}`}
+          disabled={busy || keptAll || !actions}
+          onClick={() => void keepAll()}
+          aria-label={keptAll ? "Kept" : "Keep and show my name"}
+          data-testid="spc-keep-all"
+        >
+          {keptAll ? "Kept" : "Keep & show names"}
+        </button>
       </div>
-      {reveal && (
+      {reveals.length > 0 && (
         <div className="spc-keep-note">
-          <button type="button" className="spc-keep-btn is-kept" onClick={() => onRevealed(reveal)} data-testid="spc-open-reveal">
-            You both chose to reveal. See who
-          </button>
+          {reveals.map((r) => {
+            const other = r.players.find((p) => p.playerId !== viewerPlayerId);
+            return (
+              <button
+                type="button"
+                key={r.players.map((p) => p.playerId).join(":")}
+                className="spc-keep-btn is-kept"
+                onClick={() => onRevealed(r)}
+                data-testid="spc-open-reveal"
+              >
+                {other ? `${other.displayName} shared their name` : "You both chose to reveal"}. See who
+              </button>
+            );
+          })}
+          <Link
+            className="spc-keep-btn"
+            to={`/messages?chat=${SUNDAY_THREAD_ID}`}
+            onClick={() => promoteLiveRoom(cycleId, room.roomId)}
+            data-testid="spc-open-messenger"
+          >
+            Open group in Messenger
+          </Link>
         </div>
       )}
       <div className="spc-msgs" aria-live="polite">
@@ -389,7 +439,7 @@ export function ChatScreen({
               <span className="spc-msg-star" style={{ background: `radial-gradient(circle, ${hex(m.handle)} 0 20%, transparent 62%)` }} />
               <div>
                 <div className="spc-msg-name" style={{ color: hex(m.handle) }}>
-                  {m.kind === "system" ? "Facebook Space" : m.handle}
+                  {m.kind === "system" ? "Facebook Space" : label(m.handle)}
                 </div>
                 <div className="spc-msg">{m.text}</div>
               </div>
@@ -430,11 +480,11 @@ export function ChatScreen({
       {member && actions && (
         <>
           <div className="spc-sheet-scrim" onClick={() => setSheet(null)} />
-          <div className="spc-sheet" role="dialog" aria-label={member.handle}>
+          <div className="spc-sheet" role="dialog" aria-label={label(member.handle)}>
             <span className="spc-grabber" aria-hidden="true" />
             <div className="spc-row">
               <span className="spc-sheet-star" style={{ background: `radial-gradient(circle, ${member.starColor} 0 22%, transparent 60%)` }} />
-              <div className="spc-sheet-name">{member.handle}</div>
+              <div className="spc-sheet-name">{label(member.handle)}</div>
             </div>
             {!reporting && (
               <>
@@ -443,7 +493,10 @@ export function ChatScreen({
                   className={`spc-btn spc-btn-lg ${asked[member.handle] ? "spc-btn-glass" : "spc-btn-primary"}`}
                   disabled={busy || asked[member.handle]}
                   onClick={async () => {
-                    if (await run((ctx) => actions.reveal(member.handle, ctx), "Couldn't send that. Try again.")) setAsked({ ...asked, [member.handle]: true });
+                    if (await run((ctx) => actions.reveal(member.handle, ctx), "Couldn't send that. Try again.")) {
+                      rememberAsked(room.roomId, member.handle);
+                      setAsked({ ...asked, [member.handle]: true });
+                    }
                   }}
                 >
                   {asked[member.handle] ? "Asked" : "Ask to reveal"}

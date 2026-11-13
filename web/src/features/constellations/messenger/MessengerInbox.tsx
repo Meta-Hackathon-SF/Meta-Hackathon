@@ -3,9 +3,9 @@ import { useSearchParams } from "react-router";
 import { Users, X } from "lucide-react";
 import Avatar from "../../../components/common/Avatar";
 import { currentUser, people } from "../../../data/demo";
-import { DraftCard, EventCard, ItemCard } from "../../catalog/Cards";
-import { createEvent, findEvent, useCatalogState } from "../../catalog/store";
-import { SUNDAY_THREAD_ID, addMuseMessage, markDraftCreated, sendInboxMessage, useInbox, type InboxThread } from "./inbox";
+import { SUNDAY_THREAD_ID, addMuseMessage, sendInboxMessage, useInbox, type InboxThread } from "./inbox";
+import { LiveGroupThread } from "./LiveGroupThread";
+import { MessageCards } from "./MessageCards";
 import { anonymize, askMuse, inferKind, type MuseKind } from "./museHelp";
 
 const SUGGESTIONS: [MuseKind, string, string][] = [
@@ -71,7 +71,6 @@ function SharedVibe({ onClose }: { onClose: () => void }) {
 
 export default function MessengerInbox() {
   const threads = useInbox();
-  const catalog = useCatalogState();
   const [params, setParams] = useSearchParams();
   const requested = params.get("chat");
   const selected = threads.find((thread) => thread.id === requested) ?? threads[0];
@@ -129,6 +128,9 @@ export default function MessengerInbox() {
           </button>
         ))}
       </div>
+      {selected.live ? (
+        <LiveGroupThread key={selected.live.roomId} thread={selected} suggestions={SUGGESTIONS} />
+      ) : (
       <div className="conversation" role="region" aria-label={selected.title}>
         <header>
           <ThreadMark thread={selected} />
@@ -173,25 +175,7 @@ export default function MessengerInbox() {
               <p className={message.mine ? "sent-message" : message.fromMuse ? "muse-message" : "received-message"}>
                 {message.text}
               </p>
-              {(message.itemIds?.length || message.eventIds?.length || message.draft) && (
-                <div className={`cat-cards${message.mine ? " is-mine" : ""}`}>
-                  {message.itemIds?.map((id) => <ItemCard key={id} itemId={id} />)}
-                  {message.eventIds?.map((id) => {
-                    const event = findEvent(id, catalog);
-                    return event ? <EventCard key={id} event={event} /> : null;
-                  })}
-                  {message.draft && (
-                    <DraftCard
-                      draft={message.draft}
-                      createdId={message.createdEventId}
-                      onCreate={() => {
-                        const event = createEvent(message.draft!, currentUser.name);
-                        markDraftCreated(selected.id, message.id, event.eventId, event.title);
-                      }}
-                    />
-                  )}
-                </div>
-              )}
+              <MessageCards threadId={selected.id} message={message} />
             </div>
           ))}
           {asking && <p className="muted">Muse is writing…</p>}
@@ -234,6 +218,7 @@ export default function MessengerInbox() {
           </button>
         </form>
       </div>
+      )}
     </section>
   );
 }
