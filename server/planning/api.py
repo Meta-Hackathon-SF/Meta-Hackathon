@@ -55,6 +55,9 @@ class PlanningRuntime:
     venues: VenueCatalog | None = None
     muse_configured: bool = False
     generator: QuestionGenerator | None = None
+    # The adapter's ReasoningTrace (``adapter.reasoning_trace``): every Muse call
+    # plus the code verdicts on it. PROPOSED route, see build_router.
+    trace: Any = None
 
     async def ready(self) -> bool:
         """Readiness for the registry. Local state only; never probes the paid model."""
@@ -144,6 +147,22 @@ def build_router(runtime: PlanningRuntime, session_dependency: Callable[..., Any
             result = await nudges.propose_and_post(constellation_id, request_id=_request_id(request))
             return result["nudge"]
 
+    if runtime.trace is not None:
+        trace = runtime.trace
+
+        # PROPOSED (not yet in contracts/API.md): operator view of the reasoning.
+        # Codes and counts only; never payloads, prompts, outputs or player data.
+        @router.get("/operator/reasoning")
+        async def reasoning(task: str | None = None, limit: int = 100,
+                            _community: str = Depends(operator)) -> list[dict[str, Any]]:
+            from server.providers.port import TASKS
+
+            if task is not None and task not in TASKS:
+                raise PlanningError("INVALID_INPUT", "unknown task")
+            if not (1 <= limit <= 300):
+                raise PlanningError("INVALID_INPUT", "limit must be 1-300")
+            return trace.list(task=task, limit=limit)
+
     if runtime.generator is not None:
         generator = runtime.generator
 
@@ -158,7 +177,7 @@ def build_router(runtime: PlanningRuntime, session_dependency: Callable[..., Any
                 aggregate_signals=body.get("aggregateSignals"), recent_question_ids=recent,
             )
             return {"status": "pending", "questions": result.pending, "rejected": result.rejected,
-                    "evidence": result.evidence}
+                    "rejections": result.rejections, "basis": result.basis, "evidence": result.evidence}
 
         @router.get("/operator/questions/pending")
         async def pending(_community: str = Depends(operator)) -> list[dict[str, Any]]:

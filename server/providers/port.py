@@ -119,11 +119,16 @@ class TaskRegistry:
 class KeywordMusePort:
     """camelCase keyword form of MusePort.run, mirroring contracts/protocol.ts:
 
-        await port.run(task=..., requestId=..., promptVersion=..., payload=..., signal=None)
+        await port.run(task=..., requestId=..., promptVersion=..., payload=..., signal=None,
+                       correction=None)
             -> {"output": {...}, "evidence": MuseCallEvidence}
 
     ``signal`` is accepted for protocol parity and ignored: cancel the awaiting
     asyncio task instead, which propagates into the HTTP attempt.
+    ``correction`` is the caller's re-ask feedback after its own validator
+    rejected the previous answer (e.g. "2 unknown member ids; group 3 has 6
+    members"). It must be code-generated: never player or model text. The
+    adapter bounds its length.
     """
 
     def __init__(self, muse: MusePort, *, deadline_s: float | None = None) -> None:
@@ -131,12 +136,15 @@ class KeywordMusePort:
         self._deadline_s = deadline_s
 
     async def run(self, *, task: str, requestId: str, promptVersion: str,
-                  payload: Any, signal: Any = None) -> dict[str, Any]:
+                  payload: Any, signal: Any = None, correction: str | None = None) -> dict[str, Any]:
+        if correction is not None and not isinstance(correction, str):
+            raise TypeError("correction must be a string")
         result = await self._muse.run(MuseRequest(
             task=task,  # type: ignore[arg-type]  # unknown tasks fail closed in the adapter
             request_id=requestId,
             prompt_version=promptVersion,
             payload=payload,
             deadline_s=self._deadline_s,
+            correction=correction or None,
         ))
         return {"output": result.output, "evidence": dict(result.evidence)}

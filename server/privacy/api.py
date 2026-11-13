@@ -17,6 +17,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.requests import HTTPConnection
 
 from .errors import PrivacyError
 from .activity import ActivityRequest, ActivityStore
@@ -41,17 +42,20 @@ def request_id(request: Request) -> str:
     return rid
 
 
-def session_token(request: Request) -> str | None:
+def session_token(request: HTTPConnection) -> str | None:
     auth = request.headers.get("authorization", "")
     if auth.lower().startswith("bearer "):
         return auth[7:].strip() or None
     return request.cookies.get(SESSION_COOKIE)
 
 
-def actor_dependency(service: PrivacyService) -> Callable[[Request], Actor]:
-    """Resolve the session once per request and cache it on request.state."""
+def actor_dependency(service: PrivacyService) -> Callable[[HTTPConnection], Actor]:
+    """Resolve the session once per request and cache it on request.state.
 
-    def require_actor(request: Request) -> Actor:
+    Typed as HTTPConnection so the same dependency guards HTTP routes and
+    WebSocket routes (a ``Request``-typed dependency fails on WebSockets)."""
+
+    def require_actor(request: HTTPConnection) -> Actor:
         cached = getattr(request.state, "cst_actor", None)
         if isinstance(cached, Actor):
             return cached

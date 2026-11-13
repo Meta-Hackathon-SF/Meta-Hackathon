@@ -115,6 +115,18 @@ class MuseAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(res.attempts, 2)
         self.assertEqual(len(sleeps), 1)
 
+    async def test_malformed_retry_tells_muse_what_failed_without_echoing_output(self):
+        leaked = "PLAYER SECRET TEXT"
+        t = Recorder(['{"answer":"ok","extra":"' + leaked + '"}', '{"answer":"ok"}'])
+        a, _, _ = adapter(t)
+        res = await a.run(req())
+        self.assertEqual(res.attempts, 2)
+        first, second = t.requests
+        self.assertNotIn("REJECTED BY SERVER VALIDATION", first.developer)
+        self.assertIn("REJECTED BY SERVER VALIDATION", second.developer)
+        self.assertNotIn(leaked, second.developer)
+        self.assertEqual(first.user, second.user)
+
     async def test_schema_violation_exhausts_bounded_retries(self):
         t = Recorder(['{"answer":"ok","extra":1}', '{"answer": 5}'])
         a, _, records = adapter(t)
@@ -188,7 +200,11 @@ class MuseAdapterTests(unittest.IsolatedAsyncioTestCase):
         blob = json.dumps(records)
         self.assertNotIn(secret, blob)
         self.assertNotIn("k-test", blob)
-        self.assertEqual(set(records[-1]), {"requestId", "task", "callType", "promptVersion", "model", "attempts", "outcome", "latencyMs"})
+        self.assertEqual(set(records[-1]), {"requestId", "task", "callType", "promptVersion", "model", "source", "attempts", "outcome", "latencyMs"})
+        self.assertEqual(records[-1]["source"], "live")
+        trace = a.reasoning_trace.list()
+        self.assertEqual(len(trace), 1)
+        self.assertNotIn(secret, json.dumps(trace))
 
     async def test_oversized_payload_rejected(self):
         a, _, _ = adapter(Recorder([]))
@@ -248,6 +264,21 @@ class MuseAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(ctx.exception.kind, "invalid_request")
         self.assertNotIn("p-maya", ctx.exception.message)
         self.assertEqual(t.requests, [])
+
+    async def test_keyword_port_forwards_code_correction_to_the_retry(self):
+        from server.providers import KeywordMusePort
+
+        t = Recorder(['{"answer":"ok"}', '{"answer":"ok"}'])
+        a, _, _ = adapter(t)
+        port = KeywordMusePort(a)
+        await port.run(task="clarify", requestId="r1", promptVersion="t.v1", payload={"x": 1})
+        await port.run(task="clarify", requestId="r2", promptVersion="t.v1", payload={"x": 1},
+                       correction="2 unknown member ids; group 3 has 6 members")
+        self.assertNotIn("REJECTED BY SERVER VALIDATION", t.requests[0].developer)
+        self.assertIn("group 3 has 6 members", t.requests[1].developer)
+        with self.assertRaises(ProviderError):
+            await port.run(task="clarify", requestId="r3", promptVersion="t.v1", payload={"x": 1},
+                           correction="x" * 601)
 
     async def test_keyword_port_returns_wire_shape(self):
         a, _, _ = adapter(Recorder(['{"answer":"ok"}']))
