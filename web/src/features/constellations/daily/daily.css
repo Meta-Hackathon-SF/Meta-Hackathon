@@ -1449,3 +1449,221 @@ a.cst-post-title:hover {
     transition: none;
   }
 }
+
+/* ---- Rewards ------------------------------------------------------------------------- */
+.cst-feed-next {
+  margin: 0 8px 0 auto;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.cst-rewards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.cst-rewards li {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border-radius: 8px;
+  text-align: center;
+}
+.cst-rewards strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+.cst-rewards small {
+  font-size: 12px;
+  line-height: 1.3;
+}
+.cst-badge {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: conic-gradient(var(--blue) var(--cst-progress, 0deg), var(--surface) 0);
+}
+.cst-badge > span {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card, #fff);
+  color: var(--muted);
+}
+.cst-rewards li.is-earned .cst-badge {
+  background: linear-gradient(135deg, #ffb443, #f26b1d);
+}
+.cst-rewards li.is-earned .cst-badge > span {
+  background: linear-gradient(135deg, #ffd27a, #ff8a3d);
+  color: #fff;
+}
+
+/* ---- Why this group ------------------------------------------------------------------ */
+.cst-why-quote {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--cst-blue-soft);
+  font-size: 15px;
+  line-height: 1.4;
+}
+.cst-subhead {
+  margin: 16px 0 8px;
+  font-size: 15px;
+}
+.cst-why-list,
+.cst-signals,
+.cst-heat-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cst-why-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.cst-signals li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cst-signals li > svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.cst-signals li > span:nth-child(2) {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+.cst-signals small {
+  font-size: 12px;
+}
+
+/* ---- Event heat ---------------------------------------------------------------------- */
+.cst-heat-list {
+  margin-top: 12px;
+}
+.cst-heat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.cst-heat-row.is-heat-3 {
+  background: linear-gradient(90deg, #ffe7d6, transparent 70%);
+}
+.cst-heat-row.is-heat-2 {
+  background: linear-gradient(90deg, #fff2e6, transparent 70%);
+}
+.cst-date-badge {
+  display: grid;
+  justify-items: center;
+  width: 48px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card, #fff);
+}
+.cst-date-badge small {
+  width: 100%;
+  padding: 1px 0;
+  background: #e41e3f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+.cst-date-badge strong {
+  padding: 2px 0 4px;
+  font-size: 18px;
+}
+.cst-heat-main {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+}
+.cst-heat-main small {
+  font-size: 12px;
+}
+.cst-heat-main small svg {
+  vertical-align: -1px;
+}
+.cst-heat-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  color: #b4470c;
+  font-size: 12px;
+  font-weight: 700;
+}
+.cst-heat-cells {
+  display: inline-flex;
+  gap: 2px;
+}
+.cst-heat-cells i {
+  width: 12px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--surface);
+}
+.cst-heat-cells i.is-on {
+  background: #f26b1d;
+}
+.cst-heat-cells i.is-on:first-child {
+  background: #ffb443;
+}
+.cst-heat-cells i.is-on:nth-child(2) {
+  background: #ff8a3d;
+}
+.cst-interested {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .cst-rewards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cst-heat-row {
+    flex-wrap: wrap;
+  }
+  .cst-interested {
+    width: 100%;
+    justify-content: center;
+  }
+  .cst-feed-next {
+    display: none;
+  }
+}
+.cst-venue {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}

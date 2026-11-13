@@ -96,3 +96,15 @@ Owner and affected: producer Rishi (closeness in formation); Kai (room members c
 Status: proposed; needs ACK from `@rishibagri`, `@beatopia`, `@patrikliska13`. Until then the UI shows a labeled Example only.
 Contract version / migration: 2.1.0 (additive, optional); no data to migrate; fixture `chat-room` gains the band on non-self members.
 Verification: none yet (proposal).
+
+## D010: More matching signals: Groups, Events, Posts and Comments (proposed by Will)
+ID / UTC timestamp: D010 / 2026-11-13T05:10Z (proposed)
+Decision and rationale: Product direction from Will (human, product notes): matching and the "why this group" context should also use the Groups a player is in, the Events they are interested in or going to, and their Posts and Comments, not only daily answers. Target audience: people (emphasis college age) who feel they don't relate, want to meet people, and find it hard to take the first step. Proposal:
+1. A fourth, optional consent toggle `useActivity` (default off), separate from the three required join toggles. Off means matching uses daily answers only, exactly as today.
+2. When on, formation (Rishi) may read: Group memberships, Event interest/going, and topics derived from the player's own Posts and Comments. Raw post or comment text never leaves the formation step, is never quoted, and never reaches any output (same no-quote and sensitive-term guards as answers). Sensitive categories (health, sexuality, religion, finances, family trauma, home location) are excluded at derivation.
+3. Shared Groups and shared Events only raise the private closeness score (D009). Before mutual reveal the UI shows counts only ("2 of your 4 stars are in a Group you're in"); which star shares what appears only after both reveal. Already-friends are noted as a count so constellations favour new people.
+4. Event heat ("Where people like you are going"): events come from the approved venue catalog (Adam, M7). Code drops any event with fewer than 3 similar people and shows bucketed counts only (3–5, 6–9, 10+). Marking "Interested" is private.
+Owner and affected: Patrik (consent toggle, storage, deletion of the new data, privacy sign-off), Rishi (formation inputs and closeness), Adam (event catalog and nudges), Kai (reveal view shows the context). Will: UI only.
+Status: proposed; needs ACK from `@patrikliska13`, `@rishibagri`, `@adamzhang06`, `@beatopia`. Until then the UI shows these as labeled Examples marked "Needs your OK" and reads none of this data.
+Contract version / migration: 2.1.0 together with D009 if accepted (additive: `Consent.useActivity?: boolean`, default false); no data to migrate.
+Verification: none yet (proposal). UI: web/tests/constellations.spec.ts "why-this-group" and "event heat" tests prove counts-only and the threshold in the Example.

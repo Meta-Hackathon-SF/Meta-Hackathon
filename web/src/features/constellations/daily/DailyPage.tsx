@@ -9,8 +9,11 @@ import { getCycleClient } from "./clientContext";
 import { JOIN_SCOPE_LABEL, OPERATOR_PATH, PLAY_COMMUNITY } from "./communities";
 import ConstellationPreview from "./ConstellationPreview";
 import ConstellationsMark from "./ConstellationsMark";
+import EventHeat from "./EventHeat";
 import GuessCard from "./GuessCard";
+import MatchReasons from "./MatchReasons";
 import QuestionPost from "./QuestionPost";
+import StreakRewards from "./StreakRewards";
 import { DAY_NAMES, useDaily, when } from "./useDaily";
 import WeekGraph from "./WeekGraph";
 import "./daily.css";
@@ -81,7 +84,14 @@ function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "con
     );
 
   const { cycle, catchUp, streak } = current;
-  if (tab === "constellation") return <ConstellationPreview revealsAt={cycle.status === "open" || cycle.status === "locked" || cycle.status === "forming" ? cycle.revealsAt : null} />;
+  if (tab === "constellation")
+    return (
+      <>
+        <ConstellationPreview revealsAt={cycle.status === "open" || cycle.status === "locked" || cycle.status === "forming" ? cycle.revealsAt : null} />
+        <MatchReasons />
+        <EventHeat />
+      </>
+    );
   const answerFor = (day: number) => data.answers.find((a) => a.day === day);
   const questionFor = (day: number) => data.questions.find((q) => q.day === day as CycleDay);
   const past = cycle.status === "open" ? [1, 2, 3, 4, 5].filter((day) => day < cycle.currentDay) : [];
@@ -163,6 +173,8 @@ function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "con
             </section>
           )}
 
+          <StreakRewards streak={streak} answers={data.answers} />
+
           <GuessCard key={cycle.cycleId} client={client} cycleId={cycle.cycleId} saved={data.guess} />
 
           {earlierDays.length > 0 && (
@@ -195,6 +207,7 @@ function DailyContent({ client, tab }: { client: CycleClient; tab: "week" | "con
           </p>
         </section>
       )}
+      {cycle.status !== "open" && <StreakRewards streak={streak} answers={data.answers} />}
     </>
   );
 }
@@ -210,8 +223,8 @@ function About({ operator }: { operator: boolean }) {
               <Sparkles size={16} />
             </span>
             <div>
-              <strong>Mon–Fri: one question a day</strong>
-              <p className="muted">Answer by typing or voice. Missed a day? Catch up until Saturday noon.</p>
+              <strong>Mon–Fri: one easy question a day</strong>
+              <p className="muted">About a minute, by typing or voice. Missed a day? Catch up until Saturday noon. It all resets Monday.</p>
             </div>
           </li>
           <li>
@@ -222,7 +235,7 @@ function About({ operator }: { operator: boolean }) {
               <strong>Sunday: meet your constellation</strong>
               <p className="muted">
                 The 3 to 5 people whose answers meant the most similar things. The closer the match, the brighter their
-                star.
+                star. No first move needed: the group is made for you.
               </p>
             </div>
           </li>
@@ -232,7 +245,7 @@ function About({ operator }: { operator: boolean }) {
             </span>
             <div>
               <strong>Anonymous chat, all week</strong>
-              <p className="muted">You're a Star handle. Names appear only if you both choose to reveal.</p>
+              <p className="muted">You're a Star handle. Names appear only if you both choose to reveal, and then you can add each other as friends.</p>
             </div>
           </li>
         </ol>

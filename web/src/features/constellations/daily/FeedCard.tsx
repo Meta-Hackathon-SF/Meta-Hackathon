@@ -13,6 +13,7 @@ import { getCycleClient } from "./clientContext";
 import { CONSTELLATIONS_PATH, JOIN_SCOPE_LABEL, PLAY_COMMUNITY } from "./communities";
 import ConstellationsMark from "./ConstellationsMark";
 import QuestionPost from "./QuestionPost";
+import { computeRewards, nextReward } from "./rewards";
 import { DAY_NAMES, useDaily, when } from "./useDaily";
 import WeekGraph from "./WeekGraph";
 import "./daily.css";
@@ -65,6 +66,7 @@ function JoinedCard({ client }: { client: CycleClient }) {
 
   const { cycle, streak, catchUp, question } = current;
   const open = cycle.status === "open" && question;
+  const next = nextReward(computeRewards(streak, data.answers));
   return (
     <section className="card cst-feed" aria-label="Constellations" data-testid="cst-feed-card">
       <Header
@@ -103,6 +105,11 @@ function JoinedCard({ client }: { client: CycleClient }) {
             ? `${catchUp.missedDays.length} missed ${catchUp.missedDays.length === 1 ? "day" : "days"} to catch up`
             : "See your week"}
         </span>
+        {next && (
+          <small className="cst-feed-next" data-testid="cst-feed-next">
+            Next badge: {next.title}
+          </small>
+        )}
         <ChevronRight size={18} aria-hidden="true" />
       </Link>
     </section>
@@ -146,12 +153,12 @@ export default function ConstellationsFeedCard() {
             ))}
           </svg>
         </div>
-          <h2>One question a day. On Sunday, meet the 3–5 people whose week felt like yours.</h2>
+          <h2>Feel like nobody quite gets you? Answer one question a day. On Sunday, meet the 3–5 people who answered like you.</h2>
         </div>
       </div>
       <div className="cst-feed-actions">
         <p className="muted">
-          {paused ? "You paused Constellations. Turn it back on any time." : "Answers stay private. Matching is anonymous until you both choose to reveal."}
+          {paused ? "You paused Constellations. Turn it back on any time." : "A minute a day, resets every Monday. Answers stay private and you stay anonymous until you both choose to reveal."}
         </p>
         {paused ? (
           <Link to={PAGE} className="button-primary">

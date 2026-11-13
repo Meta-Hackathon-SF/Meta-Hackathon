@@ -107,10 +107,65 @@ test("Constellation tab explains the idea with a labeled example; there is no se
   await expect(tabs.getByRole("tab", { name: /Constellation/ })).toHaveAttribute("aria-selected", "true");
   const panel = page.getByRole("tabpanel");
   await expect(panel.getByRole("heading", { name: "Your constellation" })).toBeVisible();
-  await expect(panel.getByText("Example", { exact: true })).toBeVisible();
+  // Every card on this tab is an Example until formation and the reveal view supply real data.
+  await expect(panel.getByText("Example", { exact: true })).toHaveCount(3);
   await expect(panel.getByRole("img", { name: /closer people shine brighter/ })).toBeVisible();
   await tabs.getByRole("tab", { name: "This week" }).click();
   await expect(page.getByTestId("cst-day-1")).toBeVisible();
+});
+
+test("why-this-group shows counts only, and new data sources need the player's OK", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await page.getByRole("tab", { name: /Constellation/ }).click();
+  const why = page.getByTestId("cst-why");
+  await expect(why.getByRole("heading", { name: "Why this group" })).toBeVisible();
+  await expect(why.getByText("Example", { exact: true })).toBeVisible();
+  await expect(why).toContainText("2 of your 4 stars");
+  await expect(why).toContainText("after you both choose to reveal");
+  // No Star handle is tied to a shared Group, friend or event before reveal.
+  await expect(why).not.toContainText(/Star \d/);
+  for (const source of ["Groups you're in", "Events you're going to", "Posts and comments"]) {
+    await expect(why.getByRole("listitem").filter({ hasText: source })).toContainText("Needs your OK");
+  }
+  await expect(why.getByRole("listitem").filter({ hasText: "Daily answers" })).toContainText("On");
+});
+
+test("event heat hides events under 3 similar people and buckets the rest", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await page.getByRole("tab", { name: /Constellation/ }).click();
+  const heat = page.getByTestId("cst-heat");
+  await expect(heat.getByText("Example", { exact: true })).toBeVisible();
+  const rows = heat.getByTestId("cst-heat-row");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.first()).toContainText("Board game night");
+  await expect(rows.first()).toContainText("10+ people like you");
+  await expect(heat).not.toContainText("Film club"); // 2 similar people: below threshold
+  await expect(heat).not.toContainText(/\b(11|6) people/); // exact counts never shown
+  const interested = rows.first().getByRole("button", { name: "Interested" });
+  await interested.click();
+  await expect(interested).toHaveAttribute("aria-pressed", "true");
+});
+
+test("streak rewards come from on-day answers; catch-ups count for every-day but not perfect week", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  const rewards = page.getByTestId("cst-rewards");
+  await expect(rewards).toContainText("0 of 4 earned");
+  await expect(rewards).toContainText("Next: First light");
+  await answer(page, 1, "Board games with my floor");
+  await expect(page.getByTestId("cst-reward-first-light")).toHaveClass(/is-earned/);
+  await expect(rewards).toContainText("1 of 4 earned");
+  await advance(page, 1);
+  await openDaily(page);
+  await answer(page, 2, "Walking to class with music");
+  await advance(page, 1);
+  await openDaily(page);
+  await answer(page, 3, "Cooking with my roommate");
+  await expect(page.getByTestId("cst-reward-three-in-a-row")).toHaveClass(/is-earned/);
+  await expect(page.getByTestId("cst-reward-perfect-week")).not.toHaveClass(/is-earned/);
+  await expect(rewards).toContainText("never change who you're matched with");
 });
 
 test("answer box grows with text and never shows a scrollbar for normal answers", async ({ page }) => {
@@ -357,7 +412,8 @@ test("home feed: Constellations sits under the composer and works without leavin
   await page.keyboard.press("Enter");
   await expect(card.getByTestId("cst-answer-text-1")).toHaveText(LONG);
   await expect(card.getByTestId("cst-feed-streak")).toHaveText("1");
-  await card.getByRole("link", { name: "See your week" }).click();
+  await expect(card.getByTestId("cst-feed-next")).toBeAttached();
+  await card.getByRole("link", { name: /See your week/ }).click();
   await expect(page).toHaveURL(new RegExp(`${DAILY}$`));
   await expect(page.getByTestId("cst-answer-text-1")).toHaveText(LONG); // same answer, one source of truth
   if (!isMobile) {
