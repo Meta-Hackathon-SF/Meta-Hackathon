@@ -5,6 +5,7 @@ privacy-aware idempotent sinks. Tests pass labeled fixture sinks. These hooks ru
 after the cycle commits, so a sink failure remains a retryable operator error.
 """
 
+import inspect
 from collections.abc import Callable
 
 from server.app.errors import ServiceError
@@ -15,7 +16,10 @@ class CycleHooks:
     def __init__(
         self, *, publish_cycle: Callable, enqueue_formation: Callable, reveal_cycle: Callable
     ):
-        if not all(callable(fn) for fn in (publish_cycle, enqueue_formation, reveal_cycle)):
+        if not all(
+            callable(fn) and not inspect.iscoroutinefunction(fn)
+            for fn in (publish_cycle, enqueue_formation, reveal_cycle)
+        ):
             raise ValueError("Explicit durable cycle hooks required")
         self.publish_cycle = publish_cycle
         self.enqueue_formation = enqueue_formation
@@ -30,7 +34,11 @@ class CycleHooks:
     @staticmethod
     def _call(sink, cycle):
         try:
-            sink(cycle.model_dump(mode="json"))
+            result = sink(cycle.model_dump(mode="json"))
+            if inspect.isawaitable(result):
+                if inspect.iscoroutine(result):
+                    result.close()
+                raise ServiceError("PROVIDER_UNAVAILABLE")
         except Exception:
             raise ServiceError("PROVIDER_UNAVAILABLE") from None
 

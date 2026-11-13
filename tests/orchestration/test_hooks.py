@@ -35,3 +35,19 @@ def test_hook_failure_is_sanitized_for_operator_retry():
     with pytest.raises(ServiceError) as error:
         hooks.on_locked(cycle_wire())
     assert str(error.value) == "PROVIDER_UNAVAILABLE"
+
+
+def test_async_sink_cannot_silently_skip_a_cycle_side_effect():
+    async def async_sink(cycle):
+        return None
+
+    with pytest.raises(ValueError):
+        CycleHooks(publish_cycle=async_sink, enqueue_formation=async_sink, reveal_cycle=async_sink)
+
+    def wrapper(cycle):
+        return async_sink(cycle)
+
+    hooks = CycleHooks(publish_cycle=wrapper, enqueue_formation=wrapper, reveal_cycle=wrapper)
+    with pytest.raises(ServiceError) as error:
+        hooks.on_locked(cycle_wire())
+    assert error.value.code == "PROVIDER_UNAVAILABLE"
