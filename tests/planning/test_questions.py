@@ -233,3 +233,27 @@ class FutureDayLeakTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class QuestionTextsTests(unittest.TestCase):
+    def test_formation_reader_returns_the_selected_week_for_that_community_only(self):
+        svc = QuestionService(load_default_bank(), InMemorySelectionStore(), TestOnlyWeekStart())
+        week = run(svc.select_week(CYCLE, COMMUNITY))
+        texts = svc.question_texts(CYCLE, COMMUNITY)
+        self.assertEqual(texts, {d["question"]["questionId"]: d["question"]["text"] for d in week})
+        self.assertEqual(len(texts), 5)
+        for bad in ((CYCLE, "another-group"), ("cycle-unknown", COMMUNITY)):
+            with self.assertRaises(PlanningError) as ctx:
+                svc.question_texts(*bad)
+            self.assertEqual(ctx.exception.code, "NOT_FOUND")
+
+    def test_formation_snapshot_shape_matches_the_contract(self):
+        from server.providers.contract import M4_IN
+        from server.providers.schema import validate
+
+        svc = QuestionService(load_default_bank(), InMemorySelectionStore(), TestOnlyWeekStart())
+        run(svc.select_week(CYCLE, COMMUNITY))
+        questions = [{"questionId": k, "text": v} for k, v in svc.question_texts(CYCLE, COMMUNITY).items()]
+        qid = questions[0]["questionId"]
+        validate({"themes": [], "answers": [{"id": "r1", "text": "nobody", "questionId": qid}],
+                  "blockedPairs": [], "questions": questions}, M4_IN)

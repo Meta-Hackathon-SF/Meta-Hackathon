@@ -52,6 +52,14 @@ class Recorder:
         return ChatResponse(text=step, model="muse-spark-1.3")
 
 
+async def _async(value):
+    return value
+
+
+def _resp(text, usage):
+    return _async(ChatResponse(text=text, model="muse-spark-1.3", usage=usage))
+
+
 def adapter(transport, **kw) -> tuple[MuseAdapter, list, list]:
     sleeps: list[float] = []
     records: list[dict] = []
@@ -280,6 +288,17 @@ class MuseAdapterTests(unittest.IsolatedAsyncioTestCase):
             await port.run(task="clarify", requestId="r3", promptVersion="t.v1", payload={"x": 1},
                            correction="x" * 601)
 
+    async def test_usage_summed_across_attempts_with_cost_estimate(self):
+        u = {"inputTokens": 1000, "outputTokens": 200, "reasoningTokens": 50}
+        t = Recorder([lambda r: _resp("not json", u), lambda r: _resp('{"answer":"ok"}', u)])
+        a, _, records = adapter(t)
+        await a.run(req())
+        rec = records[-1]
+        self.assertEqual((rec["inputTokens"], rec["outputTokens"], rec["reasoningTokens"]), (2000, 400, 100))
+        # muse-spark-1.3: 2000 * 1.25e-6 + 400 * 4.25e-6
+        self.assertAlmostEqual(rec["estCostUsd"], 0.0042, places=6)
+        self.assertEqual(a.reasoning_trace.list()[0]["inputTokens"], 2000)
+
     async def test_keyword_port_returns_wire_shape(self):
         a, _, _ = adapter(Recorder(['{"answer":"ok"}']))
         out = await KeywordMusePort(a).run(task="clarify", requestId="req-9", promptVersion="t.v1", payload={"x": 1})
@@ -313,9 +332,21 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual((cfg.timeout_s, cfg.reasoning_effort), (45.0, "medium"))
 
     def test_unknown_reasoning_effort_rejected(self):
-        for effort in ("none", "max", "LOW"):
+        for effort in ("none", "extreme", "LOW"):
             with self.assertRaises(ValueError):
                 load_muse_config({"MUSE_API_KEY": "k", "MUSE_REASONING_EFFORT": effort})
+        with self.assertRaises(ValueError):  # not verified for 1.2
+            load_muse_config({"MUSE_API_KEY": "k", "MUSE_MODEL": "muse-spark-1.2", "MUSE_REASONING_EFFORT": "max"})
+
+    def test_wonder_and_ember_accepted_with_their_effort_range(self):
+        for model in ("muse-wonder-1.0", "muse-ember-1.0"):
+            for effort in ("minimal", "max"):
+                cfg = load_muse_config({"MUSE_API_KEY": "k", "MUSE_MODEL": model, "MUSE_REASONING_EFFORT": effort})
+                assert cfg is not None
+                self.assertEqual((cfg.model, cfg.reasoning_effort), (model, effort))
+        for model in ("muse-spark-1.3-contributor", "muse-spark-1.2-contributor", "muse-image-1.0", "sam-3.1"):
+            with self.assertRaises(ValueError):
+                load_muse_config({"MUSE_API_KEY": "k", "MUSE_MODEL": model})
 
     def test_contributor_and_unknown_models_rejected(self):
         for model in ("muse-spark-1.3-contributor", "gpt-4o"):

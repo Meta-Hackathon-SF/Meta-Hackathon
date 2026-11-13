@@ -21,14 +21,15 @@ from typing import Any, Literal, Protocol, TypedDict, get_args
 
 from .schema import check_schema_supported
 
-# MuseTask in contracts/protocol.ts (2.0.0). Order is M1..M8.
+# MuseTask in contracts/protocol.ts (2.2.0). Order is M1..M10.
 Task = Literal[
     "safety_screen", "clarify", "theme_discovery", "constellation_formation",
     "constellation_naming", "question_generation", "event_nudge", "sky_narration",
+    "activity_classification", "sensitivity_screen",
 ]
 TASKS: frozenset[str] = frozenset(get_args(Task))
 
-CallType = Literal["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8"]
+CallType = Literal["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10"]
 CALL_TYPES: dict[str, CallType] = {
     task: f"M{i}" for i, task in enumerate(get_args(Task), start=1)  # type: ignore[misc]
 }
