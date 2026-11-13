@@ -47,6 +47,13 @@ def test_composition_uses_approved_router_without_live_calls(monkeypatch):
         assert not isinstance(env.app.state.muse.muse, MuseRouter)
 
 
+def test_composition_registers_activity_and_sensitivity_tasks():
+    with runtime_environment() as env:
+        registry = env.app.state.muse.muse._registry
+        assert registry.get("activity_classification", "activity_classification.v1")
+        assert registry.get("sensitivity_screen", "sensitivity_screen.v1")
+
+
 class SyntheticPlayer(SimpleNamespace):
     def __repr__(self):
         return "<SyntheticPlayer>"
