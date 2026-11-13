@@ -1,0 +1,47 @@
+{
+  "contractVersion": "3.0.0",
+  "_note": "S11. Room-local indices (R1): none of these equal the viewer's sky star index. 3-5 members. main is null with an enum reason when no group.",
+  "response": {
+    "main": {
+      "constellationId": "mc-01",
+      "roomId": "room-01",
+      "myRoomIndex": 2,
+      "roomIndices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "anchors": [
+        {
+          "index": 0,
+          "t": 0.05
+        },
+        {
+          "index": 1,
+          "t": 0.3
+        },
+        {
+          "index": 2,
+          "t": 0.55
+        },
+        {
+          "index": 3,
+          "t": 0.8
+        }
+      ],
+      "brightness": {
+        "0": "bright",
+        "1": "mid",
+        "3": "faint"
+      },
+      "revealedAt": "2026-11-15T18:00:00Z",
+      "roomExpiresAt": "2026-11-16T18:00:00Z"
+    },
+    "reason": null
+  },
+  "noMatch": {
+    "main": null,
+    "reason": "no_match"
+  }
+}
