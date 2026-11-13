@@ -35,6 +35,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from .guard import redact_for_model
 from .activity import SAFE_TOPICS, derive_topics
 
 ACTIVITY_TASK = "activity_classification"
@@ -162,7 +163,8 @@ class ActivityClassifier:
             task=ACTIVITY_TASK,
             request_id=request_id,
             prompt_version=ACTIVITY_PROMPT_VERSION,
-            payload={"texts": [{"id": i, "text": t} for i, t in zip(ids, texts)]},
+            # D014 sign-off: redact other people's details and contact routes first.
+            payload={"texts": [{"id": i, "text": redact_for_model(t)} for i, t in zip(ids, texts)]},
             deadline_s=self._deadline_s,
         )
         async with sem:

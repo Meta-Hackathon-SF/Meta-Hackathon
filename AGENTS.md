@@ -5,7 +5,7 @@ Read this file at the start of every task and after resuming. These instructions
 ## Required context
 Execution is phase-driven and tag-driven. **Before any work, check open PRs and issues for tags addressed to you and answer them first (docs/COORDINATION.md §1).** Then read docs/PLAN.md (eight-step build order) and docs/roles/<name>.md (your tasks, owned paths, interfaces, acceptance checks), inspect code and handoff evidence, and select the first incomplete task. Keep the last six hours for UI/demo. Update your handoff with the current step and actual verification; never claim completion from elapsed time alone.
 
-Read README.md, PROJECT_KNOWLEDGE.md, docs/COORDINATION.md, contracts/README.md, contracts/protocol.ts, contracts/API.md, contracts/WORKFLOW.md, contracts/PRIVACY.md, docs/ARCHITECTURE.md, docs/DECISIONS.md, docs/roles/<name>.md and docs/handoffs/<name>.md. Read docs/PLAN.md and docs/DEMO.md for shared priorities.
+Read README.md, PROJECT_KNOWLEDGE.md, docs/COORDINATION.md, contracts/README.md, contracts/protocol.ts, contracts/API.md, contracts/WORKFLOW.md, contracts/PRIVACY.md, docs/ARCHITECTURE.md, docs/DECISIONS.md, docs/roles/<name>.md and docs/handoffs/<name>.md. Read docs/PLAN.md and docs/DEMO.md for shared priorities. Before building or styling any UI, read docs/DESIGN.md (tokens, components, motion, privacy-in-UI rules).
 
 ## Branch identity
 - Rishi: role/rishi-matching

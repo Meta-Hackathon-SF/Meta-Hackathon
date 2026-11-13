@@ -462,3 +462,53 @@ def test_snapshot_question_source_failure_propagates(store, stores):
     with pytest.raises(RuntimeError):
         PrivacyFormation(store, answers, moderation, question_texts=broken).prepare_formation(
             "cycle-demo-w1", COMMUNITY)
+
+
+# ---- D014 sign-off conditions: redaction before Muse (Patrik) ---------------
+from server.privacy.guard import MODEL_TEXT_MAX_CHARS, redact_for_model  # noqa: E402
+from server.privacy.topics import ActivityClassifier  # noqa: E402
+
+PII_POST = ("Climbing with @jordan.k tonight! text me 765-555-0123 or jo.k@example.edu, "
+            "pics at https://example.com/album and www.climb.gym, meet at 123 Main Street")
+
+
+@pytest.mark.parametrize("raw,leaks", [
+    ("ping @maya_22 about board games", ["@maya_22"]),
+    ("email me: maya.k@example.edu", ["maya.k@example.edu"]),
+    ("maya dot k at example dot com", ["example dot com"]),
+    ("call (765) 555-0123 or +1 765 555 0123", ["555-0123", "555 0123"]),
+    ("photos on https://example.com/x and example.io", ["https://example.com/x", "example.io"]),
+    ("we live at 42 Elm Street", ["42 Elm Street"]),
+    ("card 4111 1111 1111 1111", ["4111 1111 1111 1111"]),
+])
+def test_redact_removes_other_peoples_details(raw, leaks):
+    out = redact_for_model(raw)
+    for leak in leaks:
+        assert leak.lower() not in out.lower(), out
+
+
+def test_redact_keeps_topic_words_and_caps_length():
+    assert redact_for_model("loved the jazz concert and coffee after") == "loved the jazz concert and coffee after"
+    assert len(redact_for_model("music " * 1000)) == MODEL_TEXT_MAX_CHARS
+    with pytest.raises(TypeError):
+        redact_for_model(None)
+
+
+def test_m9_payload_is_redacted_before_it_reaches_muse():
+    seen = []
+
+    class CaptureMuse:
+        async def run(self, request):
+            seen.append(request.payload)
+            ids = [t["id"] for t in request.payload["texts"]]
+
+            class R:
+                output = {"results": [{"id": i, "sensitive": False,
+                                       "labels": [{"topic": "sports", "stance": "positive"}]} for i in ids]}
+            return R()
+
+    topics = asyncio.run(ActivityClassifier(CaptureMuse()).classify([PII_POST]))
+    sent = json.dumps(seen)
+    for leak in ("@jordan.k", "765-555-0123", "jo.k@example.edu", "example.com", "climb.gym", "123 Main Street"):
+        assert leak not in sent, leak
+    assert "Climbing" in sent and topics == ["sports"]

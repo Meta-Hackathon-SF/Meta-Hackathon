@@ -222,9 +222,10 @@ function ActivitySwitch({
         <span className="cstp-switch-label">Use my Groups, Events, friends and post topics</span>
       </button>
       <p id={id} className="cstp-detail">
-        Optional. People in your Groups or going to the same events shine a little brighter. Your posts and comments
-        are reduced to everyday topics like "music" or "coffee"; the words themselves are never kept or shown.
-        Turning this off deletes it.
+        Optional. People in your Groups or going to the same events shine a little brighter. Muse reads your posts
+        and comments once to find everyday topics like "music" or "coffee". Emails, links, phone numbers and @mentions
+        are removed first, the words are never stored or shown, and only the topic labels are kept. Turning this off
+        deletes it.
       </p>
       {on && topics && (
         <p className="cstp-ok" role="status" data-testid="cstp-activity-topics">

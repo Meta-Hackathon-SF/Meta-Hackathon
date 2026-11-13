@@ -106,6 +106,8 @@ class CycleRecord:
     followups: dict[str, M2Out] = field(default_factory=dict)
     # answerIds whose text M1 flagged; never sent to another Muse call
     flagged: set[str] = field(default_factory=set)
+    # day -> playerIds with an accepted, unflagged answer for that day (answeredToday, D012)
+    answered: dict[int, set[str]] = field(default_factory=dict)
     # transitions committed inside a write path whose hooks have not fired yet
     pending: list[str] = field(default_factory=list)
     # bumps on every committed change to the cycle; see CycleService.gate
@@ -262,6 +264,31 @@ class CycleService:
         return flag
 
     # ---- CyclePort ---------------------------------------------------------
+    @staticmethod
+    def _mark_answered(record: CycleRecord, day: int, player_id: str, counted: bool) -> None:
+        players = record.answered.setdefault(day, set())
+        if counted:
+            players.add(player_id)
+        else:
+            players.discard(player_id)
+
+    def answered_today(self, cycle_id: str, day: int | None = None) -> int:
+        """PROPOSED (D012, contract 3.0.0 ``answeredToday``): how many distinct
+        players have an accepted, unflagged answer for ``day`` (default: the
+        current day). A count only; no player ids leave this method. Zero once
+        the cycle is no longer open and no day is given."""
+        with self._repo.lock:
+            record = self._repo.get(cycle_id)
+            if record is None:
+                raise CycleError("NOT_FOUND")
+            if day is None:
+                if record.cycle.status != "open":
+                    return 0
+                day = record.cycle.currentDay
+            if day not in (1, 2, 3, 4, 5):
+                raise CycleError("INVALID_INPUT")
+            return len(record.answered.get(day, ()))
+
     def current(self, community_id: str) -> WeeklyCycle:
         """CyclePort.current: the community's most recently created cycle."""
         records = self._repo.for_community(community_id)
@@ -389,6 +416,7 @@ class CycleService:
             self._answers.purge_cycle(cycle_id)
             record.followups.clear()
             record.flagged.clear()
+            record.answered.clear()
             self._set(record, status="open", currentDay=1)
         self._fire(record, ["changed"])
         return record.cycle
@@ -444,6 +472,7 @@ class CycleService:
                 self._answers.save(answer, flag)
                 if flag != "none":
                     record.flagged.add(answer.answerId)
+                self._mark_answered(record, day, row["playerId"], flag == "none")
                 added += 1
             for guess in fixture["guesses"]:
                 self._answers.save_guess(
@@ -556,6 +585,7 @@ class CycleService:
             self._answers.save(answer, flag)
             if flag != "none":
                 record.flagged.add(answer.answerId)
+            self._mark_answered(record, request.day, session.playerId, flag == "none")
         return AnswerResponse(answer=answer, supportCard=flag != "none")
 
     def edit_answer(
@@ -589,6 +619,7 @@ class CycleService:
                 record.flagged.add(answer.answerId)
             else:
                 record.flagged.discard(answer.answerId)
+            self._mark_answered(record, day, session.playerId, flag == "none")
         return AnswerResponse(answer=answer, supportCard=flag != "none")
 
     def delete_answer(self, session: Session, cycle_id: str, day: int) -> None:
@@ -601,6 +632,7 @@ class CycleService:
             self._answers.delete(cycle_id, session.playerId, day, cal.iso(self._clock()))
             record.followups.pop(existing.answerId, None)
             record.flagged.discard(existing.answerId)
+            self._mark_answered(record, day, session.playerId, False)
 
     def followup(self, session: Session, cycle_id: str, day: int) -> M2Out:
         """At most one Muse follow-up per answer; repeat calls return the same one."""
