@@ -1,45 +1,50 @@
 # Kai handoff
-Current step: 2 foundation restored; task 2 production formation/reveal BLOCKED
-Status: fixture-verified only; default app intentionally not ready; no deployment/live Muse
-Branch + commit: role/kai-orchestration / ddb71c1 (foundation)
-Contract: 2.0.0 unchanged; D005 and D006 ACK posted on PR #11
-Updated: 2026-11-13T02:14:06Z
+Current step: 2 foundation checkpoint delivered; production tasks 2-5 BLOCKED. Independent task 6 components fixture-verified.
+Status: offline/fixture evidence only; no deployment and no Kai live model calls.
+Branch: role/kai-orchestration. PR: https://github.com/willapat/Meta-Hackathon/pull/13 (draft).
+Updated: 2026-11-13T02:31:27Z
+Contract: protocol.ts 2.0.0 unchanged. D005/D006 ACK posted on #11; copy delivered by Rishi in #18. D007 privacy SQLite ACK posted on #15.
 
-## Completed milestones
-- Task 1: archived app/config/errors/middleware/registry, manifests, CI, workflow migration restored and adapted. Existing 2.0.0 AGENTS preserved. Retired workflow modules replaced with strict weekly boundaries and a port-only worker.
-- Registry: ServiceRegistration(owner, router, authorize, ready); /api/v1 prefix; only privacy POST /communities/{id}/join bootstraps without the global verified-session dependency. Areas include privacy/cycle/voice/matching/planning/orchestration/chat. See server/app/README.md.
-- Strict camelCase models match the shared contract (including rejecting extra isFallback), runtime errors and fixture tests. The formation worker validates partition and blocks; injected store must recheck current consent/deletions/cycle revision atomically.
-- db/workflow migration installs only jobs/idempotency/outbox, forced RLS and no API grants. PostgreSQL execution is unverified locally; CI has a disposable PostgreSQL migration check. No production repository exists.
+## Completed working milestones
+- ddb71c1: task 1 archive restoration/adaptation of app, middleware, error envelope, explicit router registry, dependency manifests, workflow migration/CI. Retired workflow code replaced with weekly runtime boundaries. Strict camelCase/enum/extra-field validation follows protocol.ts and shared fixtures. No other owner code edited.
+- 14fee2b: pure chat policies and StreamEvent validation/encoding/replay. Anonymous handles; M1 + OutputGuard before accepting any chat kind; rate limit; actor/route/body idempotency helper; report hides immediately, two distinct reports auto-hide; room-local block effects; mutual reveal pair-only/idempotent; exact expiry/read-only/14-day purge. These are authorized-transaction policies, not a production store/service/router.
+- bdd816c: public privacy_registration composes into Kai's app, with real privacy code tested offline for join/session/revocation/sign-out. Generated request IDs replace caller values before downstream routers read them. CycleHooks dispatcher validates shape/status and requires explicit sinks; later fix rejects asynchronous sinks rather than silently dropping effects.
+- 859d50f: ChatPanel and SkyPanel with runtime validators, scoped responsive CSS, truth labels, read-only expiry, immediate report hiding, safe retries/cancel/stale-response dropping, names only from validated MutualReveal. Sky uses Rishi's supplied numbers, filters low-count themes and hides headlines when a malformed suppressed theme arrived. Every synthetic signal is separate/labeled. Muse text needs evidence in live mode. Source fixtures/test UI adapters are under chat/test-only and not imported by the application entrypoint.
+- Registry convention: server/app/README.md. ServiceRegistration(owner, router, authorize, ready); /api/v1 prefix; only privacy POST /communities/{id}/join bootstraps. compose(privacy=..., registrations=...) uses owner-public exports. Default app has no fixture/player routes and stays unready until actual dependencies arrive.
+
+## Task status
+1. Restored/adapted and targeted tests pass. Registry delivered/ACKed; all-owner live composition is still pending.
+2. Worker validates FormationPort wire results, exact partition/blocks, cancellation and stale commit gates through a TEST-ONLY store. Production commit/Sunday publishing pending privacy/cycle transaction hooks.
+3-5. Chat/expiry/mutual-reveal/replay policies tested with TEST-ONLY transaction driver. No HTTP chat/SSE endpoint or durable chat repository is claimed implemented.
+6. Chat/Sky components tested against shared fixtures on desktop/mobile. Unmounted in Groups (Will owns routing); live adapter blocked on chat endpoints. Adam's card can occupy nudgeSlot after integration. Steps 6/7 of PLAN remain first cuts.
 
 ## Requests answered
-- PR #11: ACK FormationPort consumption and fallback labeling; CHANGE: isFallback is internal metadata, not a wire field. Rishi's to_wire already omits it; a public fallback label remains needed in the guarded name rather than private sharedMeaning.
-- D005/D006 Kai ACK: https://github.com/willapat/Meta-Hackathon/pull/11#issuecomment-6841714246
-- Remote handoffs read for all owners. Adam/Will still describe pre-pivot work, not delivered 2.0.0 dependencies; Patrik has not started 2.0.0. Superseded pre-pivot requests are not implemented.
+- #11 ACK D005/D006/FormationPort; CHANGE extra isFallback wire field. #16 ACK public guarded fallback-name fix (resolved).
+- #12 DELIVERED registry, ACK internal durable SelectionStore/ClarifyStore needs (not implemented, not silently replaced).
+- #14 DELIVERED cycle registry slot/deps and ACK public router/error-handler/Actor compatibility. CycleHooks delivered in bdd816c. on_changed/on_locked/on_revealed use explicit required idempotent sinks.
+- #15 ACK D007 privacy SQLite/session shapes. No cross-database atomicity assumed.
+- #17 ACK NudgePort/postSystem/card shape, defer step-6 schedule/context until privacy storage; CHANGE provider-owned Windows loopback test assertion failure reported with exact result.
+- #13 ACK Adam registry/readiness exports and Rishi SkyService/spec exports (delivered). ACK Will gate/check_gate as process checks; CHANGE: require lock held across validation and short commit. Exact Needs from block posted in #13 comment 6842009466; no repeated unchanged need.
 
-## Shared-file claims
-Task-1-authorized pyproject.toml, .github/workflows/validation.yml and db/workflow/*. No contracts or other owner paths changed.
+## Checks and actual results
+- Python 3.13.7 isolated venv outside repo. Installed versions pinned in server/app/requirements-dev.lock; no secrets/config loaded implicitly.
+- Kai acceptance `python -m pytest tests/orchestration tests/chat -q`: 104 passed before one additional hook regression test (targeted hook tests: 3 passed). One Starlette httpx deprecation warning. Final combined acceptance rerun follows latest sync.
+- Combined `pytest tests -q` at main 6f0b757: 265 passed, 1 failed: providers TransportTests.test_unreachable_host_is_unavailable expects connection_refused but Windows returns connect_timeout with kind unavailable. Reported to Adam; his paths untouched. No live model request.
+- Web npm run lint/build pass. Initial lifecycle lint warnings fixed. npm run test:e2e: 16/16 existing feed checks pass. Custom chat/Sky Playwright: 12/12 pass (desktop+mobile, including private-field/runtime rejection and delayed response cancellation). First custom run had 8 pass/2 failures due to test landmark role; assertion corrected and rerun green. Two early encoding/file-placement errors were corrected before UI commit; no stray files remain.
+- Ruff check/format clean on Kai-owned Python after fixes. One final hook lint lambda fixed.
+- Earlier PR #13 CI head 4162f86: backend/PostgreSQL and frontend passed; disposable migration/RLS check ran there. Latest head CI still pending after push. Local PostgreSQL not run.
+- Browser desktop/mobile layout visually inspected; no horizontal overflow. Test-only preview http://127.0.0.1:5193/src/features/constellations/chat/test-only/index.html (server stopped at session end). Screenshot under ignored web/test-results/kai. No hosting/deployment.
 
-## Checks and evidence
-- Python 3.13.7 isolated venv outside repo; pinned installed dependency versions in server/app/requirements-dev.lock.
-- python -m pytest tests/orchestration tests/chat -q: 77 passed, one Starlette httpx deprecation warning. Initial boolean-day test failed, fixed and rerun green.
-- ruff format applied; ruff check before formatting found one long test line (formatted); final lint pending next checkpoint.
-- Fixture adapters live exclusively under tests/. No live model, real player data, complete prompts, credentials or raw request logs.
-- Web acceptance and PostgreSQL execution not run at this checkpoint. PR remains draft.
-
-## Blocked on
-- Patrik: 2.0.0 session/consent dependency, OutputGuard, M1, private storage/report/block ports, atomic current-state gates and revocation/deletion hooks. PrivacyPort alone exposes no transactional publish gate or answer texts for OutputGuard.
-- Will: acknowledged CyclePort/router and a current locked/reveal snapshot plus revision/timing gate so formation and Sunday publishing cannot race cycle changes.
-- Rishi: FormationService exists on role branch/PR #11; wire result compatible. Fallback grouping label currently only private sharedMeaning/internal metadata. computeSky is not yet supplied.
-- Router registration ACKs and readiness exports from owners. No fake auth or fixture route is mounted.
+## Blocked on (current needs; inspect fresh owner refs before resuming)
+- Patrik: M1, OutputGuard, private answer/guess snapshot, report/block storage, and approved atomic current-consent/deletion/membership gates. Sessions/consent/router ARE delivered and composed offline; do not request them again. PrivacyPort alone has no publication transaction or againstAnswers access seam. Canonical future-cycle blocks are not supplied by room-local effects.
+- Will: CyclePort/router and process revision gate ARE delivered on #14. Need approved commit guard holding cycle lock across the short privacy/Kai commit (or equivalent atomic storage gate); current check_gate releases before write. Still in-memory cycle state, not durable.
+- Durable production store/outbox/recovery adapters remain absent. db/workflow contains archived/adapted PostgreSQL foundation with forced RLS/no API grants, not an integrated repository. D007 switches privacy storage only to SQLite; no unapproved cross-store transaction is claimed.
+- Rishi computation/fallback/specs and Adam provider/planning registration are delivered; authorized guesses/private inputs and guarded live wiring remain pending. Ordinary tests never call the model.
+- Live UI waits on those server endpoints, and Will's Groups mount. No fake app route/session/storage is introduced.
 
 ## Next consumer action
-Owners ACK/CHANGE the registry and deliver approved public factories/dependencies, production transaction hooks and cycle gates. Kai can then replace test stores with approved adapters and verify integration. Until then only independent work behind labeled test adapters; tasks 2-5 are not declared live-complete.
+Will can import ChatPanel and SkyPanel from their index.ts files; props/actions, truth labels and nudgeSlot documented in web/src/features/constellations/chat/README.md. Consume only pair-filtered mutual-reveal events and server-guarded messages.
+Owners reply ACK/CHANGE/DELIVERED to #13 with approved transaction hooks and missing privacy ports. Kai then implements actual repository/handlers and validates the integrated journey. Until then keep #13 draft and report fixture evidence honestly.
 
-## Independent chat milestone (PR #13)
-- Pure authorized-transaction chat policies: anonymous handles, M1 + OutputGuard gate, rate limiting, actor/route/body idempotency helper, immediate report hiding, two distinct reporters auto-hide, room-local blocks, pending/mutual reveal, exact weekly expiry, 14-day text/outbox purge.
-- Validated StreamEvent union, SSE encoder, Last-Event-ID parsing, seq replay filtering; historical messages recheck current moderation/block state and mutual identities are pair-only.
-- TEST-ONLY transaction/privacy/session/clock driver is exclusively tests/chat/adapters.py. No production chat store, route, HTTP stream or fake auth installed. Canonical block/report persistence, current privacy gates and actual moderation remain blocked.
-- Targeted tests/chat: 32 passed; Ruff clean. Fixture evidence only, no model call.
-- Requests answered: #14 DELIVERED registry/cycle slot/deps; #12 DELIVERED registry, ACK store needs; #17 ACK nudge shape and scope cut; #15 ACK D007 privacy SQLite (no cross-store atomicity assumed); #16 ACK guarded public fallback fix. Responses posted in original threads.
-- New remote state: privacy sessions/consent are now on main; Rishi fallback fix/Sky computation and Will cycle hooks/router are on branches. Next sync main before composition; update old blockers accordingly.
-- Sites skill applies only as local repository UI workflow; no hosting registration or deployment requested.
+## Shared-file claims
+Task-1-authorized pyproject.toml, .github/workflows/validation.yml and db/workflow/*. Only Kai-owned source/tests/UI/handoff/log edited. Contracts untouched. Sites skill used for local repository UI workflow only; no hosting registration/publication.
