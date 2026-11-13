@@ -1,0 +1,99 @@
+name: Validate integration
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend and PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          # Disposable synthetic test databases/roles only, never a deployment.
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CONSTELLATIONS_TEST_ADMIN_DSN: postgresql://postgres@127.0.0.1:5432/postgres
+      CONSTELLATIONS_ENV: test
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: |
+            server/app/requirements-dev.lock
+      - name: Install pinned app dependencies
+        run: |
+          python -m pip install -r server/app/requirements-dev.lock
+          python -m pip install --no-deps -e .
+          python -m pip check
+      - name: Check Kai-owned Python formatting and lint
+        run: |
+          python -m ruff check server/app server/orchestration server/chat tests/orchestration tests/chat
+          python -m ruff format --check server/app server/orchestration server/chat tests/orchestration tests/chat
+      - name: Require an actual PostgreSQL connection
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg
+          with psycopg.connect(os.environ['CONSTELLATIONS_TEST_ADMIN_DSN'], connect_timeout=5) as connection:
+              assert connection.execute('SELECT 1').fetchone() == (1,)
+          PY
+      - name: Run combined offline and database-backed tests
+        run: python -m pytest tests -q --junitxml=.pytest_cache/ci-results.xml
+      - name: Validate weekly migration on disposable PostgreSQL
+        run: |
+          python - <<'PYSQL'
+          import os
+          from pathlib import Path
+          import psycopg
+          with psycopg.connect(os.environ['CONSTELLATIONS_TEST_ADMIN_DSN']) as connection:
+              connection.execute(Path('db/workflow/001_workflow.sql').read_text())
+              count = connection.execute("SELECT count(*) FROM pg_tables WHERE schemaname = 'workflow' AND rowsecurity").fetchone()[0]
+              assert count == 3, 'All weekly tables must enable RLS'
+          PYSQL
+
+  frontend:
+    name: Frontend and browser smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
