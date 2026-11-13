@@ -1,8 +1,18 @@
 # adam handoff
-Current step: 7 (question generation) done offline. All six tasks in docs/roles/adam.md are implemented offline; what remains is live verification and integration with other owners
-Status: Muse adapter restored for 2.0.0; question bank, weekly selection, M2 follow-up, M7 event nudges, the nudge card and M6 question generation implemented. Offline-verified only.
-Branch + commit: `role/adam-planning`; PRs #12 and #17 merged to main; question generation in the follow-up PR. PR #12 merged to main (655903a); nudges in the follow-up PR.
-Updated: 2026-11-13T03:05Z
+Current step: integration + deployment. Ownership relaxed 2026-11-13 ~11:40Z: Adam and Rishi own the whole repo (Will, Kai, Patrik offline); contract ACKs no longer gate merges
+Status: v3 events (#76), per-task Muse router in the app (#87), Dockerfile (#89) merged; Railway now auto-deploys main from GitHub and runs ff68afc (verified 12:05Z)
+Branch + commit: `role/adam-planning` synced with main ff68afc+; merged today: #76, #87, #88, #89
+Updated: 2026-11-13T12:10Z
+
+## Deployment (live, verified 2026-11-13T15:05Z)
+Full description, every issue hit and its fix: **docs/DEPLOYMENT.md, "Live deployment"**. Summary:
+- Web on Vercel (https://constellations-demo-zeta.vercel.app), API + Postgres on Railway; both deploy on every merge to `main`.
+- Browser → Vercel `/api/v1` rewrite (#91) → Railway → Vercel Muse relay `/api/muse/v1` (#93) → `api.meta.ai`. The relay exists because Meta lists zero models for our key from Railway's IPs.
+- Verified in a real browser: join, operator start week, question, synthetic answer accepted with Muse reached through the relay.
+- Not verified live: Skip to Sunday, formation, naming, chat, SSE through Vercel, nudge, synthetic top-up (needs Adam's go-ahead: writes 38 labeled synthetic players to the production DB).
+- **A redeploy erases the current week** (in-memory cycle store). No merges or Railway variable changes during the demo.
+- Operator role: granted per player in the container only (`grant_operator`); test player `p_a0c715cbb0da42a10781999b` has it.
+- Still off: v3 per-viewer routes uncomposed in `server/app/weekly.py` (404), so the day count shows 0.
 
 ## Completed tasks
 1. `server/providers/` restored from `archive/group-quests-before-pivot`, renamed, extended to the 2.0.0 `MuseTask` list (M1-M8), retested. **Live call re-verified 2026-11-13T02:25Z**: `python3 -m server.providers.smoke` -> ok, `clarify` (M2), provider echoed `muse-spark-1.3`, 16.2 s, attempt 1, `reasoning_effort=low`.
