@@ -1,0 +1,173 @@
+/*
+ * Constellations on the home feed, right under "What's on your mind?".
+ * Not joined: one card with a Join button (consent opens in a dialog, no page change).
+ * Joined: today's question with a private comment box, streak and catch-up count.
+ */
+import { useState } from "react";
+import { Link } from "react-router";
+import { ChevronRight, Flame, Lock, MoonStar } from "lucide-react";
+import Modal from "../../../components/common/Modal";
+import { allOn, getPrivacyClient, JoinScreen, usePrivacySession } from "../privacy";
+import type { CycleClient } from "./client";
+import { getCycleClient } from "./clientContext";
+import { CONSTELLATIONS_PATH, FEATURE_NAME, JOIN_SCOPE_LABEL, PLAY_COMMUNITY } from "./communities";
+import ConstellationsMark from "./ConstellationsMark";
+import QuestionPost from "./QuestionPost";
+import { computeRewards, nextReward } from "./rewards";
+import { DAY_NAMES, useDaily, when } from "./useDaily";
+import WeekGraph from "./WeekGraph";
+import "./daily.css";
+
+const COMMUNITY = PLAY_COMMUNITY;
+const PAGE = CONSTELLATIONS_PATH;
+
+function Header({ streak, meta }: { streak: number | null; meta: string }) {
+  return (
+    <header className="cst-post-head">
+      <ConstellationsMark />
+      <div className="cst-post-who">
+        <Link to={PAGE} className="cst-post-title">
+          {FEATURE_NAME}
+        </Link>
+        <span className="post-meta">
+          {meta} <span aria-hidden="true">·</span> <Lock size={12} aria-label="Private answers" />
+        </span>
+      </div>
+      {streak !== null && (
+        <span className="cst-streak" data-testid="cst-feed-streak" title="Days in a row answered on the day">
+          <Flame size={14} aria-hidden="true" /> {streak}
+        </span>
+      )}
+    </header>
+  );
+}
+
+function JoinedCard({ client }: { client: CycleClient }) {
+  const { data, error, refresh } = useDaily(client);
+  if (error)
+    return (
+      <section className="card cst-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
+        <Header streak={null} meta="Weekly game" />
+        <p className="cst-error cst-pad" role="alert">
+          {error}
+        </p>
+      </section>
+    );
+  if (!data) return <section className="card cst-feed cst-feed-loading" aria-label={FEATURE_NAME} data-testid="cst-feed-card" aria-busy="true" />;
+
+  const current = data.current;
+  if (!current)
+    return (
+      <section className="card cst-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
+        <Header streak={null} meta="Weekly game" />
+        <p className="cst-pad muted">No week is running yet. The first question arrives Monday morning.</p>
+      </section>
+    );
+
+  const { cycle, streak, catchUp, question } = current;
+  const open = cycle.status === "open" && question;
+  const next = nextReward(computeRewards(streak, data.answers));
+  return (
+    <section className="card cst-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
+      <Header
+        streak={streak.current}
+        meta={open ? `${DAY_NAMES[cycle.currentDay - 1]}'s question` : cycle.status === "revealed" ? "Revealed" : "Locked"}
+      />
+      {open ? (
+        <div className="cst-feed-question">
+          <QuestionPost
+            backdrop={<WeekGraph cycle={cycle} answers={data.answers} variant="dark" />}
+            key={`${cycle.cycleId}-${question.day}`}
+            client={client}
+            cycleId={cycle.cycleId}
+            item={question}
+            answer={data.answers.find((a) => a.day === question.day)}
+            kind="today"
+            framed={false}
+            onChanged={() => void refresh()}
+          />
+        </div>
+      ) : (
+        <div className="cst-feed-status">
+          <span className="cst-icon-circle" aria-hidden="true">
+            {cycle.status === "revealed" ? <MoonStar size={18} /> : <Lock size={18} />}
+          </span>
+          <p>
+            {cycle.status === "revealed"
+              ? "Your constellation is out. Meet them anonymously."
+              : `Answers are locked. Your constellation is revealed ${when(cycle.revealsAt)}.`}
+          </p>
+        </div>
+      )}
+      <Link to={PAGE} className="cst-feed-footer">
+        <span>
+          {catchUp.missedDays.length > 0
+            ? `${catchUp.missedDays.length} missed ${catchUp.missedDays.length === 1 ? "day" : "days"} to catch up`
+            : "See your week"}
+        </span>
+        {next && (
+          <small className="cst-feed-next" data-testid="cst-feed-next">
+            Next badge: {next.title}
+          </small>
+        )}
+        <ChevronRight size={18} aria-hidden="true" />
+      </Link>
+    </section>
+  );
+}
+
+export default function ConstellationsFeedCard() {
+  const privacy = getPrivacyClient();
+  const client = getCycleClient(COMMUNITY);
+  const { state, set } = usePrivacySession(privacy, COMMUNITY);
+  const [joining, setJoining] = useState(false);
+
+  if (state.status === "loading") return <section className="card cst-feed cst-feed-loading" aria-label={FEATURE_NAME} data-testid="cst-feed-card" aria-busy="true" />;
+
+  if (state.status === "ready" && allOn(state.view.consent)) return <JoinedCard client={client} />;
+
+  const paused = state.status === "ready";
+  // Compact feature card, like Facebook's Memories or Marketplace promos: icon, one line, one button.
+  return (
+    <section className="card cst-feed cst-promo" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
+      <div className="cst-promo-row">
+        <ConstellationsMark size={48} />
+        <div className="cst-promo-text">
+          <strong>{paused ? `${FEATURE_NAME} is paused` : "Feel like nobody quite gets you?"}</strong>
+          <p className="muted">
+            {paused
+              ? "Turn it back on any time. Your answers stay private."
+              : "Answer one easy question a day. On Sunday, meet the 3–5 people who answered like you."}
+          </p>
+        </div>
+        {paused ? (
+          <Link to={PAGE} className="button-primary">
+            Manage
+          </Link>
+        ) : (
+          <button type="button" className="button-primary" onClick={() => setJoining(true)}>
+            Join this week
+          </button>
+        )}
+      </div>
+      {!paused && (
+        <p className="cst-promo-foot">
+          <Lock size={12} aria-hidden="true" /> {FEATURE_NAME} · A minute a day · Anonymous until you both reveal
+        </p>
+      )}
+      {joining && (
+        <Modal title={`Join ${FEATURE_NAME}`} onClose={() => setJoining(false)} className="cst-join-modal">
+          <JoinScreen
+            client={privacy}
+            communityId={COMMUNITY}
+            communityName={JOIN_SCOPE_LABEL}
+            onJoined={(view) => {
+              setJoining(false);
+              set(view);
+            }}
+          />
+        </Modal>
+      )}
+    </section>
+  );
+}

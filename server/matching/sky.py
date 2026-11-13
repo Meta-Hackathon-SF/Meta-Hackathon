@@ -218,26 +218,34 @@ class SkyService:
                 return lines
         return None
 
-    async def compute(self, cycle_id: str, formation: FormationResult,
-                      guesses: Mapping[str, Any], threshold: int, *,
-                      answer_texts: Sequence[str] = (), mutual_reveals: int = 0,
-                      synthetic_signals: Sequence[SyntheticSignal] = (),
-                      request_id: str | None = None) -> SkyStats:
-        if formation.status != "ok":
-            raise MatchingError("INVALID_INPUT", "Sky needs a formed cycle", retryable=False)
-        eligible = len({p for c in formation.constellations for p in c.member_ids})
-        themes, suppressed = compute_themes(formation.themes, validate_guesses(guesses),
-                                            eligible, threshold, self._guard, answer_texts)
-        payload = build_m8_payload(eligible, len(formation.constellations), themes)
+    async def compute_from(self, cycle_id: str, themes: Sequence[Theme], eligible: int,
+                           constellations: int, guesses: Mapping[str, Any], threshold: int,
+                           *, answer_texts: Sequence[str] = (), mutual_reveals: int = 0,
+                           synthetic_signals: Sequence[SyntheticSignal] = (),
+                           request_id: str | None = None) -> SkyStats:
+        """Sky from private themes and counts only. Usable before names exist (M8 needs
+        counts and theme labels, never constellation names)."""
+        visible, suppressed = compute_themes(themes, validate_guesses(guesses), eligible,
+                                             threshold, self._guard, answer_texts)
+        payload = build_m8_payload(eligible, constellations, visible)
         evidence: list[MuseCallEvidence] = []
         headlines = await self._narrate(payload, answer_texts,
                                         request_id or f"sky-{cycle_id}", evidence)
         return SkyStats(
             cycle_id=cycle_id, threshold=threshold, eligible_players=eligible,
-            constellations=len(formation.constellations), mutual_reveals=mutual_reveals,
-            themes=themes, suppressed_themes=suppressed,
-            headlines=headlines or template_headlines(eligible, themes),
+            constellations=constellations, mutual_reveals=mutual_reveals,
+            themes=visible, suppressed_themes=suppressed,
+            headlines=headlines or template_headlines(eligible, visible),
             synthetic_signals=tuple(synthetic_signals), evidence=tuple(evidence))
+
+    async def compute(self, cycle_id: str, formation: FormationResult,
+                      guesses: Mapping[str, Any], threshold: int, **kwargs: Any) -> SkyStats:
+        if formation.status != "ok":
+            raise MatchingError("INVALID_INPUT", "Sky needs a formed cycle", retryable=False)
+        eligible = len({p for c in formation.constellations for p in c.member_ids})
+        return await self.compute_from(cycle_id, formation.themes, eligible,
+                                       len(formation.constellations), guesses, threshold,
+                                       **kwargs)
 
 
 def formation_debug(constellations_refs: Sequence[Sequence[str]],

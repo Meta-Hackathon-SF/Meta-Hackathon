@@ -123,7 +123,6 @@ test("navigation and every secondary route support direct visits", async ({
     profile: "Your profile",
     messages: "Messenger",
     notifications: "Notifications",
-    campus: "Campus",
   })) {
     const response = await page.goto(`/${route}`);
     expect(response?.status()).toBe(200);
@@ -168,9 +167,9 @@ test("search and header menus work", async ({ page, isMobile }) => {
     await page.getByRole("button", { name: "Open menu" }).click();
     await page
       .getByRole("region", { name: "Menu", exact: true })
-      .getByRole("link", { name: "Campus", exact: true })
+      .getByRole("link", { name: "Memories", exact: true })
       .click();
-    await expect(page).toHaveURL("/campus");
+    await expect(page).toHaveURL("/memories");
   } else {
     await page.getByRole("button", { name: "Account", exact: true }).click();
     await expect(
