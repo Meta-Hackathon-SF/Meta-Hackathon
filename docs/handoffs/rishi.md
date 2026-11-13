@@ -74,3 +74,10 @@ Fixture versus live evidence: fixture only. FakeMuse is scripted, so tests prove
 
 ## Next action
 Run live 30-player timing once a Muse key is available; swap FixtureGuard/_AllowAll for Patrik's OutputGuard when it lands on main.
+
+
+## Review of Adam's changes (2026-11-13)
+- #62 (formation v2), #53 (sky guard, friend counting off) and #60 (D014 contract 2.2.0): reviewed, ACKed with notes. Merged together with main and my pending #35: pytest 1009 passed, 2 skipped. Three lines over 100 columns in Adam's code.
+- Live quality closed by Adam's evals: Muse 0.95/0.88 to 1.0/1.0 vs keyword baseline 0.13 (small runs). Themes into M4 gave no gain, and Sky is removed in v3, so day-close grouping will not call M3.
+- v3 design flag (not yet in the PRD): M4 partitions into groups of 3-5 and is bounded by MAX_ANSWERS, but daily constellations have no size cap and the sky holds about 10k players. Daily clustering needs a different method: a Muse call proposes a small set of meaning tags per day, code assigns each answer to its best 1-2 tags, and each tag with 3+ players is a constellation. M4 stays for the Sunday main constellation (3-5).
+- D014 builds on 2.1.0; my 3.0.0 draft will build on 2.2.0.

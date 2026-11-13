@@ -50,7 +50,7 @@ To do:
 - [ ] Event constellation-interest counts and nudge eligibility (bucketed, 3+ only, allowlist from #44). Owns `server/matching`. Accepts: a count under 3 is never returned; an event outside the allowlist is never eligible.
 - [ ] Custom-event cluster finder (repeat matches over 3 weeks). Owns `server/matching`. Accepts: a seeded cluster of 3+ repeat matches is found; a one-off match is not.
 - [ ] Remove M5 naming, M8 Sky narration and the guess from matching. Owns `server/matching`. Accepts: grep finds no naming, prevalence or guess code; tests green.
-- [ ] Live quality run (`live_eval --gold --live`). Owns `server/matching`. Accepts: results and model/latency recorded in the handoff, labeled live.
+- [x] Live quality run. Done by Adam's live evals (`docs/audits/2026-11-13-live-evals.md`, synthetic gold set, 30 players): Muse scored pairwise precision/recall 0.95/0.88 (Spark), 0.98/0.89 (Ember), 1.0/1.0 (Wonder) against 0.13 for the keyword baseline. Small runs (1-3 per model), directional only.
 
 ### Adam (`@adamzhang06`, branch `role/adam-planning`)
 Muse adapter, event data, copy jobs.
