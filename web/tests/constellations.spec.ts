@@ -198,3 +198,34 @@ test("operator runs a full demo week in under 3 minutes; lock closes answers", a
   await expect(page.getByTestId("cst-op-state")).toHaveText("Open · Monday");
   expect(Date.now() - started).toBeLessThan(180_000);
 });
+
+test("recordings are converted to 16 kHz mono 16-bit WAV before upload", async ({ page }) => {
+  await page.goto(DAILY);
+  const result = await page.evaluate(async () => {
+    const { encodeWav, toWav } = await import("/src/features/constellations/daily/wav.ts");
+    // A synthetic one-second 440 Hz stereo-rate source at 48 kHz, as a phone might record.
+    const source = new Float32Array(48000);
+    for (let i = 0; i < source.length; i++) source[i] = 0.5 * Math.sin((2 * Math.PI * 440 * i) / 48000);
+    const converted: Blob = await toWav(encodeWav(source, 48000));
+    const view = new DataView(await converted.arrayBuffer());
+    const tag = (o: number) => String.fromCharCode(...[0, 1, 2, 3].map((i) => view.getUint8(o + i)));
+    let peak = 0;
+    for (let o = 44; o < view.byteLength; o += 2) peak = Math.max(peak, Math.abs(view.getInt16(o, true)));
+    return {
+      type: converted.type,
+      riff: tag(0),
+      wave: tag(8),
+      format: view.getUint16(20, true),
+      channels: view.getUint16(22, true),
+      rate: view.getUint32(24, true),
+      bits: view.getUint16(34, true),
+      samples: view.getUint32(40, true) / 2,
+      peak,
+    };
+  });
+  expect(result).toMatchObject({ type: "audio/wav", riff: "RIFF", wave: "WAVE", format: 1, channels: 1, rate: 16000, bits: 16 });
+  expect(result.samples).toBeGreaterThan(15900);
+  expect(result.samples).toBeLessThan(16100);
+  expect(result.peak).toBeGreaterThan(12000); // the tone survived, not silence
+  expect(result.peak).toBeLessThan(20000);
+});
