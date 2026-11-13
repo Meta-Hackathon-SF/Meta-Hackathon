@@ -72,11 +72,11 @@ Daily experience, screens, operator controls.
 
 ### Patrik (`@patrikliska13`, branch `role/patrik-privacy`)
 Consent, private storage, retention, guards.
-- [ ] `eventSignals` consent toggle. Accepts: no interest or RSVP is stored for a player who has not opted in.
-- [ ] Interest and RSVP private storage. Accepts: another session gets 403; only bucketed counts leave the privacy module.
-- [ ] Retention for the new tables. Accepts: interest, RSVP and daily-placement data expire with the rest (14 days after lock); a TTL test proves it.
-- [ ] Privacy review of second-degree constellations and events. Accepts: written review in the handoff; no path lets a player infer who another player is.
-- [ ] OutputGuard on nudge and custom-event copy. Accepts: a fuzz test with known answers finds no 5-word overlap; sensitive terms are rejected.
+- [x] `eventSignals` consent toggle. Accepts: no interest or RSVP is stored for a player who has not opted in. (`tests/privacy/test_privacy_events.py::test_nothing_stored_without_opt_in`)
+- [x] Interest and RSVP private storage. Accepts: another session gets 403; only bucketed counts leave the privacy module. (`test_invites_only_to_opted_in_and_rsvp_is_403_for_anyone_else`, `test_interest_bucket_counts_only_opted_in_peers_and_never_under_three`)
+- [x] Retention for the new tables. Accepts: interest, RSVP and daily-placement data expire with the rest (14 days after lock); a TTL test proves it. (`test_interest_and_invites_expire_fourteen_days_after_lock`; daily placement is Rishi's table: purge it via `AnswerStore.expired_cycles()`)
+- [x] Privacy review of second-degree constellations and events. Accepts: written review in the handoff; no path lets a player infer who another player is. (docs/handoffs/patrik.md: no direct path; risks R1 star-index linkage, R2 small-community graph, R3 bucket differencing, each with an owner fix)
+- [x] OutputGuard on nudge and custom-event copy. Accepts: a fuzz test with known answers finds no 5-word overlap; sensitive terms are rejected. (`OutputGuard.check_event_copy`; `tests/privacy/test_privacy_guard_events.py`)
 
 ### Kai (`@beatopia`, branch `role/kai-orchestration`)
 Jobs, chat, sky UI, API composition.

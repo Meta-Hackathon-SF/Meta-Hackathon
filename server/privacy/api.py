@@ -21,10 +21,11 @@ from starlette.requests import HTTPConnection
 
 from .errors import PrivacyError
 from .activity import ActivityRequest, ActivityStore
+from .events import EventStore
 from .answers import AnswerStore
 from .moderation import HandleResolver, ModerationStore
 from .service import Actor, PrivacyService
-from .wire import ApiError, ApiErrorBody, BlockRequest, JoinRequest, UpdateConsentRequest
+from .wire import ApiError, ApiErrorBody, BlockRequest, EventSignalsRequest, JoinRequest, UpdateConsentRequest
 
 SESSION_COOKIE = "cst_session"
 
@@ -106,6 +107,8 @@ def build_router(
     moderation: ModerationStore | None = None,
     resolve_handle: HandleResolver | None = None,
     activity: ActivityStore | None = None,
+    events: EventStore | None = None,
+    current_cycle_id: Callable[[str], str] | None = None,
 ) -> APIRouter:
     router = APIRouter()
     ActorDep = Annotated[Actor, Depends(actor_dependency(service))]
@@ -146,6 +149,8 @@ def build_router(
             answers.delete_my_data(actor.player_id)
             if activity is not None:
                 activity.delete_player(actor.player_id)
+            if events is not None:
+                events.delete_player(actor.player_id)  # interests and RSVPs; opt-in stays
             return {"status": "deleted"}
 
     if moderation is not None and resolve_handle is not None:
@@ -168,5 +173,13 @@ def build_router(
             if body.use_activity:
                 service.require_consent(actor)  # only fully consenting players can add signals
             return activity.put(actor.player_id, actor.community_id, body, service.now().isoformat()).wire()
+
+    if events is not None and current_cycle_id is not None:
+        @router.put("/me/event-signals")
+        def put_event_signals(body: EventSignalsRequest, actor: ActorDep) -> dict:
+            """D012 v3 (S2): my full set of interested approved events. Needs the
+            eventSignals opt-in; unknown event ids are NOT_FOUND."""
+            stored = events.replace_interests(actor, current_cycle_id(actor.community_id), body.event_ids)
+            return {"stored": stored}
 
     return router
