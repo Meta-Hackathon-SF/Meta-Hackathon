@@ -1,6 +1,13 @@
 /* Dark Space screens: the animated sky (daily / week / forming / main), the anonymous chat and mutual reveal. */
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import { ArrowUp, ChevronLeft } from "lucide-react";
+import {
+  isSundayPromoted,
+  promoteSundayChat,
+  SUNDAY_THREAD_ID,
+  JORDAN_THREAD_ID,
+} from "../../messenger/inbox";
 import { DAY_LONG, DAY_SHORT, dayHex, type Screen } from "./model";
 import { PreviewTag, StarField } from "./parts";
 import { CONTACT_PATTERN, PREVIEW_DAY_COUNTS, PREVIEW_MEMBERS, PREVIEW_MESSAGES } from "./preview";
@@ -205,6 +212,18 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const later = (ms: number, fn: () => void) => timers.current.push(window.setTimeout(fn, ms));
   const kept = ["me", "0", "1", "2", "3"].every((k) => keep[k]);
+  const label = (index: number) => (kept ? PREVIEW_MEMBERS[index].identity : PREVIEW_MEMBERS[index].name);
+
+  useEffect(() => {
+    if (!kept || isSundayPromoted()) return;
+    promoteSundayChat(
+      msgs.map((message) => ({
+        senderName: message.mine ? "Alex Morgan" : PREVIEW_MEMBERS[message.member!].identity,
+        text: message.text,
+        mine: Boolean(message.mine),
+      })),
+    );
+  }, [kept, msgs]);
 
   const send = () => {
     const t = draft.trim();
@@ -221,11 +240,15 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
   };
   const vote = (k: string) => setKeep((x) => ({ ...x, [k]: true }));
   const toggleKeep = () => {
-    if (keep.me) return setKeep((x) => ({ ...x, me: false }));
+    if (keep.me) {
+      if (isSundayPromoted()) return;
+      return setKeep((x) => ({ ...x, me: false }));
+    }
     vote("me");
-    later(700, () => vote("0"));
-    later(1500, () => vote("1"));
-    later(2400, () => vote("3"));
+    later(500, () => vote("0"));
+    later(1000, () => vote("1"));
+    later(1500, () => vote("3"));
+    later(2000, () => vote("2"));
   };
   const member = sheet >= 0 ? PREVIEW_MEMBERS[sheet] : null;
   const shown = msgs.filter((m) => m.mine || !(blocked[m.member!] || reported[m.member!]));
@@ -251,7 +274,7 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
                 setSheet(i);
                 setReporting(false);
               }}
-              aria-label={m.name}
+              aria-label={label(i)}
             >
               <i style={{ background: m.hex, boxShadow: `0 0 8px ${m.hex}` }} />
             </button>
@@ -261,7 +284,11 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
         <span className="spc-chat-left">{kept ? "Kept" : "23 h left"}</span>
       </div>
       <div className="spc-keep">
-        <span className="spc-grow">{kept ? "Everyone kept it. It stays open." : "Gone in 23 h unless everyone keeps it"}</span>
+        <span className="spc-grow">
+          {kept
+            ? "Everyone agreed. Names are visible, and this chat is in Messenger."
+            : "Gone in 23 h unless everyone keeps it"}
+        </span>
         <span className="spc-keep-dots" aria-hidden="true">
           {["me", "0", "1", "2", "3"].map((k) => (
             <i key={k} className={keep[k] ? "is-on" : ""} />
@@ -270,6 +297,11 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
         <button type="button" className={`spc-keep-btn${keep.me ? " is-kept" : ""}`} onClick={toggleKeep} aria-pressed={Boolean(keep.me)}>
           {keep.me ? "Kept" : "Keep"}
         </button>
+        {kept && (
+          <Link className="spc-keep-btn" to={`/messages?chat=${SUNDAY_THREAD_ID}`}>
+            Open in Messenger
+          </Link>
+        )}
       </div>
       <div className="spc-msgs" aria-live="polite">
         <div className="spc-msgs-time">Sunday 10:00 AM</div>
@@ -283,14 +315,14 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
               <span className="spc-msg-star" style={{ background: `radial-gradient(circle, ${PREVIEW_MEMBERS[m.member!].hex} 0 20%, transparent 62%)` }} />
               <div>
                 <div className="spc-msg-name" style={{ color: PREVIEW_MEMBERS[m.member!].hex }}>
-                  {PREVIEW_MEMBERS[m.member!].name}
+                  {label(m.member!)}
                 </div>
                 <div className="spc-msg">{m.text}</div>
               </div>
             </div>
           ),
         )}
-        {typing && <div className="spc-typing">Star 3 is typing…</div>}
+        {typing && <div className="spc-typing">{label(1)} is typing…</div>}
       </div>
       <div className="spc-chat-foot">
         {rejected && (
@@ -323,11 +355,11 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
       {member && (
         <>
           <div className="spc-sheet-scrim" onClick={() => setSheet(-1)} />
-          <div className="spc-sheet" role="dialog" aria-label={member.name}>
+          <div className="spc-sheet" role="dialog" aria-label={label(sheet)}>
             <span className="spc-grabber" aria-hidden="true" />
             <div className="spc-row">
               <span className="spc-sheet-star" style={{ background: `radial-gradient(circle, ${member.hex} 0 22%, transparent 60%)` }} />
-              <div className="spc-sheet-name">{member.name}</div>
+              <div className="spc-sheet-name">{label(sheet)}</div>
             </div>
             {!reporting && !reported[sheet] && (
               <>
@@ -404,13 +436,13 @@ export function RevealedScreen({ onBack }: { onBack: () => void }) {
       </div>
       <p className="spc-reveal-sub">You and Star 3 both chose to reveal</p>
       <div className="spc-reveal-avatar" aria-hidden="true" />
-      <h2 className="spc-reveal-name">Jordan Lee</h2>
+      <h2 className="spc-reveal-name">Jordan Davis</h2>
       <p className="spc-reveal-note">Only you two can see this. Everyone else still sees Star 3.</p>
       <div className="spc-flex" />
       <div className="spc-col spc-reveal-actions">
-        <button type="button" className="spc-btn spc-btn-primary spc-btn-lg">
+        <Link className="spc-btn spc-btn-primary spc-btn-lg" to={`/messages?chat=${JORDAN_THREAD_ID}`}>
           Message Jordan
-        </button>
+        </Link>
         <button type="button" className="spc-btn spc-btn-glass spc-btn-lg" onClick={onBack}>
           Back to chat
         </button>

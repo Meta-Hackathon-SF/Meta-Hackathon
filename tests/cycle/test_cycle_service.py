@@ -486,7 +486,8 @@ def test_synthetic_topup_is_labeled_weighted_and_keeps_the_distress_flag():
     env.service.advance(cycle.cycleId)
     env.service.advance(cycle.cycleId)  # Wednesday, like the fixture
     result = env.service.synthetic_topup(cycle.cycleId)
-    assert result == {"label": "Synthetic player", "syntheticPlayers": 8, "answersAdded": 14}
+    # 8 fixture players + Patrik's 30-player demo cast (#84)
+    assert result == {"label": "Synthetic player", "syntheticPlayers": 38, "answersAdded": 104}
     assert all(p["isSynthetic"] for p in env.seeder.players.values())
     day1 = env.store.get(cycle.cycleId, "p-maya", 1)
     assert (day1.isCatchUp, day1.weight) == (True, 0.6)  # day 1 answered on Wednesday
