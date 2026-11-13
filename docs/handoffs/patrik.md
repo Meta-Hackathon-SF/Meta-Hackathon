@@ -29,7 +29,8 @@ Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
 All evidence is offline (in-memory SQLite, synthetic names). No model call. No composed server.
 
 ## Requests answered
-- GitHub PR/issue tags could not be checked: the repo is private and Patrik's machine has no `gh` CLI or API auth. Remote handoffs of all four owners were inspected; none has a 2.0.0 request for Patrik (all predate the pivot).
+- 2026-11-13 Kai #13 (registry, session/consent, M1, OutputGuard, report/block store, publish gate): ACK registry; DELIVERED session/consent (#15), listeners, answer store (#24); planned OutputGuard -> M1 -> report/block -> formationSnapshot; CHANGE proposal `formation_snapshot` + `check_publish(cycleId, revision, playerIds)`. https://github.com/willapat/Meta-Hackathon/pull/13#issuecomment-6842159029
+- PR opened: #24 (task 3).
 - ACK D005 and D006 (producer shapes) recorded in docs/DECISIONS.md.
 
 ## Blocked on
