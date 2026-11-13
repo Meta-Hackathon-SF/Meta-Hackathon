@@ -15,13 +15,14 @@ import {
   parseEvidence,
   parseFollowUp,
   parseFormationResponse,
-  parseGuess,
   parseList,
   parseReport,
   parseTopUp,
   parseTranscript,
   type CycleClient,
 } from "./client";
+import { parseDailyConstellations, parseProposal, parseWeekView } from "./v3";
+import { parseReasoning } from "../operator/reasoning";
 import { toWav } from "./wav";
 
 function key(): string {
@@ -93,14 +94,11 @@ export function createHttpClient(
     },
     questions: (id, signal) => call("GET", `${c(id)}/questions`, (v) => parseList(v, parseDailyQuestion), { signal }),
     myAnswers: (id, signal) => call("GET", `${c(id)}/answers`, (v) => parseList(v, parseAnswer), { signal }),
-    // No read route for the guess exists in contracts/API.md; the slider starts unset.
-    myGuess: async () => null,
     submit: (id, body) => mutate(call("POST", `${c(id)}/answers`, parseAnswerResult, { body })),
     edit: (id, day, body) => mutate(call("PATCH", `${c(id)}/answers/${day}`, parseAnswerResult, { body })),
     remove: (id, day) =>
       mutate(call("DELETE", `${c(id)}/answers/${day}`, () => undefined, { emptyOk: true })),
     followUp: (id, day, signal) => call("GET", `${c(id)}/answers/${day}/followup`, parseFollowUp, { signal }),
-    guess: (id, percent) => call("PUT", `${c(id)}/guess`, parseGuess, { body: { percent } }),
     async transcribe(audio, signal) {
       // The speech-to-text provider takes WAV only; convert in memory first.
       let wav: Blob;
@@ -153,6 +151,32 @@ export function createHttpClient(
       }
     },
     nudge: createNudgeRequester(base),
+    reasoning: (signal) => call("GET", "/operator/reasoning?limit=50", parseReasoning, { signal }),
+    // PROPOSED routes from docs/PRD-v3.md (contract 3.0.0, D012). Until the producers
+    // mount them these calls fail and the UI shows its pending/unavailable state.
+    v3: {
+      dailyConstellations: (id, day, signal) =>
+        call("GET", `${c(id)}/days/${day}/constellations`, parseDailyConstellations, { signal }),
+      week: (id, signal) => call("GET", `${c(id)}/week`, parseWeekView, { signal }),
+      closeDay: (id, day) =>
+        mutate(
+          call("POST", `${op(id)}/close-day`, (v) => {
+            const jobId = (v as { jobId?: unknown } | null)?.jobId;
+            if (typeof jobId !== "string" || !jobId)
+              throw new ClientError("PROVIDER_UNAVAILABLE", "The server sent an unexpected response.", true);
+            return { jobId };
+          }, { body: { day } }),
+        ),
+      customEvents: (signal) =>
+        call("GET", "/operator/custom-events", (v) => parseList(v, (x) => parseProposal(x, parseEvidence)), { signal }),
+      decideCustomEvent: (proposalId, decision, note) =>
+        call(
+          "POST",
+          `/operator/custom-events/${encodeURIComponent(proposalId)}/decision`,
+          (v) => parseProposal(v, parseEvidence),
+          { body: note ? { decision, note } : { decision } },
+        ),
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);

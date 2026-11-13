@@ -1,4 +1,24 @@
 # will handoff
+Current step: v3 (D012) Will tasks on `will/v3-daily-ui`; UI fixture-verified, live data blocked on contract 3.0.0 + producer routes.
+Updated: 2026-11-13T08:40Z
+
+## v3 (D012) status, 2026-11-13
+Branch `will/v3-daily-ui` (from main after #55). Verification: `pytest tests` 885 passed, 2 skipped; web `npm run lint` 0 errors, `npm run build` ok, `npx playwright test` 67 passed, 1 skipped. Fixture mode only; nothing live, nothing deployed.
+- `answeredToday`: `CycleService.answered_today(cycleId, day=None)` counts distinct players with an accepted, unflagged answer (submit/edit/delete/top-up/reset kept in sync). Port for Rishi's S5 view; not yet on the wire (WeeklyCycle is 2.1.0).
+- Guess: `GuessCard`, `myGuess`/`guess` client calls, guess CSS removed. **Held:** `PUT /cycles/:id/guess` and `put_guess` stay until 3.0.0 replaces 2.1.0. Patrik's privacy copy still says "guess" (`privacy/copy.ts`, `PrivacyComponents.tsx`).
+- Day colors: `daily/v3.ts` `DAY_COLORS` (Mon blue, Tue teal, Wed green, Thu amber, Fri rose; ids match the PRD sketch). Color always paired with the day name.
+- S5 `daily/DailyReveal.tsx`, S6 `daily/WeekDays.tsx`, S15 `operator/V3Panels.tsx` (Close day, custom-event queue with decision log).
+- Local PENDING-3.0.0 types and validators in `daily/v3.ts`; `CycleClient.v3?` (http calls the PRD routes; fixture is TEST-ONLY synthetic placement).
+
+- Audit #50: follow-up reply is a soft limit (never truncated, send blocked when over); reasoning panel mounted from `GET /operator/reasoning`. R6 storage change (reply + its question to M3/M4) still needs a contract decision.
+
+### Needs from others (exact)
+- @rishibagri: contract 3.0.0 in `contracts/protocol.ts` with `DayColorId`, `DailyConstellationsView`, `WeekView`, `CustomEventProposal`, `WeeklyCycle.answeredToday`; routes `GET /cycles/:id/days/:day/constellations`, `GET /cycles/:id/week` (I can serve `week` days/answers; need his per-day `constellationCount`). Use `CycleService.answered_today` for the count.
+- @beatopia: day-close job behind `POST /operator/cycles/:id/close-day` (my control calls it), SSE `daily.updated` / `day.closed` (UI refetches on client change today).
+- @adamzhang06: `GET /operator/custom-events`, `POST /operator/custom-events/:id/decision` with audit log.
+- @patrikliska13: remove "guess" wording from privacy copy and delete-data text.
+
+## Earlier status
 Current step: 2-3 (foundation + daily loop) and the operator part of step 8, see docs/PLAN.md
 Status: role tasks 1-7 implemented and fixture-verified. Nothing is composed into a running server, nothing has called Muse, nothing is deployed.
 Branch + commit: `feat/will-constellations-feed-ui` @ d52b3ea (human-requested UI branch, open PR); `role/will-voice-ui` = main ea3672f (PR #29 merged).
