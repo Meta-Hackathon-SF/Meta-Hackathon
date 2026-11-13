@@ -1,8 +1,8 @@
 # will handoff
 Current step: 2-3 (foundation + daily loop) and the operator part of step 8, see docs/PLAN.md
 Status: role tasks 1-7 implemented and fixture-verified. Nothing is composed into a running server, nothing has called Muse, nothing is deployed.
-Branch + commit: `role/will-voice-ui` @ 8e03bd1; PR #14 merged to main as 4437e21 (2026-11-13)
-Updated: 2026-11-13T04:10Z
+Branch + commit: `feat/will-daily-ui-polish` @ de922ec (UI redesign, branched from main 3fb4bef at the human's request); `role/will-voice-ui` = main. PR #14 merged as 4437e21, PR #25 merged as ef81f4f.
+Updated: 2026-11-13T03:47Z
 
 ## Completed tasks (docs/roles/will.md)
 1. `server/voice/` restored from the archive, renamed to daily-answer terms, transcript cap 400. Default transcriber is unconfigured (503); typing never depends on it.
@@ -20,19 +20,26 @@ Updated: 2026-11-13T04:10Z
 - `server/cycle/ports.py`: the shapes I consume (`AnswerStore`, `QuestionPort`, `SafetyScreen`, `Clarify`, `TextGuard`, `CycleHooks`, `SyntheticSeeder`, `Session`).
 - Web: `CycleClient` in `daily/client.ts` (hand validators for every response), `httpClient.ts` (live, used when `VITE_CONSTELLATIONS_API` is set), `fixtureClient.ts` (TEST-ONLY).
 
-## Added after teammates replied (2026-11-13T03:05Z)
+## Added after teammates replied (2026-11-13T02:26Z)
 - `CycleService.gate(cycleId) -> CycleGate(cycle, revision)` and `check_gate(cycleId, revision, status=None)` (`STALE_REVISION` when the cycle changed). For Kai's formation commit, reveal and room expiry.
 - On lock the service calls `answers.mark_locked(cycleId, lockedAt)` when the store has it (Patrik's store does).
 - `build_router(service, session_dependency, transcriber=None, require_consent=None)`: `session_dependency` may return Patrik's `Actor`; `require_consent(actor)` runs before answer, follow-up and guess writes. Reads and delete stay available after revocation.
 - `tests/cycle/test_cycle_integration.py`: my service with Adam's real `CycleQuestionPort` from `server.planning` (offline bank), and an Actor-shaped session with a consent check.
 - Operator console mounts Rishi's `FormationDebug` from `GET /operator/cycles/:id/formation-debug` (accepts his object alone or `{data, evidence, totalMs, usedFallback}`); fixture mode shows an honest empty state.
 
-## Muse speech-to-text (2026-11-13T04:10Z, NOT verified live)
+## Muse speech-to-text (2026-11-13T02:43Z, NOT verified live)
 - `server/voice/muse_stt.py`: `MuseTranscriber`, `MuseSttConfig`, `load_muse_stt_config`, `build_transcriber(env=None)`. Provider format read from dev.meta.ai docs on 2026-11-13: `POST {base}/asr/transcribe`, multipart `request` (JSON: model `muse-voice-transcribe-1.0`, `audioEncoding: "WAV"`, `mode: "PUSH_TO_TALK"`, `languageBias`) + `audio`; response `{transcript, ...}`. Audio must be mono 16-bit PCM WAV at 16 or 24 kHz.
 - Composition: pass `transcriber=server.voice.build_transcriber()` to `build_router`. It uses `MUSE_API_KEY` / `MODEL_API_KEY`, `MUSE_BASE_URL`, optional `MUSE_STT_MODEL`, `MUSE_STT_TIMEOUT_S`; with no key it is the 503 transcriber. It reads the process environment only (it does not load `server/providers/muse.env`).
 - `web/.../daily/wav.ts`: the live client converts each recording to 16 kHz mono WAV in memory before upload.
 - To verify with a key: `python -m server.voice.smoke` (one paid call, synthetic tone, prints status and timing only). Not run.
 - Unknowns until a live call: whether the team key is enabled for the voice model, real latency, transcript quality on phone recordings, and Safari's decode of its own mp4 recordings.
+
+## UI redesign + privacy gate (2026-11-13T03:47Z, branch `feat/will-daily-ui-polish`)
+- Daily page redesigned: night-sky week view (answered days light stars; consecutive on-day answers draw the streak line), composer with "Only you can read this" bar and recording timer, Catch up section, collapsible Earlier this week, large-number guess slider, post-lock status card, skeleton and empty states, delete confirmation.
+- Patrik's `PrivacyGate` mounted inside `DailyPage` (under the page header, so the title stays while joining); the week loads only after join with all three consents. His `SupportCard` replaces my inline card. `onDataDeleted` remounts the page; fixture mode also clears this tab's answers via the new optional `CycleClient.clearLocalData()`.
+- Operator console redesigned: Mon..Close stepper, state pill, next-step button with its effect, confirmations for Reset and for New cycle over a running week, Muse call summary.
+- Operator console is not gated (operators act through server roles); live-mode 401/403 show plain messages.
+- Checks: web lint 0 errors (2 warnings in my files), build ok, Playwright 38 passed; full `pytest tests` 560 passed. Fixture mode only; not tried on a real phone.
 
 ## Shared files touched (claimed)
 - `web/src/App.tsx` (two routes), `web/src/pages/SecondaryPages.tsx` (one link on the Hackathon Builders card), `web/src/components/navigation/Header.tsx` (mobile title uses first path segment).
@@ -51,6 +58,7 @@ All fixture. Server tests use `server/cycle/testing.py` (TEST-ONLY stand-ins for
 `GET /cycles/:id/answers` (own answers), `POST /voice/transcribe` (raw audio body -> `{transcript, mode}`), `PATCH answers/:day` body `{text, answersFollowUp?}`, response shapes `{cycle, question, streak, catchUp}` and `{answer, supportCard}`, optional `evidence: MuseCallEvidence` on the follow-up response (for the Muse chip), a read route for my own guess.
 
 ## Requests answered
+- Patrik (handoff "Blocked on", 2026-11-13): mount `PrivacyGate` + use `SupportCard` + Playwright join flow: DELIVERED on `feat/will-daily-ui-polish`. `AnswerStore` swap and `mark_locked`: my side done (lock calls it); the swap itself is in Kai's composition root.
 - D005 ACK and D006 ACK posted in PR #14 (2026-11-13).
 - Kai (PR #13 "Needs from Will"): ACK registry; DELIVERED CyclePort, router factory and the revision gate.
 - Rishi (PR #14 comment): ACK D008 streak rule; DELIVERED FormationDebug mount in the operator console.
