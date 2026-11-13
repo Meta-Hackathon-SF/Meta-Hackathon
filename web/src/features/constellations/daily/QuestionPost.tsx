@@ -13,6 +13,7 @@ import ConstellationsMark from "./ConstellationsMark";
 import { SupportCard } from "../privacy";
 import type { CycleClient, DailyAnswer, DailyQuestion, FollowUp } from "./client";
 import { DAY_NAMES, MAX_CHARS, message } from "./useDaily";
+import { isLiveSupported, useLiveTranscription } from "./useLiveTranscription";
 import { MAX_RECORDING_SECONDS, useVoiceRecorder } from "./useVoiceRecorder";
 
 export type PostKind = "today" | "catch-up" | "earlier";
@@ -165,10 +166,40 @@ export default function QuestionPost({
   });
   useEffect(() => () => transcription.current?.abort(), []);
 
-  const recording = recorder.status === "recording";
-  const micBlocked = recorder.status === "denied" || recorder.status === "unsupported";
+  // Live mode (PROPOSED, D011): words appear while the player talks. Falls back to
+  // the record-then-transcribe flow above when the live route is unavailable.
+  const [liveOff, setLiveOff] = useState(false);
+  const liveUrl = !liveOff && isLiveSupported() ? (client.liveTranscriptionUrl?.() ?? null) : null;
+  const live = useLiveTranscription(liveUrl, {
+    onPartial: (spoken) => {
+      setText(spoken.slice(0, MAX_CHARS));
+      setSource("voice");
+    },
+    onFinal: (spoken) => {
+      if (spoken) setText(spoken.slice(0, MAX_CHARS));
+      setSource("voice");
+      setVoiceNote(spoken ? "Check the transcript, edit if needed, then send." : "No words came through. Try again or type.");
+    },
+    onUnavailable: () => {
+      setLiveOff(true);
+      setVoiceNote("Live transcription isn't available. Recording instead…");
+      void recorder.start();
+    },
+  });
+  const liveActive = live.status === "connecting" || live.status === "listening";
+
+  const recording = recorder.status === "recording" || liveActive;
+  const micBlocked = recorder.status === "denied" || recorder.status === "unsupported" || live.status === "denied";
   const note =
-    recorder.status === "denied"
+    live.status === "connecting"
+      ? "Connecting…"
+      : live.status === "listening"
+        ? "Listening… your words appear as you talk. Tap stop when you're done."
+        : live.status === "finishing"
+          ? "Finishing…"
+          : live.status === "error"
+            ? `${live.error ?? "Live transcription stopped."} You can type instead.`
+            : recorder.status === "denied" || live.status === "denied"
       ? "Microphone access is off. Typing works the same."
       : recorder.status === "unsupported"
         ? "This browser can't record. Typing works the same."
@@ -229,11 +260,12 @@ export default function QuestionPost({
     <button
       type="button"
       className="cst-tool is-live"
-      onClick={recorder.stop}
-      aria-label={`Stop recording, ${recorder.seconds} of ${MAX_RECORDING_SECONDS} seconds`}
+      onClick={liveActive ? live.stop : recorder.stop}
+      aria-label={`Stop recording, ${liveActive ? live.seconds : recorder.seconds} of ${MAX_RECORDING_SECONDS} seconds`}
+      data-testid="cst-mic-stop"
     >
       <Square size={13} fill="currentColor" aria-hidden="true" />
-      <span aria-hidden="true">{clock(recorder.seconds)}</span>
+      <span aria-hidden="true">{clock(liveActive ? live.seconds : recorder.seconds)}</span>
     </button>
   ) : (
     <button
@@ -241,8 +273,8 @@ export default function QuestionPost({
       className="cst-tool"
       aria-label="Record answer"
       title="Record answer"
-      onClick={() => void recorder.start()}
-      disabled={micBlocked || recorder.status === "requesting" || busy}
+      onClick={() => void (liveUrl ? live.start() : recorder.start())}
+      disabled={micBlocked || recorder.status === "requesting" || live.status === "finishing" || busy}
     >
       <Mic size={18} aria-hidden="true" />
     </button>

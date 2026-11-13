@@ -22,12 +22,15 @@ import uuid
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request, WebSocket
 from pydantic import BaseModel, ValidationError
 from starlette.concurrency import run_in_threadpool
 from starlette.responses import JSONResponse, Response
 
 from server.voice import MAX_AUDIO_BYTES, Transcriber, UnconfiguredTranscriber, VoiceError, transcribe_audio
+from server.voice.live import default_connect, origin_allowed
+from server.voice.live import relay as live_relay
+from server.voice.muse_stt import MuseSttConfig
 
 from .ports import Session
 from .service import ERRORS, CycleError, CycleService
@@ -111,6 +114,9 @@ def build_router(
     *,
     transcriber: Transcriber | None = None,
     require_consent: Callable[[Any], Any] | None = None,
+    live_stt: MuseSttConfig | None = None,
+    live_origins: tuple[str, ...] = (),
+    live_connect: Callable[[str], Any] | None = None,
 ) -> APIRouter:
     router = APIRouter()
     stt: Transcriber = transcriber or UnconfiguredTranscriber()
@@ -194,6 +200,34 @@ def build_router(
             )
         # mode "fixture" -> the UI must label the transcript as a fixture
         return _json({**result, "mode": stt.mode})
+
+    # Mounted only when configured: without a key there is no live route, and the
+    # browser falls back to POST /voice/transcribe. Composition must also accept
+    # WebSocket routes (Kai's registry is HTTP-only today; see D011).
+    if live_stt is not None:
+        @router.websocket("/voice/live")
+        async def live(websocket: WebSocket):
+            """PROPOSED (D011): live speech-to-text while the player talks. One
+            push-to-talk turn per connection; see server/voice/live.py."""
+            if not origin_allowed(websocket.headers, live_origins):
+                await websocket.close(code=1008)  # cookie-authenticated: same host only
+                return
+            await websocket.accept()
+            try:
+                actor = actor_dependency(websocket)  # session from the cookie, never a client id
+                if require_consent is not None:
+                    require_consent(actor)
+            except Exception as exc:  # noqa: BLE001 - map to a contract code, no details
+                code = getattr(exc, "code", "UNAUTHENTICATED")
+                code = code if code in {"UNAUTHENTICATED", "CONSENT_REQUIRED", "FORBIDDEN"} else "UNAUTHENTICATED"
+                await websocket.send_json({"type": "error", "code": code, "message": "Join and turn on consent to answer.", "retryable": False})
+                await websocket.close(code=1008)
+                return
+            await live_relay(websocket.receive, websocket.send_json, live_stt, connect=live_connect or default_connect)
+            try:
+                await websocket.close()
+            except RuntimeError:
+                pass  # already closed by the client
 
     # ---- operator ("Demo timing") -------------------------------------------
     @router.post("/operator/cycles")
