@@ -86,12 +86,15 @@ class VenueCatalogTests(unittest.TestCase):
         bad = [
             doc(contractVersion="1.0.0"), doc(venues=[]), doc(venues=private), doc(venues=addressed),
             doc(venues=VENUES_DOC["venues"] + [VENUES_DOC["venues"][0]]),
-            doc(campusEvents=[{"eventId": "ev-party", "title": "House party", "placeId": "v-someones-flat", "start": "2026-11-19T03:00:00Z"}]),
-            doc(campusEvents=[{"eventId": "ev-mic", "title": "Open mic", "placeId": "v-cafe", "start": "Thursday evening"}]),
+            doc(campusEvents=[{"eventId": "ev-party", "title": "House party", "placeId": "v-someones-flat", "start": "2026-11-19T03:00:00Z", "end": "2026-11-19T05:00:00Z"}]),
+            doc(campusEvents=[{"eventId": "ev-long", "title": "Marathon", "placeId": "v-quad", "start": "2026-11-19T03:00:00Z", "end": "2026-11-19T09:00:00Z"}]),  # too long
+            doc(campusEvents=[{"eventId": "ev-back", "title": "Backwards", "placeId": "v-quad", "start": "2026-11-19T03:00:00Z", "end": "2026-11-19T02:00:00Z"}]),
+            doc(campusEvents=[{"eventId": "ev-mic", "title": "Open mic", "placeId": "v-cafe", "start": "Thursday evening", "end": "2026-11-19T05:00:00Z"}]),
             doc(campusEvents=[{"title": "Open mic", "placeId": "v-cafe", "start": "2026-11-19T03:00:00Z"}]),           # no id
-            doc(campusEvents=[{"eventId": "Open Mic!", "title": "Open mic", "placeId": "v-cafe", "start": "2026-11-19T03:00:00Z"}]),
-            doc(campusEvents=[{"eventId": "ev-a", "title": "A", "placeId": "v-cafe", "start": "2026-11-19T03:00:00Z"},
-                              {"eventId": "ev-a", "title": "B", "placeId": "v-rec", "start": "2026-11-19T04:00:00Z"}]),  # duplicate id
+            doc(campusEvents=[{"eventId": "Open Mic!", "title": "Open mic", "placeId": "v-cafe", "start": "2026-11-19T03:00:00Z", "end": "2026-11-19T05:00:00Z"}]),
+            doc(campusEvents=[{"eventId": "ev-mic", "title": "Open mic", "placeId": "v-cafe", "start": "2026-11-19T03:00:00Z"}]),  # no end
+            doc(campusEvents=[{"eventId": "ev-a", "title": "A", "placeId": "v-cafe", "start": "2026-11-19T03:00:00Z", "end": "2026-11-19T04:00:00Z"},
+                              {"eventId": "ev-a", "title": "B", "placeId": "v-rec", "start": "2026-11-19T04:00:00Z", "end": "2026-11-19T05:00:00Z"}]),  # duplicate id
         ]
         for d in bad:
             with self.assertRaises(BankError):

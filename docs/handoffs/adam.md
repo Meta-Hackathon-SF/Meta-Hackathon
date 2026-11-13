@@ -93,8 +93,13 @@ Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
 ## D014 ACKed (2026-11-13T08:34Z, recorded 10:00Z)
 All four owners ACKed on #60. Patrik's M9 sign-off has conditions (redaction, cap, consent copy), which he implemented on #59. Rishi: v3 (3.0.0, D012) builds on 2.2.0 and removes M5/M8. #58 was merged by Patrik with his review fixes. Will delivered `server/cycle` `question_texts` (#63); my `QuestionService.question_texts` is an equivalent reader from the planning selection, so Kai uses one of them.
 
+## v3 events and custom events + live audit (2026-11-13T10:00Z)
+- Live full-loop audit: 4 agents, 947 calls, $2.81. Findings filed as #70 (Kai), #71 (Patrik), #72 (Rishi), #73 (Will) and #74 (mine). The formation break it found (#59 + #62) was fixed by Patrik's #69.
+- 3.0.0 review on #68: ACK on my shapes. CHANGE proposals: (1) catalog `end`, done; (2) M7 copy shapes; (3) `custom_event` stays under `event_nudge`; (4) align the v3 fixtures to the catalog. 2-4 await Rishi.
+- Built offline: `EventsService`, `EventNudgeService` (copy and cadence), `CustomEventService`, the v3 routes, `sensitivity_allows(required=True)` for v3 paths, and catalog end times. `python -m pytest tests`: 1343 passed, 2 skipped, 12 xfailed. Not composed by Kai yet.
+
 ## API budget
-Adam's Muse key has a $100 cap for the whole event including the demo. About 47 earlier live calls plus 285 eval calls (about $1.21 measured) so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
+Adam's Muse key has a $100 cap for the whole event including the demo. About 47 earlier calls, 285 eval calls ($1.21) and 947 audit calls ($2.81) so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
 
 ## Next action
 - DONE (Will, #38 f88311f): `OperatorNudgePanel` mounted in the operator console; verified on main 6d7dc62: Playwright 55 passed incl. the nudge test on desktop+mobile, pytest 565 passed 1 skipped.

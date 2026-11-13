@@ -32,6 +32,9 @@ from .ports import ChatPostPort, OutputGuardPort, WeekStartLookup
 from .questions import QuestionBank, load_default_bank, question_problems, validate_question
 from .selection import InMemorySelectionStore, QuestionService, SelectionStore, pick_week
 from .venues import VenueCatalog
+from .custom_events import CUSTOM_EVENT_PROMPT_VERSION, CustomEventService, register_custom_event_task
+from .events import EventsService
+from .nudge_copy import NUDGE_COPY_PROMPT_VERSION, EventNudgeService, register_nudge_copy_task
 
 
 def register_planning_tasks(registry: TaskRegistry) -> TaskRegistry:
@@ -39,11 +42,18 @@ def register_planning_tasks(registry: TaskRegistry) -> TaskRegistry:
     register_clarify_task(registry)
     register_nudge_task(registry)
     register_generation_task(registry)
+    register_nudge_copy_task(registry)    # v3 M7: EventNudgeView copy
+    register_custom_event_task(registry)  # v3 M7: operator-gated custom events
     return registry
 
 
 __all__ = [
     "BankError",
+    "CUSTOM_EVENT_PROMPT_VERSION",
+    "CustomEventService",
+    "EventNudgeService",
+    "EventsService",
+    "NUDGE_COPY_PROMPT_VERSION",
     "CLARIFY_PROMPT_VERSION",
     "ChatPostPort",
     "ClarifyResult",
