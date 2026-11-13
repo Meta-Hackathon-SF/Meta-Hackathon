@@ -496,6 +496,54 @@ class CycleService:
                 )
         return {"label": "Synthetic player", "syntheticPlayers": len(players), "answersAdded": added}
 
+    def stage_answers(self, cycle_id: str, community_id: str, rows: list[dict]) -> int:
+        """Demo stage only: save scripted on-day answers ``{playerId, day, text}`` for
+        the presenters' phones, so they type just Friday live. Fixture (demo-timing)
+        cycles only, open days already released, never over an existing answer.
+        The text is the fixed script in server/app/stage_script.py, so like the
+        synthetic top-up it is stored without a model screen."""
+        with self._repo.lock:
+            record = self._repo.get(cycle_id)
+            if record is None or record.cycle.communityId != community_id:
+                raise CycleError("NOT_FOUND")
+            if not record.fixture:
+                raise CycleError("FORBIDDEN")
+            if record.cycle.status != "open":
+                raise CycleError("CYCLE_LOCKED")
+            added = 0
+            now = cal.iso(self._clock())
+            for row in rows:
+                day = row["day"]
+                if day > record.cycle.currentDay or self._answers.get(cycle_id, row["playerId"], day):
+                    continue
+                answer = DailyAnswer(
+                    answerId=f"answer-{uuid.uuid4().hex}",
+                    cycleId=cycle_id,
+                    day=day,
+                    questionId=self._question(record, day).question.questionId,
+                    playerId=row["playerId"],
+                    text=row["text"],
+                    source="text",
+                    isCatchUp=False,
+                    weight=compute_weight(False, False),
+                    followUpUsed=False,
+                    createdAt=now,
+                    editedAt=None,
+                    deletedAt=None,
+                )
+                self._answers.save(answer, "none")
+                self._mark_answered(record, day, row["playerId"], True)
+                added += 1
+            return added
+
+    def day_question(self, cycle_id: str, community_id: str, day: int) -> DailyQuestion:
+        """No-session reader for the stage: the stored question for one day."""
+        with self._repo.lock:
+            record = self._repo.get(cycle_id)
+            if record is None or record.cycle.communityId != community_id:
+                raise CycleError("NOT_FOUND")
+            return self._question(record, day)
+
     # ---- player reads ------------------------------------------------------
     def _released_days(self, record: CycleRecord) -> list[int]:
         return [d for d in (1, 2, 3, 4, 5) if self._phase(record, d) != "future"]

@@ -279,3 +279,16 @@ def test_prompt_text_lives_outside_payloads():
     assert set(prompts.PROMPT_TEXT) == {prompts.PROMPT_VERSION_M3, prompts.PROMPT_VERSION_M4,
                                         prompts.PROMPT_VERSION_M5}
     assert "triangle" in prompts.PROMPT_TEXT[prompts.PROMPT_VERSION_M5]
+
+
+def test_fallback_grouping_names_do_not_repeat():
+    from server.matching.formation import FALLBACK_SUFFIX, _fallback_grouping_name
+    from server.matching.models import COLOR_IDS, MAX_NAME_CHARS, shapes_for
+
+    # A 100-person week makes about 20 groups; cover well past one pass of every color and shape.
+    names = [_fallback_grouping_name(index, 5) for index in range(80)]
+
+    assert len({name for name, _, _ in names}) == len(names)
+    assert all(name.endswith(FALLBACK_SUFFIX) for name, _, _ in names)
+    assert all(len(name) <= MAX_NAME_CHARS for name, _, _ in names)
+    assert all(shape in shapes_for(5) and color in COLOR_IDS for _, shape, color in names)

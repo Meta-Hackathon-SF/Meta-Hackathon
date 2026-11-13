@@ -2,6 +2,14 @@
 Current step: Sunday constellation chat promotes into Messenger, with Muse suggestions for a hangout. Fixture-verified; live Muse is the Vite dev route only.
 Updated: 2026-11-13T11:18Z
 
+
+## Live rehearsal, 2026-11-13
+
+- Full week verified on the hosted app with 3 test accounts (data deleted after). Matching takes 18-90 s after the lock; demo buttons now wait for it (#108).
+- Stage view (`/space/stage`) opens for any signed-in member (#111, D017 amendment; Adam/Patrik may revert after the demo).
+- Open for Rishi: live matching sometimes falls back ("(Fallback grouping)" names, repeated); one Muse run put all 3 test accounts in one 10-person room.
+- Known demo limits: shared week (one presser), one browser per account, Muse group replies visible to the asker only, Muse-created events per browser.
+
 ## Messenger promotion and Muse suggestions, 2026-11-13
 - Keeping the Sunday preview chat (all five votes) reveals Maya Chen, Jordan Davis, Sofia Patel, and Daniel Kim and copies the thread into this browser's Messenger (`sessionStorage` key `fb-space-messenger-demo`). It is not a live multi-phone room.
 - The Sunday thread has Plan a hangout, Find supplies, and Ask a vendor. Each stays off until a message is typed, then sends that note with `@muse`.

@@ -36,7 +36,6 @@ export const tabIcons = {
 
 export const primaryNavigation = [
   { to: "/", label: "Home", icon: tabIcons.home },
-  { to: "/space", label: "Facebook Space", icon: tabIcons.space },
   { to: "/friends", label: "Friends", icon: tabIcons.friends },
   { to: "/watch", label: "Video", icon: tabIcons.video },
   { to: "/marketplace", label: "Marketplace", icon: tabIcons.marketplace },

@@ -88,7 +88,6 @@ export function AnswerScreen({
             value={draft}
             onChange={(e) => setDraft(e.target.value.slice(0, MAX_CHARS))}
             maxLength={MAX_CHARS}
-            placeholder="Type your answer…"
           />
         )}
         <div className="spc-row spc-between">
@@ -132,7 +131,7 @@ export function FollowUpScreen({ question, onSkip, onSend, busy, error, evidence
         <span className="spc-fine" data-testid="cst-muse-chip">
           {evidence}
         </span>
-        <textarea className="spc-textarea is-short" aria-label={question} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Optional" />
+        <textarea className="spc-textarea is-short" aria-label={question} value={reply} onChange={(e) => setReply(e.target.value)} />
         <span className={`spc-fine${over ? " spc-count-over" : ""}`} data-testid="spc-fu-count">
           {reply.trim().length}/{room}
           {over ? " · too long to add to your answer" : ""}
@@ -408,8 +407,9 @@ export function JoinScreen({
           <h3 className="spc-h1">Before you play</h3>
           <p className="spc-sub is-lg">Nothing is saved until you join.</p>
           <p className="spc-sub">Simulated Facebook profile: {displayName} is not a verified identity.</p>
-          <label htmlFor="spc-display-name">Display name</label>
-          <input id="spc-display-name" maxLength={40} autoComplete="nickname" value={name} onChange={(e) => setName(e.target.value)} data-testid="cstp-name" />
+          <label className="spc-field-label" htmlFor="spc-display-name">Display name</label>
+          <input className="spc-name-input" aria-describedby="spc-name-help" id="spc-display-name" maxLength={40} autoComplete="nickname" value={name} onChange={(e) => setName(e.target.value)} data-testid="cstp-name" />
+          <p className="spc-fine" id="spc-name-help">Your name is shared only when you both choose to reveal.</p>
         </div>
         <div className="spc-selectall">
           <span className="spc-strong">Select all</span>

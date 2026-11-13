@@ -1,3 +1,4 @@
+import { apiBase } from "../../apiBase";
 /*
  * Live anonymous room for the Space chat screen. Backed by the real LiveChatSession (server room,
  * SSE stream, moderated messages, mutual reveal). No local state stands in for the server: without
@@ -9,7 +10,7 @@ import { LiveChatSession } from "../../chat/LiveSession";
 import type { LiveSnapshot } from "../../chat/LiveSession";
 import type { ChatActions } from "../../chat/ChatPanel";
 
-const BASE = (import.meta.env.VITE_CONSTELLATIONS_API as string | undefined)?.replace(/\/$/, "");
+const BASE = apiBase();
 const NONE: LiveSnapshot = { messages: [], reveals: [], status: "unavailable", notice: "Chat needs the live server." };
 const noop = () => () => {};
 
