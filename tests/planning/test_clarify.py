@@ -129,6 +129,7 @@ class ClarifyTests(unittest.TestCase):
             "Have you talked to a therapist about that?",   # sensitive_term
             "Want to text me at 555-0100?",                 # contact_info
             "Why? And who with?",                           # two questions
+            "Is there a small moment you would like to share more about?",  # yes/no (seen live)
             "Tell me more about the corner table.",         # not a question
             "What " + "really " * 30 + "happened?",         # too long
             "   ",
