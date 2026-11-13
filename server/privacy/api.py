@@ -25,6 +25,7 @@ from .events import EventStore
 from .answers import AnswerStore
 from .moderation import HandleResolver, ModerationStore
 from .service import Actor, PrivacyService
+from .topics import ActivityTopics
 from .wire import ApiError, ApiErrorBody, BlockRequest, EventSignalsRequest, JoinRequest, UpdateConsentRequest
 
 SESSION_COOKIE = "cst_session"
@@ -109,7 +110,13 @@ def build_router(
     activity: ActivityStore | None = None,
     events: EventStore | None = None,
     current_cycle_id: Callable[[str], str] | None = None,
+    activity_muse=None,
 ) -> APIRouter:
+    """``activity_muse``: Adam's MusePort with ``register_activity_task`` applied.
+    When given, ``PUT /me/activity`` labels texts with Muse M9; when omitted it
+    uses the labeled keyword fallback. The path taken is returned in the
+    ``X-Topic-Source`` header (``muse`` / ``muse_unavailable`` /
+    ``keyword_fallback`` / ``no_texts``); the JSON body stays the contract's."""
     router = APIRouter()
     ActorDep = Annotated[Actor, Depends(actor_dependency(service))]
 
@@ -166,13 +173,22 @@ def build_router(
             return Response(status_code=204)
 
     if activity is not None:
+        topic_source = ActivityTopics(activity_muse)
+
         @router.put("/me/activity")
-        def put_activity(body: ActivityRequest, actor: ActorDep) -> dict:
+        async def put_activity(body: ActivityRequest, actor: ActorDep, response: Response) -> dict:
             """D010: opt in/out of activity signals. Texts become allowlisted topics
-            and are discarded; nothing here is logged or echoed back."""
-            if body.use_activity:
-                service.require_consent(actor)  # only fully consenting players can add signals
-            return activity.put(actor.player_id, actor.community_id, body, service.now().isoformat()).wire()
+            and are discarded; nothing here is logged or echoed back. Consent is
+            checked before any text leaves the server."""
+            if not body.use_activity:
+                response.headers["X-Topic-Source"] = "no_texts"
+                return activity.put(actor.player_id, actor.community_id, body, service.now().isoformat(),
+                                    topics=[]).wire()
+            service.require_consent(actor)  # only fully consenting players can add signals
+            derived = await topic_source.derive(body.texts)
+            response.headers["X-Topic-Source"] = derived.source
+            return activity.put(actor.player_id, actor.community_id, body, service.now().isoformat(),
+                                topics=derived.topics).wire()
 
     if events is not None and current_cycle_id is not None:
         @router.put("/me/event-signals")

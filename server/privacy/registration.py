@@ -42,6 +42,7 @@ def privacy_registration(
     activity: ActivityStore | None = None,
     events: EventStore | None = None,
     current_cycle_id=None,
+    activity_muse=None,
 ) -> "ServiceRegistration":
     from server.app.registry import ServiceRegistration
 
@@ -52,7 +53,8 @@ def privacy_registration(
 
     return ServiceRegistration(
         owner="privacy",
-        router=build_router(service, answers, moderation, resolve_handle, activity, events, current_cycle_id),
+        router=build_router(service, answers, moderation, resolve_handle, activity, events, current_cycle_id,
+                            activity_muse=activity_muse),
         authorize=actor_dependency(service),
         ready=ready,
     )

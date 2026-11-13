@@ -8,6 +8,7 @@ to anyone's home.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,11 +19,16 @@ from server.providers.schema import SchemaViolation, validate
 
 from .errors import BankError
 
+_EVENT_ID = re.compile(r"^ev-[a-z0-9-]{1,60}$")
+# What M7 sees of an event (M7In.campusEvents in contracts/protocol.ts): no id.
+M7_EVENT_FIELDS = ("title", "placeId", "start")
 DEFAULT_VENUES_PATH = Path(__file__).resolve().parent / "data" / "venues.json"
 
 _EVENT = {
-    "type": "object", "additionalProperties": False, "required": ["title", "placeId", "start"],
+    "type": "object", "additionalProperties": False, "required": ["eventId", "title", "placeId", "start"],
     "properties": {
+        # Stable approved id: activity signals and event heat may count only these.
+        "eventId": {"type": "string", "minLength": 4, "maxLength": 64},
         "title": {"type": "string", "minLength": 1, "maxLength": 80},
         "placeId": {"type": "string", "minLength": 1, "maxLength": 64},
         "start": {"type": "string", "minLength": 10, "maxLength": 40},
@@ -63,12 +69,16 @@ class VenueCatalog:
             if v["placeId"] in ids:
                 raise BankError(f"venues[{i}]: duplicate placeId")
             ids.add(v["placeId"])
+        event_ids: set[str] = set()
         for i, e in enumerate(events):
             try:
                 validate(e, _EVENT)
                 parse_utc(e["start"])
             except (SchemaViolation, ValueError) as exc:
                 raise BankError(f"campusEvents[{i}]: {exc}") from None
+            if not _EVENT_ID.match(e["eventId"]) or e["eventId"] in event_ids:
+                raise BankError(f"campusEvents[{i}]: eventId must be unique and look like ev-name")
+            event_ids.add(e["eventId"])
             if e["placeId"] not in ids:
                 raise BankError(f"campusEvents[{i}]: placeId is not an approved venue")
         return cls(tuple(dict(v) for v in venues), tuple(dict(e) for e in events))
@@ -88,4 +98,16 @@ class VenueCatalog:
         return None
 
     def events_between(self, start: datetime, end: datetime) -> list[dict[str, Any]]:
-        return [dict(e) for e in self.campus_events if start <= parse_utc(e["start"]) < end]
+        """Events in [start, end) shaped for M7In (title, placeId, start; no id)."""
+        return [{k: e[k] for k in M7_EVENT_FIELDS} for e in self.campus_events
+                if start <= parse_utc(e["start"]) < end]
+
+    def event_ids(self) -> frozenset[str]:
+        """Approved event ids: the only ids activity signals and event heat may count."""
+        return frozenset(e["eventId"] for e in self.campus_events)
+
+    def event(self, event_id: Any) -> dict[str, Any] | None:
+        for e in self.campus_events:
+            if e["eventId"] == event_id:
+                return dict(e)
+        return None

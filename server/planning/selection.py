@@ -186,6 +186,18 @@ class QuestionService:
         last = current_day if cycle_open else DAYS[-1]
         return [d for d in self._daily(record) if d["day"] <= last]
 
+    def question_texts(self, cycle_id: str, community_id: str) -> dict[str, str]:
+        """``{questionId: text}`` for the cycle's selected week (D014 formation snapshot).
+
+        Server-side only, never a route: formation runs after the Saturday lock, when
+        all five days are past. The community must match (NOT_FOUND otherwise, same as
+        a cycle with no selection), so one Group can never read another's week.
+        """
+        record = self._store.get(cycle_id)
+        if record is None or record["communityId"] != community_id:
+            raise PlanningError("NOT_FOUND", "cycle has no selected questions")
+        return {q["questionId"]: q["text"] for q in record["questions"]}
+
     def question_for_day(self, cycle_id: str, day: int, current_day: int) -> dict[str, Any]:
         """One released ``DailyQuestion``; a future day is NOT_FOUND, same as a missing one."""
         for d in self.released(cycle_id, current_day):

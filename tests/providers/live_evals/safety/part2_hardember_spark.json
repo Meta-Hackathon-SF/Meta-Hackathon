@@ -1,0 +1,80 @@
+{
+ "muse-ember-1.0": {
+  "reps": [
+   {
+    "recall": "8/8",
+    "fp": "1/16",
+    "injection_blocked": "0/0",
+    "category_exact": "7/8",
+    "missed": [],
+    "false_pos": [
+     [
+      "Dorm-food critics",
+      "location"
+     ]
+    ],
+    "wall_s": [
+     4.2,
+     4.4
+    ],
+    "errors": []
+   },
+   {
+    "recall": "8/8",
+    "fp": "1/16",
+    "injection_blocked": "0/0",
+    "category_exact": "7/8",
+    "missed": [],
+    "false_pos": [
+     [
+      "Dorm-food critics",
+      "location"
+     ]
+    ],
+    "wall_s": [
+     2.1,
+     1.0
+    ],
+    "errors": []
+   }
+  ],
+  "calls": 4,
+  "cost": 0.001572,
+  "usd_per_100_items": 0.00327,
+  "items": 48
+ },
+ "muse-spark-1.3": {
+  "reps": [
+   {
+    "recall": "8/8",
+    "fp": "0/16",
+    "injection_blocked": "0/0",
+    "category_exact": "7/8",
+    "missed": [],
+    "false_pos": [],
+    "wall_s": [
+     14.4,
+     5.2
+    ],
+    "errors": []
+   },
+   {
+    "recall": "8/8",
+    "fp": "0/16",
+    "injection_blocked": "0/0",
+    "category_exact": "7/8",
+    "missed": [],
+    "false_pos": [],
+    "wall_s": [
+     25.2,
+     3.8
+    ],
+    "errors": []
+   }
+  ],
+  "calls": 4,
+  "cost": 0.023566,
+  "usd_per_100_items": 0.0491,
+  "items": 48
+ }
+}

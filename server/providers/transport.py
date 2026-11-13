@@ -44,6 +44,9 @@ class ChatRequest:
 class ChatResponse:
     text: str
     model: str | None
+    # Token counts reported by the provider (counts only): inputTokens,
+    # outputTokens, reasoningTokens. None when the envelope has no usage.
+    usage: dict[str, int] | None = None
 
 
 class ChatTransport(Protocol):
@@ -164,4 +167,22 @@ def parse_chat_completion(raw: bytes) -> ChatResponse:
     if not isinstance(content, str):
         raise ProviderError("malformed_output", "provider returned no text content")
     model = doc.get("model") if isinstance(doc.get("model"), str) else None
-    return ChatResponse(text=content, model=model)
+    return ChatResponse(text=content, model=model, usage=_usage(doc.get("usage")))
+
+
+def _count(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+
+
+def _usage(raw: Any) -> dict[str, int] | None:
+    """OpenAI-style usage reduced to three non-negative integer counts."""
+    if not isinstance(raw, dict):
+        return None
+    details = raw.get("completion_tokens_details")
+    out = {
+        "inputTokens": _count(raw.get("prompt_tokens")),
+        "outputTokens": _count(raw.get("completion_tokens")),
+        "reasoningTokens": _count(details.get("reasoning_tokens")) if isinstance(details, dict) else None,
+    }
+    kept = {k: v for k, v in out.items() if v is not None}
+    return kept or None
