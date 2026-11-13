@@ -15,9 +15,14 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. No backend, login, API keys, or environment
-variables are needed. Images are served locally from `public/demo/`; see
-[ASSETS.md](ASSETS.md) for sources.
+Open the URL printed by Vite. The normal dev server uses live Space data through
+`/api/v1`, forwarded to the existing Vercel rewrite and Railway API. Join Space
+with a server session. Muse credentials stay on the servers; no local API key is
+needed. Actions affect the shared production backend, including consent and answers.
+
+For isolated offline UI tests, use `npm run dev:fixture`. Playwright uses this
+explicit fixture command and does not call production Muse. The Facebook feed
+itself remains a labeled simulation; its demo assets are documented in [ASSETS.md](ASSETS.md).
 
 ## What works
 
