@@ -12,21 +12,6 @@ export interface MuseHelp {
   link?: { href: string; label: string };
 }
 
-const HANGOUT = {
-  title: "Board game night",
-  venue: "Library Commons",
-  when: "Thursday at 7 PM",
-};
-const SUPPLIES = [
-  { title: "Coffee set for your next study session", price: "$20", place: "Santa Cruz, CA" },
-  { title: "Textbook exchange", price: "Free", place: "Campus pickup" },
-];
-const VENDOR = {
-  name: "Campus Cafe",
-  ask: "a table for the group",
-  offer: "bring the coffee set from Marketplace and split the check",
-};
-
 export const MUSE_FALLBACK: Record<MuseKind, string> = {
   hangout: "Board game night at Library Commons on Thursday at 7 PM. It's public, and it's easy to skip.",
   supplies: "The coffee set on Marketplace is $20 in Santa Cruz. That's a demo listing, not a purchase.",
@@ -106,10 +91,29 @@ export interface MuseNote {
   text: string;
 }
 
+/** Picks the kind of help from what was written. Code decides; Muse only phrases. */
+export function inferKind(text: string): MuseKind {
+  const t = text.toLowerCase();
+  if (/\b(cafe|caf\u00e9|vendor|table|reserve|reservation|venue|book a|booking)\b/.test(t)) return "barter";
+  if (/\b(buy|bring|need|supplies|snacks?|drinks?|coffee|books?|textbooks?|stuff|gear)\b/.test(t)) return "supplies";
+  return "hangout";
+}
+
+/** Real names never reach Muse: other members become "Member 1..", you become "You". */
+export function anonymize(context: { sender: string; text: string; mine: boolean; fromMuse: boolean }[]): MuseNote[] {
+  const labels = new Map<string, string>();
+  return context.map((note) => {
+    if (note.fromMuse) return { sender: "Muse", text: note.text };
+    if (note.mine) return { sender: "You", text: note.text };
+    if (!labels.has(note.sender)) labels.set(note.sender, `Member ${Math.min(9, labels.size + 1)}`);
+    return { sender: labels.get(note.sender)!, text: note.text };
+  });
+}
+
 export async function askMuse(kind: MuseKind, context: MuseNote[]): Promise<MuseHelp> {
   const link = LINK[kind];
   const notes = context
-    .map((note) => ({ sender: note.sender.slice(0, 40), text: note.text.trim().slice(0, 200) }))
+    .map((note) => ({ sender: note.sender.slice(0, 20), text: note.text.trim().slice(0, 200) }))
     .filter((note) => note.text)
     .slice(-6);
   if (!notes.length) return { text: catalogReply(kind, []), source: "catalog", link };
@@ -117,11 +121,8 @@ export async function askMuse(kind: MuseKind, context: MuseNote[]): Promise<Muse
     const response = await fetch("/api/muse-chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        kind,
-        context: notes,
-        facts: kind === "hangout" ? HANGOUT : kind === "supplies" ? { items: SUPPLIES } : VENDOR,
-      }),
+      // Facts live on the server; the request carries only the task and anonymous lines.
+      body: JSON.stringify({ kind, context: notes }),
     });
     if (response.ok) {
       const body: unknown = await response.json();

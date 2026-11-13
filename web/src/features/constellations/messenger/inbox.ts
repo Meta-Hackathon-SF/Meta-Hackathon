@@ -114,7 +114,10 @@ export function isSundayPromoted(): boolean {
   return threads.some((thread) => thread.id === SUNDAY_THREAD_ID);
 }
 
-export function promoteSundayChat(lines: SundayLine[]) {
+let seq = 0;
+const nextId = (prefix: string) => `${prefix}-${Date.now()}-${++seq}`;
+
+export function promoteSundayChat(lines: SundayLine[], memberNames: string[]) {
   if (isSundayPromoted() || lines.length === 0) return;
   const messages = lines.map((line, index) => ({
     id: `sun-${index}`,
@@ -126,7 +129,7 @@ export function promoteSundayChat(lines: SundayLine[]) {
     id: SUNDAY_THREAD_ID,
     kind: "group",
     title: "Sunday constellation",
-    memberNames: ["Maya Chen", "Jordan Davis", "Sofia Patel", "Daniel Kim"],
+    memberNames,
     messages,
     preview: messages[messages.length - 1]?.text ?? "Names are visible",
   };
@@ -141,7 +144,7 @@ export function addMuseMessage(
   link?: { href: string; label: string },
 ) {
   const message: InboxMessage = {
-    id: `muse-${Date.now()}`,
+    id: nextId("muse"),
     senderName: "Muse",
     text,
     mine: false,
@@ -162,7 +165,7 @@ export function sendInboxMessage(threadId: string, text: string) {
   const trimmed = text.trim();
   if (!trimmed) return;
   const message: InboxMessage = {
-    id: `out-${Date.now()}`,
+    id: nextId("out"),
     senderName: "Alex Morgan",
     text: trimmed,
     mine: true,

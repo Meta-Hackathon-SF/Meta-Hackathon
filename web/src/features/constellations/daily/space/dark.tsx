@@ -222,6 +222,7 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
         text: message.text,
         mine: Boolean(message.mine),
       })),
+      PREVIEW_MEMBERS.map((m) => m.identity),
     );
   }, [kept, msgs]);
 
@@ -287,15 +288,24 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
         <span className="spc-grow">
           {kept
             ? "Everyone agreed. Names are visible, and this chat is in Messenger."
-            : "Gone in 23 h unless everyone keeps it"}
+            : keep.me
+              ? "Waiting for everyone. Names show only once all 5 keep it."
+              : "Gone in 23 h. If everyone keeps it, names are shown and it moves to Messenger."}
         </span>
         <span className="spc-keep-dots" aria-hidden="true">
           {["me", "0", "1", "2", "3"].map((k) => (
             <i key={k} className={keep[k] ? "is-on" : ""} />
           ))}
         </span>
-        <button type="button" className={`spc-keep-btn${keep.me ? " is-kept" : ""}`} onClick={toggleKeep} aria-pressed={Boolean(keep.me)}>
-          {keep.me ? "Kept" : "Keep"}
+        <button
+          type="button"
+          className={`spc-keep-btn${keep.me ? " is-kept" : ""}`}
+          onClick={toggleKeep}
+          aria-pressed={Boolean(keep.me)}
+          aria-label={keep.me ? "Kept" : "Keep and show my name"}
+          title="Keeping shares your name with this group once everyone keeps it"
+        >
+          {keep.me ? "Kept" : "Keep & show names"}
         </button>
         {kept && (
           <Link className="spc-keep-btn" to={`/messages?chat=${SUNDAY_THREAD_ID}`}>

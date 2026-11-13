@@ -9,6 +9,12 @@ Updated: 2026-11-13T11:18Z
 - The key stays in gitignored `server/providers/muse.env`. The browser calls Vite-only `POST /api/muse-chat`. Ordinary Playwright tests mock that route.
 - Verification: `PLAYWRIGHT_CHANNEL=chrome npx playwright test tests/constellations.spec.ts -g "everyone keeping the Sunday chat"` — 2 passed (desktop and mobile). Live Muse replies for hangout, supplies, books, and the cafe ask were checked against the same truth rules and accepted.
 
+## Messenger follow-up, 2026-11-13
+- Product decision (Will): keeping the Sunday chat is the consent to show names. The button reads "Keep & show names"; names show only once all five keep it. @patrikliska13 please confirm the privacy copy.
+- Muse in the Sunday group now works on the deployed site: `web/api/muse-chat.ts` is a Vercel Function (and the dev server mounts the same handler). Facts are fixed server-side; only "You / Member N / Muse" labels reach Muse; best-effort rate limit.
+- Needs from whoever owns the Vercel project: set `MUSE_API_KEY` (and optionally `MUSE_MODEL`) in Vercel env. Without it the route returns 503 and the UI shows the labeled catalog line.
+- Messenger UX: mention @muse in the normal composer (code picks hangout/supplies/vendor), chips only fill the box; Preview labels on the group and "Same vibe"; in-app links; unique message ids; member names come from the constellation.
+
 ## Space V4 redesign, 2026-11-13
 Source: the V4 phone design ("Artifact sharing request" folder, SpaceV4Phone). Facebook shell unchanged (header, left sidebar, mobile tabs).
 - Home feed card (`daily/FeedCard.tsx`): night-sky question block, streak + answered-today row, answer like a comment (Enter posts), your answer shows as your own private comment. "Open Space" is the only way in.
