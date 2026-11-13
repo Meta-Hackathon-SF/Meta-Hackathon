@@ -6,3 +6,4 @@ Format: UTC timestamp | branch/commit | phase/status | interfaces/files | checks
 
 2026-11-12 | main | weekly-game pivot (contract 2.0.0) | docs/roles/rishi.md rewritten | none | none | none
 2026-11-13T00:30Z | role/rishi-matching | step 4 formation core, fixture-verified | server/matching/*, tests/matching/* | pytest 25 passed; ruff clean | ACK requests to Patrik, Adam, Kai in PR | none
+2026-11-13T01:30Z | role/rishi-matching | contract alignment + Sky prevalence, fixture-verified | server/matching/sky.py, tests/matching/test_sky.py | pytest 43 passed; ruff clean | DELIVERED to Kai on #11; guess-source ask to Patrik | none
