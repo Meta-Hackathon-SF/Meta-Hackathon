@@ -115,7 +115,7 @@ export function heatBucket(n: number): { level: 1 | 2 | 3; label: string } | nul
   if (n < HEAT_THRESHOLD) return null;
   if (n >= 10) return { level: 3, label: "10+ people like you" };
   if (n >= 6) return { level: 2, label: "6–9 people like you" };
-  return { level: 1, label: "3–5 people like you" };
+  return { level: 1, label: "5+ people like you" };
 }
 
 /** eventId -> count of synthetic people similar to you (closeness >= 0.15) who are interested. */

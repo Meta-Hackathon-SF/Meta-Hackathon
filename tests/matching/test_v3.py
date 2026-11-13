@@ -62,7 +62,7 @@ def test_views_use_indices_only_and_main_room_index_is_not_star_index():
     sky = p.my_sky("c1", "g0", {1: "blue", 2: "teal"})
     assert sky["secondDegree"] == [] and "g1" not in str(sky)
     m = p.main_view("c1", "g0", "room-1", "2026-11-15T00:00:00Z", "2026-11-16T00:00:00Z")["main"]
-    assert 3 <= len(m["roomIndices"]) <= 5 and m["myRoomIndex"] in m["roomIndices"]
+    assert len(m["roomIndices"]) >= 5 and m["myRoomIndex"] in m["roomIndices"]
     assert "g1" not in str(m)
     assert p.main_view("c1", "z", "room-2", "a", "b") == {"main": None, "reason": "no_match"}
 
@@ -81,3 +81,82 @@ def test_purge_cycle_clears_everything():
     run(p.closeDay("c1", 1))
     p.store.purge_cycle("c1")
     assert p.store.load_days("c1") == {} and p.store.load_main("c1") is None
+
+
+class ThemeMuse:
+    """Fake Muse: M3 returns paraphrase themes that share no keywords; M4 returns one group."""
+
+    def __init__(self, themes, m4=None):
+        self.themes, self.m4 = themes, m4
+
+    async def run(self, *, task, requestId, promptVersion, payload, **_):
+        ev = {
+            "callType": "M3" if task == "theme_discovery" else "M4",
+            "model": "fake",
+            "source": "replay",
+            "generatedAt": "2026-11-14T20:00:00Z",
+            "latencyMs": 1,
+        }
+        if task == "theme_discovery":
+            refs = {a["id"]: a["id"] for a in payload["answers"]}
+            out = {
+                "themes": [
+                    {
+                        "id": f"t{i}",
+                        "label": "x",
+                        "description": "y",
+                        "memberIds": [r for r in m if r in refs],
+                    }
+                    for i, m in enumerate(self.themes)
+                ]
+            }
+        else:
+            out = {
+                "constellations": [
+                    {"memberIds": g, "sharedMeaning": "same", "confidence": 0.9} for g in self.m4
+                ]
+            }
+        return {"output": out, "evidence": ev}
+
+
+PARAPHRASE = {
+    "a": "i eat in my room alone",
+    "b": "cooking for one is sad",
+    "c": "dinner by myself again",
+    "d": "no one to eat with",
+    "e": "meals alone at my desk",
+    "x": "chess",
+    "y": "hiking",
+    "w": "pottery",
+}
+
+
+def test_daily_uses_muse_theme_members_even_when_words_differ():
+    muse = ThemeMuse([["r-a", "r-b", "r-c", "r-d", "r-e"]])
+    v3 = FormationV3(muse, Src(PARAPHRASE), InMemoryDayStore())
+    out = run(v3.closeDay("c1", 1))
+    rec = v3.store.load_days("c1")[1]
+    assert out["constellations"] == 1 and out["evidence"]
+    assert set(rec.groups[0].members) == {"a", "b", "c", "d", "e"}
+
+
+def test_late_answer_does_not_overwrite_closed_day():
+    muse = ThemeMuse([["r-a", "r-b", "r-c", "r-d", "r-e"]])
+    v3 = FormationV3(muse, Src(PARAPHRASE), InMemoryDayStore())
+    run(v3.closeDay("c1", 1))
+    run(v3.dailyPlace("c1", 1, "a"))
+    rec = v3.store.load_days("c1")[1]
+    assert rec.final and set(rec.groups[0].members) == {"a", "b", "c", "d", "e"}
+
+
+def test_main_never_puts_blocked_pair_together_and_uses_m4_evidence():
+    ids = list("abcdefghij")
+    texts = {p: "eating alone in the dining hall" for p in ids}
+    src = Src(texts, blocked=[("a", "b")])
+    muse = ThemeMuse([["r-" + p for p in ids]], m4=[["r-w0", "r-w1", "r-w2", "r-w3", "r-w4"]])
+    v3 = FormationV3(muse, src, InMemoryDayStore())
+    run(v3.closeDay("c1", 1))
+    out = run(v3.mainConstellation("c1"))
+    assert out["status"] == "ok"
+    for g in v3.store.load_main("c1"):
+        assert not ({"a", "b"} <= set(g))

@@ -20,7 +20,7 @@ def test_thirty_player_fixture_run_is_valid_and_labeled():
     report = asyncio.run(evaluate(30, live=False))
     assert report["status"] == "ok" and report["label"] == "Synthetic player"
     assert report["mode"] == "fixture" and not report["usedFallback"]
-    assert all(3 <= s <= 5 for s in report["constellationSizes"])
+    assert all(s >= 5 for s in report["constellationSizes"])
     assert sum(report["constellationSizes"]) == 30
     assert all(e["source"] == "replay" for e in report["evidence"])
     assert {e["callType"] for e in report["evidence"]} == {"M3", "M4", "M5", "M8"}

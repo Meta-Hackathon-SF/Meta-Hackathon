@@ -15,14 +15,25 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from server.matching.models import SHAPES_BY_SIZE
+from server.matching.models import shapes_for
 
 FIXTURE = Path(__file__).resolve().parents[2] / "contracts" / "fixtures" / "week-sample.json"
 LABEL = "TEST-ONLY adapter"
 
 
+EXTRA_PLAYERS = {  # D016: a constellation needs 5+, so the matching tests get 3 more players
+    "p-x1": ["Cooking for one feels pointless so I skip it", "I scroll my phone through every meal"],
+    "p-x2": ["Lunch alone in the library is easier than the dining hall"],
+    "p-x3": ["I wait until the dining room empties so nobody sees me alone"],
+}
+
+
 def load_week() -> dict:
-    return json.loads(FIXTURE.read_text())
+    """The shared week fixture plus matching-only extras (other suites read the JSON directly)."""
+    week = json.loads(FIXTURE.read_text())
+    extra = [{"playerId": p, "day": 1 + i, "text": t, "isCatchUp": False}
+             for p, texts in EXTRA_PLAYERS.items() for i, t in enumerate(texts)]
+    return {**week, "answers": week["answers"] + extra}
 
 
 class FixtureSnapshotSource:
@@ -113,7 +124,7 @@ class FakeMuse:
                 {"memberIds": g, "sharedMeaning": self.meaning, "confidence": 0.8}
                 for g in groups]}, "evidence": evidence("M4")}
         if task == "constellation_naming":
-            shape = SHAPES_BY_SIZE[payload["size"]][0]
+            shape = shapes_for(payload["size"])[0]
             return {"output": {"name": self.m5_name, "shapeId": shape,
                                "colorId": "dusk"}, "evidence": evidence("M5")}
         raise ValueError(f"unexpected task {task}")

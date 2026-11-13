@@ -14,7 +14,6 @@ from collections.abc import Iterable, Mapping, Sequence
 from itertools import combinations
 
 from server.matching.models import (
-    MAX_CONSTELLATION_SIZE,
     MIN_CONSTELLATION_SIZE,
     MatchingError,
     PromptText,
@@ -72,13 +71,12 @@ def similarity_matrix(answers: Iterable[PromptText]) -> dict[tuple[str, str], fl
 
 
 def group_sizes(n: int) -> tuple[int, ...]:
-    """Split n players into groups of 3-5, as even as possible, fewest groups."""
+    """Split n players into as many groups as possible with at least MIN_CONSTELLATION_SIZE
+    each, as even as possible. There is no maximum: sizes land in [5, 9]."""
     if n < MIN_CONSTELLATION_SIZE:
         raise MatchingError("INVALID_INPUT", "Not enough eligible players to form",
                             retryable=False)
-    k = math.ceil(n / MAX_CONSTELLATION_SIZE)
-    while k * MIN_CONSTELLATION_SIZE > n:
-        k -= 1
+    k = n // MIN_CONSTELLATION_SIZE
     base, extra = divmod(n, k)
     return tuple(base + 1 if i < extra else base for i in range(k))
 
@@ -105,7 +103,7 @@ def _pick_seeds(refs: Sequence[str], k: int, sim: Similarity,
 
 def partition(refs: Sequence[str], sim: Similarity,
               blocked_pairs: Iterable[tuple[str, str]] = ()) -> tuple[Group, ...]:
-    """Constrained partition: sizes 3-5, everyone once, no blocked pair together.
+    """Constrained partition: sizes 5+, everyone once, no blocked pair together.
 
     Seeds one ref per group, then places the most constrained refs first into the group
     with the highest keyword affinity, backtracking when a block leaves no legal group.

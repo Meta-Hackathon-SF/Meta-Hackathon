@@ -75,7 +75,7 @@ function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
       ? "Meet the people who answered like you."
       : status === "locked" || status === "forming"
         ? "Your week is in the sky."
-        : "One easy question a day. On Sunday, meet the 3–5 people who answered like you.";
+        : "One easy question a day. On Sunday, meet the 5 or more people who answered like you.";
 
   return (
     <section className="card spc-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">

@@ -442,7 +442,7 @@ export interface FormationPort {
     { status: "ok"; constellations: number; unplaced: number; evidence: MuseCallEvidence[] } | FormationFailure>;
   /** Co-membership graph for the week: edge weight = shared constellations. Server only; ids never leave. */
   weekGraph(cycleId: Id): Promise<{ status: "ok"; players: number; edges: number } | FormationFailure>;
-  /** Sunday main constellations: 3-5, one per player, M4 on the bounded candidate set. Views use room indices (R1). */
+  /** Sunday main constellations: 5 or more (no maximum), one per player, M4 on the bounded candidate set. Views use room indices (R1). */
   mainConstellation(cycleId: Id): Promise<
     { status: "ok"; groups: number; unplaced: number; evidence: MuseCallEvidence[] } | FormationFailure>;
   /** Saturday layout: week-seeded positions; secondDegree is false below V3.secondDegreeMinEligible (R2). */

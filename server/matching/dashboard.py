@@ -125,7 +125,7 @@ async def run_cycle(seed: int, n: int) -> None:
             day=day,
             stage="keyword baseline",
             ms=round((time.perf_counter() - t0) * 1000, 1),
-            detail=f"{len(base)} fallback groups of 3-5 from keyword cosine",
+            detail=f"{len(base)} fallback groups of 5+ from keyword cosine",
         )
 
         t0 = time.perf_counter()
@@ -177,7 +177,7 @@ async def run_cycle(seed: int, n: int) -> None:
         day="week",
         stage="Sunday main constellations",
         ms=round((time.perf_counter() - t0) * 1000, 1),
-        detail=f"{main['groups']} groups of 3-5, {main['unplaced']} unplaced",
+        detail=f"{main['groups']} groups of 5+, {main['unplaced']} unplaced",
     )
     t0 = time.perf_counter()
     sky = await port.skyLayout(cycle)
@@ -247,7 +247,7 @@ h2{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--sub)
 <section class=card><h2>Always the same</h2><p class=lead>These never move. They are the guarantees.</p>
 <div class=fixed>
 <div class=fx><b>Meaning first</b><span>Muse groups by what answers mean</span></div>
-<div class=fx><b>3 to 5</b><span>people per constellation, everyone placed once</span></div>
+<div class=fx><b>5 or more</b><span>people per constellation, no maximum, everyone placed once</span></div>
 <div class=fx><b>Answers dominate</b><span>activity boosts capped at +0.30</span></div>
 <div class=fx><b>0.6 / +0.1</b><span>catch-up answer weight / follow-up bonus</span></div>
 <div class=fx><b>No quotes</b><span>blocked pairs and thresholds enforced by code</span></div></div></section>
