@@ -304,3 +304,38 @@ def test_supplies_requires_item_ids_and_barter_requires_only_text():
     )
     assert supplies == ["text", "itemIds"]
     assert barter == ["text"]
+
+
+def test_composed_backend_lets_plain_members_run_a_demo_week():
+    """No operator grant: two ordinary players start, fill and advance a demo week to the reveal."""
+    from tests.orchestration.runtime_helpers import runtime_environment
+    from tests.orchestration.test_runtime import COMMUNITY, call, join
+
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        alex, sam = join(client, "alex"), join(client, "sam")
+        made = call(
+            client,
+            alex,
+            "POST",
+            "/operator/cycles",
+            json={"communityId": COMMUNITY, "demoTiming": True},
+        )
+        assert made.status_code == 201, made.text
+        cid = made.json()["cycleId"]
+        assert (
+            call(client, sam, "POST", f"/operator/cycles/{cid}/synthetic-topup").status_code == 200
+        )
+        real = call(
+            client,
+            alex,
+            "POST",
+            "/operator/cycles",
+            json={"communityId": COMMUNITY, "demoTiming": False},
+        )
+        assert real.status_code == 403
+        statuses = []
+        for who in (alex, sam) * 3:  # Tue..Fri, lock, forming; the reveal needs Muse (not in tests)
+            r = call(client, who, "POST", f"/operator/cycles/{cid}/advance", json={})
+            assert r.status_code == 200, r.text
+            statuses.append(r.json()["status"])
+        assert statuses[-2:] == ["locked", "forming"]

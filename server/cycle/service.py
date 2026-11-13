@@ -406,6 +406,12 @@ class CycleService:
         self._fire(record, events)
         return record.cycle
 
+    def is_demo_cycle(self, cycle_id: str) -> bool:
+        """True for demo-timing (fixture) cycles, which any member may run (see api.py)."""
+        with self._repo.lock:
+            record = self._repo.get(cycle_id)
+            return bool(record is not None and record.fixture)
+
     def reset(self, cycle_id: str) -> WeeklyCycle:
         """Fixture (demo-timing) cycles only. Never touches sessions or players."""
         with self._repo.lock:
