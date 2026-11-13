@@ -459,3 +459,18 @@ test("Facebook-style shell: sidebar order, Meta AI and Gaming placeholders, new-
   await page.getByRole("link", { name: "Open Facebook Space" }).click();
   await expect(page).toHaveURL(/\/space$/);
 });
+
+test("operator posts an event nudge to the revealed room (fixture replay, approved venue)", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page); // the operator also plays, so they have a room after reveal
+  await page.goto(OPERATOR);
+  const nudge = page.getByTestId("cst-op-nudge");
+  await expect(nudge).toContainText("open after Sunday's reveal");
+  await advance(page, 7); // Tue..Fri, lock, form, reveal
+  await expect(page.getByTestId("cst-op-state")).toContainText(/Reveal/i);
+  await expect(nudge.getByRole("combobox", { name: "Room" })).toHaveValue("room-orion");
+  await nudge.getByRole("button", { name: "Post event nudge" }).click();
+  await expect(nudge).toContainText("Replay of a saved cycle");
+  await expect(nudge).toContainText("Campus Cafe");
+  await expect(nudge).toContainText("Fixture mode");
+});

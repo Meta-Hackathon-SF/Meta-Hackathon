@@ -20,11 +20,12 @@ export interface HeatEvent {
   similar: number; // people like you who are interested or going
 }
 
+// Venues come from Adam's approved public venue list (nudges/venues.ts), like real nudges.
 const EXAMPLE_EVENTS: HeatEvent[] = [
-  { id: "e1", title: "Board game night", venue: "Student union, room 2", date: "2026-11-18", time: "7:00 PM", similar: 11 },
-  { id: "e2", title: "Intro climbing session", venue: "Rec center wall", date: "2026-11-19", time: "6:30 PM", similar: 6 },
-  { id: "e3", title: "Open mic", venue: "Main street café", date: "2026-11-20", time: "8:00 PM", similar: 3 },
-  { id: "e4", title: "Film club", venue: "Library screening room", date: "2026-11-21", time: "7:30 PM", similar: 2 }, // below threshold: hidden
+  { id: "e1", title: "Board game night", venue: "Library Commons", date: "2026-11-18", time: "7:00 PM", similar: 11 },
+  { id: "e2", title: "Pickup volleyball", venue: "Rec Center Courts", date: "2026-11-19", time: "6:30 PM", similar: 6 },
+  { id: "e3", title: "Open mic", venue: "Campus Cafe", date: "2026-11-20", time: "8:00 PM", similar: 3 },
+  { id: "e4", title: "Film club", venue: "Main Quad", date: "2026-11-21", time: "7:30 PM", similar: 2 }, // below threshold: hidden
 ];
 
 /** Code-enforced: hide below the threshold, bucket the rest. */
