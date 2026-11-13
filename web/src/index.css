@@ -20,6 +20,25 @@
   --border: #e2e5e9;
   --hover: #e4e6e9;
   --shadow: 0 1px 2px #0003;
+  /* Named tokens from docs/DESIGN.md, for new feature code. Existing shell values above are unchanged. */
+  --fb-blue: #0866ff;
+  --fb-blue-ui: #1877f2;
+  --fb-blue-hover: #166fe5;
+  --fb-blue-tint: #e7f3ff;
+  --fb-bg: #f0f2f5;
+  --fb-card: #ffffff;
+  --fb-divider: #ced0d4;
+  --fb-hover: #f2f2f2;
+  --fb-text: #050505;
+  --fb-text-strong: #1c2b33;
+  --fb-text-secondary: #65676b;
+  --fb-green: #31a24c;
+  --fb-red: #e41e3f;
+  --radius-card: 8px;
+  --radius-button: 6px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-raised: 0 12px 28px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 * {
   box-sizing: border-box;

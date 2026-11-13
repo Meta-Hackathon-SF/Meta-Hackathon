@@ -539,16 +539,23 @@ a.cst-post-title:hover {
   stroke: #050505;
   stroke-width: 2.5;
 }
+.cst-node-label,
+.cst-node-sub {
+  /* white halo keeps day labels readable where edges cross behind them */
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
 .cst-node-label {
   fill: #050505;
   font-size: 12px;
   font-weight: 700;
-  pointer-events: none;
 }
 .cst-node-sub {
   fill: var(--muted);
   font-size: 11px;
-  pointer-events: none;
 }
 .cst-node.is-answered .cst-node-sub,
 .cst-node.is-today .cst-node-sub {
@@ -670,6 +677,8 @@ a.cst-post-title:hover {
   font-size: 12px;
   font-weight: 600;
   line-height: 18px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .cst-label-warn {
   background: #fff4d6;
@@ -1391,7 +1400,7 @@ a.cst-post-title:hover {
 @media (min-width: 700px) {
   .cst-op-grid {
     grid-template-columns: 1fr 1fr;
-    align-items: start;
+    align-items: stretch;
   }
   .cst-op-advance {
     width: auto;
@@ -1448,6 +1457,25 @@ a.cst-post-title:hover {
   .cst-reply-box {
     transition: none;
   }
+  .cst-feed :is(.button-primary, .button-secondary, .button-soft, .cst-tool):active,
+  .cst-page :is(.button-primary, .button-secondary, .button-soft, .cst-tool):active,
+  .cst-join-modal :is(.button-primary, .button-secondary, .button-soft, .cst-tool):active {
+    transform: none;
+  }
+}
+
+/* Quick, springy press feedback on feature buttons (DESIGN.md §4). */
+.cst-feed :is(.button-primary, .button-secondary, .button-soft, .cst-tool),
+.cst-page :is(.button-primary, .button-secondary, .button-soft, .cst-tool),
+.cst-join-modal :is(.button-primary, .button-secondary, .button-soft, .cst-tool) {
+  transition:
+    background-color 0.12s,
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cst-feed :is(.button-primary, .button-secondary, .button-soft, .cst-tool):active:not(:disabled),
+.cst-page :is(.button-primary, .button-secondary, .button-soft, .cst-tool):active:not(:disabled),
+.cst-join-modal :is(.button-primary, .button-secondary, .button-soft, .cst-tool):active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 /* ---- Rewards ------------------------------------------------------------------------- */
