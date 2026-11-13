@@ -28,6 +28,12 @@ Fixture versus live evidence: fixture only. FakeMuse is scripted, so tests prove
 - Formation debug UI: `web/src/features/constellations/formation` exports `FormationDebug` + `parseFormationDebug` (ids only, "Operator only", Fallback grouping badge, Muse chips). @willapat mounts it in the operator console.
 - Checks: pytest tests/matching -> 46 passed; ruff clean.
 
+## Quality eval (added 2026-11-13)
+- server/matching/evaluation.py: labeled synthetic gold set (6 feelings x 5 paraphrases, little word overlap) + pairwise precision/recall.
+- `python -m server.matching.live_eval --gold --players 30 [--live]`. Keyword baseline on gold: precision 0.15, recall 0.15 (9/60 gold pairs; random about 0.17). The Muse number only means something with --live; the fixture Muse is scripted and reported as such.
+- Partition stress: 30/10, 80/40, 80/120, 200/300 (players/blocks) all valid in 0.02 s or less.
+- Still blocked for integration (not for my tasks): Patrik's OutputGuard and formationSnapshot are not on main or his branch; asked in #16.
+
 ## Interface assumptions (need ACK, not blocking)
 - Patrik `@patrikliska13`: `formationSnapshot` returns `answers[].id` as one random ref per PLAYER (shared by all that player's answers), `weight` per answer, `idMap` ref->playerId, `blockedPairs` as playerIds. Players with any distress/harm flag this cycle are excluded entirely. Prevalence guesses will be needed for computeSky (shape TBD).
 - Adam `@adamzhang06`: Python MusePort is `async run(*, task, requestId, promptVersion, payload, signal=None) -> {"output", "evidence"}` with evidence in MuseCallEvidence wire shape. Formation sends `instructions` inside payload; tell me if the adapter owns system prompts instead.
