@@ -1,7 +1,7 @@
-# server/planning: question bank, weekly selection, M2 follow-up, M7 event nudges (owner: Adam)
+# server/planning: question bank, weekly selection, M2 follow-up, M7 event nudges, M6 question generation (owner: Adam)
 
 Contract: `contracts/protocol.ts` 2.0.0 (`Question`, `DailyQuestion`, `QuestionPort`, `M2In`/`M2Out`, `Venue`, `EventNudge`, `NudgePort`, `M7In`/`M7Out`).
-Status (2026-11-12): **implemented and offline-tested against fixtures and labeled test-only adapters.** The operator router exists but is not mounted in a running app, nothing is persisted durably, and no live Muse call has run through this code. Question generation (M6) is not implemented.
+Status (2026-11-12): **implemented and offline-tested against fixtures and labeled test-only adapters.** The operator router exists but is not mounted in a running app, nothing is persisted durably, and no live Muse call has run through this code.
 
 ## What is here
 | File | What |
@@ -12,6 +12,7 @@ Status (2026-11-12): **implemented and offline-tested against fixtures and label
 | `clarify.py` | `ClarifyService.follow_up` (M2), prompt `clarify.v1`, `InMemoryClarifyStore`. |
 | `venues.py`, `data/venues.json` | `VenueCatalog`: the approved public venue allowlist (same rows as the shared fixture). |
 | `nudges.py` | `NudgeService.propose` (NudgePort), `propose_and_post`, prompt `event_nudge.v1`. |
+| `generation.py` | `QuestionGenerator.generate / pending / approve / reject` (M6), prompt `question_generation.v1`. |
 | `adapters.py` | `CycleQuestionPort`, `SyncClarify`: the synchronous shapes Will's cycle service consumes. `run_sync`. |
 | `api.py` | FastAPI router factory `build_router(runtime, session_dependency)`, `PlanningRuntime.ready`, `install_planning_error_handler`. The only module that needs FastAPI. |
 | `ports.py` | The ports planning consumes: `OutputGuardPort` (Patrik), `ChatPostPort` (Kai), `WeekStartLookup` (Will). |
@@ -60,6 +61,21 @@ There is **no invented fallback nudge**: `EventNudge.evidence` must be a real Mu
 
 The mid-week schedule and the operator button are not wired: both call `propose_and_post` once the route and Kai's job runner exist.
 
+## M6 question generation (step 7, cuttable)
+```python
+from server.planning import QuestionGenerator
+gen = QuestionGenerator(muse, output_guard, questions)
+res = await gen.generate(count=5, request_id=..., category_mix={"belonging": 2, "routine": 1},
+                         aggregate_signals=[{"tag": "solitude", "share": 0.43}])
+res.pending     # Question rows with source "generated", active False
+gen.approve(question_id)    # operator only: joins the bank as active
+gen.reject(question_id)
+```
+- The prompt holds aggregates only: `{tag, share}` pairs, the category mix, a count and recent question ids. A signal that is not a lowercase tag, or carries any extra field, is refused before the call, so answer text cannot ride in.
+- Each proposal must validate as a `Question` and pass `OutputGuard` (text and hint); repeats of the bank or of another proposal are dropped. `"high"` sensitivity fails the adapter schema.
+- Survivors wait in a pending queue outside the bank, so `select_week` cannot pick them. Only `approve` makes one active. Approved questions live in process memory until orchestration persists the bank.
+- `aggregate_signals` must come from Rishi's thresholded aggregates. Nothing in this package computes them.
+
 ## Wiring for the cycle service (Will)
 ```python
 from server.planning import (ClarifyService, CycleQuestionPort, InMemorySelectionStore,
@@ -79,11 +95,11 @@ ServiceRegistration(owner="planning", router=build_router(runtime, session_depen
                     authorize=session_dependency, ready=runtime.ready)
 install_planning_error_handler(app)
 ```
-Routes (paths without `/api/v1`): `GET /operator/questions` (`active`, `category`, `source` filters), `POST /operator/cycles/{cycleId}/select-week`, `POST /operator/rooms/{roomId}/nudge` (registered only when `nudges` and `room_constellation` are given). Each handler rechecks the operator role from the session (`is_operator` / `isOperator`) and takes the community from the session, never from the client. `POST /operator/questions/generate` is not registered. `ready()` checks local state only (bank, venues, Muse key present) and never calls the model.
+Routes (paths without `/api/v1`): `GET /operator/questions` (`active`, `category`, `source` filters), `POST /operator/cycles/{cycleId}/select-week`, `POST /operator/rooms/{roomId}/nudge` (registered only when `nudges` and `room_constellation` are given), and with `runtime.generator` set: `POST /operator/questions/generate` (202) plus three routes that are **not in contracts/API.md yet** (proposed, need ACK): `GET /operator/questions/pending`, `POST /operator/questions/{id}/approve`, `POST /operator/questions/{id}/reject`. Each handler rechecks the operator role from the session (`is_operator` / `isOperator`) and takes the community from the session, never from the client. `ready()` checks local state only (bank, venues, Muse key present) and never calls the model.
 
 ## Not done / needs other owners
 - The router is tested on a bare FastAPI app with a test-only session stand-in. It has not run inside Kai's composed app or behind Patrik's real session.
-- `OutputGuardPort`, `WeekStartLookup`, `ConstellationContext`, `ChatPostPort` and the selection/clarify/nudge stores are satisfied in tests by `tests/planning/doubles.py` (TEST ONLY) and the in-memory stores. Durable stores belong to orchestration.
+- `OutputGuardPort`, `WeekStartLookup`, `ConstellationContext`, `ChatPostPort` and the selection/clarify/nudge stores and the pending-question queue are satisfied in tests by `tests/planning/doubles.py` (TEST ONLY) and the in-memory stores. Durable stores belong to orchestration.
 
 ## Tests
 ```sh
