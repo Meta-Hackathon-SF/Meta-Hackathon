@@ -219,3 +219,76 @@ def test_final_transcript_is_capped_like_the_batch_route():
 def test_url_and_handshake_helpers():
     assert realtime_url(MuseSttConfig(api_key="k", base_url="https://api.meta.ai/v1/")) == "wss://api.meta.ai/v1/asr/realtime"
     assert json.loads(handshake(CFG))["languageBias"] == ["English"]
+
+
+# ---- hardening: slow Muse handshakes and content-free failure logs ----------
+class SlowMuse(FakeMuse):
+    def __init__(self, delay, **kw):
+        super().__init__(**kw)
+        self.delay = delay
+
+    async def recv(self):
+        await asyncio.sleep(self.delay)
+        return await super().recv()
+
+
+def _run(fake, *, ready_timeout, chunks=(b"\x00" * 10,)):
+    inbox = [{"type": "websocket.receive", "bytes": c} for c in chunks] + [{"type": "websocket.receive", "text": "stop"}]
+    out = []
+
+    async def receive():
+        return inbox.pop(0) if inbox else await asyncio.sleep(3600)
+
+    async def send_json(m):
+        out.append(m)
+
+    asyncio.run(relay(receive, send_json, CFG, connect=fake.connect, ready_timeout=ready_timeout))
+    return out
+
+
+def test_ready_wait_is_longer_than_the_old_10s_limit():
+    from server.voice.live import CONNECT_TIMEOUT_S, READY_TIMEOUT_S
+    assert READY_TIMEOUT_S >= 20 and CONNECT_TIMEOUT_S <= 10
+
+
+def test_slow_handshake_within_the_wait_still_works():
+    out = _run(SlowMuse(0.2), ready_timeout=1.0)
+    assert out[0] == {"type": "ready"} and out[-1]["type"] == "final"
+
+
+def test_handshake_timeout_logs_reason_only(caplog):
+    caplog.set_level("WARNING", logger="constellations.voice.live")
+    out = _run(SlowMuse(0.5), ready_timeout=0.1)
+    assert out == [{"type": "error", "code": "PROVIDER_UNAVAILABLE",
+                    "message": "Live transcription is unavailable right now. You can type instead.", "retryable": True}]
+    assert len(caplog.records) == 1
+    line = caplog.records[0].getMessage()
+    assert line.startswith("live stt failed reason=handshake_timeout after=")
+    assert KEY not in caplog.text and "mostly" not in caplog.text
+
+
+@pytest.mark.parametrize("fake,reason", [
+    (FakeMuse(reject=True), "handshake_rejected"),
+    (FakeMuse(fail_after=1), "provider_error"),
+])
+def test_failure_reasons_are_fixed_codes_without_content(caplog, fake, reason):
+    caplog.set_level("WARNING", logger="constellations.voice.live")
+    _run(fake, ready_timeout=1.0)
+    assert f"reason={reason} " in caplog.text
+    assert KEY not in caplog.text and "XYZ" not in caplog.text and "bad key" not in caplog.text
+
+
+def test_connect_failure_is_logged(caplog):
+    caplog.set_level("WARNING", logger="constellations.voice.live")
+
+    def broken(url):
+        raise OSError("dns down for api.meta.ai")
+
+    out = []
+
+    async def send_json(m):
+        out.append(m)
+
+    asyncio.run(relay(lambda: None, send_json, CFG, connect=broken))
+    assert "reason=connect_failed" in caplog.text and "dns" not in caplog.text
+    assert out[-1]["code"] == "PROVIDER_UNAVAILABLE"

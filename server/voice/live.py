@@ -25,6 +25,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
+import time
 from collections.abc import Awaitable, Callable, Iterable
 from typing import Any, Protocol
 from urllib.parse import urlsplit
@@ -34,7 +36,23 @@ from .transcription import MAX_TRANSCRIPT_CHARS
 
 MAX_LIVE_SECONDS = 60  # matches the web recorder's MAX_RECORDING_SECONDS
 MAX_LIVE_BYTES = MAX_LIVE_SECONDS * 32_000 + 64_000  # 16 kHz PCM16 plus slack
-HANDSHAKE_TIMEOUT_S = 10.0
+CONNECT_TIMEOUT_S = 10.0  # Muse requires our handshake within 10 s of connecting
+READY_TIMEOUT_S = 20.0  # how long we wait for Muse's reply; it can be slow under load
+
+log = logging.getLogger("constellations.voice.live")
+
+
+class LiveFailure(Exception):
+    """Internal: a fixed reason code for the content-free log line."""
+
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason
+
+
+def _log_failure(reason: str, started: float) -> None:
+    # Fixed reason code and timing only: no audio, transcript, key or player id.
+    log.warning("live stt failed reason=%s after=%.1fs", reason, time.monotonic() - started)
 
 
 class Upstream(Protocol):
@@ -79,7 +97,7 @@ def origin_allowed(headers: Any, extra: Iterable[str] = ()) -> bool:
 def default_connect(url: str):
     import websockets  # lazy: only live mode needs it
 
-    return websockets.connect(url, max_size=2**20, open_timeout=HANDSHAKE_TIMEOUT_S)
+    return websockets.connect(url, max_size=2**20, open_timeout=CONNECT_TIMEOUT_S)
 
 
 def _error(code: str, message: str, retryable: bool) -> dict:
@@ -94,31 +112,40 @@ async def relay(
     connect: Connect = default_connect,
     max_bytes: int = MAX_LIVE_BYTES,
     max_seconds: float = MAX_LIVE_SECONDS,
+    ready_timeout: float = READY_TIMEOUT_S,
 ) -> None:
     """One push-to-talk turn. ``receive`` yields ASGI websocket.receive messages."""
     if config is None:
         await send_json(_error("PROVIDER_UNAVAILABLE", "Live transcription isn't set up. You can type instead.", False))
         return
+    started = time.monotonic()
+    stage = "connect_failed"
     try:
         async with connect(realtime_url(config)) as upstream:
             await upstream.send(handshake(config))
-            first = json.loads(await asyncio.wait_for(upstream.recv(), timeout=HANDSHAKE_TIMEOUT_S))
+            stage = "handshake_timeout"
+            first = json.loads(await asyncio.wait_for(upstream.recv(), timeout=ready_timeout))
             if not isinstance(first, dict) or "sessionId" not in first:
-                raise RuntimeError("handshake rejected")
+                raise LiveFailure("handshake_rejected")
             await send_json({"type": "ready"})
-            await asyncio.wait_for(_pump(receive, send_json, upstream, max_bytes, max_seconds),
+            stage = "stream_timeout"
+            await asyncio.wait_for(_pump(receive, send_json, upstream, max_bytes, max_seconds, started),
                                    timeout=max_seconds + 15)
+    except LiveFailure as failure:
+        _log_failure(failure.reason, started)
+        await send_json(_error("PROVIDER_UNAVAILABLE", "Live transcription is unavailable right now. You can type instead.", True))
     except Exception:
         # Never echo provider errors, keys or audio details.
+        _log_failure(stage, started)
         await send_json(_error("PROVIDER_UNAVAILABLE", "Live transcription is unavailable right now. You can type instead.", True))
 
 
-async def _pump(receive, send_json, upstream: Upstream, max_bytes: int, max_seconds: float) -> None:
+async def _pump(receive, send_json, upstream: Upstream, max_bytes: int, max_seconds: float, started: float) -> None:
     finished = asyncio.Event()
 
     async def browser_to_muse() -> None:
         loop = asyncio.get_running_loop()
-        started, sent = loop.time(), 0
+        began, sent = loop.time(), 0
         try:
             while True:
                 msg = await receive()
@@ -128,8 +155,9 @@ async def _pump(receive, send_json, upstream: Upstream, max_bytes: int, max_seco
                 chunk = msg.get("bytes")
                 if chunk is not None:
                     sent += len(chunk)
-                    if sent > max_bytes or loop.time() - started > max_seconds:
-                        break  # cap reached: finish the turn with what we have
+                    if sent > max_bytes or loop.time() - began > max_seconds:
+                        _log_failure("cap_reached", started)  # not an error: turn ends with what we have
+                        break
                     await upstream.send(chunk)
                 elif msg.get("text") == "stop":
                     break
@@ -156,6 +184,7 @@ async def _pump(receive, send_json, upstream: Upstream, max_bytes: int, max_seco
                     await send_json({"type": "final", "text": str(event.get("transcript", ""))[:MAX_TRANSCRIPT_CHARS]})
                     return
                 elif kind == "error":
+                    _log_failure("provider_error", started)
                     await send_json(_error("PROVIDER_UNAVAILABLE", "Live transcription stopped. You can type instead.", True))
                     return
             await send_json({"type": "final", "text": ""})  # upstream closed without a final
