@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --mode live",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "screenshots": "node scripts/capture-ui.mjs"
+    "screenshots": "node scripts/capture-ui.mjs",
+    "dev:fixture": "vite --mode fixture"
   },
   "dependencies": {
     "lucide-react": "^1.72.0",
