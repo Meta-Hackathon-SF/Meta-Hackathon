@@ -135,6 +135,7 @@ const choice = (v: unknown): SlotChoice => (v === "A" || v === "B" || v === "off
 export const fetchStage = async (signal?: AbortSignal): Promise<StageView> => parseStage(await request("GET", "/operator/stage", undefined, signal));
 export const startWeek = async (): Promise<StageView> => parseStage(await request("POST", "/operator/stage/start"));
 export const nextStep = async (): Promise<StageView> => parseStage(await request("POST", "/operator/stage/next"));
+export const skipPhone = async (slot: Slot): Promise<StageView> => parseStage(await request("POST", "/operator/stage/skip", { slot }));
 export const redetectPhones = async (): Promise<StageView> => parseStage(await request("POST", "/operator/stage/phones/reset"));
 export const fetchMySlot = async (signal?: AbortSignal): Promise<SlotChoice> => choice(rec(await request("GET", "/me/stage", undefined, signal)).slot);
 export const chooseSlot = async (value: SlotChoice): Promise<SlotChoice> => choice(rec(await request("POST", "/me/stage", { slot: value })).slot);

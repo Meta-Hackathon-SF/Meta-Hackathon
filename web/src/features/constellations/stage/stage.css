@@ -651,3 +651,19 @@
 .stg-sky-box text {
   animation: stg-fade 0.8s 1.6s ease-out both;
 }
+
+.stg-skip {
+  padding: 2px 9px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.stg-skip:hover,
+.stg-skip:focus-visible {
+  color: var(--text);
+  border-color: var(--muted);
+}

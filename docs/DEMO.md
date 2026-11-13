@@ -50,7 +50,7 @@ words they used, and places you with 5 or more people who feel the same. On Sund
 Two phones and one laptop on the big screen. The laptop drives the whole week; the phones only join and type one answer.
 
 1. **Laptop:** sign in to Facebook Space, then open `/space/stage`. Leave it open on the big screen.
-2. **Phones:** each presenter opens the site and joins Facebook Space. They appear on the stage by themselves within two seconds, the first to join as Phone A. If the wrong account shows up, press **Phones** on the stage to re-detect, or use Privacy → Demo screen on the phone to pick a side or hide.
+2. **Phones:** each presenter opens the site and joins Facebook Space. They appear on the stage by themselves within two seconds, the first to join as Phone A. If the wrong account shows up (any account that joins counts, a teammate's test account included), press **Skip** on that phone panel and the next newest player takes the slot. **Phones** re-detects from scratch; Privacy → Demo screen on a phone picks a side or hides it. **Start demo week** always re-detects.
 3. **Start demo week.** 100 synthetic players arrive with their Monday answers; the phones' Monday answer is filled in.
 4. **Next day** four times (Tuesday to Friday). The bars and dots grow; the phones' answers are filled in for them.
 5. **Friday:** the stage shows each presenter the exact line to type under their phone, with the day's question. They type it and post. The Safety step lights up: Muse screened it.
