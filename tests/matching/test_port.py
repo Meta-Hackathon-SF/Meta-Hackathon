@@ -51,7 +51,7 @@ def test_form_returns_exact_formation_success_wire():
     assert set(raw) == {"status", "constellations", "evidence"} and raw["status"] == "ok"
     for c in raw["constellations"]:
         assert CONSTELLATION_KEYS <= set(c) <= CONSTELLATION_KEYS | OPTIONAL_KEYS
-        assert c["cycleId"] == "cycle-1" and 3 <= len(c["memberIds"]) <= 5
+        assert c["cycleId"] == "cycle-1" and len(c["memberIds"]) >= 5
         assert len(set(c["memberIds"])) == len(c["memberIds"])
     assert all(set(e) == EVIDENCE_KEYS for e in raw["evidence"])
     json.dumps(raw)  # plain JSON, no dataclasses

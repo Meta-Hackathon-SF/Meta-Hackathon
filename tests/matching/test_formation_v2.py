@@ -170,7 +170,7 @@ def test_registered_m4_spec_is_v2_with_tested_sentences():
 # ---------------------------------------------------------------- affinity
 
 def activity_snapshot() -> dict:
-    refs = ["ra", "rb", "rc", "rd"]
+    refs = ["ra", "rb", "rc", "rd", "re"]
     return {
         "answers": [{"id": r, "text": f"synthetic answer {r}"} for r in refs],
         "idMap": {r: f"syn-{r}" for r in refs} | {"rz": "syn-rz"},
@@ -183,6 +183,7 @@ def activity_snapshot() -> dict:
             "rc": {"topics": [], "groupIds": [], "eventIds": ["ev-rogue"],
                    "friendIds": ["syn-ra"]},
             "rd": {"topics": ["sports"]},
+            "re": {"topics": []},
             "rz": {"topics": ["music"], "groupIds": ["g-1"]},  # no answers: never a pair
         },
     }
@@ -211,7 +212,7 @@ def test_affinity_capped_strongest_first():
 def test_affinity_reaches_m4_as_refs_and_counts_only():
     raw = activity_snapshot()
     muse = FakeMuse({}, [])
-    muse.groups = [["ra", "rb", "rc", "rd"]]
+    muse.groups = [["ra", "rb", "rc", "rd", "re"]]
     service = FormationService(muse, DictSource(raw), FixtureGuard(),
                                approved_event_ids={"ev-approved"})
     result = run(service.form("c", "r"))
@@ -267,7 +268,7 @@ def test_resolve_carries_code_generated_correction(first, expect):
 def test_correction_counts_violation_kinds():
     text = prompts.m4_correction(["size:0", "size:2", "blocked_pair:1", "placed_twice:3",
                                   "unknown_refs:2"], unplaced=[f"r{i}" for i in range(15)])
-    assert "2 groups outside size 3-5 (group 1, 3)" in text
+    assert "2 groups under size 5 (group 1, 3)" in text
     assert "1 groups containing a blocked pair (group 2)" in text
     assert "3 ids placed more than once" in text and "2 ids that are not in answers" in text
     assert "15 ids not placed" in text and "and 3 more" in text

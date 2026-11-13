@@ -44,7 +44,7 @@ export default function StreakRewards({ streak, answers }: { streak: Streak; ans
           );
         })}
       </ul>
-      <p className="cst-panel-note muted">Badges are just for you. They never change who you're matched with.</p>
+      <p className="cst-panel-note muted">Streaks reward showing up, never what you share. Badges are just for you and never change who you're matched with.</p>
     </section>
   );
 }

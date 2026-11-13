@@ -8,6 +8,7 @@ Muse proposes; this module decides. Nothing here persists; orchestration (Kai) c
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import inspect
 import time
 import uuid
@@ -28,7 +29,6 @@ from server.matching.models import (
     FALLBACK_LABEL,
     LOOSE_MATCH_CONFIDENCE,
     MAX_NAME_CHARS,
-    SHAPES_BY_SIZE,
     Constellation,
     FormationResult,
     FormationSnapshot,
@@ -36,9 +36,11 @@ from server.matching.models import (
     MuseCallEvidence,
     Theme,
     ValidationError,
+    shapes_for,
 )
 from server.matching.ports import MusePortLike, OutputGuardLike, SnapshotSource
 from server.matching.repair import repair_proposal
+from server.matching.sampling import sample_for_muse
 from server.matching.sky import formation_debug
 from server.matching.validation import violations
 
@@ -78,6 +80,23 @@ class _Call:
     evidence: MuseCallEvidence
 
 
+# Absolute clock time by which this formation must finish (None = no budget). Set in form(); read
+# by _call so every Muse call gets the REMAINING time as deadline_s (audit #72), keeping a reserve
+# for the code-only keyword fallback. A ContextVar keeps gather() tasks and forms apart.
+_FORMATION_DEADLINE: contextvars.ContextVar[float | None] = contextvars.ContextVar(
+    "formation_deadline", default=None)
+FALLBACK_RESERVE_S = 3.0
+MIN_CALL_BUDGET_S = 1.0
+
+
+def _accepts_kwarg(muse: Any, name: str) -> bool:
+    try:
+        params = inspect.signature(muse.run).parameters
+    except (TypeError, ValueError, AttributeError):
+        return False
+    return name in params or any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
+
+
 def _accepts_correction(muse: Any) -> bool:
     """True when muse.run takes `correction=` (KeywordMusePort does; older fakes do not)."""
     try:
@@ -90,7 +109,7 @@ def _accepts_correction(muse: Any) -> bool:
 
 def _fallback_name(index: int, size: int) -> tuple[str, str, str]:
     color = COLOR_IDS[index % len(COLOR_IDS)]
-    shape = SHAPES_BY_SIZE[size][index % len(SHAPES_BY_SIZE[size])]
+    shape = shapes_for(size)[index % len(shapes_for(size))]
     return f"The {color.capitalize()} {shape.split('-')[0].capitalize()}", shape, color
 
 
@@ -100,7 +119,7 @@ def _fallback_grouping_name(index: int, size: int) -> tuple[str, str, str]:
     isFallback is not a wire field (protocol.ts 2.0.0), so the label rides in the name.
     """
     color = COLOR_IDS[index % len(COLOR_IDS)]
-    shape = SHAPES_BY_SIZE[size][index % len(SHAPES_BY_SIZE[size])]
+    shape = shapes_for(size)[index % len(shapes_for(size))]
     base = f"{color.capitalize()} {shape.split('-')[0].capitalize()}"
     base = base[:MAX_NAME_CHARS - len(FALLBACK_SUFFIX)].rstrip()
     return f"{base}{FALLBACK_SUFFIX}", shape, color
@@ -110,10 +129,11 @@ class FormationService:
     def __init__(self, muse: MusePortLike, snapshots: SnapshotSource, guard: OutputGuardLike,
                  *, timeout_s: float = DEFAULT_TIMEOUT_S, allow_fallback: bool = True,
                  parallel_themes: bool = True, name_timeout_s: float = NAME_TIMEOUT_S,
-                 approved_event_ids: Collection[str] = (),
+                 approved_event_ids: Collection[str] = (), budget_s: float | None = None,
                  clock: Callable[[], float] = time.monotonic) -> None:
         self._muse = muse
         self._sends_correction = _accepts_correction(muse)
+        self._sends_deadline = _accepts_kwarg(muse, "deadline_s")
         # Adam's venue catalog event ids; only these count toward M4 affinity.
         self._approved_event_ids = frozenset(approved_event_ids)
         self._snapshots = snapshots
@@ -123,17 +143,28 @@ class FormationService:
         self._parallel_themes = parallel_themes
         self._name_timeout_s = name_timeout_s
         self._clock = clock
+        self._budget_s = budget_s
 
     # ------------------------------------------------------------ Muse calls
 
     async def _call(self, task: str, prompt_version: str, payload: dict,
                     request_id: str, timeout_s: float | None = None,
                     correction: str | None = None) -> _Call:
-        extra = {"correction": correction} if correction and self._sends_correction else {}
+        extra: dict[str, Any] = (
+            {"correction": correction} if correction and self._sends_correction else {})
+        cap = timeout_s or self._timeout_s
+        absolute = _FORMATION_DEADLINE.get()
+        if absolute is not None:
+            remaining = absolute - self._clock() - FALLBACK_RESERVE_S
+            if remaining < MIN_CALL_BUDGET_S:
+                raise TimeoutError  # out of budget: caller falls back to keyword grouping
+            cap = min(cap, remaining)
+        if self._sends_deadline:
+            extra["deadline_s"] = cap
         response = await asyncio.wait_for(
             self._muse.run(task=task, requestId=request_id, promptVersion=prompt_version,
                            payload=payload, **extra),
-            timeout=timeout_s or self._timeout_s)
+            timeout=cap)
         if not isinstance(response, Mapping) or set(response) != {"output", "evidence"}:
             raise ValidationError("response", "expected output and evidence")
         return _Call(response["output"], MuseCallEvidence.from_dict(response["evidence"]))
@@ -289,6 +320,7 @@ class FormationService:
         """
         request_id = request_id or f"form-{cycle_id}-{uuid.uuid4().hex[:8]}"
         started = self._clock()
+        _FORMATION_DEADLINE.set(None if self._budget_s is None else started + self._budget_s)
         timings: dict[str, int] = {}
         try:
             snap = FormationSnapshot.from_dict(await self._snapshots.formation_snapshot(cycle_id))
@@ -300,6 +332,8 @@ class FormationService:
         except MatchingError as exc:
             return FormationResult("failed", error=exc)
         timings["baselineMs"] = int((self._clock() - started) * 1000)
+        full_snap = snap
+        snap, sample_reason = sample_for_muse(full_snap)  # Muse sees a bounded sample; code uses all
 
         evidence: list[MuseCallEvidence] = []
         if self._parallel_themes:
@@ -323,6 +357,7 @@ class FormationService:
                     "PROVIDER_UNAVAILABLE", "Formation unavailable; retry", retryable=True))
             proposal = tuple((g, FALLBACK_MEANING, FALLBACK_CONFIDENCE) for g in baseline)
 
+        snap = full_snap  # guards, closeness and context use every answer
         answer_texts = [a.text for a in snap.answers]
         proposal = self._guarded_meanings(proposal, answer_texts)
         themes = self._guarded_themes(themes, answer_texts)
@@ -352,7 +387,19 @@ class FormationService:
             for i, ((refs, meaning, confidence), (name, shape, color))
             in enumerate(zip(proposal, names, strict=False)))
         debug = formation_debug([tuple(refs) for refs, _, _ in proposal], baseline)
+        ids = snap.id_map
+        # Operator-only, kept apart from the ref-only `debug` so the public getter stays ids-free.
+        operator_debug = {
+            "baselineGroups": [sorted(ids[r] for r in g) for g in baseline],
+            "museGroups": [sorted(ids[r] for r in refs) for refs, _, _ in proposal],
+            "splitByBaseline": [[ids[a], ids[b]] for a, b in debug["splitByBaseline"]],
+            "agreements": debug["agreements"],
+            "usedFallback": used_fallback,
+        }
+        if sample_reason:
+            debug = {**debug, "reason": sample_reason}  # operator-only, no ids or text
         return FormationResult("ok", constellations=constellations, themes=theme_objs,
                                evidence=tuple(evidence), used_fallback=used_fallback,
                                repaired_groups=repaired, debug=debug,
+                               operator_debug=operator_debug,
                                timings_ms=timings)

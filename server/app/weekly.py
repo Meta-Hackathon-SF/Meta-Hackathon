@@ -2,6 +2,7 @@
 
 import asyncio
 import contextvars
+import logging
 from contextlib import asynccontextmanager, contextmanager
 from copy import copy
 from uuid import uuid4
@@ -142,8 +143,30 @@ def build_weekly_app(
         ClarifyService(muse, guard, DurableClarifyStore(repository)), questions.bank
     )
     screen = safety.sync_screen()
+    from server.app.v3_routes import InMemoryDayStore as _Store
+    from server.app.v3_routes import V3Scheduler
+
+    v3_store = _Store()
+    v3_scheduler = V3Scheduler(answers, KeywordMusePort(muse), guard, v3_store)
+
+    async def _v3_run(cycle):
+        try:
+            await v3_scheduler.on_cycle(cycle)
+        except Exception:  # a v3 failure never blocks the cycle, but it must be visible
+            logging.getLogger(__name__).exception("v3 scheduler step failed")
+
+    def _v3_tick(cycle):
+        # Fire and forget. Cycle hooks run in async routes, in sync routes (threadpool, no
+        # running loop) and in the worker, so fall back to the app loop captured at startup.
+        try:
+            asyncio.get_running_loop().create_task(_v3_run(cycle))
+        except RuntimeError:
+            loop = holder.get("loop")
+            if loop is not None and loop.is_running():
+                asyncio.run_coroutine_threadsafe(_v3_run(cycle), loop)
+
     hooks = CycleHooks(
-        publish_cycle=lambda c: holder["runtime"].on_changed(c),
+        publish_cycle=lambda c: (holder["runtime"].on_changed(c), _v3_tick(c))[0],
         enqueue_formation=lambda c: holder["runtime"].on_locked(c),
         reveal_cycle=lambda c: holder["runtime"].on_revealed(c),
     )
@@ -269,15 +292,36 @@ def build_weekly_app(
             data = state.records.get("formations", {}).get(cycleId)
             if not data:
                 raise ServiceError("NOT_FOUND")
-            _ = data["privateFormation"]
-        # Actual baseline groups are not part of FormationResult. Never invent a
-        # comparison from baselineAgrees flags; wait for the producer's artifact.
-        raise ServiceError("PROVIDER_UNAVAILABLE")
+            debug = (data["privateFormation"] or {}).get("debug") or {}
+        if not debug:
+            raise ServiceError("NOT_FOUND")
+        # Operator-only: player ids (synthetic in the demo), never answer text.
+        return {
+            "label": "Keyword grouping next to Muse grouping. Synthetic players.",
+            "keywordGroups": debug.get("baselineGroups", []),
+            "museGroups": debug.get("museGroups", []),
+            "splitByKeywords": debug.get("splitByBaseline", []),
+            "agreements": debug.get("agreements", 0),
+            "fallbackGrouping": bool(debug.get("usedFallback")),
+        }
 
     def sky_refresh(room_id, tasks):
         job_id = runtime.request_sky_for_room(room_id)
         if job_id is not None:
             tasks.add_task(runtime.run_job, job_id)
+
+    from server.app.v3_routes import build_v3_router
+
+    # Re-register the v3 handlers as plain routes: the registry accepts only direct HTTP routes.
+    for route in build_v3_router(
+        answers=answers,
+        cycles=cycles,
+        privacy_actor=privacy,
+        muse=KeywordMusePort(muse),
+        guard=guard,
+        store=v3_store,
+    ).routes:
+        matching.routes.append(route)
 
     nudges = GuardedNudges(runtime, chat, muse, VERIFIED_TOKEN.get)
     planning = PlanningRuntime(
@@ -311,12 +355,14 @@ def build_weekly_app(
     install_planning_error_handler(app)
     app.state.runtime, app.state.chat, app.state.cycles = runtime, chat, cycles
     app.state.nudges = nudges
+    app.state.v3_store, app.state.v3_scheduler = v3_store, v3_scheduler
     app.state.privacy, app.state.answers, app.state.muse = privacy, answers, muse
     previous = app.router.lifespan_context
 
     @asynccontextmanager
     async def lifespan(application):
         async with previous(application):
+            holder["loop"] = asyncio.get_running_loop()
             worker = asyncio.create_task(runtime.loop(chat)) if start_worker else None
             try:
                 yield

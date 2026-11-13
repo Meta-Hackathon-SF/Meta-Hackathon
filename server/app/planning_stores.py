@@ -205,6 +205,7 @@ class _PrivateFormation(Wire):
     repairedGroups: NonNegative
     timingsMs: dict[Text, NonNegative]
     fallbackConstellationIds: list[Text]
+    debug: dict = Field(default_factory=dict)  # operator-only: player ids, never answer text
 
     @model_validator(mode="after")
     def lineage(self):
@@ -250,6 +251,7 @@ def dump_matching_result(result: FormationResult) -> dict:
             "usedFallback": result.used_fallback,
             "repairedGroups": result.repaired_groups,
             "timingsMs": dict(result.timings_ms),
+            "debug": dict(getattr(result, "operator_debug", None) or {}),
             "fallbackConstellationIds": [
                 constellation.constellation_id
                 for constellation in result.constellations
@@ -313,6 +315,7 @@ def load_matching_result(value: dict) -> FormationResult:
             used_fallback=saved.usedFallback,
             repaired_groups=saved.repairedGroups,
             timings_ms=dict(saved.timingsMs),
+            operator_debug=dict(saved.debug),
         )
     except (TypeError, ValueError, ValidationError):
         raise ServiceError("PROVIDER_UNAVAILABLE") from None

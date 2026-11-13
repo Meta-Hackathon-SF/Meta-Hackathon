@@ -3,6 +3,7 @@ import type { CycleClient } from "../client";
 import { isLiveSupported, useLiveTranscription } from "../useLiveTranscription";
 import { MAX_CHARS, message } from "../useDaily";
 import { useVoiceRecorder } from "../useVoiceRecorder";
+import { isBrowserSpeechSupported, useBrowserSpeech } from "./useBrowserSpeech";
 
 /**
  * Mic button behaviour for the Space composer: live words while talking when the
@@ -57,15 +58,26 @@ export function useVoiceInput(client: CycleClient, setText: (text: string) => vo
     },
   });
 
+  // Fixture client has no voice route: use the browser's speech engine so the mic really works in demos.
+  const demoSpeech = client.mode === "fixture" && isBrowserSpeechSupported();
+  const browser = useBrowserSpeech({
+    onText: (spoken) => {
+      setTextRef.current(spoken.slice(0, MAX_CHARS));
+      setUsedVoice(true);
+    },
+    onDone: (spoken) => setNote(spoken ? "Browser speech (demo). Check the words, then post." : "No words came through. Try again or type."),
+  });
+
   const liveActive = live.status === "connecting" || live.status === "listening";
-  const recording = recorder.status === "recording" || liveActive;
-  const blocked = recorder.status === "denied" || recorder.status === "unsupported" || live.status === "denied";
+  const recording = recorder.status === "recording" || liveActive || browser.status === "listening";
+  const blocked =
+    recorder.status === "denied" || recorder.status === "unsupported" || live.status === "denied" || browser.status === "denied";
 
   const hint = recording
     ? "Listening… tap to stop"
     : transcribing
       ? "Transcribing…"
-      : recorder.status === "denied" || live.status === "denied"
+      : recorder.status === "denied" || live.status === "denied" || browser.status === "denied"
         ? "Mic is off. Typing works the same."
         : recorder.status === "unsupported"
           ? "This browser can't record. Type instead."
@@ -73,12 +85,14 @@ export function useVoiceInput(client: CycleClient, setText: (text: string) => vo
 
   const toggle = () => {
     if (recording) {
-      if (liveActive) live.stop();
+      if (browser.status === "listening") browser.stop();
+      else if (liveActive) live.stop();
       else recorder.stop();
       return;
     }
     setNote(null);
-    if (liveUrl) void live.start();
+    if (demoSpeech) browser.start();
+    else if (liveUrl) void live.start();
     else void recorder.start();
   };
 
@@ -86,6 +100,7 @@ export function useVoiceInput(client: CycleClient, setText: (text: string) => vo
     pending.current?.abort();
     recorder.cancel();
     live.cancel();
+    browser.cancel();
     setNote(null);
     setUsedVoice(false);
     setTranscribing(false);

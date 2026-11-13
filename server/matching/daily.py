@@ -21,7 +21,7 @@ from server.matching.models import MatchingError, PromptText, pair
 MIN_VISIBLE = 3  # protocol V3.minVisibleConstellation (R2)
 MAX_DAILY_PER_PLAYER = 3  # V3.maxDailyConstellations
 MAX_DAILY_STARS = 12  # V3.dailyConstellationMaxStars
-MAIN_MIN, MAIN_MAX = 3, 5
+MAIN_MIN = 5  # D016: at least 5, no maximum
 SECOND_DEGREE_MIN_ELIGIBLE = 30
 SECOND_DEGREE_MAX_PER_STAR = 2
 TAGS_PER_ANSWER = 2
@@ -100,6 +100,33 @@ def daily_groups(
     return tuple(final), tuple(sorted(set(vectors) - placed))
 
 
+def groups_from_themes(
+    themes: Iterable[Sequence[str]],
+    known_refs: Iterable[str],
+    blocked_ref_pairs: Iterable[tuple[str, str]] = (),
+) -> tuple[tuple[Group, ...], tuple[str, ...]]:
+    """Use Muse (M3) theme memberships directly as daily constellations. Code only enforces:
+    known refs, no blocked pair, 3..12 stars, at most MAX_DAILY_PER_PLAYER per player."""
+    known = set(known_refs)
+    blocked = {pair(a, b) for a, b in blocked_ref_pairs}
+    cands: list[Group] = []
+    for members in themes:
+        uniq = [r for r in dict.fromkeys(members) if r in known]
+        kept = _drop_blocked(uniq, blocked, {})[:MAX_DAILY_STARS]
+        group = tuple(sorted(kept))
+        if len(group) >= MIN_VISIBLE and group not in cands:
+            cands.append(group)
+    cands.sort(key=lambda g: (-len(g), g))
+    per_player: Counter = Counter()
+    final: list[Group] = []
+    for g in cands:
+        if all(per_player[r] < MAX_DAILY_PER_PLAYER for r in g):
+            final.append(g)
+            per_player.update(g)
+    placed = {r for g in final for r in g}
+    return tuple(final), tuple(sorted(known - placed))
+
+
 def week_graph(days: Iterable[Iterable[Sequence[str]]]) -> dict[tuple[str, str], int]:
     """Co-membership weight per pair: number of constellations they shared across the week.
     Reproducible from the day results alone."""
@@ -117,7 +144,7 @@ def main_groups(
     answers: Sequence[PromptText] = (),
     blocked_pairs: Iterable[tuple[str, str]] = (),
 ) -> tuple[tuple[Group, ...], tuple[str, ...]]:
-    """Sunday main constellations: 3-5, one per player. Candidates are players who share 2+
+    """Sunday main constellations: 5+, one per player. Candidates are players who share 2+
     constellations or have similar answers. Players with no qualifying match are unplaced."""
     sim = dict(similarity_matrix(answers)) if answers else {}
     closeness = {

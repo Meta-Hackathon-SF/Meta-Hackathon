@@ -55,7 +55,7 @@ def test_main_groups_size_blocks_and_unplaced():
     graph = week_graph([[("a", "b", "c", "d")], [("a", "b", "c", "d")], [("x", "y", "w")]] * 1)
     players = ["a", "b", "c", "d", "x", "y", "w", "q"]
     groups, unplaced = main_groups(players, graph, blocked_pairs=[("a", "b")])
-    assert all(3 <= len(g) <= 5 for g in groups)
+    assert all(len(g) >= 5 for g in groups)
     assert all(not {"a", "b"} <= set(g) for g in groups)
     assert "q" in unplaced
     assert len({r for g in groups for r in g}) == sum(len(g) for g in groups)  # exactly once

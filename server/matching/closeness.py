@@ -44,15 +44,21 @@ def activity_boost(a: ActivitySignals | None, b: ActivitySignals | None) -> floa
 
 
 def pair_closeness(
-    snap: FormationSnapshot, refs: Sequence[str]
+    snap: FormationSnapshot, refs: Sequence[str], weights=None
 ) -> tuple[tuple[str, str, float], ...]:
-    """(playerA, playerB, score) for each pair of refs, sorted, scores in [0, 1]."""
+    """(playerA, playerB, score) for each pair of refs, sorted, scores in [0, 1].
+
+    `weights` (adaptive.Weights, optional) scales keyword cosine and activity boosts by the input;
+    None keeps the fixed D009 behaviour."""
+    kw = weights.keyword if weights else 1.0
+    act = weights.activity if weights else 1.0
     vectors = player_vectors(a for a in snap.answers if a.id in set(refs))
     out = []
     for ra, rb in combinations(sorted(refs), 2):
         base = cosine(vectors.get(ra, {}), vectors.get(rb, {}))  # type: ignore[arg-type]
         score = min(
-            1.0, max(0.0, base + activity_boost(snap.activity.get(ra), snap.activity.get(rb)))
+            1.0,
+            max(0.0, base * kw + act * activity_boost(snap.activity.get(ra), snap.activity.get(rb))),
         )
         a, b = pair(snap.id_map[ra], snap.id_map[rb])
         out.append((a, b, round(score, 4)))

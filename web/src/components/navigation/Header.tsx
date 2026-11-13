@@ -8,16 +8,15 @@ import {
   Plus,
   Search,
   Settings,
-  Users,
   X,
 } from "lucide-react";
 import Avatar from "../common/Avatar";
 import IconButton from "../common/IconButton";
 import { currentUser, notifications, people } from "../../data/demo";
-import { SUNDAY_THREAD_ID, useInbox } from "../../features/constellations/messenger/inbox";
 import { useApp } from "../../state/context";
 import { primaryNavigation, sidebarNavigation } from "./navigation";
 import NavigationIcon from "./NavigationIcon";
+import { SpaceTabIcon } from "./AppIcons";
 
 type Panel =
   "menu" | "messages" | "notifications" | "profile" | "search" | null;
@@ -45,7 +44,6 @@ export default function Header() {
   const { pathname } = useLocation();
   const { setComposerOpen, readNotifications, markNotificationsRead, notify } =
     useApp();
-  const sunday = useInbox().find((thread) => thread.id === SUNDAY_THREAD_ID);
   const title =
     pathname === "/watch"
       ? "Reels"
@@ -157,6 +155,13 @@ export default function Header() {
           onClick={() => toggle("search")}
         >
           <Search />
+        </IconButton>
+        <IconButton
+          label="Facebook Space"
+          className="desktop-control"
+          onClick={() => navigate("/space")}
+        >
+          <SpaceTabIcon />
         </IconButton>
         <IconButton
           label="Menu"
@@ -345,21 +350,6 @@ export default function Header() {
                   placeholder="Search Messenger"
                 />
               </form>
-              {sunday && (
-                <Link
-                  className="chat-preview"
-                  to={`/messages?chat=${sunday.id}`}
-                  onClick={close}
-                >
-                  <span className="avatar group-chip" aria-hidden="true">
-                    <Users size={18} />
-                  </span>
-                  <span>
-                    <strong>{sunday.title}</strong>
-                    <small>{sunday.memberNames.join(", ")}</small>
-                  </span>
-                </Link>
-              )}
               {people.slice(0, 3).map((person, index) => (
                 <Link
                   className="chat-preview"

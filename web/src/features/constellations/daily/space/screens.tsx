@@ -5,11 +5,7 @@ import type { ConsentToggles, PrivacyClient, SessionView } from "../../privacy";
 import type { CycleClient, CycleDay, DailyQuestion } from "../client";
 import { MAX_CHARS } from "../useDaily";
 import { DAY_LONG, dayHex, type Screen } from "./model";
-import { Glyph, MicIcon, PreviewTag, StarField, Toggle, TopBar, Waveform } from "./parts";
-import { Link } from "react-router";
-import { BASE_EVENTS } from "../../../catalog/catalog";
-import { EventCard } from "../../../catalog/Cards";
-import { findEvent, isRegistered, useCatalogState } from "../../../catalog/store";
+import { Glyph, MicIcon, StarField, Toggle, TopBar, Waveform } from "./parts";
 import { SUPPORT_RESOURCES } from "./preview";
 import { useVoiceInput } from "./useVoiceInput";
 
@@ -196,19 +192,11 @@ export function DistressScreen({ onBack }: { onBack: () => void }) {
 }
 
 // ---------------------------------------------------------------- events / invite
-/** Constellation buckets (preview): how many of your people showed interest. Never exact, never under 3. */
-const BUCKETS: Record<string, string> = {
-  "ev-open-mic": "6–10 of your people",
-  "ev-board-games": "3–5 of your people",
-  "ev-study-jam": "3–5 of your people",
-};
 
 export function EventsScreen({ onBack, eventsOn, enable }: { onBack: () => void; eventsOn: boolean; enable: () => void }) {
   return (
     <div className="spc-screen">
-      <TopBar title="Where your people are going" onBack={onBack}>
-        <PreviewTag />
-      </TopBar>
+      <TopBar title="Where your people are going" onBack={onBack} />
       <div className="spc-pad spc-col">
         {!eventsOn && (
           <div className="spc-card spc-rounded spc-row spc-pad-md">
@@ -218,48 +206,25 @@ export function EventsScreen({ onBack, eventsOn, enable }: { onBack: () => void;
             </button>
           </div>
         )}
-        {BASE_EVENTS.map((e) => (
-          <div className="spc-event-wrap" key={e.eventId}>
-            <EventCard event={e} />
-            {eventsOn && BUCKETS[e.eventId] && (
-              <div className="spc-bucket">
-                <span aria-hidden="true">
-                  <i style={{ background: "#F5B841" }} />
-                  <i style={{ background: "#2CC7C0" }} />
-                  <i style={{ background: "#F07196" }} />
-                </span>
-                {BUCKETS[e.eventId]}
-              </div>
-            )}
-          </div>
-        ))}
-        <p className="spc-fine">Interest is private. Groups under 3 people are never shown. Registering saves only in this browser.</p>
+        <section className="spc-card spc-empty" data-testid="spc-events-empty">
+          <h2>Nothing yet</h2>
+          <p className="spc-sub">Events your people are interested in will show up here.</p>
+        </section>
+        <p className="spc-fine">Interest is private. Groups under 3 people are never shown.</p>
       </div>
     </div>
   );
 }
 
-const INVITE_ID = "ev-board-games";
-
 export function InviteScreen({ onBack }: { onBack: () => void }) {
-  const s = useCatalogState();
-  const event = findEvent(INVITE_ID, s)!;
-  const going = isRegistered(INVITE_ID, s);
   return (
     <div className="spc-screen spc-white">
-      <TopBar title="You're invited" onBack={onBack}>
-        <PreviewTag />
-      </TopBar>
+      <TopBar title="You're invited" onBack={onBack} />
       <div className="spc-pad spc-col">
-        <EventCard event={event} />
-        <p className="spc-sub">{event.description}</p>
-        <div className={`spc-status ${going ? "is-ok" : ""}`} role="status">
-          <i />
-          {going ? "You're going. It's on: 3 of your people are going too." : "On if 3 of your people go"}
-        </div>
-        <Link className="spc-btn spc-btn-gray" to={`/events/${INVITE_ID}`}>
-          Event details
-        </Link>
+        <section className="spc-card spc-empty" data-testid="spc-invite-empty">
+          <h2>No invites yet</h2>
+          <p className="spc-sub">When an event your people want to go to is on, it will show up here.</p>
+        </section>
       </div>
     </div>
   );
