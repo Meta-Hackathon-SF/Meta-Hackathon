@@ -17,3 +17,5 @@ Format: UTC timestamp | branch/commit | phase/status | interfaces/files | checks
 2026-11-13T04:29Z | feat/will-constellations-feed-ui @ d52b3ea | Facebook-native redesign: home feed card, sidebar shortcut, Group-style page, Obsidian-style week graph | web/src/features/constellations/{daily,operator}, HomePage.tsx, navigation.ts, LeftSidebar.tsx, web/tests/constellations.spec.ts | Playwright 42 passed; build ok; pytest tests 560 passed | none | fixture mode only; PR open, not merged
 
 2026-11-13T04:38Z | feat/will-constellations-feed-ui @ c9affd5 | Constellations made general (/constellations), circular mark, Constellation tab with labeled Example, Sky tab removed, textarea scrollbar fixed | daily/*, App.tsx, navigation.ts, SecondaryPages.tsx, tests | Playwright 46 passed; build ok | product direction recorded in handoff; team proposal not yet sent | fixture mode only
+
+2026-11-13T04:45Z | feat/will-constellations-feed-ui @ 36d72cd | Proposed D009 (constellation brightness bands, additive 2.1.0) and tagged Rishi, Kai, Patrik on PR #31 | docs/DECISIONS.md, docs/handoffs/will.md | none (proposal) | waiting on ACKs | Example only in UI

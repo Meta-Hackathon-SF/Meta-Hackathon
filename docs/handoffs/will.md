@@ -85,6 +85,8 @@ All fixture. Server tests use `server/cycle/testing.py` (TEST-ONLY stand-ins for
 - `@adamzhang06`: nothing blocking. `SyncClarify` needs a live Muse and Patrik's real OutputGuard before the follow-up is live.
 - `@rishibagri`: nothing blocking. Confirm the formation-debug response envelope.
 
+- D009 constellation brightness (PR #31 comment https://github.com/Meta-Hackathon-SF/Meta-Hackathon/pull/31#issuecomment-6844535941): needs ACK from `@rishibagri` (per-member closeness banded bright/mid/faint), `@beatopia` (carry it on room members, reveal view), `@patrikliska13` (privacy sign-off). Until then the Constellation tab shows a labeled Example only.
+
 ## Next action
 Me: when Patrik's store/session and Kai's registry land, write the thin adapters, remove the fixture adapters from live composition, point the web app at `/api/v1`, and test on phones. Then durable cycle storage (Kai's migration order).
 Consumers: Kai mounts `build_router`; Kai's job calls `advance(cycleId, "forming")` then `"revealed"`; Rishi reads `DailyAnswer.weight`/`isCatchUp` via Patrik's snapshot.
