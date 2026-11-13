@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -25,15 +25,18 @@ M7_EVENT_FIELDS = ("title", "placeId", "start")
 DEFAULT_VENUES_PATH = Path(__file__).resolve().parent / "data" / "venues.json"
 
 _EVENT = {
-    "type": "object", "additionalProperties": False, "required": ["eventId", "title", "placeId", "start"],
+    "type": "object", "additionalProperties": False, "required": ["eventId", "title", "placeId", "start", "end"],
     "properties": {
         # Stable approved id: activity signals and event heat may count only these.
         "eventId": {"type": "string", "minLength": 4, "maxLength": 64},
         "title": {"type": "string", "minLength": 1, "maxLength": 80},
         "placeId": {"type": "string", "minLength": 1, "maxLength": 64},
         "start": {"type": "string", "minLength": 10, "maxLength": 40},
+        # D015 addendum: explicit end so EventView.endsAt (3.0.0) is never guessed.
+        "end": {"type": "string", "minLength": 10, "maxLength": 40},
     },
 }
+MAX_EVENT_HOURS = 3
 
 
 def parse_utc(value: Any) -> datetime:
@@ -73,7 +76,9 @@ class VenueCatalog:
         for i, e in enumerate(events):
             try:
                 validate(e, _EVENT)
-                parse_utc(e["start"])
+                begins, ends = parse_utc(e["start"]), parse_utc(e["end"])
+                if not (begins < ends <= begins + timedelta(hours=MAX_EVENT_HOURS)):
+                    raise ValueError(f"end must be after start and within {MAX_EVENT_HOURS} h")
             except (SchemaViolation, ValueError) as exc:
                 raise BankError(f"campusEvents[{i}]: {exc}") from None
             if not _EVENT_ID.match(e["eventId"]) or e["eventId"] in event_ids:

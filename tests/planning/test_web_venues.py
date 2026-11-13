@@ -15,13 +15,13 @@ ROW = re.compile(
 
 
 EVENT_ROW = re.compile(
-    r"\{\s*eventId:\s*'([^']+)',\s*title:\s*'([^']+)',\s*placeId:\s*'([^']+)',\s*start:\s*'([^']+)'\s*\}"
+    r"\{\s*eventId:\s*'([^']+)',\s*title:\s*'([^']+)',\s*placeId:\s*'([^']+)',\s*start:\s*'([^']+)',\s*end:\s*'([^']+)'\s*\}"
 )
 
 
 class WebVenueCopyTests(unittest.TestCase):
     def test_web_events_equal_server_catalog(self):
-        rows = [{"eventId": i, "title": t, "placeId": p, "start": st} for i, t, p, st in EVENT_ROW.findall(TS.read_text())]
+        rows = [{"eventId": i, "title": t, "placeId": p, "start": st, "end": en} for i, t, p, st, en in EVENT_ROW.findall(TS.read_text())]
         self.assertEqual(rows, json.loads(CATALOG.read_text())["campusEvents"])
 
     def test_web_venues_equal_server_catalog(self):
