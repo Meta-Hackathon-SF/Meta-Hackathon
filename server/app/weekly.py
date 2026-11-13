@@ -143,7 +143,8 @@ def build_weekly_app(
         ClarifyService(muse, guard, DurableClarifyStore(repository)), questions.bank
     )
     screen = safety.sync_screen()
-    from server.app.v3_routes import InMemoryDayStore as _Store, V3Scheduler
+    from server.app.v3_routes import InMemoryDayStore as _Store
+    from server.app.v3_routes import V3Scheduler
 
     v3_store = _Store()
     v3_scheduler = V3Scheduler(answers, KeywordMusePort(muse), guard, v3_store)
@@ -313,7 +314,12 @@ def build_weekly_app(
 
     # Re-register the v3 handlers as plain routes: the registry accepts only direct HTTP routes.
     for route in build_v3_router(
-        answers=answers, cycles=cycles, privacy_actor=privacy, muse=KeywordMusePort(muse), guard=guard, store=v3_store
+        answers=answers,
+        cycles=cycles,
+        privacy_actor=privacy,
+        muse=KeywordMusePort(muse),
+        guard=guard,
+        store=v3_store,
     ).routes:
         matching.routes.append(route)
 

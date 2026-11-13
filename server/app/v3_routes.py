@@ -13,8 +13,8 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 
-from server.matching.v3 import FormationV3, InMemoryDayStore, QuietSignals
 from server.matching.models import MatchingError
+from server.matching.v3 import FormationV3, InMemoryDayStore, QuietSignals
 
 CHAT_HOURS = 24
 DAY_COLORS = ("ember", "tide", "moss", "dusk", "gold")
@@ -27,7 +27,9 @@ class AnswersDaySource:
         self._answers, self._community = answers, community_id
 
     async def day_snapshot(self, cycle_id: str, day: int) -> dict[str, Any]:
-        rows = [r for r in self._answers.eligible_answers(cycle_id, self._community) if r["day"] <= day]
+        rows = [
+            r for r in self._answers.eligible_answers(cycle_id, self._community) if r["day"] <= day
+        ]
         todays = {r["player_id"] for r in rows if r["day"] == day}
         players = sorted(todays)
         refs = {p: "r-" + secrets.token_hex(4) for p in players}
@@ -42,7 +44,9 @@ class AnswersDaySource:
         }
 
 
-def build_v3_router(*, answers, cycles, privacy_actor, muse, guard, store: InMemoryDayStore | None = None) -> APIRouter:
+def build_v3_router(
+    *, answers, cycles, privacy_actor, muse, guard, store: InMemoryDayStore | None = None
+) -> APIRouter:
     router = APIRouter()
     store = store or InMemoryDayStore()
     ports: dict[str, FormationV3] = {}
@@ -55,11 +59,16 @@ def build_v3_router(*, answers, cycles, privacy_actor, muse, guard, store: InMem
             raise MatchingError("NOT_FOUND", "Unknown cycle", retryable=False)
         key = f"{actor.community_id}:{cycle_id}"
         if key not in ports:
-            ports[key] = FormationV3(muse, AnswersDaySource(answers, actor.community_id), store, guard=guard)
+            ports[key] = FormationV3(
+                muse, AnswersDaySource(answers, actor.community_id), store, guard=guard
+            )
         return ports[key], actor
 
     def deny(exc: MatchingError) -> dict:
-        return {"status": "failed", "error": {"code": exc.code, "message": str(exc), "retryable": exc.retryable}}
+        return {
+            "status": "failed",
+            "error": {"code": exc.code, "message": str(exc), "retryable": exc.retryable},
+        }
 
     @router.get("/cycles/{cycleId}/days/{day}/constellations")
     async def daily(cycleId: str, day: int, request: Request):
@@ -99,7 +108,9 @@ def build_v3_router(*, answers, cycles, privacy_actor, muse, guard, store: InMem
     async def sky_mine(cycleId: str, request: Request):
         try:
             v3, actor = port(request, cycleId)
-            return v3.my_sky(cycleId, actor.player_id, {d: DAY_COLORS[(d - 1) % 5] for d in range(1, 6)})
+            return v3.my_sky(
+                cycleId, actor.player_id, {d: DAY_COLORS[(d - 1) % 5] for d in range(1, 6)}
+            )
         except MatchingError as exc:
             return deny(exc)
 
@@ -117,7 +128,10 @@ def build_v3_router(*, answers, cycles, privacy_actor, muse, guard, store: InMem
             v3, actor = port(request, cycleId)
             now = datetime.now(UTC)
             return v3.main_view(
-                cycleId, actor.player_id, f"room-{cycleId}", now.isoformat(),
+                cycleId,
+                actor.player_id,
+                f"room-{cycleId}",
+                now.isoformat(),
                 (now + timedelta(hours=CHAT_HOURS)).isoformat(),
             )
         except MatchingError as exc:
@@ -151,7 +165,10 @@ class V3Scheduler:
 
     def _port(self, community_id: str) -> FormationV3:
         return FormationV3(
-            self._muse, AnswersDaySource(self._answers, community_id), self._store, guard=self._guard
+            self._muse,
+            AnswersDaySource(self._answers, community_id),
+            self._store,
+            guard=self._guard,
         )
 
     async def on_cycle(self, cycle) -> None:

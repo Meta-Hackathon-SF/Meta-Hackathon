@@ -545,7 +545,14 @@ def test_v3_live_routes_serve_indices_only_from_the_verified_session():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, _job = formed(env, client)
         a = players[0]
-        close = call(client, a, "POST", f"/operator/cycles/{cycle_id}/close-day", key="close-1", json={"day": 1})
+        close = call(
+            client,
+            a,
+            "POST",
+            f"/operator/cycles/{cycle_id}/close-day",
+            key="close-1",
+            json={"day": 1},
+        )
         assert close.status_code == 200 and close.json()["status"] == "ok"
         view = call(client, a, "GET", f"/cycles/{cycle_id}/days/1/constellations")
         assert view.status_code == 200
