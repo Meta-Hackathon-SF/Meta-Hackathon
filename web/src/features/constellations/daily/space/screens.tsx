@@ -7,7 +7,9 @@ import type { CycleClient, CycleDay, DailyQuestion } from "../client";
 import { MAX_CHARS } from "../useDaily";
 import { DAY_LONG, dayHex, type Screen } from "./model";
 import { Glyph, MicIcon, StarField, Toggle, TopBar, Waveform } from "./parts";
-import { SUPPORT_RESOURCES } from "./preview";
+import { INVITE_EVENT, SUPPORT_RESOURCES } from "./preview";
+import { BASE_EVENTS } from "../../../catalog/catalog";
+import { EventCard } from "../../../catalog/Cards";
 import { useVoiceInput } from "./useVoiceInput";
 
 export type Go = (screen: Screen, day?: number) => void;
@@ -207,11 +209,19 @@ export function EventsScreen({ onBack, eventsOn, enable }: { onBack: () => void;
             </button>
           </div>
         )}
-        <section className="spc-card spc-empty" data-testid="spc-events-empty">
-          <h2>Nothing yet</h2>
-          <p className="spc-sub">Events your people are interested in will show up here.</p>
-        </section>
-        <p className="spc-fine">Interest is private. Groups under 3 people are never shown.</p>
+        {eventsOn ? (
+          <section className="spc-col" data-testid="spc-events-list">
+            {BASE_EVENTS.map((event) => (
+              <EventCard key={event.eventId} event={event} />
+            ))}
+          </section>
+        ) : (
+          <section className="spc-card spc-empty" data-testid="spc-events-empty">
+            <h2>Turn on event signals</h2>
+            <p className="spc-sub">Events your people are interested in will show up here.</p>
+          </section>
+        )}
+        <p className="spc-fine">Demo campus events. Registering is saved in this browser. Interest is private; groups under 3 people are never shown.</p>
       </div>
     </div>
   );
@@ -222,10 +232,17 @@ export function InviteScreen({ onBack }: { onBack: () => void }) {
     <div className="spc-screen spc-white">
       <TopBar title="You're invited" onBack={onBack} />
       <div className="spc-pad spc-col">
-        <section className="spc-card spc-empty" data-testid="spc-invite-empty">
-          <h2>No invites yet</h2>
-          <p className="spc-sub">When an event your people want to go to is on, it will show up here.</p>
-        </section>
+        {INVITE_EVENT ? (
+          <section className="spc-col" data-testid="spc-invite-event">
+            <p className="spc-sub">People in your constellation are interested in this. Register to let them know you might come.</p>
+            <EventCard event={INVITE_EVENT} />
+          </section>
+        ) : (
+          <section className="spc-card spc-empty" data-testid="spc-invite-empty">
+            <h2>No invites yet</h2>
+            <p className="spc-sub">When an event your people want to go to is on, it will show up here.</p>
+          </section>
+        )}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { BASE_EVENTS } from "../../../catalog/catalog";
 /*
  * PREVIEW content for Space screens whose producers are still pending (contract
  * 3.0.0: week sky, formation, reveal chat, event signals). Every screen that uses
@@ -42,3 +43,6 @@ export const PREVIEW_THINK = [
   { median: 201, buckets: [12, 35, 31, 22] },
   { median: 188, buckets: [15, 36, 29, 20] },
 ];
+
+/** The demo invite: a catalog event (same data as the Events page and Muse). */
+export const INVITE_EVENT = BASE_EVENTS.find((e) => e.eventId === "ev-board-games") ?? BASE_EVENTS[0];

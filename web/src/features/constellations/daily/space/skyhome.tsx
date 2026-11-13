@@ -11,7 +11,7 @@ import type { CycleClient, CycleDay, DailyQuestion } from "../client";
 import { MAX_CHARS } from "../useDaily";
 import { DAY_LONG, DAY_SHORT, dayHex, type Screen, type WeekModel } from "./model";
 import { MicIcon, PreviewTag, SpaceAvatar, StarField, Waveform } from "./parts";
-import { PREVIEW_INVITE, PREVIEW_THINK } from "./preview";
+import { INVITE_EVENT, PREVIEW_THINK } from "./preview";
 import SkyCanvas from "./SkyCanvas";
 import { useVoiceInput } from "./useVoiceInput";
 import { fmtDuration, readTook, useAnsweredToday, writeTook } from "./stats";
@@ -52,8 +52,9 @@ export function DayTracker({ week, go }: { week: WeekModel; go: Go }) {
           }
         } else if (week.day >= d) {
           cls = "is-weekend";
-          status = d === 6 ? "Week sky" : "Constellation";
-          action = () => go(d === 6 ? "sky" : "main");
+          const toMain = d === 7 || week.day >= 7;
+          status = toMain ? "Constellation" : "Week sky";
+          action = () => go(toMain ? "main" : "sky");
         }
         const label = `${DAY_LONG[i]}: ${status}`;
         const inner = (
@@ -408,8 +409,8 @@ export function SkyHome({
   const sunday = week.day >= 7;
   const tabs: { label: string; to: Screen; on?: boolean }[] = [
     { label: "Today", to: "home", on: true },
-    { label: "Week sky", to: "sky" },
-    ...(sunday ? [{ label: "Constellation", to: "main" as Screen }] : []),
+    // The week sky becomes your constellation on Sunday: one tab, never both.
+    sunday ? { label: "Constellation", to: "main" as Screen } : { label: "Week sky", to: "sky" as Screen },
     ...(sunday && eventsOn ? [{ label: "Events", to: "events" as Screen }] : []),
     { label: "Privacy", to: "settings" },
   ];
@@ -537,7 +538,7 @@ export function SkyHome({
                         </span>
                         <span className="spc-list-main">
                           You're invited
-                          <small>{PREVIEW_INVITE.title}</small>
+                          <small>{INVITE_EVENT?.title ?? "Campus event"}</small>
                         </span>
                         <span className="spc-unread" aria-label="New" />
                         <ChevronRight size={20} className="spc-chev" aria-hidden="true" />
