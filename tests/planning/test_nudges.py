@@ -215,3 +215,48 @@ class NudgeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CamelChatDouble:
+    """TEST ONLY. Mirrors the input check in Kai's ChatService.postSystem
+    (role/kai-orchestration b1192cb): exact keys, handle Muse, kind allowlist."""
+
+    __test__ = False
+
+    def __init__(self):
+        self.posted = []
+
+    async def postSystem(self, roomId, message):
+        if (set(message) != {"roomId", "handle", "text", "kind"} or message["roomId"] != roomId
+                or message["handle"] != "Muse" or message["kind"] not in {"system", "muse_nudge"}):
+            raise ValueError("INVALID_INPUT")
+        self.posted.append((roomId, dict(message)))
+        return {**message, "messageId": "m-camel-1", "createdAt": "2026-11-18T18:00:01Z", "moderation": "visible"}
+
+
+class ChatSystemPosterTests(unittest.TestCase):
+    def test_nudge_posts_through_camel_case_chat_with_exact_keys(self):
+        from server.planning import ChatSystemPoster
+
+        transport = ScriptedTransport()
+        transport.queue("event_nudge", GOOD)
+        muse = FixtureMuse(register_planning_tasks(TaskRegistry()), transport)
+        chat = CamelChatDouble()
+        ids = iter(f"{i:032x}" for i in range(1, 100))
+        svc = NudgeService(muse, TestOnlyOutputGuard(), VenueCatalog.load(), Context(),
+                           ChatSystemPoster(chat), now=lambda: NOW, new_id=lambda: next(ids))
+        out = run(svc.propose_and_post("c-1"))
+        self.assertEqual(len(chat.posted), 1)
+        room_id, message = chat.posted[0]
+        self.assertEqual(room_id, "room-orion")
+        self.assertEqual(message["kind"], "muse_nudge")
+        self.assertEqual(out["message"]["messageId"], "m-camel-1")
+        # Posting again for the same constellation does not post twice.
+        run(svc.propose_and_post("c-1"))
+        self.assertEqual(len(chat.posted), 1)
+
+    def test_rejects_chat_without_post_system(self):
+        from server.planning import ChatSystemPoster
+
+        with self.assertRaises(TypeError):
+            ChatSystemPoster(TestOnlyChat())

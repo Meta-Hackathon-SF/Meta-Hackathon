@@ -23,6 +23,7 @@ Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
 - `ChangeNotice` gained kinds `answer_deleted` (with `cycle_id`) and `data_deleted`; `consent_version` is now optional (None for non-consent kinds).
 
 ## Checks run + actual result
+- 2026-11-13 registration fix: `privacy_registration` now takes `answers`, `moderation`, `resolve_handle`; Kai's composition previously mounted only join/session/consent, so `/me/data` and `/me/blocks` were missing and chat blocks never reached the block store. Verified through Kai's real `create_app` (his branch, exported to a scratch path): join 201, DELETE /me/data 202 + answers gone, POST /me/blocks 204 for known and unknown handles with only the real block stored, 401 without session, 400 without Idempotency-Key. New `tests/privacy/test_privacy_registration.py` 3 passed with Kai's registry (skips on main until server/app lands).
 - Task 7 (2026-11-13): web lint clean for privacy folder; `tsc -b` and `npm run build` pass; Playwright flow on a temporary uncommitted mount around Will's real DailyPage passed desktop + mobile (join gate, keyboard, reload, pause hides daily page, restore, delete, sign out, tel:988); existing e2e 32 passed after revert. Live browser run against the server not done.
 - Task 6 (2026-11-13): formation/moderation tests 22 passed: snapshot passes Rishi's `FormationSnapshot.from_dict`; guard goes stale on delete/edit/revoke/block/flagged player/forged revision; a concurrent consent change waits for the guard (thread test); nested calls and rollback work. Full `pytest tests` **527 passed**. Mutations (guard never stale, flagged player kept, lock released before commit body) fail 6/2/2 tests.
 - Task 4 (2026-11-13): safety tests 26 passed with Adam's labeled FixtureMuse (scripted, `source: replay`); composition test: distress answer through Will's real CycleService is stored flagged and excluded from `eligible_answers`. Full `pytest tests` **503 passed**. Mutations (disabled pre-screen, model downgrade allowed) each fail 5 tests. No live model call.
@@ -43,6 +44,7 @@ All evidence is offline (in-memory SQLite, synthetic names). No model call. No c
 - ACK D005 and D006 (producer shapes) recorded in docs/DECISIONS.md.
 
 ## Blocked on
+- `@beatopia` (Kai): in `server/app/composition.py` call `privacy_registration(privacy, answers=..., moderation=..., resolve_handle=chat.resolve_handle)` so /me/data and /me/blocks mount.
 - `@willapat` (Will): mount `PrivacyGate` around `DailyPage` in `App.tsx` (snippet in web/src/features/constellations/privacy/README.md) and optionally use `SupportCard`; add the Playwright flow from the PR.
 - `@willapat` / `@beatopia`: wire `AnswerStore(store, privacy, answer_model=DailyAnswer, guess_model=PrevalenceGuess)` in place of the test-only adapter; call `mark_locked(cycleId, lockedAt)` on Saturday lock (or Kai's `on_locked` hook does). The store accepts his `DailyAnswer` model or a camelCase dict.
 - `@beatopia` (Kai): ACK or CHANGE on the delivered `prepare_formation` / `publish_guard` / `ModerationStore` seams (#13); wire `resolve_handle` for `POST /me/blocks`. D007 ACKs (Kai, Will) received and copied.
