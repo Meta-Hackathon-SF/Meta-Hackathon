@@ -1,4 +1,6 @@
 import { Route, Routes } from "react-router";
+import DailyPage from "./features/constellations/daily/DailyPage";
+import OperatorConsole from "./features/constellations/operator/OperatorConsole";
 import AppLayout from "./layouts/AppLayout";
 import CampusPage from "./pages/CampusPage";
 import HomePage from "./pages/HomePage";
@@ -26,6 +28,14 @@ export default function App() {
           <Route path="campus" element={<CampusPage />} />
           <Route path="friends" element={<FriendsPage />} />
           <Route path="groups" element={<GroupsPage />} />
+          <Route
+            path="groups/:communityId/constellations"
+            element={<DailyPage />}
+          />
+          <Route
+            path="groups/:communityId/constellations/operator"
+            element={<OperatorConsole />}
+          />
           <Route path="marketplace" element={<MarketplacePage />} />
           <Route path="watch" element={<WatchPage />} />
           <Route path="events" element={<EventsPage />} />
