@@ -7,10 +7,12 @@ import AppProvider from "./state/AppProvider";
 import {
   EventsPage,
   FriendsPage,
+  GamingPage,
   GroupsPage,
   MarketplacePage,
   MemoriesPage,
   MessagesPage,
+  MetaAiPage,
   NotFoundPage,
   NotificationsPage,
   ProfilePage,
@@ -26,17 +28,24 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="friends" element={<FriendsPage />} />
           <Route path="groups" element={<GroupsPage />} />
-          <Route path="constellations" element={<DailyPage />} />
-          <Route path="constellations/operator" element={<OperatorConsole />} />
-          {/* Earlier Group-scoped links keep working. */}
+          <Route path="space" element={<DailyPage />} />
+          <Route path="space/operator" element={<OperatorConsole />} />
+          {/* Earlier links (Constellations, Group-scoped) keep working. */}
+          <Route path="constellations" element={<Navigate to="/space" replace />} />
+          <Route
+            path="constellations/operator"
+            element={<Navigate to="/space/operator" replace />}
+          />
           <Route
             path="groups/:communityId/constellations"
-            element={<Navigate to="/constellations" replace />}
+            element={<Navigate to="/space" replace />}
           />
           <Route
             path="groups/:communityId/constellations/operator"
-            element={<Navigate to="/constellations/operator" replace />}
+            element={<Navigate to="/space/operator" replace />}
           />
+          <Route path="meta-ai" element={<MetaAiPage />} />
+          <Route path="gaming" element={<GamingPage />} />
           <Route path="marketplace" element={<MarketplacePage />} />
           <Route path="watch" element={<WatchPage />} />
           <Route path="events" element={<EventsPage />} />

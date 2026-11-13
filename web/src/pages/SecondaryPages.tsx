@@ -6,12 +6,14 @@ import {
   Camera,
   Check,
   ChevronRight,
+  Gamepad2,
   Globe,
   MapPin,
   Pencil,
   Play,
   Plus,
   Send,
+  Sparkles,
   Users,
 } from "lucide-react";
 import PageFrame from "../layouts/PageFrame";
@@ -552,6 +554,36 @@ export function NotFoundPage() {
         <h2>Let's get you back to your community.</h2>
         <Link to="/" className="button-primary">
           Go to Feed
+        </Link>
+      </section>
+    </PageFrame>
+  );
+}
+
+export function MetaAiPage() {
+  return (
+    <PageFrame title="Meta AI" description="Placeholder in this prototype.">
+      <section className="card empty-state">
+        <Sparkles size={40} />
+        <h2>Meta AI isn't part of this prototype.</h2>
+        <p>Facebook Space uses Muse behind the scenes to suggest questions and group people.</p>
+        <Link to="/space" className="button-primary">
+          Open Facebook Space
+        </Link>
+      </section>
+    </PageFrame>
+  );
+}
+
+export function GamingPage() {
+  return (
+    <PageFrame title="Gaming" description="Placeholder in this prototype.">
+      <section className="card empty-state">
+        <Gamepad2 size={40} />
+        <h2>Looking for a game? Try this week's questions.</h2>
+        <p>One question a day, a streak to keep, and on Sunday you meet your constellation.</p>
+        <Link to="/space" className="button-primary">
+          Play Facebook Space
         </Link>
       </section>
     </PageFrame>

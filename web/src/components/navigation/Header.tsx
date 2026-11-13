@@ -244,7 +244,7 @@ export default function Header() {
               <div className="menu-grid">
                 {sidebarNavigation.map(({ to, label, icon: Icon, color }) => (
                   <Link to={to} key={to} className="menu-row" onClick={close}>
-                    <Icon className={`nav-color-${color}`} size={26} />
+                    <Icon className={`nav-color-${color}`} size={28} />
                     {label}
                   </Link>
                 ))}

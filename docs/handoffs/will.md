@@ -86,6 +86,14 @@ All fixture. Server tests use `server/cycle/testing.py` (TEST-ONLY stand-ins for
 - `@rishibagri`: nothing blocking. Confirm the formation-debug response envelope.
 
 - D009 constellation brightness (PR #31 comment https://github.com/Meta-Hackathon-SF/Meta-Hackathon/pull/31#issuecomment-6844535941): needs ACK from `@rishibagri` (per-member closeness banded bright/mid/faint), `@beatopia` (carry it on room members, reveal view), `@patrikliska13` (privacy sign-off). Until then the Constellation tab shows a labeled Example only.
+- D010 more matching signals (Groups, Events, Posts/Comments behind an optional `useActivity` consent toggle): needs ACK from `@patrikliska13`, `@rishibagri`, `@adamzhang06`, `@beatopia`. Branch `feat/will-signals-rewards` shows them only as labeled Examples ("Needs your OK"); no such data is read.
+
+## Branch feat/will-signals-rewards (2026-11-13)
+From Will's product notes: streak rewards (`rewards.ts`, `StreakRewards.tsx`; cosmetic, computed in code from the server Streak + `isCatchUp`), "Why this group" (`MatchReasons.tsx`, Example, counts only before reveal), event heat (`EventHeat.tsx`, Example, code threshold 3 + bucketed counts), audience copy on the feed card and About. Verified: lint 0 errors, build ok, Playwright constellations suite passes (fixture mode only).
+
+## Rename: players see "Facebook Space" (Will, human, 2026-11-13)
+The feature is shown as **Facebook Space**; each person's matched group is still a "constellation". Internal names, contract types and `web/src/features/constellations/` paths are unchanged. Routes: `/space`, `/space/operator`; `/constellations` and the old Group links redirect. `FEATURE_NAME` lives in `daily/communities.ts`. Open: Patrik's `JoinScreen` heading still reads "Join Constellations in {communityName}" (his file; asked on PR #33).
+Shell (same branch): system font stack, sidebar in Facebook order (Meta AI and Gaming are placeholder pages), compact Create story card with story bubbles, floating New message button, compact not-joined feature card.
 
 ## Next action
 Me: when Patrik's store/session and Kai's registry land, write the thin adapters, remove the fixture adapters from live composition, point the web app at `/api/v1`, and test on phones. Then durable cycle storage (Kai's migration order).

@@ -15,9 +15,14 @@ export default function LeftSidebar() {
           <span>{currentUser.name}</span>
         </Link>
         {sidebarNavigation.map(({ to, label, icon: Icon, color }) => (
-          <NavLink to={to} key={to} className="sidebar-row" end>
+          <NavLink
+            to={to}
+            key={to}
+            className={({ isActive }) => `sidebar-row${isActive && to !== "/" ? " active" : ""}`}
+            end
+          >
             <span className={`sidebar-icon nav-color-${color}`}>
-              <Icon size={29} strokeWidth={2.1} />
+              <Icon size={36} />
             </span>
             <span>{label}</span>
           </NavLink>
@@ -26,7 +31,7 @@ export default function LeftSidebar() {
           extraNavigation.map(({ to, label, icon: Icon, color }) => (
             <Link to={to} key={label} className="sidebar-row">
               <span className={`sidebar-icon nav-color-${color}`}>
-                <Icon size={28} />
+                <Icon size={36} />
               </span>
               <span>{label}</span>
             </Link>
