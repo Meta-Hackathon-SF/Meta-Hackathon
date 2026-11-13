@@ -4,6 +4,7 @@
  * agrees to keep the temporary chat.
  */
 import { useSyncExternalStore } from "react";
+import type { EventDraft } from "../../catalog/catalog";
 
 const STORAGE_KEY = "fb-space-messenger-demo";
 
@@ -18,8 +19,12 @@ export interface InboxMessage {
   fromMuse?: boolean;
   /** "live" is a Muse reply. "catalog" is the allowlisted fallback when Muse does not answer. */
   source?: "live" | "catalog";
-  linkHref?: string;
-  linkLabel?: string;
+  /** Catalog ids Muse pointed at; rendered as Marketplace / Event cards. */
+  itemIds?: string[];
+  eventIds?: string[];
+  /** A Muse event draft, and the event id once someone tapped Create. */
+  draft?: EventDraft;
+  createdEventId?: string;
 }
 
 export interface InboxThread {
@@ -114,7 +119,10 @@ export function isSundayPromoted(): boolean {
   return threads.some((thread) => thread.id === SUNDAY_THREAD_ID);
 }
 
-export function promoteSundayChat(lines: SundayLine[]) {
+let seq = 0;
+const nextId = (prefix: string) => `${prefix}-${Date.now()}-${++seq}`;
+
+export function promoteSundayChat(lines: SundayLine[], memberNames: string[]) {
   if (isSundayPromoted() || lines.length === 0) return;
   const messages = lines.map((line, index) => ({
     id: `sun-${index}`,
@@ -126,7 +134,7 @@ export function promoteSundayChat(lines: SundayLine[]) {
     id: SUNDAY_THREAD_ID,
     kind: "group",
     title: "Sunday constellation",
-    memberNames: ["Maya Chen", "Jordan Davis", "Sofia Patel", "Daniel Kim"],
+    memberNames,
     messages,
     preview: messages[messages.length - 1]?.text ?? "Names are visible",
   };
@@ -136,23 +144,39 @@ export function promoteSundayChat(lines: SundayLine[]) {
 
 export function addMuseMessage(
   threadId: string,
-  text: string,
-  source: "live" | "catalog",
-  link?: { href: string; label: string },
+  help: { text: string; source: "live" | "catalog"; itemIds: string[]; eventIds: string[]; draft: EventDraft | null },
 ) {
   const message: InboxMessage = {
-    id: `muse-${Date.now()}`,
+    id: nextId("muse"),
     senderName: "Muse",
-    text,
+    text: help.text,
     mine: false,
     fromMuse: true,
-    source,
-    linkHref: link?.href,
-    linkLabel: link?.label,
+    source: help.source,
+    itemIds: help.itemIds,
+    eventIds: help.eventIds,
+    draft: help.draft ?? undefined,
   };
   threads = threads.map((thread) =>
     thread.id === threadId
-      ? { ...thread, messages: [...thread.messages, message], preview: text }
+      ? { ...thread, messages: [...thread.messages, message], preview: help.text }
+      : thread,
+  );
+  emit();
+}
+
+/** Records that a draft was turned into an event, and shares the event card in the thread. */
+export function markDraftCreated(threadId: string, messageId: string, eventId: string, title: string) {
+  threads = threads.map((thread) =>
+    thread.id === threadId
+      ? {
+          ...thread,
+          messages: [
+            ...thread.messages.map((m) => (m.id === messageId ? { ...m, createdEventId: eventId } : m)),
+            { id: nextId("out"), senderName: "Alex Morgan", text: `Created ${title}. Register here:`, mine: true, eventIds: [eventId] },
+          ],
+          preview: `Created ${title}`,
+        }
       : thread,
   );
   emit();
@@ -162,7 +186,7 @@ export function sendInboxMessage(threadId: string, text: string) {
   const trimmed = text.trim();
   if (!trimmed) return;
   const message: InboxMessage = {
-    id: `out-${Date.now()}`,
+    id: nextId("out"),
     senderName: "Alex Morgan",
     text: trimmed,
     mine: true,

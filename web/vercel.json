@@ -10,7 +10,7 @@
       "destination": "https://constellations-api-production.up.railway.app/api/v1/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]

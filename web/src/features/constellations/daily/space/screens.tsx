@@ -6,7 +6,11 @@ import type { CycleClient, CycleDay, DailyQuestion } from "../client";
 import { MAX_CHARS } from "../useDaily";
 import { DAY_LONG, dayHex, type Screen } from "./model";
 import { Glyph, MicIcon, PreviewTag, StarField, Toggle, TopBar, Waveform } from "./parts";
-import { PREVIEW_EVENTS, PREVIEW_INVITE, SUPPORT_RESOURCES } from "./preview";
+import { Link } from "react-router";
+import { BASE_EVENTS } from "../../../catalog/catalog";
+import { EventCard } from "../../../catalog/Cards";
+import { findEvent, isRegistered, useCatalogState } from "../../../catalog/store";
+import { SUPPORT_RESOURCES } from "./preview";
 import { useVoiceInput } from "./useVoiceInput";
 
 export type Go = (screen: Screen, day?: number) => void;
@@ -192,8 +196,14 @@ export function DistressScreen({ onBack }: { onBack: () => void }) {
 }
 
 // ---------------------------------------------------------------- events / invite
+/** Constellation buckets (preview): how many of your people showed interest. Never exact, never under 3. */
+const BUCKETS: Record<string, string> = {
+  "ev-open-mic": "6–10 of your people",
+  "ev-board-games": "3–5 of your people",
+  "ev-study-jam": "3–5 of your people",
+};
+
 export function EventsScreen({ onBack, eventsOn, enable }: { onBack: () => void; eventsOn: boolean; enable: () => void }) {
-  const [interest, setInterest] = useState<Record<number, boolean>>({});
   return (
     <div className="spc-screen">
       <TopBar title="Where your people are going" onBack={onBack}>
@@ -208,91 +218,48 @@ export function EventsScreen({ onBack, eventsOn, enable }: { onBack: () => void;
             </button>
           </div>
         )}
-        {PREVIEW_EVENTS.map((e, i) => {
-          const on = Boolean(interest[i]);
-          return (
-            <div className="spc-card spc-rounded spc-event" key={e.title}>
-              <div className="spc-cal" aria-hidden="true">
-                <span>{e.mon}</span>
-                <b>{e.day}</b>
+        {BASE_EVENTS.map((e) => (
+          <div className="spc-event-wrap" key={e.eventId}>
+            <EventCard event={e} />
+            {eventsOn && BUCKETS[e.eventId] && (
+              <div className="spc-bucket">
+                <span aria-hidden="true">
+                  <i style={{ background: "#F5B841" }} />
+                  <i style={{ background: "#2CC7C0" }} />
+                  <i style={{ background: "#F07196" }} />
+                </span>
+                {BUCKETS[e.eventId]}
               </div>
-              <div className="spc-grow">
-                <div className="spc-strong">{e.title}</div>
-                <div className="spc-sub">{e.sub}</div>
-                {eventsOn && e.bucket && (
-                  <div className="spc-bucket">
-                    <span aria-hidden="true">
-                      <i style={{ background: "#F5B841" }} />
-                      <i style={{ background: "#2CC7C0" }} />
-                      <i style={{ background: "#F07196" }} />
-                    </span>
-                    {e.bucket}
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                className={`spc-plus${on ? " is-on" : ""}`}
-                aria-pressed={on}
-                aria-label={`Interested in ${e.title}`}
-                disabled={!eventsOn}
-                onClick={() => setInterest({ ...interest, [i]: !on })}
-              >
-                {on ? "✓" : "+"}
-              </button>
-            </div>
-          );
-        })}
-        <p className="spc-fine">Interest is private. Groups under 3 people are never shown.</p>
+            )}
+          </div>
+        ))}
+        <p className="spc-fine">Interest is private. Groups under 3 people are never shown. Registering saves only in this browser.</p>
       </div>
     </div>
   );
 }
 
+const INVITE_ID = "ev-board-games";
+
 export function InviteScreen({ onBack }: { onBack: () => void }) {
-  const [rsvp, setRsvp] = useState<"none" | "going" | "not_going">("none");
-  const [confirmed, setConfirmed] = useState(false);
-  const status = confirmed
-    ? { label: "It's on", cls: "is-ok" }
-    : { label: `On if ${PREVIEW_INVITE.threshold} people go`, cls: "" };
+  const s = useCatalogState();
+  const event = findEvent(INVITE_ID, s)!;
+  const going = isRegistered(INVITE_ID, s);
   return (
     <div className="spc-screen spc-white">
       <TopBar title="You're invited" onBack={onBack}>
         <PreviewTag />
       </TopBar>
       <div className="spc-pad spc-col">
-        <div className="spc-cal is-big" aria-hidden="true">
-          <span>{PREVIEW_INVITE.mon}</span>
-          <b>{PREVIEW_INVITE.day}</b>
-        </div>
-        <h3 className="spc-h1">{PREVIEW_INVITE.title}</h3>
-        <p className="spc-sub">{PREVIEW_INVITE.sub}</p>
-        <div className={`spc-status ${status.cls}`} role="status">
+        <EventCard event={event} />
+        <p className="spc-sub">{event.description}</p>
+        <div className={`spc-status ${going ? "is-ok" : ""}`} role="status">
           <i />
-          {status.label}
+          {going ? "You're going. It's on: 3 of your people are going too." : "On if 3 of your people go"}
         </div>
-        <div className="spc-flex" />
-        <div className="spc-row">
-          <button
-            type="button"
-            className={`spc-btn spc-btn-lg spc-grow ${rsvp === "going" ? "spc-btn-primary" : "spc-btn-gray"}`}
-            aria-pressed={rsvp === "going"}
-            onClick={() => {
-              setRsvp("going");
-              window.setTimeout(() => setConfirmed(true), 1500);
-            }}
-          >
-            Going
-          </button>
-          <button
-            type="button"
-            className={`spc-btn spc-btn-lg spc-grow ${rsvp === "not_going" ? "spc-btn-dark" : "spc-btn-gray"}`}
-            aria-pressed={rsvp === "not_going"}
-            onClick={() => setRsvp("not_going")}
-          >
-            Can't go
-          </button>
-        </div>
+        <Link className="spc-btn spc-btn-gray" to={`/events/${INVITE_ID}`}>
+          Event details
+        </Link>
       </div>
     </div>
   );

@@ -1,0 +1,212 @@
+{
+  "note": "Fictional demo catalog. Nothing here is for sale and no event is real. Venues match the approved list in server/planning/data/venues.json.",
+  "venues": [
+    { "placeId": "v-cafe", "name": "Campus Cafe" },
+    { "placeId": "v-dining-north", "name": "North Dining Hall" },
+    { "placeId": "v-library-commons", "name": "Library Commons" },
+    { "placeId": "v-quad", "name": "Main Quad" },
+    { "placeId": "v-rec", "name": "Rec Center Courts" }
+  ],
+  "items": [
+    {
+      "itemId": "mk-coffee-set",
+      "title": "Coffee set for your next study session",
+      "price": "$20",
+      "place": "Santa Cruz, CA",
+      "image": "coffee",
+      "seller": "Maya Chen",
+      "condition": "Like new",
+      "category": "Kitchen",
+      "tags": ["coffee", "drinks", "study", "kitchen", "mugs", "snacks"],
+      "description": "Pour-over cone, kettle and four mugs. Enough for a study group of five."
+    },
+    {
+      "itemId": "mk-textbooks",
+      "title": "Textbook exchange",
+      "price": "Free",
+      "place": "Campus pickup",
+      "image": "library",
+      "seller": "Library Commons volunteers",
+      "condition": "Used",
+      "category": "Books",
+      "tags": ["books", "textbook", "class", "study", "reading"],
+      "description": "Intro chem, calc and writing textbooks. Take one, leave one."
+    },
+    {
+      "itemId": "mk-board-games",
+      "title": "Board game bundle: Codenames and Catan",
+      "price": "$25",
+      "place": "Santa Cruz, CA",
+      "image": "team",
+      "seller": "Jordan Davis",
+      "condition": "Good",
+      "category": "Games",
+      "tags": ["games", "board game", "party", "hangout", "fun"],
+      "description": "Both boxes complete. Great for game night with 4 to 8 people."
+    },
+    {
+      "itemId": "mk-speaker",
+      "title": "Portable Bluetooth speaker",
+      "price": "$35",
+      "place": "Scotts Valley, CA",
+      "image": "concert",
+      "seller": "Sofia Patel",
+      "condition": "Like new",
+      "category": "Electronics",
+      "tags": ["music", "speaker", "party", "outdoor", "picnic"],
+      "description": "Loud enough for the quad, 12-hour battery, charging cable included."
+    },
+    {
+      "itemId": "mk-tent",
+      "title": "Two-person tent and lantern",
+      "price": "$40",
+      "place": "Capitola, CA",
+      "image": "coast",
+      "seller": "Daniel Kim",
+      "condition": "Good",
+      "category": "Outdoors",
+      "tags": ["camping", "outdoor", "beach", "hike", "trip"],
+      "description": "Sets up in five minutes. Lantern takes AA batteries."
+    },
+    {
+      "itemId": "mk-desk-setup",
+      "title": "Laptop stand and desk setup",
+      "price": "$250",
+      "place": "Santa Cruz, CA",
+      "image": "code",
+      "seller": "Emma Wilson",
+      "condition": "Like new",
+      "category": "Electronics",
+      "tags": ["desk", "laptop", "study", "work", "monitor"],
+      "description": "Monitor, laptop stand, keyboard and mouse. Pickup only."
+    },
+    {
+      "itemId": "mk-desk-lamp",
+      "title": "Desk lamp and monitor riser",
+      "price": "$15",
+      "place": "Campus pickup",
+      "image": "workspace",
+      "seller": "Maya Chen",
+      "condition": "Good",
+      "category": "Home",
+      "tags": ["desk", "lamp", "study", "dorm", "light"],
+      "description": "Warm light, three brightness levels. Riser fits a 27-inch monitor."
+    },
+    {
+      "itemId": "mk-vr-headset",
+      "title": "VR headset, like new",
+      "price": "$120",
+      "place": "San Jose, CA",
+      "image": "headset",
+      "seller": "Jordan Davis",
+      "condition": "Like new",
+      "category": "Electronics",
+      "tags": ["vr", "games", "gaming", "tech"],
+      "description": "Two controllers and a carrying case. Factory reset."
+    },
+    {
+      "itemId": "mk-bike",
+      "title": "Campus cruiser bike",
+      "price": "$90",
+      "place": "Santa Cruz, CA",
+      "image": "campus",
+      "seller": "Daniel Kim",
+      "condition": "Good",
+      "category": "Transport",
+      "tags": ["bike", "commute", "outdoor", "ride"],
+      "description": "Single speed with a basket and a lock. Just tuned up."
+    },
+    {
+      "itemId": "mk-cat-tree",
+      "title": "Cat tree, barely used",
+      "price": "$30",
+      "place": "Soquel, CA",
+      "image": "cat",
+      "seller": "Sofia Patel",
+      "condition": "Like new",
+      "category": "Pets",
+      "tags": ["cat", "pets", "home"],
+      "description": "Four levels with a hideaway. My cat prefers the box it came in."
+    }
+  ],
+  "events": [
+    {
+      "eventId": "ev-board-games",
+      "title": "Board game night",
+      "placeId": "v-library-commons",
+      "start": "2026-11-20T03:00:00Z",
+      "when": "Thu, Nov 19 · 7 PM",
+      "image": "team",
+      "host": "Library Commons",
+      "going": 23,
+      "capacity": 40,
+      "tags": ["games", "board game", "hangout", "chill", "indoor", "meet"],
+      "description": "Codenames, Catan and a lot of snacks. Come solo or bring your group."
+    },
+    {
+      "eventId": "ev-open-mic",
+      "title": "Open mic night",
+      "placeId": "v-cafe",
+      "start": "2026-11-21T04:00:00Z",
+      "when": "Fri, Nov 20 · 8 PM",
+      "image": "concert",
+      "host": "Campus Cafe",
+      "going": 41,
+      "capacity": 60,
+      "tags": ["music", "poetry", "performance", "night", "coffee", "creative"],
+      "description": "Sign up at the door for a five-minute slot, or just come listen."
+    },
+    {
+      "eventId": "ev-volleyball",
+      "title": "Pickup volleyball",
+      "placeId": "v-rec",
+      "start": "2026-11-18T23:00:00Z",
+      "when": "Wed, Nov 18 · 3 PM",
+      "image": "campus",
+      "host": "Rec Center",
+      "going": 14,
+      "capacity": 24,
+      "tags": ["sports", "volleyball", "active", "outdoor", "exercise"],
+      "description": "All levels welcome. Teams are picked fresh every game."
+    },
+    {
+      "eventId": "ev-film-club",
+      "title": "Film club screening",
+      "placeId": "v-quad",
+      "start": "2026-11-22T02:00:00Z",
+      "when": "Sat, Nov 21 · 6 PM",
+      "image": "coast",
+      "host": "Film Club",
+      "going": 35,
+      "capacity": 80,
+      "tags": ["movie", "film", "outdoor", "night", "chill", "watch"],
+      "description": "Outdoor screening on the quad. Bring a blanket."
+    },
+    {
+      "eventId": "ev-study-jam",
+      "title": "Late-night study jam",
+      "placeId": "v-library-commons",
+      "start": "2026-11-18T05:00:00Z",
+      "when": "Tue, Nov 17 · 9 PM",
+      "image": "workspace",
+      "host": "Library Commons",
+      "going": 19,
+      "capacity": 50,
+      "tags": ["study", "homework", "exam", "quiet", "library", "class"],
+      "description": "Quiet tables, free coffee and tutors until midnight."
+    },
+    {
+      "eventId": "ev-dumpling-night",
+      "title": "Dumpling folding night",
+      "placeId": "v-dining-north",
+      "start": "2026-11-23T02:00:00Z",
+      "when": "Sun, Nov 22 · 6 PM",
+      "image": "coffee",
+      "host": "North Dining Hall",
+      "going": 28,
+      "capacity": 36,
+      "tags": ["food", "cooking", "dinner", "eat", "social"],
+      "description": "Learn to fold dumplings, then eat them. Ingredients provided."
+    }
+  ]
+}
