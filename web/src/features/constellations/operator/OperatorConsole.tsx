@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router";
-import { Activity, CalendarDays, Flag, RotateCcw, Sparkles, UserPlus, Users } from "lucide-react";
+import { Link } from "react-router";
+import LeftSidebar from "../../../components/layout/LeftSidebar";
+import { Activity, CalendarDays, Flag, MapPin, RotateCcw, Sparkles, UserPlus, Users } from "lucide-react";
 import {
   ClientError,
   type CurrentCycle,
@@ -10,8 +11,9 @@ import {
   type WeeklyCycle,
 } from "../daily/client";
 import { getCycleClient } from "../daily/clientContext";
-import { COMMUNITIES } from "../daily/communities";
+import { CONSTELLATIONS_PATH, FEATURE_NAME, PLAY_COMMUNITY } from "../daily/communities";
 import { FormationDebug } from "../formation";
+import { OperatorNudgePanel } from "../nudges";
 import "../daily/daily.css";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -53,7 +55,7 @@ function stepOf(cycle: WeeklyCycle): number {
 
 function text(error: unknown): string {
   if (error instanceof ClientError) {
-    if (error.code === "UNAUTHENTICATED") return "Sign in from the Constellations page first.";
+    if (error.code === "UNAUTHENTICATED") return `Sign in from the ${FEATURE_NAME} page first.`;
     if (error.code === "FORBIDDEN") return "This account isn't an operator for this Group.";
     return `${error.code}: ${error.message}`;
   }
@@ -73,13 +75,15 @@ function median(values: number[]): number {
 type Confirm = "reset" | "new" | null;
 
 export default function OperatorConsole() {
-  const { communityId = "" } = useParams();
+  const communityId = PLAY_COMMUNITY;
   const client = getCycleClient(communityId);
   const [current, setCurrent] = useState<CurrentCycle | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [calls, setCalls] = useState<MuseCallEvidence[] | string>("Loading…");
   const [reports, setReports] = useState<Report[] | string>("Loading…");
   const [formation, setFormation] = useState<FormationDebugProps | string | null>(null);
+  const [myRoom, setMyRoom] = useState<string | null>(null);
+  const [nudgeRoom, setNudgeRoom] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -99,6 +103,12 @@ export default function OperatorConsole() {
           (err) => id === request.current && setFormation(`Not available: ${text(err)}`),
         );
       else setFormation(null);
+      if (value && value.cycle.status === "revealed")
+        client.myRoomId(value.cycle.cycleId).then(
+          (roomId) => id === request.current && setMyRoom(roomId),
+          () => id === request.current && setMyRoom(null),
+        );
+      else setMyRoom(null);
     } catch (err) {
       if (id === request.current) {
         setLoaded(true);
@@ -140,15 +150,6 @@ export default function OperatorConsole() {
     }
   }
 
-  if (!COMMUNITIES[communityId]) {
-    return (
-      <main className="cst-page" id="main-content">
-        <section className="cst-card cst-empty">
-          <h1 className="cst-question">Group not found</h1>
-        </section>
-      </main>
-    );
-  }
 
   const cycle = current?.cycle ?? null;
   const next = cycle ? nextStep(cycle) : null;
@@ -157,31 +158,31 @@ export default function OperatorConsole() {
     void run("New week opened on Monday.", async () => void (await client.createCycle()));
 
   return (
-    <main className="cst-page cst-page-wide" id="main-content">
-      <header className="cst-header">
-        <nav className="cst-breadcrumb" aria-label="Breadcrumb">
-          <Link to={`/groups/${communityId}/constellations`}>Constellations</Link>
-          <span aria-hidden="true">/</span>
-          <span>{COMMUNITIES[communityId]}</span>
-        </nav>
-        <h1>Operator console</h1>
-        <p className="cst-tagline">
-          Run the week by hand for the demo. Same rules as real time: forward only, one step at a time.
-        </p>
-        <p className="cst-chips">
-          <span className="cst-chip">Simulated Facebook</span>
-          <span className="cst-chip cst-chip-warn">Demo timing</span>
-          {client.mode === "fixture" && (
-            <span className="cst-chip cst-chip-warn" data-testid="cst-mode">
-              Fixture mode · no server, no Muse
-            </span>
-          )}
-        </p>
+    <div className="secondary-layout cst-op-layout">
+    <LeftSidebar />
+    <main className="cst-page cst-op" id="main-content">
+      <header className="card cst-group-header">
+        <div className="cst-group-id">
+          <p className="cst-crumb">
+            <Link to={CONSTELLATIONS_PATH}>{FEATURE_NAME}</Link>
+          </p>
+          <h1>Operator console</h1>
+          <p className="muted">Run the week by hand for the demo. Same rules as real time: forward only, one step at a time.</p>
+          <p className="cst-labels">
+            <span className="cst-label">Simulated Facebook</span>
+            <span className="cst-label cst-label-warn">Demo timing</span>
+            {client.mode === "fixture" && (
+              <span className="cst-label cst-label-warn" data-testid="cst-mode">
+                Fixture mode · no server, no Muse
+              </span>
+            )}
+          </p>
+        </div>
       </header>
 
-      <section className="cst-card cst-op-main" aria-labelledby="cst-op-cycle">
+      <section className="card cst-panel" aria-labelledby="cst-op-cycle">
         <div className="cst-op-head">
-          <h2 id="cst-op-cycle" className="cst-question">
+          <h2 id="cst-op-cycle">
             <CalendarDays size={18} aria-hidden="true" /> This week
           </h2>
           {cycle && (
@@ -327,8 +328,8 @@ export default function OperatorConsole() {
       </section>
 
       <div className="cst-op-grid">
-        <section className="cst-card" aria-labelledby="cst-op-calls">
-          <h2 id="cst-op-calls" className="cst-question cst-card-title">
+        <section className="card cst-panel" aria-labelledby="cst-op-calls">
+          <h2 id="cst-op-calls" className="cst-card-title">
             <Sparkles size={18} aria-hidden="true" /> Muse calls
           </h2>
           {typeof calls === "string" ? (
@@ -370,7 +371,7 @@ export default function OperatorConsole() {
                         <td>{call.model}</td>
                         <td>
                           {call.source === "replay" ? (
-                            <span className="cst-chip cst-chip-warn">Replay of a saved cycle</span>
+                            <span className="cst-label cst-label-warn">Replay of a saved cycle</span>
                           ) : (
                             "Live"
                           )}
@@ -385,8 +386,8 @@ export default function OperatorConsole() {
           )}
         </section>
 
-        <section className="cst-card" aria-labelledby="cst-op-reports">
-          <h2 id="cst-op-reports" className="cst-question cst-card-title">
+        <section className="card cst-panel" aria-labelledby="cst-op-reports">
+          <h2 id="cst-op-reports" className="cst-card-title">
             <Flag size={18} aria-hidden="true" /> Report queue
           </h2>
           {typeof reports === "string" ? (
@@ -421,8 +422,16 @@ export default function OperatorConsole() {
         </section>
       </div>
 
-      <section className="cst-card" aria-labelledby="cst-op-formation">
-        <h2 id="cst-op-formation" className="cst-question cst-card-title">
+      <NudgeSection
+        client={client}
+        revealed={cycle?.status === "revealed"}
+        rooms={roomChoices(myRoom, reports)}
+        selected={nudgeRoom}
+        onSelect={setNudgeRoom}
+      />
+
+      <section className="card cst-panel" aria-labelledby="cst-op-formation">
+        <h2 id="cst-op-formation" className="cst-card-title">
           <Users size={18} aria-hidden="true" /> Formation
         </h2>
         {typeof formation === "string" ? (
@@ -441,5 +450,61 @@ export default function OperatorConsole() {
         )}
       </section>
     </main>
+    </div>
+  );
+}
+
+/** Rooms the operator can nudge: their own room (GET /cycles/:id/room), then rooms seen in the report queue. */
+function roomChoices(myRoom: string | null, reports: Report[] | string): { roomId: string; label: string }[] {
+  const out: { roomId: string; label: string }[] = [];
+  if (myRoom) out.push({ roomId: myRoom, label: `Your room · ${myRoom}` });
+  if (typeof reports !== "string")
+    for (const report of reports)
+      if (!out.some((r) => r.roomId === report.roomId)) out.push({ roomId: report.roomId, label: `Reported room · ${report.roomId}` });
+  return out;
+}
+
+function NudgeSection({
+  client,
+  revealed,
+  rooms,
+  selected,
+  onSelect,
+}: {
+  client: ReturnType<typeof getCycleClient>;
+  revealed: boolean;
+  rooms: { roomId: string; label: string }[];
+  selected: string;
+  onSelect: (roomId: string) => void;
+}) {
+  const roomId = rooms.some((r) => r.roomId === selected) ? selected : (rooms[0]?.roomId ?? "");
+  return (
+    <section className="card cst-panel" aria-labelledby="cst-op-nudge" data-testid="cst-op-nudge">
+      <h2 id="cst-op-nudge" className="cst-card-title">
+        <MapPin size={18} aria-hidden="true" /> Nudge a room
+      </h2>
+      {!revealed ? (
+        <p className="cst-hint">Nudges go to a constellation's chat room, so they open after Sunday's reveal.</p>
+      ) : rooms.length === 0 ? (
+        <p className="cst-hint">No room found yet. Join the week as a player to get a room to nudge.</p>
+      ) : (
+        <>
+          <label className="cst-op-field">
+            <span>Room</span>
+            <select value={roomId} onChange={(event) => onSelect(event.target.value)}>
+              {rooms.map((room) => (
+                <option key={room.roomId} value={room.roomId}>
+                  {room.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <OperatorNudgePanel roomId={roomId} request={client.nudge} />
+          {client.mode === "fixture" && (
+            <p className="cst-hint">Fixture mode: the nudge is a saved result, labeled as a replay. Nothing is posted.</p>
+          )}
+        </>
+      )}
+    </section>
   );
 }

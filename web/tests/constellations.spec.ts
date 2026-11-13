@@ -5,7 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
  * Runs against the in-browser FIXTURE adapter only: no server, no Muse, no
  * speech-to-text. These tests prove UI behavior, not live integration.
  */
-const DAILY = "/groups/hackathon-builders/constellations";
+const DAILY = "/space";
 const OPERATOR = `${DAILY}/operator`;
 const LONG = "Mostly the dining hall with my floor, loud but good";
 
@@ -68,7 +68,7 @@ async function join(page: Page, name = "Synthetic tester") {
 async function openDaily(page: Page) {
   await page.goto(DAILY);
   const joinForm = page.getByTestId("cstp-join");
-  const ready = page.locator(".cst-sky, .cst-empty");
+  const ready = page.locator(".cst-week, .cst-empty");
   await expect(joinForm.or(ready).first()).toBeVisible();
   if (await joinForm.isVisible()) await join(page);
 }
@@ -80,21 +80,109 @@ async function answer(page: Page, day: number, text: string) {
   await expect(page.getByTestId(`cst-answer-text-${day}`)).toHaveText(text);
 }
 
-test("Groups links to the Constellations tab with truth labels", async ({ page }) => {
-  await page.goto("/groups");
-  await page.getByRole("link", { name: "Constellations" }).click();
+test("Constellations is a Facebook-wide page with truth labels; old Group links redirect", async ({ page }) => {
+  await page.goto("/groups/hackathon-builders/constellations");
   await expect(page).toHaveURL(new RegExp(`${DAILY}$`));
-  await expect(page.getByRole("heading", { level: 1, name: "Constellations" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Facebook Space" })).toBeVisible();
   await expect(page.getByText("Simulated Facebook", { exact: true })).toBeVisible();
   await expect(page.getByTestId("cst-mode")).toHaveText(/Fixture mode/);
   // Nothing about the week loads before joining with all three consents.
   await expect(page.getByTestId("cstp-join-submit")).toBeDisabled();
-  await expect(page.locator(".cst-sky, .cst-empty")).toHaveCount(0);
+  await expect(page.locator(".cst-week, .cst-empty")).toHaveCount(0);
   await join(page);
   await expect(page.getByRole("heading", { name: "No week is running yet" })).toBeVisible();
   await expect(page.getByTestId("cstp-panel")).toBeVisible();
-  await page.goto("/groups/not-a-group/constellations");
-  await expect(page.getByRole("heading", { name: "Group not found" })).toBeVisible();
+  await page.goto("/constellations");
+  await expect(page).toHaveURL(new RegExp(`${DAILY}$`));
+  await page.goto("/groups/any-group/constellations/operator");
+  await expect(page).toHaveURL(new RegExp(`${OPERATOR}$`));
+});
+
+test("Constellation tab explains the idea with a labeled example; there is no separate Sky", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  const tabs = page.getByRole("tablist", { name: "Facebook Space sections" });
+  await expect(tabs.getByRole("tab")).toHaveCount(2);
+  await expect(tabs.getByRole("tab", { name: /Sky/ })).toHaveCount(0);
+  await expect(tabs.getByRole("tab", { name: "This week" })).toHaveAttribute("aria-selected", "true");
+  await tabs.getByRole("tab", { name: /Constellation/ }).click();
+  await expect(tabs.getByRole("tab", { name: /Constellation/ })).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel");
+  await expect(panel.getByRole("heading", { name: "Your constellation" })).toBeVisible();
+  // Every card on this tab is an Example until formation and the reveal view supply real data.
+  await expect(panel.getByText("Example", { exact: true })).toHaveCount(3);
+  await expect(panel.getByRole("img", { name: /closer people shine brighter/ })).toBeVisible();
+  await tabs.getByRole("tab", { name: "This week" }).click();
+  await expect(page.getByTestId("cst-day-1")).toBeVisible();
+});
+
+test("why-this-group shows counts only, and new data sources need the player's OK", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await page.getByRole("tab", { name: /Constellation/ }).click();
+  const why = page.getByTestId("cst-why");
+  await expect(why.getByRole("heading", { name: "Why this group" })).toBeVisible();
+  await expect(why.getByText("Example", { exact: true })).toBeVisible();
+  await expect(why).toContainText("2 of your 4 stars");
+  await expect(why).toContainText("after you both choose to reveal");
+  // No Star handle is tied to a shared Group, friend or event before reveal.
+  await expect(why).not.toContainText(/Star \d/);
+  for (const source of ["Groups you're in", "Events you're going to", "Posts and comments"]) {
+    await expect(why.getByRole("listitem").filter({ hasText: source })).toContainText("Needs your OK");
+  }
+  await expect(why.getByRole("listitem").filter({ hasText: "Daily answers" })).toContainText("On");
+});
+
+test("event heat hides events under 3 similar people and buckets the rest", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  await page.getByRole("tab", { name: /Constellation/ }).click();
+  const heat = page.getByTestId("cst-heat");
+  await expect(heat.getByText("Example", { exact: true })).toBeVisible();
+  const rows = heat.getByTestId("cst-heat-row");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.first()).toContainText("Board game night");
+  await expect(rows.first()).toContainText("10+ people like you");
+  await expect(heat).not.toContainText("Film club"); // 2 similar people: below threshold
+  await expect(heat).not.toContainText(/\b(11|6) people/); // exact counts never shown
+  const interested = rows.first().getByRole("button", { name: "Interested" });
+  await interested.click();
+  await expect(interested).toHaveAttribute("aria-pressed", "true");
+});
+
+test("streak rewards come from on-day answers; catch-ups count for every-day but not perfect week", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  const rewards = page.getByTestId("cst-rewards");
+  await expect(rewards).toContainText("0 of 4 earned");
+  await expect(rewards).toContainText("Next: First light");
+  await answer(page, 1, "Board games with my floor");
+  await expect(page.getByTestId("cst-reward-first-light")).toHaveClass(/is-earned/);
+  await expect(rewards).toContainText("1 of 4 earned");
+  await advance(page, 1);
+  await openDaily(page);
+  await answer(page, 2, "Walking to class with music");
+  await advance(page, 1);
+  await openDaily(page);
+  await answer(page, 3, "Cooking with my roommate");
+  await expect(page.getByTestId("cst-reward-three-in-a-row")).toHaveClass(/is-earned/);
+  await expect(page.getByTestId("cst-reward-perfect-week")).not.toHaveClass(/is-earned/);
+  await expect(rewards).toContainText("never change who you're matched with");
+});
+
+test("answer box grows with text and never shows a scrollbar for normal answers", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page);
+  const box = page.getByTestId("cst-day-1").getByRole("textbox", { name: "Your answer" });
+  await box.fill("one line");
+  const one = await box.evaluate((el) => ({ h: el.clientHeight, sh: el.scrollHeight, o: getComputedStyle(el).overflowY }));
+  expect(one.o).toBe("hidden");
+  expect(one.sh).toBeLessThanOrEqual(one.h + 1);
+  await box.fill("line\n".repeat(4) + "last line");
+  const five = await box.evaluate((el) => ({ h: el.clientHeight, sh: el.scrollHeight, o: getComputedStyle(el).overflowY }));
+  expect(five.h).toBeGreaterThan(one.h);
+  expect(five.o).toBe("hidden");
+  expect(five.sh).toBeLessThanOrEqual(five.h + 1);
 });
 
 test("typed answer, one follow-up, edit and delete, by keyboard", async ({ page }) => {
@@ -105,8 +193,7 @@ test("typed answer, one follow-up, edit and delete, by keyboard", async ({ page 
   const card = page.getByTestId("cst-day-1");
   await expect(card.getByRole("button", { name: "Submit answer" })).toBeDisabled();
   await card.getByRole("textbox", { name: "Your answer" }).fill("alone mostly");
-  await page.keyboard.press("Tab"); // submit comes right after the text field
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter"); // Enter sends, like a Facebook comment
   await expect(page.getByTestId("cst-answer-text-1")).toHaveText("alone mostly");
   await expect(page.getByTestId("cst-streak")).toHaveText(/Streak 1/);
   await expect(page.getByTestId("cst-muse-chip")).toHaveText(/Fixture follow-up · not Muse/);
@@ -121,8 +208,10 @@ test("typed answer, one follow-up, edit and delete, by keyboard", async ({ page 
   await page.reload();
   await expect(page.getByTestId("cst-answer-text-1")).toHaveText("edited answer text");
   await page.getByTestId("cst-day-1").getByRole("button", { name: "Delete" }).click();
+  const dialog = page.getByRole("dialog", { name: "Delete answer?" });
+  await expect(dialog).toBeVisible();
   await expect(page.getByTestId("cst-answer-text-1")).toBeVisible(); // nothing deleted until confirmed
-  await page.getByTestId("cst-day-1").getByRole("button", { name: "Delete answer" }).click();
+  await dialog.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.getByTestId("cst-day-1").getByRole("textbox", { name: "Your answer" })).toBeVisible();
   await expect(page.getByTestId("cst-streak")).toHaveText(/Streak 0/);
 });
@@ -264,7 +353,7 @@ test("pausing consent hides the week; delete my data clears answers", async ({ p
   await page.getByTestId("cstp-panel").locator("summary").click();
   await page.getByTestId("cstp-toggle-matchAnswers").click();
   await page.getByTestId("cstp-save").click();
-  await expect(page.locator(".cst-sky")).toHaveCount(0);
+  await expect(page.locator(".cst-week")).toHaveCount(0);
   await expect(page.getByTestId("cst-answer-text-1")).toHaveCount(0);
   await page.getByTestId("cstp-toggle-matchAnswers").click();
   await page.getByTestId("cstp-save").click();
@@ -299,4 +388,89 @@ test("week view has no horizontal overflow on a small phone", async ({ page }) =
   await page.goto(OPERATOR);
   const opOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(opOverflow).toBeLessThanOrEqual(0);
+});
+
+test("home feed: Constellations sits under the composer and works without leaving Home", async ({ page, isMobile }) => {
+  await page.goto("/");
+  const feed = page.getByRole("main", { name: "News Feed" });
+  const card = feed.getByTestId("cst-feed-card");
+  await expect(card).toBeVisible();
+  // Directly after "What's on your mind?", before stories and posts.
+  const order = await feed.evaluate((main) =>
+    [...main.children]
+      .filter((el) => !el.classList.contains("sr-only"))
+      .map((el) => el.getAttribute("aria-label") ?? el.className)
+      .slice(0, 2),
+  );
+  expect(order[0]).toBe("Create a post");
+  expect(order[1]).toBe("Facebook Space");
+  await card.getByRole("button", { name: "Join this week" }).click();
+  await join(page, "Feed tester");
+  await expect(card.getByText(/No week is running yet/)).toBeVisible();
+  await newCycle(page);
+  await page.goto("/");
+  await expect(card.getByRole("heading", { name: /Where did you eat most of your meals/ })).toBeVisible();
+  await card.getByRole("textbox", { name: "Your answer" }).fill(LONG);
+  await page.keyboard.press("Enter");
+  await expect(card.getByTestId("cst-answer-text-1")).toHaveText(LONG);
+  await expect(card.getByTestId("cst-feed-streak")).toHaveText("1");
+  await expect(card.getByTestId("cst-feed-next")).toBeAttached();
+  await card.getByRole("link", { name: /See your week/ }).click();
+  await expect(page).toHaveURL(new RegExp(`${DAILY}$`));
+  await expect(page.getByTestId("cst-answer-text-1")).toHaveText(LONG); // same answer, one source of truth
+  if (!isMobile) {
+    // Desktop sidebar: only the Constellations shortcut is highlighted, not Groups too.
+    const explore = page.getByRole("navigation", { name: "Explore" });
+    await expect(explore.getByRole("link", { name: "Facebook Space" })).toHaveClass(/active/);
+    await expect(explore.getByRole("link", { name: "Groups" })).not.toHaveClass(/active/);
+  }
+});
+
+test("week graph: day nodes are keyboard reachable and open their question", async ({ page }) => {
+  await newCycle(page);
+  await advance(page, 2); // Wednesday
+  await openDaily(page);
+  const graph = page.getByRole("group", { name: "Your week, one node per day" });
+  await expect(graph).toBeVisible();
+  const monday = graph.getByRole("button", { name: /^Monday: Catch up/ });
+  await monday.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("cst-day-1").getByRole("textbox", { name: "Your answer" })).toBeFocused();
+  await answer(page, 1, LONG);
+  await expect(graph.getByRole("button", { name: /^Monday: Caught up/ })).toBeVisible();
+  await expect(graph.getByRole("button", { name: /^Wednesday: Today/ })).toBeVisible();
+});
+
+test("Facebook-style shell: sidebar order, Meta AI and Gaming placeholders, new-message button", async ({ page, isMobile }) => {
+  test.skip(isMobile, "desktop sidebar and floating button");
+  await page.goto("/");
+  const explore = page.getByRole("navigation", { name: "Explore" });
+  const labels = (await explore.locator(".sidebar-row > span:last-child").allTextContents()).slice(1, 11);
+  expect(labels).toEqual(["Meta AI", "Friends", "Memories", "Saved", "Groups", "Facebook Space", "Reels", "Marketplace", "Feeds", "Events"]);
+  await expect(explore.getByRole("link", { name: "Feeds" })).not.toHaveClass(/active/);
+  await expect(page.getByRole("region", { name: "Stories" }).getByRole("button", { name: /Create story/ })).toBeVisible();
+  await page.getByRole("link", { name: "New message" }).click();
+  await expect(page).toHaveURL("/messages");
+  await expect(page.getByRole("link", { name: "New message" })).toHaveCount(0);
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Gaming" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Gaming" })).toBeVisible();
+  await explore.getByRole("link", { name: "Meta AI" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Meta AI" })).toBeVisible();
+  await page.getByRole("link", { name: "Open Facebook Space" }).click();
+  await expect(page).toHaveURL(/\/space$/);
+});
+
+test("operator posts an event nudge to the revealed room (fixture replay, approved venue)", async ({ page }) => {
+  await newCycle(page);
+  await openDaily(page); // the operator also plays, so they have a room after reveal
+  await page.goto(OPERATOR);
+  const nudge = page.getByTestId("cst-op-nudge");
+  await expect(nudge).toContainText("open after Sunday's reveal");
+  await advance(page, 7); // Tue..Fri, lock, form, reveal
+  await expect(page.getByTestId("cst-op-state")).toContainText(/Reveal/i);
+  await expect(nudge.getByRole("combobox", { name: "Room" })).toHaveValue("room-orion");
+  await nudge.getByRole("button", { name: "Post event nudge" }).click();
+  await expect(nudge).toContainText("Replay of a saved cycle");
+  await expect(nudge).toContainText("Campus Cafe");
+  await expect(nudge).toContainText("Fixture mode");
 });

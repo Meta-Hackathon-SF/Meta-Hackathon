@@ -39,11 +39,31 @@ from server.matching.ports import MusePortLike, OutputGuardLike, SnapshotSource
 from server.matching.repair import repair_proposal
 from server.matching.validation import violations
 
-DEFAULT_TIMEOUT_S = 45.0
+# Live muse-spark-1.3 (Adam, 2026-11-13, 30 players): M3 21.5 s, M4 38.8 s, M5 10-25 s with
+# intermittent hangs. Timeouts sit above observed latency; naming has a safe fixed fallback,
+# so it gets one short attempt instead of a retry.
+DEFAULT_TIMEOUT_S = 75.0
+NAME_TIMEOUT_S = 20.0
+NAME_ATTEMPTS = 1
+M3_ATTEMPTS = 1  # themes feed Sky only when run in parallel; never worth a second wait
 M4_ATTEMPTS = 2  # first proposal + one re-solve
 FALLBACK_MEANING = "Grouped by shared keywords (Fallback grouping)"
 FALLBACK_CONFIDENCE = 0.0
 FALLBACK_SUFFIX = f" ({FALLBACK_LABEL})"
+
+
+GroupedHook = Callable[[tuple[Theme, ...], int, int], Awaitable[Any]]
+
+
+async def _run_hook(hook: GroupedHook | None, themes: tuple[Theme, ...], eligible: int,
+                    constellations: int) -> None:
+    """Sky precompute; isolated so its failure never fails formation."""
+    if hook is None:
+        return
+    try:
+        await hook(themes, eligible, constellations)
+    except Exception:  # noqa: BLE001 - Sky is recomputed on demand if precompute failed
+        return
 
 
 @dataclass(frozen=True)
@@ -73,22 +93,25 @@ def _fallback_grouping_name(index: int, size: int) -> tuple[str, str, str]:
 class FormationService:
     def __init__(self, muse: MusePortLike, snapshots: SnapshotSource, guard: OutputGuardLike,
                  *, timeout_s: float = DEFAULT_TIMEOUT_S, allow_fallback: bool = True,
+                 parallel_themes: bool = True, name_timeout_s: float = NAME_TIMEOUT_S,
                  clock: Callable[[], float] = time.monotonic) -> None:
         self._muse = muse
         self._snapshots = snapshots
         self._guard = guard
         self._timeout_s = timeout_s
         self._allow_fallback = allow_fallback
+        self._parallel_themes = parallel_themes
+        self._name_timeout_s = name_timeout_s
         self._clock = clock
 
     # ------------------------------------------------------------ Muse calls
 
     async def _call(self, task: str, prompt_version: str, payload: dict,
-                    request_id: str) -> _Call:
+                    request_id: str, timeout_s: float | None = None) -> _Call:
         response = await asyncio.wait_for(
             self._muse.run(task=task, requestId=request_id, promptVersion=prompt_version,
                            payload=payload),
-            timeout=self._timeout_s)
+            timeout=timeout_s or self._timeout_s)
         if not isinstance(response, Mapping) or set(response) != {"output", "evidence"}:
             raise ValidationError("response", "expected output and evidence")
         return _Call(response["output"], MuseCallEvidence.from_dict(response["evidence"]))
@@ -121,7 +144,7 @@ class FormationService:
         parsed = await self._try(
             lambda: self._call("theme_discovery", prompts.PROMPT_VERSION_M3, payload,
                                f"{request_id}:m3"),
-            evidence, lambda out: prompts.parse_m3(out, known), attempts=2)
+            evidence, lambda out: prompts.parse_m3(out, known), attempts=M3_ATTEMPTS)
         return parsed or ()
 
     async def _groups(self, snap: FormationSnapshot, themes: Sequence[prompts.RawTheme],
@@ -169,8 +192,8 @@ class FormationService:
         local: list[MuseCallEvidence] = []
         named = await self._try(
             lambda: self._call("constellation_naming", prompts.PROMPT_VERSION_M5, payload,
-                               f"{request_id}:m5:{index}"),
-            local, parse, attempts=2)
+                               f"{request_id}:m5:{index}", self._name_timeout_s),
+            local, parse, attempts=NAME_ATTEMPTS)
         evidence.extend(local)
         return named or _fallback_name(index, size)
 
@@ -182,10 +205,29 @@ class FormationService:
             name = FALLBACK_LABEL  # fixed text; still labeled
         return name, shape, color
 
+    @staticmethod
+    def _theme_objects(cycle_id: str, snap: FormationSnapshot,
+                       themes: Sequence[prompts.RawTheme]) -> tuple[Theme, ...]:
+        weight_by_ref: dict[str, float] = {}
+        for a in snap.answers:
+            weight_by_ref[a.id] = weight_by_ref.get(a.id, 0.0) + a.weight
+        return tuple(
+            Theme(theme_id=f"{cycle_id}-t{i + 1}", cycle_id=cycle_id, label=label,
+                  description=desc, member_ids=tuple(sorted(snap.id_map[r] for r in refs)),
+                  weighted_support=round(sum(weight_by_ref.get(r, 0.0) for r in refs), 3))
+            for i, (_, label, desc, refs) in enumerate(themes))
+
     # ------------------------------------------------------------ public
 
-    async def form(self, cycle_id: str, request_id: str | None = None) -> FormationResult:
-        """FormationPort.form(cycleId). request_id is optional (generated when omitted)."""
+    async def form(self, cycle_id: str, request_id: str | None = None, *,
+                   on_grouped: GroupedHook | None = None) -> FormationResult:
+        """FormationPort.form(cycleId). request_id is optional (generated when omitted).
+
+        Schedule: M3 and M4 run concurrently (M4 gets no themes; themes feed Sky only) when
+        parallel_themes is on, else M3 then M4 with themes. After grouping validates, M5
+        naming runs in parallel with `on_grouped` (Sky precompute); a hook failure never
+        fails formation.
+        """
         request_id = request_id or f"form-{cycle_id}-{uuid.uuid4().hex[:8]}"
         started = self._clock()
         timings: dict[str, int] = {}
@@ -201,10 +243,18 @@ class FormationService:
         timings["baselineMs"] = int((self._clock() - started) * 1000)
 
         evidence: list[MuseCallEvidence] = []
-        themes = await self._themes(snap, request_id, evidence)
-        timings["m3Ms"] = int((self._clock() - started) * 1000)
-        grouped = await self._groups(snap, themes, request_id, evidence, sim)
-        timings["m4Ms"] = int((self._clock() - started) * 1000)
+        if self._parallel_themes:
+            m3_evidence: list[MuseCallEvidence] = []
+            themes, grouped = await asyncio.gather(
+                self._themes(snap, request_id, m3_evidence),
+                self._groups(snap, (), request_id, evidence, sim))
+            evidence = m3_evidence + evidence
+            timings["m3m4Ms"] = int((self._clock() - started) * 1000)
+        else:
+            themes = await self._themes(snap, request_id, evidence)
+            timings["m3Ms"] = int((self._clock() - started) * 1000)
+            grouped = await self._groups(snap, themes, request_id, evidence, sim)
+            timings["m4Ms"] = int((self._clock() - started) * 1000)
 
         used_fallback = grouped is None
         proposal, repaired = grouped if grouped is not None else ((), 0)
@@ -214,6 +264,9 @@ class FormationService:
                     "PROVIDER_UNAVAILABLE", "Formation unavailable; retry", retryable=True))
             proposal = tuple((g, FALLBACK_MEANING, FALLBACK_CONFIDENCE) for g in baseline)
 
+        theme_objs = self._theme_objects(cycle_id, snap, themes)
+        hook = asyncio.ensure_future(_run_hook(on_grouped, theme_objs, len(snap.refs),
+                                               len(proposal)))
         answer_texts = [a.text for a in snap.answers]
         if used_fallback:
             names = [self._guarded_fallback_name(i, len(refs), answer_texts)
@@ -222,6 +275,8 @@ class FormationService:
             names = await asyncio.gather(*(
                 self._name(i, meaning, len(refs), answer_texts, request_id, evidence)
                 for i, (refs, meaning, _) in enumerate(proposal)))
+        timings["namesMs"] = int((self._clock() - started) * 1000)
+        await hook
         timings["totalMs"] = int((self._clock() - started) * 1000)
 
         constellations = tuple(
@@ -234,14 +289,6 @@ class FormationService:
                 baseline_agrees=same_group(baseline, refs), is_fallback=used_fallback)
             for i, ((refs, meaning, confidence), (name, shape, color))
             in enumerate(zip(proposal, names, strict=False)))
-        weight_by_ref: dict[str, float] = {}
-        for a in snap.answers:
-            weight_by_ref[a.id] = weight_by_ref.get(a.id, 0.0) + a.weight
-        theme_objs = tuple(
-            Theme(theme_id=f"{cycle_id}-t{i + 1}", cycle_id=cycle_id, label=label,
-                  description=desc, member_ids=tuple(sorted(snap.id_map[r] for r in refs)),
-                  weighted_support=round(sum(weight_by_ref.get(r, 0.0) for r in refs), 3))
-            for i, (_, label, desc, refs) in enumerate(themes))
         return FormationResult("ok", constellations=constellations, themes=theme_objs,
                                evidence=tuple(evidence), used_fallback=used_fallback,
                                repaired_groups=repaired,
