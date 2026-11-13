@@ -26,7 +26,7 @@ function shortName(name: string | null): string | null {
   const short = name.replace(`(${FALLBACK_LABEL})`, "").trim();
   return short && short !== FALLBACK_LABEL ? short : null;
 }
-const POLL_MS = 1500;
+const POLL_MS = 3000; // each poll reads shared state; keep database load low
 const SLOT_COLOR: Record<Slot, string> = { A: "var(--a)", B: "var(--b)" };
 
 // ------------------------------------------------------------------ flow

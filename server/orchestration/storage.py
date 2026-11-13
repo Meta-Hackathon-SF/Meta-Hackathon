@@ -337,12 +337,18 @@ class PostgresWorkflowRepository:
                     if row is None:
                         raise ServiceError("PROVIDER_UNAVAILABLE")
                     state = load_state(row[0])
+                    before = dump_state(state)
                     yield state
-                    connection.execute(
-                        "UPDATE workflow.runtime_state SET body = %s, revision = revision + 1, "
-                        "updated_at = clock_timestamp() WHERE state_key = %s",
-                        (Jsonb(dump_state(state)), self._key),
-                    )
+                    after = dump_state(state)
+                    # Reads (stage polls, call lists) must not rewrite the whole state row:
+                    # every UPDATE leaves a full dead copy plus WAL, which filled the
+                    # production database disk on 2026-11-13.
+                    if after != before:
+                        connection.execute(
+                            "UPDATE workflow.runtime_state SET body = %s, revision = revision + 1, "
+                            "updated_at = clock_timestamp() WHERE state_key = %s",
+                            (Jsonb(after), self._key),
+                        )
         except psycopg.Error:
             raise ServiceError("PROVIDER_UNAVAILABLE") from None
         finally:
