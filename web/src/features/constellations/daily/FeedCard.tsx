@@ -1,117 +1,178 @@
 /*
- * Facebook Space on the home feed, right under "What's on your mind?".
- * Not joined: one card with a Join button (consent opens in a dialog, no page change).
- * Joined: today's question with a private comment box, streak and catch-up count.
+ * Facebook Space on the home feed (V4 design), right under "What's on your mind?".
+ * Joined + open: today's question on a night-sky block with a private composer.
+ * Answer it like a comment; your answer then shows as your own private comment with your streak.
+ * Not joined: the same card; sending opens Join in Space. "Open Space" is the one way into the tab.
  */
 import { useState } from "react";
-import { Link } from "react-router";
-import { ChevronRight, Flame, Lock, MoonStar } from "lucide-react";
-import Modal from "../../../components/common/Modal";
-import { allOn, getPrivacyClient, JoinScreen, usePrivacySession } from "../privacy";
+import { Link, useNavigate } from "react-router";
+import { ArrowUp, Flame, Lock } from "lucide-react";
+import Avatar from "../../../components/common/Avatar";
+import { currentUser } from "../../../data/demo";
+import { getPrivacyClient, usePrivacySession } from "../privacy";
 import type { CycleClient } from "./client";
 import { getCycleClient } from "./clientContext";
-import { CONSTELLATIONS_PATH, FEATURE_NAME, JOIN_SCOPE_LABEL, PLAY_COMMUNITY } from "./communities";
-import ConstellationsMark from "./ConstellationsMark";
-import QuestionPost from "./QuestionPost";
-import { computeRewards, nextReward } from "./rewards";
-import { DAY_NAMES, useDaily, when } from "./useDaily";
-import WeekGraph from "./WeekGraph";
-import "./daily.css";
+import { CONSTELLATIONS_PATH, FEATURE_NAME, PLAY_COMMUNITY } from "./communities";
+import { DAY_LONG } from "./space/model";
+import { MicIcon, SpaceAvatar, StarField } from "./space/parts";
+import { useAnsweredToday } from "./space/stats";
+import { useVoiceInput } from "./space/useVoiceInput";
+import { MAX_CHARS, message, useDaily } from "./useDaily";
+import "./space/space.css";
 
 const COMMUNITY = PLAY_COMMUNITY;
 const PAGE = CONSTELLATIONS_PATH;
 
-function Header({ streak, meta }: { streak: number | null; meta: string }) {
+function Card({ client, joined }: { client: CycleClient; joined: boolean }) {
+  const { data, refresh } = useDaily(client);
+  const navigate = useNavigate();
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const voice = useVoiceInput(client, setDraft);
+
+  const current = data?.current ?? null;
+  const cycle = current?.cycle;
+  const open = cycle?.status === "open" && current?.question ? current.question : null;
+  const answer = open && data ? data.answers.find((a) => a.day === open.day) : undefined;
+  const answered = joined && Boolean(answer);
+
+  const count = useAnsweredToday(client, cycle?.cycleId ?? null, answered && open ? open.day : null, answer?.answerId ?? null);
+  const streak = joined ? (current?.streak.current ?? 0) : 0;
+
+  const send = async () => {
+    const text = draft.trim();
+    if (!text || busy) return;
+    if (!joined || !cycle || !open) return navigate(`${PAGE}`);
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await client.submit(cycle.cycleId, { day: open.day, text, source: voice.source });
+      setDraft("");
+      voice.reset();
+      await refresh();
+      if (result.supportCard) navigate(`${PAGE}?s=distress`);
+    } catch (err) {
+      setError(message(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const status = cycle?.status;
+  const meta = open
+    ? `${DAY_LONG[open.day - 1]}'s question · Private`
+    : status === "revealed"
+      ? "Your constellation is ready"
+      : status === "locked" || status === "forming"
+        ? "Locked until Sunday"
+        : "Weekly game · Private";
+  const headline = open
+    ? open.question.text
+    : status === "revealed"
+      ? "Meet the people who answered like you."
+      : status === "locked" || status === "forming"
+        ? "Your week is in the sky."
+        : "One easy question a day. On Sunday, meet the 3–5 people who answered like you.";
+
   return (
-    <header className="cst-post-head">
-      <ConstellationsMark />
-      <div className="cst-post-who">
-        <Link to={PAGE} className="cst-post-title">
-          {FEATURE_NAME}
+    <section className="card spc-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
+      <div className="spc-feed-head">
+        <SpaceAvatar />
+        <div className="spc-grow">
+          <Link to={PAGE} className="spc-feed-name">
+            {FEATURE_NAME}
+          </Link>
+          <div className="spc-post-meta">{meta}</div>
+        </div>
+        <Link to={PAGE} className="spc-btn spc-btn-tint spc-btn-sm spc-pill-btn">
+          {joined ? "Open Space" : "Join"}
         </Link>
-        <span className="post-meta">
-          {meta} <span aria-hidden="true">·</span> <Lock size={12} aria-label="Private answers" />
-        </span>
       </div>
-      {streak !== null && (
-        <span className="cst-streak" data-testid="cst-feed-streak" title="Days in a row answered on the day">
-          <Flame size={14} aria-hidden="true" /> {streak}
-        </span>
-      )}
-    </header>
-  );
-}
-
-function JoinedCard({ client }: { client: CycleClient }) {
-  const { data, error, refresh } = useDaily(client);
-  if (error)
-    return (
-      <section className="card cst-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
-        <Header streak={null} meta="Weekly game" />
-        <p className="cst-error cst-pad" role="alert">
-          {error}
-        </p>
-      </section>
-    );
-  if (!data) return <section className="card cst-feed cst-feed-loading" aria-label={FEATURE_NAME} data-testid="cst-feed-card" aria-busy="true" />;
-
-  const current = data.current;
-  if (!current)
-    return (
-      <section className="card cst-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
-        <Header streak={null} meta="Weekly game" />
-        <p className="cst-pad muted">No week is running yet. The first question arrives Monday morning.</p>
-      </section>
-    );
-
-  const { cycle, streak, catchUp, question } = current;
-  const open = cycle.status === "open" && question;
-  const next = nextReward(computeRewards(streak, data.answers));
-  return (
-    <section className="card cst-feed" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
-      <Header
-        streak={streak.current}
-        meta={open ? `${DAY_NAMES[cycle.currentDay - 1]}'s question` : cycle.status === "revealed" ? "Revealed" : "Locked"}
-      />
-      {open ? (
-        <div className="cst-feed-question">
-          <QuestionPost
-            backdrop={<WeekGraph cycle={cycle} answers={data.answers} variant="dark" />}
-            key={`${cycle.cycleId}-${question.day}`}
-            client={client}
-            cycleId={cycle.cycleId}
-            item={question}
-            answer={data.answers.find((a) => a.day === question.day)}
-            kind="today"
-            framed={false}
-            onChanged={() => void refresh()}
-          />
+      <div className="spc-feed-sky">
+        <StarField />
+        <p className="spc-feed-q">{headline}</p>
+      </div>
+      {(streak > 0 || (answered && count !== null)) && (
+        <div className="spc-feed-stats">
+          {streak > 0 ? (
+            <span className="spc-feed-streak" data-testid="cst-feed-streak">
+              <Flame size={15} aria-hidden="true" /> {streak}-day streak
+            </span>
+          ) : (
+            <span />
+          )}
+          {answered && count !== null && <span>{count.toLocaleString()} answered today</span>}
         </div>
-      ) : (
-        <div className="cst-feed-status">
-          <span className="cst-icon-circle" aria-hidden="true">
-            {cycle.status === "revealed" ? <MoonStar size={18} /> : <Lock size={18} />}
-          </span>
-          <p>
-            {cycle.status === "revealed"
-              ? "Your constellation is out. Meet them anonymously."
-              : `Answers are locked. Your constellation is revealed ${when(cycle.revealsAt)}.`}
+      )}
+      {open && !answered && (
+        <div className="spc-feed-compose">
+          <div className="spc-comment">
+            <Avatar person={currentUser} size={32} />
+            <div className="spc-comment-box">
+              <textarea
+                aria-label="Your answer"
+                rows={1}
+                value={draft}
+                maxLength={MAX_CHARS}
+                onChange={(e) => {
+                  setDraft(e.target.value.slice(0, MAX_CHARS));
+                  e.target.style.height = "auto";
+                  e.target.style.height = `${e.target.scrollHeight}px`;
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void send();
+                  }
+                }}
+                placeholder={voice.recording ? "Listening…" : joined ? "Answer privately…" : "Join to answer…"}
+              />
+              <div className="spc-comment-tools">
+                <button
+                  type="button"
+                  className={`spc-comment-icon${voice.recording ? " is-on" : ""}`}
+                  onClick={voice.toggle}
+                  disabled={voice.blocked || !joined}
+                  aria-label={voice.recording ? "Stop recording" : "Answer by voice"}
+                  aria-pressed={voice.recording}
+                >
+                  <MicIcon />
+                </button>
+                <button type="button" className="spc-comment-icon is-send" disabled={!draft.trim() || busy} onClick={() => void send()} aria-label={joined ? "Send" : "Join to send"}>
+                  <ArrowUp size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="spc-comment-note" aria-live="polite">
+            <Lock size={11} aria-hidden="true" /> {voice.recording || voice.hint !== "or just talk" ? voice.hint : "Only you can see your answer"}
           </p>
+          {error && (
+            <p className="spc-error" role="alert">
+              {error}
+            </p>
+          )}
         </div>
       )}
-      <Link to={PAGE} className="cst-feed-footer">
-        <span>
-          {catchUp.missedDays.length > 0
-            ? `${catchUp.missedDays.length} missed ${catchUp.missedDays.length === 1 ? "day" : "days"} to catch up`
-            : "See your week"}
-        </span>
-        {next && (
-          <small className="cst-feed-next" data-testid="cst-feed-next">
-            Next badge: {next.title}
-          </small>
-        )}
-        <ChevronRight size={18} aria-hidden="true" />
-      </Link>
+      {answered && open && answer && (
+        <div className="spc-feed-compose">
+          <div className="spc-comment">
+            <Avatar person={currentUser} size={32} />
+            <div>
+              <div className="spc-comment-bubble">
+                <b>{currentUser.name}</b>
+                <span>{answer.text}</span>
+              </div>
+              <div className="spc-comment-meta">
+                <Lock size={11} aria-hidden="true" /> Only you
+                <span aria-hidden="true">·</span>
+                <Link to={`${PAGE}?s=answer&day=${open.day}`}>Edit</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -119,55 +180,7 @@ function JoinedCard({ client }: { client: CycleClient }) {
 export default function ConstellationsFeedCard() {
   const privacy = getPrivacyClient();
   const client = getCycleClient(COMMUNITY);
-  const { state, set } = usePrivacySession(privacy, COMMUNITY);
-  const [joining, setJoining] = useState(false);
-
-  if (state.status === "loading") return <section className="card cst-feed cst-feed-loading" aria-label={FEATURE_NAME} data-testid="cst-feed-card" aria-busy="true" />;
-
-  if (state.status === "ready" && allOn(state.view.consent)) return <JoinedCard client={client} />;
-
-  const paused = state.status === "ready";
-  // Compact feature card, like Facebook's Memories or Marketplace promos: icon, one line, one button.
-  return (
-    <section className="card cst-feed cst-promo" aria-label={FEATURE_NAME} data-testid="cst-feed-card">
-      <div className="cst-promo-row">
-        <ConstellationsMark size={48} />
-        <div className="cst-promo-text">
-          <strong>{paused ? `${FEATURE_NAME} is paused` : "Feel like nobody quite gets you?"}</strong>
-          <p className="muted">
-            {paused
-              ? "Turn it back on any time. Your answers stay private."
-              : "Answer one easy question a day. On Sunday, meet the 3–5 people who answered like you."}
-          </p>
-        </div>
-        {paused ? (
-          <Link to={PAGE} className="button-primary">
-            Manage
-          </Link>
-        ) : (
-          <button type="button" className="button-primary" onClick={() => setJoining(true)}>
-            Join this week
-          </button>
-        )}
-      </div>
-      {!paused && (
-        <p className="cst-promo-foot">
-          <Lock size={12} aria-hidden="true" /> {FEATURE_NAME} · A minute a day · Anonymous until you both reveal
-        </p>
-      )}
-      {joining && (
-        <Modal title={`Join ${FEATURE_NAME}`} onClose={() => setJoining(false)} className="cst-join-modal">
-          <JoinScreen
-            client={privacy}
-            communityId={COMMUNITY}
-            communityName={JOIN_SCOPE_LABEL}
-            onJoined={(view) => {
-              setJoining(false);
-              set(view);
-            }}
-          />
-        </Modal>
-      )}
-    </section>
-  );
+  const { state } = usePrivacySession(privacy, COMMUNITY);
+  if (state.status === "loading") return <section className="card spc-feed spc-feed-loading" aria-label={FEATURE_NAME} data-testid="cst-feed-card" aria-busy="true" />;
+  return <Card client={client} joined={state.status === "ready"} />;
 }
