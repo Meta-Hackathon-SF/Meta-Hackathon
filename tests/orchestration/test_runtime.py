@@ -6,6 +6,7 @@ not semantic matching quality, deployment, or PostgreSQL durability.
 
 import asyncio
 import json
+from contextlib import contextmanager
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -836,3 +837,36 @@ def test_a_constellation_larger_than_five_forms_saves_and_reveals():
         assert response.status_code == 200, response.json()
         room = call(client, players[6], "GET", f"/cycles/{cycle_id}/room")
         assert room.status_code == 200 and len(room.json()["members"]) == 7
+
+
+def test_stage_never_reads_privacy_inside_a_workflow_transaction():
+    # Reveal and answer paths hold the privacy lock while taking the workflow row lock.
+    # The stage once did the reverse and deadlocked the live server; keep the order.
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        laptop, phone = join(client, "laptop"), join(client, "phone")
+        inside = {"depth": 0, "violations": 0}
+        transaction, tx = env.repository.transaction, env.privacy_store.tx
+
+        @contextmanager
+        def tracked_transaction():
+            inside["depth"] += 1
+            try:
+                with transaction() as state:
+                    yield state
+            finally:
+                inside["depth"] -= 1
+
+        @contextmanager
+        def checked_tx():
+            if inside["depth"]:
+                inside["violations"] += 1
+            with tx() as conn:
+                yield conn
+
+        env.repository.transaction, env.privacy_store.tx = tracked_transaction, checked_tx
+        call(client, phone, "POST", "/me/stage", json={"slot": "A"})
+        assert call(client, laptop, "POST", "/operator/stage/start").status_code == 200
+        assert call(client, laptop, "POST", "/operator/stage/next").status_code == 200
+        assert call(client, laptop, "GET", "/operator/stage").status_code == 200
+        assert call(client, laptop, "POST", "/operator/stage/phones/reset").status_code == 200
+        assert inside["violations"] == 0
