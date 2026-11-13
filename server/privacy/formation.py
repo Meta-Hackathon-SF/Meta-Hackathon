@@ -9,7 +9,9 @@
   ``{answers, idMap, blockedPairs}``: one random ref per player per lease
   (shared by that player's answers), the server weight per answer and, per
   D014 (contract 2.2.0, signed off by Patrik), the answer's stored
-  ``questionId`` (``AnswerText``), plus a top-level ``questions: [{questionId, text}]`` when a ``question_texts`` source is
+  ``questionId`` (``AnswerText``, only when that question's text is in the
+  snapshot, so every id resolves), plus a top-level
+  ``questions: [{questionId, text}]`` when a ``question_texts`` source is
   injected (the texts live in the cycle/planning services, not here), ``idMap``
   ref -> playerId, ``blockedPairs`` as [blockerId, blockedId] player ids among
   the snapshot's players. Only unflagged answers of currently fully consenting,
@@ -100,14 +102,21 @@ class PrivacyFormation:
         refs = {p: "r" + secrets.token_hex(4) for p in players}
         while len(set(refs.values())) != len(refs):  # astronomically rare collision
             refs = {p: "r" + secrets.token_hex(4) for p in players}
+        questions: list[dict[str, str]] | None = None
+        if self._question_texts is not None:
+            questions = self._questions(cycle_id, community_id, {r["question_id"] for r in rows})
+        # An answer carries its questionId only when that question's text is in
+        # the snapshot, so every questionId resolves (Rishi's validator, #62).
+        listed = {q["questionId"] for q in questions or []}
         snapshot: dict[str, Any] = {
             "answers": [{"id": refs[r["player_id"]], "text": r["text"], "weight": r["weight"],
-                         "questionId": r["question_id"]} for r in rows],
+                         **({"questionId": r["question_id"]} if r["question_id"] in listed else {})}
+                        for r in rows],
             "idMap": {ref: player for player, ref in refs.items()},
             "blockedPairs": pairs,
         }
-        if self._question_texts is not None:
-            snapshot["questions"] = self._questions(cycle_id, community_id, {r["question_id"] for r in rows})
+        if questions is not None:
+            snapshot["questions"] = questions
         if signals:  # D010: keyed by the same random refs; omitted entirely when nobody opted in
             snapshot["activity"] = {refs[p]: s.wire() for p, s in signals.items() if p in refs}
         return FormationLease(cycle_id, community_id, snapshot, revision, frozenset(players))
