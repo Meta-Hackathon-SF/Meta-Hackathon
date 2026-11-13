@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router";
 import {
   Bookmark,
-  CalendarDays,
   Camera,
   Check,
   ChevronRight,
@@ -170,70 +169,6 @@ export function GroupsPage() {
   );
 }
 
-export function MarketplacePage() {
-  const { notify } = useApp();
-  return (
-    <PageFrame
-      title="Marketplace"
-      description="Discover a few finds in your community."
-    >
-      <div className="section-heading">
-        <h2>Today's picks</h2>
-        <span className="location-label">
-          <MapPin size={16} />
-          Santa Cruz · 40 mi
-        </span>
-      </div>
-      <div className="marketplace-grid">
-        {[
-          {
-            image: "code",
-            price: "$250",
-            title: "Laptop and desk setup",
-            place: "Santa Cruz, CA",
-          },
-          {
-            image: "headset",
-            price: "$120",
-            title: "VR headset · like new",
-            place: "San Jose, CA",
-          },
-          {
-            image: "coffee",
-            price: "$20",
-            title: "Coffee set for your next study session",
-            place: "Santa Cruz, CA",
-          },
-          {
-            image: "library",
-            price: "Free",
-            title: "Textbook exchange",
-            place: "Campus pickup",
-          },
-        ].map((item) => (
-          <button
-            className="marketplace-item"
-            key={item.title}
-            onClick={() =>
-              notify(
-                `${item.title} · Demo listing. Buying and messaging sellers will be available in a future version.`,
-              )
-            }
-          >
-            <img src={photo(item.image)} alt={item.title} />
-            <strong>{item.price}</strong>
-            <span>{item.title}</span>
-            <small>{item.place}</small>
-          </button>
-        ))}
-      </div>
-      <p className="muted demo-page-note">
-        Demonstration listings only. No purchases or payments.
-      </p>
-    </PageFrame>
-  );
-}
-
 export function WatchPage() {
   const { notify } = useApp();
   return (
@@ -259,42 +194,6 @@ export function WatchPage() {
         >
           <Play size={34} fill="white" />
         </button>
-      </section>
-    </PageFrame>
-  );
-}
-
-export function EventsPage() {
-  const [going, setGoing] = useState(false);
-  return (
-    <PageFrame title="Events" description="Make plans. Make connections.">
-      <section className="card event-card">
-        <img src={photo("team")} alt="Community members building together" />
-        <div>
-          <p className="event-eyebrow">SAT, NOV 14 · 6 PM</p>
-          <h2>Build together: community demo night</h2>
-          <p className="muted">Student Innovation Lab · Fictional demo event</p>
-          <p>
-            Bring your prototype, meet other student builders, and share what
-            you've learned.
-          </p>
-          <button
-            className={going ? "button-secondary" : "button-primary"}
-            onClick={() => setGoing(!going)}
-          >
-            {going ? (
-              <>
-                <Check size={18} />
-                Going
-              </>
-            ) : (
-              <>
-                <CalendarDays size={18} />
-                Interested
-              </>
-            )}
-          </button>
-        </div>
       </section>
     </PageFrame>
   );

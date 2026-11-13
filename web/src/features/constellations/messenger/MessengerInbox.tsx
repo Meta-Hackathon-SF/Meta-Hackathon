@@ -1,13 +1,16 @@
-import { useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 import { Users, X } from "lucide-react";
 import Avatar from "../../../components/common/Avatar";
 import { currentUser, people } from "../../../data/demo";
-import { SUNDAY_THREAD_ID, addMuseMessage, sendInboxMessage, useInbox, type InboxThread } from "./inbox";
+import { DraftCard, EventCard, ItemCard } from "../../catalog/Cards";
+import { createEvent, findEvent, useCatalogState } from "../../catalog/store";
+import { SUNDAY_THREAD_ID, addMuseMessage, markDraftCreated, sendInboxMessage, useInbox, type InboxThread } from "./inbox";
 import { anonymize, askMuse, inferKind, type MuseKind } from "./museHelp";
 
 const SUGGESTIONS: [MuseKind, string, string][] = [
-  ["hangout", "Plan a hangout", "@muse where should we hang out this week?"],
+  ["hangout", "Find an event", "@muse what's happening this week that we'd like?"],
+  ["create", "Create an event", "@muse create a study session on Thursday at 7pm"],
   ["supplies", "Find supplies", "@muse what should we bring?"],
   ["barter", "Ask a vendor", "@muse can we get a table at the cafe?"],
 ];
@@ -57,6 +60,7 @@ function SharedVibe({ onClose }: { onClose: () => void }) {
 
 export default function MessengerInbox() {
   const threads = useInbox();
+  const catalog = useCatalogState();
   const [params, setParams] = useSearchParams();
   const requested = params.get("chat");
   const selected = threads.find((thread) => thread.id === requested) ?? threads[0];
@@ -64,6 +68,11 @@ export default function MessengerInbox() {
   const [asking, setAsking] = useState<MuseKind | null>(null);
   const [vibeOpen, setVibeOpen] = useState(() => !vibeClosed());
   const input = useRef<HTMLInputElement | null>(null);
+  const end = useRef<HTMLDivElement | null>(null);
+  const count = selected?.messages.length ?? 0;
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [count, asking, selected?.id]);
   if (!selected) return null;
   const isSunday = selected.id === SUNDAY_THREAD_ID;
 
@@ -84,7 +93,7 @@ export default function MessengerInbox() {
     ]);
     setAsking(kind);
     void askMuse(kind, context).then((help) => {
-      addMuseMessage(threadId, help.text, help.source, help.link);
+      addMuseMessage(threadId, help);
       setAsking(null);
     });
   };
@@ -148,14 +157,29 @@ export default function MessengerInbox() {
               <p className={message.mine ? "sent-message" : message.fromMuse ? "muse-message" : "received-message"}>
                 {message.text}
               </p>
-              {message.linkHref && message.linkLabel && (
-                <Link className="muse-link" to={message.linkHref}>
-                  {message.linkLabel}
-                </Link>
+              {(message.itemIds?.length || message.eventIds?.length || message.draft) && (
+                <div className={`cat-cards${message.mine ? " is-mine" : ""}`}>
+                  {message.itemIds?.map((id) => <ItemCard key={id} itemId={id} />)}
+                  {message.eventIds?.map((id) => {
+                    const event = findEvent(id, catalog);
+                    return event ? <EventCard key={id} event={event} /> : null;
+                  })}
+                  {message.draft && (
+                    <DraftCard
+                      draft={message.draft}
+                      createdId={message.createdEventId}
+                      onCreate={() => {
+                        const event = createEvent(message.draft!, currentUser.name);
+                        markDraftCreated(selected.id, message.id, event.eventId, event.title);
+                      }}
+                    />
+                  )}
+                </div>
               )}
             </div>
           ))}
           {asking && <p className="muted">Muse is writing…</p>}
+          <div ref={end} />
         </div>
         {isSunday && (
           <div className="muse-actions" role="group" aria-label="Ask Muse">

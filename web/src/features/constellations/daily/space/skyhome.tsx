@@ -11,7 +11,7 @@ import type { CycleClient, CycleDay, DailyQuestion } from "../client";
 import { MAX_CHARS } from "../useDaily";
 import { DAY_LONG, DAY_SHORT, dayHex, type Screen, type WeekModel } from "./model";
 import { MicIcon, PreviewTag, SpaceAvatar, StarField, Waveform } from "./parts";
-import { PREVIEW_INVITE, PREVIEW_THINK } from "./preview";
+import { PREVIEW_THINK } from "./preview";
 import SkyCanvas from "./SkyCanvas";
 import { useVoiceInput } from "./useVoiceInput";
 import { fmtDuration, readTook, useAnsweredToday, writeTook } from "./stats";
@@ -537,7 +537,7 @@ export function SkyHome({
                         </span>
                         <span className="spc-list-main">
                           You're invited
-                          <small>{PREVIEW_INVITE.title}</small>
+                          <small>Board game night</small>
                         </span>
                         <span className="spc-unread" aria-label="New" />
                         <ChevronRight size={20} className="spc-chev" aria-hidden="true" />

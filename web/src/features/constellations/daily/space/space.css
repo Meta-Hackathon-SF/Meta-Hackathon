@@ -2318,3 +2318,11 @@ a.spc-keep-btn {
 .spc-weeklist-foot {
   padding: 4px 16px 10px;
 }
+.spc-event-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.spc-event-wrap .cat-card {
+  max-width: none;
+}

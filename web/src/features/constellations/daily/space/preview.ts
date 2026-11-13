@@ -18,14 +18,6 @@ export const PREVIEW_MESSAGES: { member: number; text: string }[] = [
   { member: 3, text: "ok this is kind of nice honestly" },
 ];
 
-export const PREVIEW_EVENTS = [
-  { title: "Open mic", mon: "NOV", day: "20", sub: "Fri · 8 PM · Union", bucket: "6–10 of your people" },
-  { title: "Study break", mon: "NOV", day: "19", sub: "Thu · 9 PM · Library", bucket: "3–5 of your people" },
-  { title: "Intramural soccer", mon: "NOV", day: "21", sub: "Sat · 11 AM · Rec Center", bucket: null },
-];
-
-export const PREVIEW_INVITE = { title: "Board game night", mon: "NOV", day: "19", sub: "Thu · 7 PM · Memorial Union", threshold: 3 };
-
 /** Client-side mirror of the chat contact-info guard, for the preview only. The server's M1 is authoritative. */
 export const CONTACT_PATTERN = /(\d[\s.()-]?){7,}|@|https?:|www\.|\.(com|net|org|edu)\b/i;
 
