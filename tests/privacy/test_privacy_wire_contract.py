@@ -40,6 +40,7 @@ def py_fields(model) -> set[str]:
 
 @pytest.mark.parametrize("ts_name,model", [
     ("Player", wire.Player), ("Consent", wire.Consent), ("ApiError", wire.ApiError),
+    ("DailyAnswer", wire.DailyAnswer), ("PrevalenceGuess", wire.PrevalenceGuess),
 ])
 def test_fields_match_protocol(ts_name, model):
     assert py_fields(model) == ts_fields(ts_name)
@@ -110,3 +111,9 @@ def test_player_color_and_consent_grants_play():
     c = wire.Consent(player_id="p", community_id="c", match_answers=True, anonymous_chat=True,
                      is_adult=False, version=1, revoked_at=None)
     assert not c.grants_play
+
+
+def test_weights_and_safety_levels_match_protocol():
+    text = PROTOCOL.read_text()
+    assert "WEIGHTS = { onDay: 1.0, catchUp: 0.6, followUpBonus: 0.1, max: 1.1 }" in text
+    assert set(get_args(wire.SafetyLevel)) == ts_union("SafetyLevel")

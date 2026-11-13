@@ -19,6 +19,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .errors import PrivacyError
+from .answers import AnswerStore
 from .service import Actor, PrivacyService
 from .wire import ApiError, ApiErrorBody, JoinRequest, UpdateConsentRequest
 
@@ -93,7 +94,7 @@ def install_error_handlers(app: FastAPI) -> None:
         return response
 
 
-def build_router(service: PrivacyService) -> APIRouter:
+def build_router(service: PrivacyService, answers: AnswerStore | None = None) -> APIRouter:
     router = APIRouter()
     ActorDep = Annotated[Actor, Depends(actor_dependency(service))]
 
@@ -124,5 +125,13 @@ def build_router(service: PrivacyService) -> APIRouter:
     @router.patch("/me/consent")
     def patch_consent(body: UpdateConsentRequest, actor: ActorDep) -> dict:
         return service.update_consent(actor, body).wire()
+
+    if answers is not None:
+        @router.delete("/me/data", status_code=202)
+        def delete_my_data(actor: ActorDep) -> dict:
+            """Deletes every answer and guess of this player now; Kai's listener
+            drops chat authorship links on the ``data_deleted`` notice."""
+            answers.delete_my_data(actor.player_id)
+            return {"status": "deleted"}
 
     return router

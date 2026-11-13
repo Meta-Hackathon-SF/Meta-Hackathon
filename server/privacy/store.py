@@ -16,7 +16,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA = Path(__file__).resolve().parents[2] / "db" / "privacy" / "001_privacy.sql"
+MIGRATIONS = Path(__file__).resolve().parents[2] / "db" / "privacy"
 
 
 class PrivacyStore:
@@ -27,7 +27,8 @@ class PrivacyStore:
         if path != ":memory:":
             self._conn.execute("PRAGMA journal_mode = WAL")
         self._lock = threading.RLock()
-        self._conn.executescript(SCHEMA.read_text())
+        for migration in sorted(MIGRATIONS.glob("[0-9][0-9][0-9]_*.sql")):  # idempotent, in order
+            self._conn.executescript(migration.read_text())
 
     @contextmanager
     def tx(self) -> Iterator[sqlite3.Connection]:

@@ -141,3 +141,49 @@ class SessionView(Wire):
     player: Player
     consent: Consent
     is_operator: StrictBool
+
+
+# ---------------------------------------------------------------------------
+# Will's DailyAnswer / PrevalenceGuess, stored by privacy (PRIVATE: author +
+# server only). Mirrored, not forked: the drift test compares with protocol.ts.
+# ---------------------------------------------------------------------------
+WEIGHTS = {"on_day": 1.0, "catch_up": 0.6, "follow_up_bonus": 0.1, "max": 1.1}
+SafetyLevel = Literal["none", "distress", "harm"]
+
+
+def expected_weight(is_catch_up: bool, follow_up_used: bool) -> float:
+    base = WEIGHTS["catch_up"] if is_catch_up else WEIGHTS["on_day"]
+    bonus = WEIGHTS["follow_up_bonus"] if follow_up_used else 0.0
+    return round(min(WEIGHTS["max"], base + bonus), 4)
+
+
+def _answer_text(value: str) -> str:
+    value = unicodedata.normalize("NFC", value).strip()
+    if not 1 <= len(value) <= 400:
+        raise ValueError("text must be 1-400 characters")
+    return value
+
+
+class DailyAnswer(Wire):
+    answer_id: Id
+    cycle_id: Id
+    day: Literal[1, 2, 3, 4, 5]
+    question_id: Id
+    player_id: Id
+    text: Annotated[StrictStr, AfterValidator(_answer_text)]
+    source: Literal["voice", "text"]
+    is_catch_up: StrictBool
+    weight: float = Field(gt=0, le=WEIGHTS["max"])
+    follow_up_used: StrictBool
+    created_at: IsoTime
+    edited_at: IsoTime | None
+    deleted_at: IsoTime | None
+
+    def weight_is_server_rule(self) -> bool:
+        return abs(self.weight - expected_weight(self.is_catch_up, self.follow_up_used)) < 1e-9
+
+
+class PrevalenceGuess(Wire):
+    cycle_id: Id
+    player_id: Id
+    percent: StrictInt = Field(ge=0, le=100)

@@ -11,12 +11,14 @@ from .api import (
     install_privacy_error_handler,
     session_token,
 )
+from .answers import AnswerStore
 from .errors import PrivacyError
 from .service import Actor, ChangeNotice, JoinResult, PrivacyService
 from .store import PrivacyStore
 
 __all__ = [
     "Actor",
+    "AnswerStore",
     "ChangeNotice",
     "JoinResult",
     "PrivacyError",
