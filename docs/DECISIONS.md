@@ -118,8 +118,16 @@ Status: accepted.
 Contract version / migration: 2.0.0 unchanged (comments only).
 Verification: `git grep -w Constellations` matches only history (DECISIONS entries before D011, docs/updates).
 
-## D012: Live speech-to-text while the player talks (proposed by Patrik, at the human's direction)
-ID / UTC timestamp: D012 / 2026-11-13T07:30Z (proposed; first filed as D011, renumbered after the brand-rename D011 landed)
+## D012: v3 redesign (daily constellations, Saturday sky, Sunday Meta-logo main constellation, 24-hour chat, events)
+ID / UTC timestamp: D012 / 2026-11-13T08:00Z
+Decision and rationale: make "you are not alone" a daily feeling and keep it anonymous. Each answer shows the constellations you joined that day (several possible, day colors). Saturday shows all of them plus faint second-degree constellations over the whole sky. Sunday reveals one main constellation of your closest people (2+ shared constellations or very similar answers), drawn as the Meta logo, with a 24-hour anonymous chat that keeps mutual reveal. Removed: percentages and Sky statistics, prevalence guess, constellation and room names, M5 naming, M8 Sky narration. Added: `answeredToday`, event interest and constellation event nudges, custom events every few weeks (operator approved, 3+ RSVPs). Spec: docs/PRD-v3.md. Task board: README "Work board (v3)".
+Owner: Rishi (team lead). Affected: all owners.
+Status: approved by Rishi; ACK pending `@adamzhang06`, `@willapat`, `@patrikliska13`, `@beatopia` (reply on the D012 issue).
+Contract version / migration: 3.0.0, breaking; Rishi drafts `contracts/protocol.ts` 3.0.0. 2.1.0 stays in force until then.
+Verification: per-screen acceptance checks in docs/PRD-v3.md and README.
+
+## D013: Live speech-to-text while the player talks (proposed by Patrik, at the human's direction)
+ID / UTC timestamp: D013 / 2026-11-13T07:30Z (first filed as D011, then D012; renumbered after the brand-rename D011 and the v3 D012 landed)
 Decision and rationale: Today a voice answer is recorded whole, then sent to `POST /voice/transcribe`. Proposal: an additive WebSocket route `WS /api/v1/voice/live` that relays 16 kHz mono PCM16 from the browser to Muse Voice Transcribe realtime (`wss://api.meta.ai/v1/asr/realtime`, `PUSH_TO_TALK`, cumulative partials) and streams partial then final text back, so words appear in the answer box as the player speaks. The server holds the key (never the browser). The transcript is a draft only: the player edits it and submits through `POST /cycles/:id/answers`, where M1 screening runs as before.
 Guards: session from the cookie (Patrik's `actor_dependency`, now typed `HTTPConnection` so it works on WebSockets) and `require_consent` before any audio; same-host Origin check (cookie-authenticated WebSockets are not covered by CORS); 60 s and size caps per turn; final text capped at 400 chars; audio and transcripts never logged or stored; provider errors never echoed. The route is mounted only when live STT is configured; otherwise the browser falls back to `POST /voice/transcribe`, and typing always works.
 Owner and affected: Will (owner of `server/voice`, `server/cycle/api.py`, the daily UI); Kai (composition: the registry is HTTP-only today, so it must accept WebSocket routes before passing `live_stt`); Patrik (privacy review: no new data stored; audio already goes to Muse for transcription).
