@@ -708,8 +708,10 @@ def test_stage_controls_run_the_demo_week_with_phones_typing_only_friday():
         assert body["cycle"]["status"] == "revealed"
         assert all(p["constellation"] for p in body["panels"])
         assert len(body["constellations"]) >= 2
-        # Starting again gives a fresh Monday for the same phones.
+        # Starting again gives a fresh Monday and re-detects: a pin from before is dropped.
+        call(client, laptop, "POST", "/me/stage", json={"slot": "A"})
         body = call(client, laptop, "POST", "/operator/stage/start").json()
+        assert [p["displayName"] for p in body["panels"]] == [phone_a.name, phone_b.name]
         assert (body["cycle"]["status"], body["cycle"]["currentDay"]) == ("open", 1)
         assert [x["day"] for x in body["panels"][1]["answers"]] == [1]
 
