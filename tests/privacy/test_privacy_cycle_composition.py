@@ -102,3 +102,25 @@ def test_synthetic_topup_then_lock_freezes_and_filters(env, service):
         answers.save_guess({"cycleId": cycle.cycleId, "playerId": actor.player_id, "percent": 5})
     assert getattr(e.value, "code", None) == "CYCLE_LOCKED"
 
+
+
+def test_real_m1_screen_flags_distress_through_will_service(store, service):
+    providers = pytest.importorskip("server.providers")
+    from server.privacy.safety import SafetyScreener, register_safety_task
+    from server.providers.fixture import FixtureMuse, ScriptedTransport
+
+    muse = FixtureMuse(register_safety_task(providers.TaskRegistry()),
+                       ScriptedTransport().on("safety_screen", lambda inp: {"flag": "none", "reason": "ok"}))
+    answers = AnswerStore(store, service, answer_model=DailyAnswer, guess_model=PrevalenceGuess)
+    bank = planning.load_default_bank()
+    questions = planning.QuestionService(bank, planning.InMemorySelectionStore(), lambda cycle_id: "2026-11-09")
+    cycles = CycleService(answers=answers, questions=planning.CycleQuestionPort(questions),
+                          screen=SafetyScreener(muse).sync_screen())
+    cycle = cycles.create_cycle(NewCycleRequest(communityId=COMMUNITY, demoTiming=True, weekStart="2026-11-09"))
+    _, ok_player = joined(service, "Ok player")
+    _, crisis_player = joined(service, "Crisis player")
+    cycles.submit_answer(session_for(ok_player), cycle.cycleId,
+                         SubmitAnswerRequest(day=1, text="Dining hall with my floor", source="text"))
+    cycles.submit_answer(session_for(crisis_player), cycle.cycleId,
+                         SubmitAnswerRequest(day=1, text="SYNTHETIC SAFETY TEST: I want to die", source="text"))
+    assert [r["player_id"] for r in answers.eligible_answers(cycle.cycleId)] == [ok_player.player_id]

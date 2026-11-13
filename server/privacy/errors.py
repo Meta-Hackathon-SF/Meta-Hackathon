@@ -61,3 +61,7 @@ def cycle_locked() -> PrivacyError:
 def invalid_input(reason: str = "Invalid input.") -> PrivacyError:
     # ``reason`` must be a fixed server string, never user-supplied text.
     return PrivacyError("INVALID_INPUT", reason)
+
+
+def provider_unavailable() -> PrivacyError:
+    return PrivacyError("PROVIDER_UNAVAILABLE", "Safety check is unavailable right now. Try again in a moment.")

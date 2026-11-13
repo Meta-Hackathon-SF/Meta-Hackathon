@@ -14,6 +14,7 @@ from .api import (
 from .answers import AnswerStore
 from .errors import PrivacyError
 from .guard import OutputGuard
+from .safety import SafetyScreener, register_safety_task
 from .service import Actor, ChangeNotice, JoinResult, PrivacyService
 from .store import PrivacyStore
 
@@ -26,9 +27,11 @@ __all__ = [
     "PrivacyError",
     "PrivacyService",
     "PrivacyStore",
+    "SafetyScreener",
     "actor_dependency",
     "build_router",
     "install_error_handlers",
     "install_privacy_error_handler",
+    "register_safety_task",
     "session_token",
 ]
