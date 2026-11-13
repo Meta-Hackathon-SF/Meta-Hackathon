@@ -1,1 +1,286 @@
-:root{font-family:Inter,Segoe UI,system-ui,sans-serif;color:#e7edf7;background:#080d15;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,a,input{ -webkit-tap-highlight-color:transparent}button{font:inherit;cursor:pointer}main{max-width:1250px;padding:0 44px 24px;margin:auto}.truth{font-size:11px;letter-spacing:1.3px;text-align:center;background:#263227;color:#d1eac9;padding:9px;margin:0 -44px}header{height:86px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #243043}.brand{display:flex;align-items:center;gap:10px;color:#e7edf7;text-decoration:none;font-size:19px;font-weight:650}.brand>span:last-child{font-weight:350;color:#a6b8d0;margin-left:4px}.brand-icon{display:inline-grid;place-items:center;background:#1877f2;color:white;width:29px;height:29px;border-radius:50%;font:bold 31px Arial;padding-top:5px}.preview{font-size:10px;color:#8396b0;letter-spacing:1.6px}nav{display:flex;gap:24px;margin-top:20px}nav button{background:none;border:0;border-bottom:2px solid transparent;color:#90a1b7;padding:12px 0;font-size:13px}nav button[aria-pressed=true]{color:#d9e8ff;border-color:#78a9ed}.intro{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:30px 0 27px}.eyebrow{font-size:10px!important;letter-spacing:2.1px;color:#8da7cb!important}h1{font-size:35px;letter-spacing:-1px;font-weight:540;margin:10px 0}.intro p{color:#96a8c0;font-size:13px;line-height:1.65;max-width:660px;margin-bottom:0}.week{font-size:10px;letter-spacing:1.5px;color:#8396b0;line-height:1.8;text-align:right;white-space:nowrap}.week strong{font-size:16px;font-weight:450;letter-spacing:0;color:#dce7f6}.sky-card{overflow:hidden;border:1px solid #2a3a50;border-radius:16px;background:#0d1726}.sky-toolbar,.sky-caption{display:flex;justify-content:space-between;gap:12px;padding:17px 22px;font-size:11px;color:#90a8c6}.sky-toolbar{border-bottom:1px solid #1d2c41}.sky-toolbar>span:first-child{color:#c5d6ec}.sky-toolbar i{display:inline-block;width:5px;height:5px;border-radius:50%;background:#8ec1ff;margin-right:8px}canvas{display:block;width:100%;height:clamp(320px,48vh,560px)}.sky-caption{border-top:1px solid #1d2c41;font-size:10px}.controls{display:flex;justify-content:space-between;gap:20px;padding:24px 0;flex-wrap:wrap}.day-controls{display:flex;gap:5px;flex-wrap:wrap}.day-controls button{border:1px solid transparent;background:transparent;color:#a7b5c9;font-size:11px;padding:9px;border-radius:7px}.day-controls button[aria-pressed=true]{background:#18273b;border-color:#3c5472;color:#eff5ff}.day-controls span{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:6px}label{display:flex;align-items:center;gap:7px;font-size:11px;color:#bccce1}input{accent-color:#78a9ed}small{color:#7e91ac;font-size:10px}footer{display:flex;justify-content:space-between;gap:15px;border-top:1px solid #202b3c;padding-top:18px;font-size:10px;color:#7e91aa;line-height:1.6}.formation{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 0;font-size:12px;color:#b4c7df}progress{accent-color:#78a9ed;width:30%}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #b2d0ff;outline-offset:4px}@media(max-width:700px){main{padding:0 18px 20px}.truth{margin:0 -18px;font-size:9px;letter-spacing:.4px}header{height:70px}.preview{display:none}.intro{padding:25px 0}h1{font-size:27px}.week{display:none}.sky-toolbar,.sky-caption{padding:14px;font-size:9px}footer{flex-direction:column;gap:5px}.controls{padding:18px 0}.day-controls button{padding:8px 6px;font-size:10px}}
+:root {
+  font-family:
+    Inter,
+    Segoe UI,
+    system-ui,
+    sans-serif;
+  color: #e7edf7;
+  background: #080d15;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+}
+main {
+  max-width: 1250px;
+  padding: 0 44px 24px;
+  margin: auto;
+}
+.truth {
+  font-size: 11px;
+  letter-spacing: 1.3px;
+  text-align: center;
+  background: #263227;
+  color: #d1eac9;
+  padding: 9px;
+  margin: 0 -44px;
+}
+header {
+  height: 86px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #243043;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e7edf7;
+  text-decoration: none;
+  font-size: 19px;
+  font-weight: 650;
+}
+.brand > span:last-child {
+  font-weight: 350;
+  color: #a6b8d0;
+  margin-left: 4px;
+}
+.brand-icon {
+  display: inline-grid;
+  place-items: center;
+  background: #1877f2;
+  color: white;
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  font: bold 31px Arial;
+  padding-top: 5px;
+}
+.preview {
+  font-size: 10px;
+  color: #8396b0;
+  letter-spacing: 1.6px;
+}
+nav {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+}
+nav button {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: #90a1b7;
+  padding: 12px 0;
+  font-size: 13px;
+}
+nav button[aria-pressed="true"] {
+  color: #d9e8ff;
+  border-color: #78a9ed;
+}
+.intro {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 30px 0 27px;
+}
+.eyebrow {
+  font-size: 10px !important;
+  letter-spacing: 2.1px;
+  color: #8da7cb !important;
+}
+h1 {
+  font-size: 35px;
+  letter-spacing: -1px;
+  font-weight: 540;
+  margin: 10px 0;
+}
+.intro p {
+  color: #96a8c0;
+  font-size: 13px;
+  line-height: 1.65;
+  max-width: 660px;
+  margin-bottom: 0;
+}
+.week {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: #8396b0;
+  line-height: 1.8;
+  text-align: right;
+  white-space: nowrap;
+}
+.week strong {
+  font-size: 16px;
+  font-weight: 450;
+  letter-spacing: 0;
+  color: #dce7f6;
+}
+.sky-card {
+  overflow: hidden;
+  border: 1px solid #2a3a50;
+  border-radius: 16px;
+  background: #0d1726;
+}
+.sky-toolbar,
+.sky-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px 22px;
+  font-size: 11px;
+  color: #90a8c6;
+}
+.sky-toolbar {
+  border-bottom: 1px solid #1d2c41;
+}
+.sky-toolbar > span:first-child {
+  color: #c5d6ec;
+}
+.sky-toolbar i {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #8ec1ff;
+  margin-right: 8px;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: clamp(320px, 48vh, 560px);
+}
+.sky-caption {
+  border-top: 1px solid #1d2c41;
+  font-size: 10px;
+}
+.controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 0;
+  flex-wrap: wrap;
+}
+.day-controls {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.day-controls button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #a7b5c9;
+  font-size: 11px;
+  padding: 9px;
+  border-radius: 7px;
+}
+.day-controls button[aria-pressed="true"] {
+  background: #18273b;
+  border-color: #3c5472;
+  color: #eff5ff;
+}
+.day-controls span {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #bccce1;
+}
+input {
+  accent-color: #78a9ed;
+}
+small {
+  color: #7e91ac;
+  font-size: 10px;
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  border-top: 1px solid #202b3c;
+  padding-top: 18px;
+  font-size: 10px;
+  color: #7e91aa;
+  line-height: 1.6;
+}
+.formation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 0;
+  font-size: 12px;
+  color: #b4c7df;
+}
+progress {
+  accent-color: #78a9ed;
+  width: 30%;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid #b2d0ff;
+  outline-offset: 4px;
+}
+@media (max-width: 700px) {
+  main {
+    padding: 0 18px 20px;
+  }
+  .truth {
+    margin: 0 -18px;
+    font-size: 9px;
+    letter-spacing: 0.4px;
+  }
+  header {
+    height: 70px;
+  }
+  .preview {
+    display: none;
+  }
+  .intro {
+    padding: 25px 0;
+  }
+  h1 {
+    font-size: 27px;
+  }
+  .week {
+    display: none;
+  }
+  .sky-toolbar,
+  .sky-caption {
+    padding: 14px;
+    font-size: 9px;
+  }
+  footer {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .controls {
+    padding: 18px 0;
+  }
+  .day-controls button {
+    padding: 8px 6px;
+    font-size: 10px;
+  }
+}

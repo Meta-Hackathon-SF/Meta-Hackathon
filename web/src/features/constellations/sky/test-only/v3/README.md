@@ -1,21 +1,29 @@
-# TEST-ONLY proposed v3 sky
+# Proposed v3 sky preview
 
-Standalone synthetic fixture, draft types and strict validators. No production imports, routes, live APIs, model calls or participant data. Contract 2.1 remains active; this does not claim an accepted v3 contract or integrated backend.
+This synthetic preview covers the Saturday sky, a labeled formation visualization
+and illustrative Sunday Meta-logo anchors. Production uses contract 2.1.0 while
+Rishi prepares the approved 3.0.0 shapes.
 
-From `web/`, run the single focused suite:
+Run from web/ with the following command.
 
-```powershell
+```sh
 npx playwright test --config src/features/constellations/sky/test-only/v3/playwright.config.ts
 ```
 
-For local review on the dedicated port:
+For interactive review, run the preview server and open http://127.0.0.1:5194/.
 
-```powershell
+```sh
 node node_modules/vite/bin/vite.js --config src/features/constellations/sky/test-only/v3/vite.config.ts
 ```
 
-Open `http://127.0.0.1:5194/`. Saturday draws 10,000 fixed positions with no zoom, five day colors, own-star ring and second-degree lines at 25% opacity. Whole-week/day filtering and second-degree visibility are local preview controls. The forming tab is explicitly an illustrative visualization. Sunday shows four synthetic anchors on an illustrative infinity path, with no chat or real formation claim.
+The Canvas renders 10,000 fixed synthetic positions, five day colors, the viewer's
+star marker and second-degree lines at 25% opacity. Preview controls select days and
+scenes. Formation is labeled as illustrative. Sunday uses four synthetic anchors
+on an infinity path. A frame-rate benchmark and live producer integration remain
+pending.
 
-Verified locally: the focused command above passed **2 tests** in **5.8 seconds**, using installed Google Chrome (`channel: 'chrome'`) on port 5194. The initial attempt with bundled Chromium passed validation but could not launch the browser because Playwright's browser download was absent. The final run covers desktop and 390px mobile rendering, controls, no wheel zoom, visible fixture labels, progress animation and invalid/private payload rejection. Screenshots are written into this directory's `artifacts/` folder. Root review also passed web lint/build. Lint warnings remain in existing Will-owned files. The full application E2E run is recorded separately in Kai's handoff.
-
-Positions use explicitly decoded little-endian signed 16-bit pairs on 0..32767. Validators enforce byte length = count × 4, index/grid bounds, day/color agreement, own membership, neighbor linkage, two sets per neighbor, 40-set/3,000-star caps and strict field allowlists at every object level. Extra private fields are rejected rather than stripped. Star indices are synthetic cycle-local indices, never participant identifiers.
+Draft validators enforce case-sensitive field allowlists, base64 byte length,
+little-endian 16-bit positions, grid/index bounds, day/color agreement, own
+membership, neighbor links and second-degree caps. Chrome is selected on Windows;
+other platforms use Playwright's bundled Chromium. Screenshots go to the ignored
+artifacts/ directory. Actual commands and results are recorded in Kai's handoff.
