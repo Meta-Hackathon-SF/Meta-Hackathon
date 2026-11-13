@@ -1,5 +1,5 @@
 /*
- * Live speech-to-text while the player talks (PROPOSED, D012; owner Will).
+ * Live speech-to-text while the player talks (PROPOSED, D013; owner Will).
  * Mic -> AudioWorklet (16 kHz mono PCM16, ~100 ms chunks) -> WebSocket
  * /voice/live -> server relay (holds the Muse key) -> partial + final text.
  * Audio stays in memory and is never stored. Tracks are released on stop,
