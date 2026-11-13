@@ -3,14 +3,14 @@ import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 import { museChatPlugin } from './museChatPlugin.ts'
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => ({
   plugins: [react(), tailwindcss(), ...(mode === 'fixture' ? [museChatPlugin()] : [])],
   // The normal local app uses the same cookie/session origin and API path as production.
   // Only the explicitly selected fixture mode uses the in-browser test adapters.
-  define: mode === 'live' ? {
+  define: command === 'serve' && mode !== 'fixture' ? {
     'import.meta.env.VITE_CONSTELLATIONS_API': JSON.stringify('/api/v1'),
   } : undefined,
-  server: mode === 'live' ? {
+  server: command === 'serve' && mode !== 'fixture' ? {
     proxy: {
       '/api/v1': {
         target: 'https://constellations-demo-zeta.vercel.app',
