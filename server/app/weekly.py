@@ -331,6 +331,7 @@ def build_weekly_app(
     stage_router, holder["stage_note"] = build_stage_router(
         repository=repository,
         privacy=privacy,
+        privacy_store=privacy_store,
         answers=answers,
         cycles=cycles,
         guard=guard,
