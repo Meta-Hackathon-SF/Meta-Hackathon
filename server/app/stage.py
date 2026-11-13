@@ -306,6 +306,10 @@ def build_stage_router(*, repository, privacy, privacy_store, answers, cycles, g
             cycle = cycles.reset(cycle.cycleId)
         else:
             cycle = cycles.create_cycle(NewCycleRequest(communityId=community, demoTiming=True))
+        # Every new week re-detects the phones: the two newest joiners, so slots
+        # pinned in an earlier rehearsal never hold the stage. "Hide me" still holds.
+        with repository.transaction() as state:
+            state.records.setdefault("stageSlots", {})[community] = {}
         fill_day(cycle, community, pin(community, actor.player_id))
         return view(actor)
 

@@ -121,12 +121,14 @@ function CommunitySky({ view, phase }: { view: StageView; phase: Phase }) {
       map.stars.forEach((p) => pos.push({ x: ox + p.x, y: oy + p.y }));
       map.edges.forEach(([a, b]) => lines.push([pos[start + a], pos[start + b]]));
       for (const s of g.slots) slotDot[s] = start;
-      labels.push({ x: cell.cx, y: cell.cy + cell.ch * 0.42, name: shortName(g.name) ?? "", slot: g.slots[0] ?? null });
+      // Keep names (and the phones' outlines below) inside the sky at its edges.
+      const labelHalf = ((shortName(g.name) ?? "").length * (g.slots[0] ? 7.2 : 6)) / 2 + 4;
+      labels.push({ x: Math.min(SKY_W - labelHalf, Math.max(labelHalf, cell.cx)), y: cell.cy + cell.ch * 0.42, name: shortName(g.name) ?? "", slot: g.slots[0] ?? null });
       if (g.slots[0]) {
         const xs = map.stars.map((p) => ox + p.x), ys = map.stars.map((p) => oy + p.y);
         const half = ((shortName(g.name) ?? "").length * 7.2) / 2 + 8; // the bold name under the stars
-        const x = Math.min(Math.min(...xs) - 12, cell.cx - half), y = Math.min(...ys) - 12;
-        const right = Math.max(Math.max(...xs) + 12, cell.cx + half);
+        const x = Math.max(2, Math.min(Math.min(...xs) - 12, cell.cx - half)), y = Math.max(2, Math.min(...ys) - 12);
+        const right = Math.min(SKY_W - 2, Math.max(Math.max(...xs) + 12, cell.cx + half));
         boxes.push({ x, y, w: right - x, h: cell.cy + cell.ch * 0.42 + 8 - y, slot: g.slots[0] });
       }
     });
