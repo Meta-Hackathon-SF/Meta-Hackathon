@@ -5,7 +5,7 @@ import { populationPosts } from "../data/population";
 import type { Post, PostImage } from "../types/feed";
 import { AppContext } from "./context";
 
-const STORAGE_KEY = "closer-together-feed-v2";
+const STORAGE_KEY = "closer-together-feed-v3";
 
 function loadPosts(): Post[] {
   try {

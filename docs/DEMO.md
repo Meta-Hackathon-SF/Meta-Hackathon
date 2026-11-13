@@ -28,7 +28,7 @@ words they used, and places you with 5 or more people who feel the same. On Sund
 - Real: Muse M3 groups each day, M4 forms Sunday's groups, code enforces size (5 or more, no
   maximum), blocks, one placement per player, and no quotes. Shared-meaning lines pass the output
   guard and show only for 3 or more people.
-- Simulated and labeled: the 38-player demo population (synthetic profiles), Facebook friend and
+- Simulated and labeled: the 108-player demo population (100-person synthetic cast plus 8 fixture players, D018), Facebook friend and
   Messenger actions ("Simulated Facebook"), and chat messages (no live source yet).
 - Not claimed: scale beyond the demo population, live results on real users.
 

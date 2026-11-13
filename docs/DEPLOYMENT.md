@@ -25,7 +25,7 @@ In a real browser against the Vercel URL, with a synthetic test player holding t
 | Operator starts a week | 201; Monday question shown |
 | Answer (M1 safety screen, M2 follow-up) | 202 in about 1 to 2 s; Muse live on `muse-ember-1.0` |
 | Advance Monday to Friday | 200 each |
-| Synthetic top-up (`POST /operator/cycles/{id}/synthetic-topup`) | 200; 38 labeled synthetic players and their answers |
+| Synthetic top-up (`POST /operator/cycles/{id}/synthetic-topup`) | 200; 38 labeled synthetic players and their answers (since D018 the cast is 108) |
 | Lock and formation | Muse ran the whole job in about 10 s: 1 M3 and 1 M4 on `muse-ember-1.0`, 12 M5 and 2 M8 on `muse-wonder-1.0`, all `source: live` in `/operator/calls` |
 | Reveal | 200 once the formation job had finished; cycle `revealed` |
 | Sky (`GET /cycles/{id}/sky`) | 200: 38 eligible players, 12 constellations, 1 theme above threshold, 5 suppressed, live M8 headlines |

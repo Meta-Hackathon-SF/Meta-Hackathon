@@ -156,7 +156,7 @@ def test_built_payloads_validate_against_contract_schemas():
 
 
 def test_registered_m4_spec_is_v2_with_tested_sentences():
-    assert prompts.PROMPT_VERSION_M4 == "constellation_formation.v2"
+    assert prompts.PROMPT_VERSION_M4 == "constellation_formation.v3"  # v3: specific groups of 5-10
     spec = register_formation_specs(TaskRegistry()).get("constellation_formation",
                                                         prompts.PROMPT_VERSION_M4)
     assert spec is not None and spec.input_schema == M4_IN

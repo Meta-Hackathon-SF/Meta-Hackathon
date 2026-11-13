@@ -12,6 +12,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from server.orchestration.api import event_stream
+from server.privacy import demo_population
 from server.privacy.fixtures import grant_operator, seed_community
 from server.providers.fixture import decode_user_message
 
@@ -603,11 +604,12 @@ def test_operator_topup_records_canonical_synthetic_labels():
         assert response.status_code == 200
         with env.repository.transaction() as state:
             labeled = state.records["syntheticPlayers"]
-            assert len(labeled) == 38  # 8 fixture players + the 30-player demo cast (#84)
+            assert len(labeled) == CAST_SIZE
             assert all(row["communityId"] == COMMUNITY for row in labeled.values())
 
 
 ANSWER = "Synthetic private submission number {} for this week"
+CAST_SIZE = 8 + len(demo_population.players())  # fixture players + the synthetic demo cast
 
 
 def test_stage_shows_only_opted_in_players_answers_to_operators():
@@ -690,7 +692,8 @@ def test_topup_needs_a_session_is_labeled_and_seeds_the_maya_dev_pair():
         topped = call(client, operator, "POST", path)
         assert topped.status_code == 200
         assert (
-            topped.json()["label"] == "Synthetic player" and topped.json()["syntheticPlayers"] == 38
+            topped.json()["label"] == "Synthetic player"
+            and topped.json()["syntheticPlayers"] == CAST_SIZE
         )
         with env.privacy_store.tx() as conn:
             rows = conn.execute(
@@ -698,7 +701,7 @@ def test_topup_needs_a_session_is_labeled_and_seeds_the_maya_dev_pair():
             ).fetchall()
             seeded = {r[0]: r for r in rows if r[0] not in (operator.player_id, player.player_id)}
             # Every generated account carries the synthetic flag and says so in its name.
-            assert len(seeded) == 38
+            assert len(seeded) == CAST_SIZE
             assert all(r[2] == 1 and "(synthetic)" in r[1] for r in seeded.values())
             assert {"p-maya", "p-dev"} <= set(seeded)
             day_one = dict(
@@ -715,7 +718,7 @@ def test_topup_needs_a_session_is_labeled_and_seeds_the_maya_dev_pair():
         assert again.status_code == 200 and again.json()["label"] == "Synthetic player"
         with env.privacy_store.tx() as conn:
             count = conn.execute("SELECT count(*) FROM players WHERE is_synthetic = 1").fetchone()
-        assert count[0] == 38
+        assert count[0] == CAST_SIZE
 
 
 def test_v3_live_routes_serve_indices_only_from_the_verified_session():

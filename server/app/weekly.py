@@ -54,6 +54,7 @@ from server.privacy import (
     PrivacyService,
     SafetyScreener,
     actor_dependency,
+    demo_population,
     install_privacy_error_handler,
     register_safety_task,
     session_token,
@@ -192,6 +193,8 @@ def build_weekly_app(
         # This is the authorized operator synthetic-top-up feature, not an auth
         # stand-in. The owner refuses any real-player fixture/reused real ID.
         ids = seed_players(privacy_store, community_id, players)
+        # Their Groups, approved event RSVPs and post topics (labels only; no text stored).
+        demo_population.seed_activity(privacy_store, community_id)
         with repository.transaction() as state:
             labeled = state.records.setdefault("syntheticPlayers", {})
             for player_id in ids:
