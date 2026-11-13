@@ -1,35 +1,99 @@
 # Facebook Space
 ### You're not the only one feeling this. Facebook Space shows you who's been feeling it right next to you.
 
-Most people our age feel like the only one carrying a private feeling, and they are almost never the only one. Facebook Space is a weekly game inside Facebook Groups that lets a Group find that out. Monday to Friday, Muse asks one honest question a day. On Saturday the week locks. On Sunday each player wakes up in a constellation: 3 to 5 people from their Group whose answers meant the same thing, in an anonymous, moderated chat that lasts one week. Names are revealed only when two people both choose to. The Sky shows the whole Group what people guessed about each other next to what was true. Friendship only, 18+.
+Most people our age feel like the only one carrying a private feeling, and they are almost never the only one. Facebook Space is a weekly game inside Facebook Groups that lets a Group find that out. Monday to Friday, Muse asks one honest question a day. Once you answer, you see the constellations you are in that day, drawn in that day's color. The only number shown is how many people answered today. On Saturday you see all your constellations for the week across the whole sky. On Sunday your closest 2 to 4 people appear as your main constellation, drawn as the Meta logo, with a 24-hour anonymous group chat. Names are revealed only when people both choose to. Friendship only, 18+.
 
-**Current state (2026-11-12):** main holds the mock Facebook web UI (`web/`, labeled "Simulated Facebook"), docs, contract 2.0.0 and shared fixtures. The weekly-game runtime is **not built**. Archived Group Quests server code (FastAPI app, Muse adapter, privacy/session code, voice boundary) lives on `archive/group-quests-before-pivot` and is restored by each owner into their own paths, then retested (build step 2).
+**v3 redesign:** the full spec is [docs/PRD-v3.md](docs/PRD-v3.md) (decision D012, contract 3.0.0, proposed). Constellations and rooms have no names, and there are no percentages, Sky stats or prevalence guesses. Anonymity is the design.
+
+**Current state (2026-11-13):** main runs the 2.1.0 weekly game end to end on test data: mock Facebook shell (`web/`, labeled "Simulated Facebook"), Kai's composed FastAPI app (`server/app`), the daily loop, formation (49.2 s live for 30 players, one run), anonymous chat with moderation and mutual reveal, nudges, and the operator console. `pytest tests` passes (842). Not yet done: v3 redesign, deployment, a full live run on phones.
 
 | Part | Status |
 | --- | --- |
 | Mock Facebook shell + feed tests (`web/`) | Existing. Mock data only. |
-| Contract `contracts/protocol.ts` 2.0.0 + `contracts/fixtures/` | Authored, typechecks; pending D006 ACK |
-| Server, Muse adapter, cycle, formation, chat, Sky, operator console | Planned (docs/PLAN.md) |
+| Contract 2.1.0 (`contracts/protocol.ts`) + fixtures | On main; D009/D010 merged ahead of owner ACKs |
+| 2.1.0 server: cycle, privacy, Muse adapter, formation, chat, nudges, composition | On main, test-verified; not deployed |
+| Contract 3.0.0 (v3 redesign, D012) | Proposed in [docs/PRD-v3.md](docs/PRD-v3.md); not yet in `contracts/` |
+| v3: daily constellations, Saturday sky, Sunday Meta logo, 24 h chat, events | Planned (work board below) |
 
 A specification is not evidence of a working journey. See [PROJECT_KNOWLEDGE.md](PROJECT_KNOWLEDGE.md).
 
 ## Start here
-**Coding agents: paste the master prompt in [docs/START_HERE.md](docs/START_HERE.md).**
+**Coding agents: paste the master prompt in [docs/START_HERE.md](docs/START_HERE.md).** Then take your tasks from the work board below and your role file in `docs/roles/`.
 
-| Owner | Owns | Tasks | Branch |
-| --- | --- | --- | --- |
-| Rishi | Semantic formation, validation, prevalence computation, synthetic signals | [rishi.md](docs/roles/rishi.md) | `role/rishi-matching` |
-| Adam | Muse adapter, question bank, generation and selection, follow-ups, event nudges | [adam.md](docs/roles/adam.md) | `role/adam-planning` |
-| Will | Weekly cycle, daily-answer experience, voice, streaks, operator controls, Groups tab | [will.md](docs/roles/will.md) | `role/will-voice-ui` |
-| Patrik | Verification, sessions, private answer storage, safety screening, output guards | [patrik.md](docs/roles/patrik.md) | `role/patrik-privacy` |
-| Kai | Anonymous chat, expiration, mutual reveal, realtime delivery, API composition, Sky UI | [kai.md](docs/roles/kai.md) | `role/kai-orchestration` |
-
-Build order: [docs/PLAN.md](docs/PLAN.md). Steps 6 (event nudges) and 7 (question generation, synthetic signals) are the first cuts.
-
-Deadline used in planning: November 13, 2026, 10:30 AM PST (team-supplied, not independently verified). Feature freeze 04:30 AM.
+Build order: [docs/PLAN.md](docs/PLAN.md). Deadline used in planning: November 13, 2026, 10:30 AM PST (team-supplied, not independently verified). Feature freeze 04:30 AM PST Nov 13.
 
 ## Product boundary
 `web/` is the mock Facebook shell. Keep it and its feed tests. Facebook Space lives in its own UI under `web/src/features/constellations/<area>/` (code name: constellations), reached from the Facebook Space shortcut in the left sidebar (`/space`) and its card on the home feed (Will owns routing). Feature CSS stays scoped. The shell's mock users and localStorage are not the product backend.
+
+## Work board (v3)
+Check a box only when the acceptance line is true on your branch, with a command or test you can name. Update this board in the same PR as the work. Per-role detail stays in `docs/roles/<name>.md`; if the two disagree, this board and [docs/PRD-v3.md](docs/PRD-v3.md) win.
+
+### Rishi (`@rishibagri`, branch `role/rishi-matching`)
+Matching, formation, sky layout, event interest. Largest share.
+
+Done:
+- [x] Formation core (`server/matching`). Accepts: formation tests pass offline.
+- [x] Validation and repair (size, everyone once, blocks). Accepts: validator rejects bad groupings in tests.
+- [x] Muse task registration for formation. Accepts: M3/M4 callable through the adapter.
+- [x] MatchingPort for Kai. Accepts: Kai composes it without importing matching internals.
+- [x] Live formation in 49.2 s (Adam's run). Accepts: recorded in the handoff; a baseline, not a target.
+- [x] Event allowlist fix. Accepts: nudge outside the allowlist is rejected.
+
+To do:
+- [ ] Contract 3.0.0 draft and D012. Owns `contracts/protocol.ts`, `docs/DECISIONS.md`. Accepts: typechecks, fixtures updated, every owner has an ACK or CHANGE.
+- [ ] Instant daily placement, code only, under 1 s. Owns `server/matching`. Accepts: a new answer returns that day's constellations in under 1 s with no Muse call.
+- [ ] Day-close formation of daily constellations (M3 batched). Owns `server/matching`. Accepts: closing a day produces constellations of 2+ people, each person placed, blocks respected.
+- [ ] Week co-membership graph. Owns `server/matching`. Accepts: shared-constellation counts per pair are reproducible from the day results.
+- [ ] Sunday main constellation: 2+ shared constellations or high closeness, groups of 3 to 5, blocks, repair, fallback, plus Meta-logo anchors. Owns `server/matching`. Accepts: validator passes; every player is in one group or labeled unplaced; fallback is labeled "Fallback grouping".
+- [ ] Sky layout: week-randomized star indices over about 10k positions, plus second-degree constellations (max 2 per star, caps). Owns `server/matching`. Accepts: your index differs week to week; no star exceeds 2 second-degree groups; the cap holds on a 10k fixture.
+- [ ] Formation progress stream with real candidate edges. Owns `server/matching`. Accepts: edges shown are ones the algorithm actually scored, not decoration.
+- [ ] Event constellation-interest counts and nudge eligibility (bucketed, 3+ only, allowlist from #44). Owns `server/matching`. Accepts: a count under 3 is never returned; an event outside the allowlist is never eligible.
+- [ ] Custom-event cluster finder (repeat matches over 3 weeks). Owns `server/matching`. Accepts: a seeded cluster of 3+ repeat matches is found; a one-off match is not.
+- [ ] Remove M5 naming, M8 Sky narration and the guess from matching. Owns `server/matching`. Accepts: grep finds no naming, prevalence or guess code; tests green.
+- [ ] Live quality run (`live_eval --gold --live`). Owns `server/matching`. Accepts: results and model/latency recorded in the handoff, labeled live.
+
+### Adam (`@adamzhang06`, branch `role/adam-planning`)
+Muse adapter, event data, copy jobs.
+- [ ] `eventId` on catalog events (#44). Owns the event catalog. Accepts: every approved event has a stable `eventId` used by nudges and interest counts.
+- [ ] `EventView` and events list backend. Owns `server/planning`. Accepts: list returns only approved events with bucketed counts, never raw ones.
+- [ ] Nudge copy job (M7). Accepts: output is strict JSON, passes the allowlist and guard, and is a labeled fallback on failure.
+- [ ] `custom_event` proposals (M7) and operator approval queue backend. Accepts: Muse proposes, nothing is visible until an operator approves, and 3+ RSVPs are required to run.
+- [ ] Remove M5 and M8 task specs. Accepts: no naming or Sky narration spec remains in the Muse registry or docs.
+
+### Will (`@willapat`, branch `role/will-voice-ui`)
+Daily experience, screens, operator controls.
+- [ ] `answeredToday` count. Owns the daily-answer UI. Accepts: shown after answering as the only number on screen.
+- [ ] Remove the guess UI and route. Accepts: no guess screen, route or copy remains; feed tests still green.
+- [ ] Day colors. Accepts: each weekday has one color used consistently across screens.
+- [ ] Daily constellation reveal screen. Accepts: after answering, shows all your constellations that day, unnamed, in that day's color.
+- [ ] Your-week screen. Accepts: lists the week's daily constellations without names or percentages.
+- [ ] Close-day operator control. Accepts: operator can close a day, labeled "Demo timing".
+- [ ] Custom-event approval UI. Accepts: operator sees Muse proposals, approves or rejects, and the decision is logged.
+
+### Patrik (`@patrikliska13`, branch `role/patrik-privacy`)
+Consent, private storage, retention, guards.
+- [ ] `eventSignals` consent toggle. Accepts: no interest or RSVP is stored for a player who has not opted in.
+- [ ] Interest and RSVP private storage. Accepts: another session gets 403; only bucketed counts leave the privacy module.
+- [ ] Retention for the new tables. Accepts: interest, RSVP and daily-placement data expire with the rest (14 days after lock); a TTL test proves it.
+- [ ] Privacy review of second-degree constellations and events. Accepts: written review in the handoff; no path lets a player infer who another player is.
+- [ ] OutputGuard on nudge and custom-event copy. Accepts: a fuzz test with known answers finds no 5-word overlap; sensitive terms are rejected.
+
+### Kai (`@beatopia`, branch `role/kai-orchestration`)
+Jobs, chat, sky UI, API composition.
+- [ ] Job runner for day close, lock, reveal and 24-hour expiry. Accepts: each job runs once, is idempotent, and a post to an expired chat returns `ROOM_EXPIRED`.
+- [ ] Saturday sky canvas (about 10k stars, no zoom). Accepts: renders your constellations plus low-opacity second-degree ones at demo frame rate on a laptop.
+- [ ] Loading screen on SSE `formation.progress`. Accepts: shows the real candidate edges as they arrive; falls back to a labeled visualization if the stream drops.
+- [ ] Sunday Meta-logo reveal. Accepts: the main constellation is drawn on the logo anchors for 2 to 4 people.
+- [ ] 24-hour chat change. Accepts: the chat expires 24 hours after reveal; mutual reveal still works; contact info is still blocked.
+- [ ] New route composition: `/sky/stars`, `/sky/mine`, `/main`, `/events`, invites. Accepts: each route is auth-checked and returns only the caller's own data.
+
+### Shared
+- [ ] Hosting per [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Accepts: the app runs on the chosen hosts and the checklist there is complete.
+- [ ] Rehearsal of the full week. Accepts: one timed run-through using [docs/DEMO.md](docs/DEMO.md), with failures logged.
+- [ ] Backup video. Accepts: a recording of the full journey, with every simulated element labeled.
+
+### Cut order
+Freeze is 04:30 AM PST Nov 13. If time runs short, cut in this order: (1) custom events become proposal plus approval only; (2) the progress stream becomes a labeled visualization; (3) second-degree constellations; (4) instant placement falls back to day-close only. **Never cut:** anonymity, consent, safety, OutputGuard, 24-hour expiry, mutual reveal, labels.
 
 ## The problem
 Young people tend to feel like the only one feeling something: lonely, pretending to be fine, missing home, behind everyone else, eating alone. Almost nobody says it out loud, so each person sees only other people's public side and assumes their own inner life is unusual. It usually isn't. Many people in the same Group privately feel the same thing, and each of them thinks they are the exception (pluralistic ignorance). That belief keeps people quiet, and quiet keeps it going.
@@ -57,33 +121,30 @@ Daily-question answers then help calibrate the match around what the player mean
 
 Once there is enough daily-question information, those answers become the primary basis for connections and the disclaimer is removed. The readiness criterion and this onboarding flow still need implementation; no answer-count threshold is specified here. Activity signals and private answers are never shown to other players, and identity still requires mutual reveal.
 
-## How a week works
-1. **Join.** Facebook Space tab inside a Group, or QR. One screen explains what is private and what is shared. Three consent toggles (match me, anonymous chat, 18+) are required before any answer. The planned first-use flow starts with activity-based provisional connections and the calibration disclaimer above while daily-question information builds up.
-2. **Daily answer (Mon-Fri).** One question per day from the question bank. Answer by voice or text, 1 to 400 characters. Muse may ask one follow-up. Answering on the day counts at full weight and builds a streak.
-3. **Catch-up.** Missed a day? Answer it any time before Saturday lock. Catch-up answers count at lower weight and never extend a streak.
-4. **Guess.** Each player guesses what percent of the Group feels like them this week.
-5. **Safety triage.** Every answer is screened for distress or harm first. Flagged answers are excluded everywhere; the player sees a private support card.
-6. **Saturday lock.** Answers freeze. Muse groups players into constellations of 3 to 5 by meaning across the week's weighted answers, then names each one. Code validates size, placement and blocks. Weak fits get an honest "looser this week" label.
-7. **Sunday reveal.** Each player sees their constellation's name and shape and joins its anonymous chat as "Star 1-5". Every message is screened; contact info is blocked; report and block are one tap. The room expires at the next Saturday lock.
-8. **Mutual reveal.** Either player can ask to reveal. Names appear only when both asked each other. A one-sided request reveals nothing.
-9. **Event nudge.** Mid-week, Muse suggests one public campus event or venue that fits what the constellation shares. Public places only, 3 or more people.
-10. **The Sky.** The Group sees every constellation as stars, themes shared by 3+ people (25+ in production), and guessed vs actual prevalence. Synthetic aggregate signals are labeled.
+## How a week works (v3)
+1. **Join.** Facebook Space tab inside a Group, or QR. One screen explains what is private and what is shared. Three consent toggles (match me, anonymous chat, 18+) are required before any answer. Event signals are a separate optional toggle (`eventSignals`).
+2. **Daily answer (Mon-Fri).** One question per day. Answer by voice or text, 1 to 400 characters. Muse may ask one follow-up. Every answer is screened for distress or harm first; flagged answers are excluded everywhere and the player sees a private support card.
+3. **Daily reveal.** Right after you answer, code places you instantly (under 1 s) and you see the constellations you are in that day, in that day's color. You may be in several. They have no names. The only number on screen is how many people answered today. When the day closes, Muse-assisted formation (M3, batched) settles the day's constellations.
+4. **Saturday.** The week locks. You see all your constellations from the week, plus low-opacity second-degree constellations, across the whole sky of about 10k stars. No zoom. Your star position is randomized each week. A loading screen shows the algorithm trying real candidate connections.
+5. **Sunday.** Your main constellation forms from the closest 2 to 4 people: 2 or more shared constellations, or very similar answers. It is drawn as the Meta logo, with a 24-hour anonymous group chat. Every message is screened; contact info is blocked; report and block are one tap. The chat expires 24 hours after it opens.
+6. **Mutual reveal.** Anyone can ask to reveal. Names appear only for people who both asked. A one-sided request reveals nothing.
+7. **Events.** You get a nudge to an approved event when people from your constellations are going. Counts are bucketed and shown only at 3 or more. Every few weeks, a cluster of repeat matches can get a custom event: Muse proposes, an operator approves, and it runs only with 3+ RSVPs. Public places only.
 
-Operator console runs the demo week (advance day, lock, reveal, synthetic top-up, reset) and shows model metadata and latency for every Muse call.
+Operator console runs the demo week (advance day, close day, lock, reveal, synthetic top-up, reset) and shows model metadata and latency for every Muse call.
 
 ## Example week
-- **Maya**, first-year, 18. Moved 900 miles, eats most meals alone. Monday she writes "I eat in my room so no one sees me alone". Wednesday she catches up on Tuesday's question.
-- **Dev**, transfer, 20. Writes "cooking for one is honestly depressing". A keyword baseline splits Maya and Dev. Muse puts them in the same constellation.
+- **Maya**, first-year, 18. Moved 900 miles, eats most meals alone. Monday she writes "I eat in my room so no one sees me alone". She answers, and sees two constellations in Monday's color. Wednesday she catches up on Tuesday's question.
+- **Dev**, transfer, 20. Writes "cooking for one is honestly depressing". A keyword baseline splits Maya and Dev. Muse puts them in a shared constellation, twice that week.
 - **Jordan**, international, 19. Answers by voice. Three-day streak.
 - **Sam**, sophomore with friends. Plays for fun and is the density that makes the game work for Maya.
 
-Sunday, Maya and Dev are "Star 1" and "Star 3" in the same room. Muse nudges the room toward Thursday's open mic. After two days of chat they both tap reveal. The Sky shows the Group guessed 12% eat alone. It was 57%.
+Saturday, Maya sees her week's constellations and a faint second ring of people one step away, across the whole sky. Sunday, Maya and Dev share a main constellation drawn as the Meta logo, with one other person, and a chat that lasts 24 hours. They both tap reveal. Thursday's open mic was nudged to them because several people from their constellations were going.
 
 ## Why Facebook
 Facebook already has the communities, and a Group carries existing trust. Facebook Space runs inside Groups young adults already belong to and gives them a weekly habit. This prototype simulates the shell. We claim no Groups, Messenger or Events API access.
 
 ## Why only AI
-No human can read a week of private answers from thousands of people, match them by meaning, and moderate every anonymous room. No chatbot sees more than one person. Code cannot understand what an answer means. Deterministic code validates every output and owns every guarantee.
+No human can read a week of private answers from thousands of people, match them by meaning, and moderate every anonymous chat. No chatbot sees more than one person. Code cannot understand what an answer means. Deterministic code validates every output and owns every guarantee.
 
 ## Muse
 Muse makes the judgment calls. **Muse proposes, code enforces.**
@@ -92,16 +153,16 @@ Muse makes the judgment calls. **Muse proposes, code enforces.**
 | --- | --- | --- | --- | --- |
 | M1 | Safety screen (answers and chat) | Patrik | `{flag, reason}` | Flagged content excluded everywhere |
 | M2 | Follow-up | Adam | `{needsFollowup, question}` | Max one per answer |
-| M3 | Theme discovery | Rishi | `{themes}` | Labels pass no-quote check |
-| M4 | Constellation formation | Rishi | `{constellations: [{memberIds, sharedMeaning, confidence}]}` | 3-5, everyone once, blocks respected |
-| M5 | Constellation naming | Rishi | `{name, shapeId, colorId}` | Fixed sets; guard |
+| M3 | Theme discovery (day close, batched) | Rishi | `{themes}` | Labels pass no-quote check |
+| M4 | Constellation formation (daily and Sunday main) | Rishi | `{constellations: [{memberIds, sharedMeaning, confidence}]}` | Size limits, everyone placed, blocks respected |
+| M5 | Removed in v3 (constellation naming) | | | |
 | M6 | Question generation | Adam | `{questions}` | Schema, guard, operator approval |
-| M7 | Event nudge | Adam | `{title, placeId, timeWindow, why}` | Venue allowlist, 3+ people, guard |
-| M8 | Sky narration | Rishi | `{headlines}` | Every number equals a server count |
+| M7 | Event nudge and custom-event proposal | Adam | `{title, eventId or placeId, timeWindow, why}` | Venue allowlist, 3+ people, guard, operator approval for custom events |
+| M8 | Removed in v3 (Sky narration) | | | |
 
-Prompts carry random per-call ids and text only. Invalid JSON gets one retry, then a labeled fallback.
+Daily placement is code only, with no Muse call. Prompts carry random per-call ids and text only. Invalid JSON gets one retry, then a labeled fallback.
 
-**Model and latency:** `muse-spark-1.3` answered 2 live calls earlier on 2026-11-12 through the archived adapter; the provider echoed the model name. Re-verify on the restored adapter. Observed single-call latency 17 to 24 s at low reasoning effort (2 calls, not a benchmark). Formation for 30 players under 60 s needs M1 at submit time and parallel M5. Every Muse output in the UI carries a chip with model, call type and latency.
+**Model and latency:** `muse-spark-1.3` answered 2 live calls earlier on 2026-11-12 through the archived adapter; the provider echoed the model name. Re-verify on the restored adapter. Observed single-call latency 17 to 24 s at low reasoning effort (2 calls, not a benchmark). A live formation run took 49.2 s (Adam's run, recorded in the handoff). Every Muse output in the UI carries a chip with model, call type and latency.
 
 ## Baseline to beat
 A keyword or embedding baseline groups answers without Muse. The demo shows one live case where the baseline splits two people who meant the same thing and Muse joins them. No measured improvement is claimed unless measured.
@@ -110,7 +171,7 @@ A keyword or embedding baseline groups answers without Muse. The demo shows one 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). React/Vite/TypeScript frontend (existing). Python FastAPI + PostgreSQL server (D002), composed by Kai; each owner mounts their own router.
 
 ## Contracts
-- [contracts/protocol.ts](contracts/protocol.ts) `CONTRACT_VERSION = "2.0.0"` (D006, pending ACK) · [fixtures](contracts/fixtures)
+- [contracts/protocol.ts](contracts/protocol.ts) `CONTRACT_VERSION = "2.0.0"` (D006, pending ACK); v3 is 3.0.0 (D012, proposed, in [docs/PRD-v3.md](docs/PRD-v3.md)) · [fixtures](contracts/fixtures)
 - [API](contracts/API.md) · [Weekly workflow](contracts/WORKFLOW.md) · [Privacy](contracts/PRIVACY.md) · [Decisions](docs/DECISIONS.md) · [Demo](docs/DEMO.md)
 
 ## Local setup
@@ -129,9 +190,7 @@ npm run lint && npm run build && npm run test:e2e
 ```
 Playwright may need `npx playwright install chromium`. The existing e2e tests exercise the mock shell, not the feature.
 
-No server exists yet, so there is no server setup. Kai adds server setup instructions when the baseline lands (proposed in D002). A running process is not evidence of a working journey.
-
-Server setup is added by Kai when the FastAPI app is restored (step 2).
+No server exists on main yet, so there is no server setup. Kai adds server setup instructions when the FastAPI app is restored (step 2, proposed in D002). A running process is not evidence of a working journey.
 
 ## Hosting (plan, not deployed)
 Supabase Postgres for the workflow database (decided). Web host and API host are still open; the API needs one always-on container because it runs background jobs, live chat streams and a SQLite privacy file, so it can't run as serverless functions. Requirements, settings, cookie setup and blockers: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
@@ -143,22 +202,14 @@ Full protocol: [docs/COORDINATION.md](docs/COORDINATION.md). Every agent follows
 2. **When blocked, stop and tag.** If your next deliverable needs another owner's interface, a contract change, a data shape, an ACK or an endpoint that is not yet on main or their branch: stop at the phase boundary, push your verified work, open or update a draft PR titled `[BLOCKED] <phase>: <what you need>` with one `Needs from @<handle>` block per owner (What, Why, Proposed shape, Fallback meanwhile), record it in your handoff, and continue only with independent work using a labeled test-only adapter.
 3. Never invent another owner's interface, edit their paths or silently change `contracts/`. A tag is a request, not an authorization.
 
-| Owner | GitHub handle | Branch |
-| --- | --- | --- |
-| Rishi | `@rishibagri` | `role/rishi-matching` |
-| Adam | `@adamzhang06` | `role/adam-planning` |
-| Will | `@willapat` | `role/will-voice-ui` |
-| Patrik | `@patrikliska13` | `role/patrik-privacy` |
-| Kai | `@beatopia` | `role/kai-orchestration` |
-
-Canonical table: [docs/COORDINATION.md](docs/COORDINATION.md).
+Handles and branches are listed per owner on the work board above. Canonical table: [docs/COORDINATION.md](docs/COORDINATION.md).
 
 ## Truth labels
 | Item | Label |
 | --- | --- |
 | Facebook shell | "Simulated Facebook" |
 | Seeded players and answers | "Synthetic player" |
-| Synthetic aggregate statistics | "Synthetic signal" |
+| Synthetic aggregate counts | "Synthetic signal" |
 | Operator-advanced days | "Demo timing" |
 | Cached Muse output | "Replay of a saved cycle" |
 | Deterministic formation fallback | "Fallback grouping" |
@@ -167,7 +218,7 @@ Canonical table: [docs/COORDINATION.md](docs/COORDINATION.md).
 Typing always works if the microphone fails. A provider outage shows a retryable operator error or a labeled replay. Never silently relax consent, size, block or threshold constraints.
 
 ## Privacy and safety
-No player ever sees another player's answers. They see constellation identities, moderated chat, thresholded aggregates, and real names only after a mutual reveal. Enforced by server code.
+No player ever sees another player's answers. They see anonymous constellations, moderated chat, bucketed counts, and real names only after a mutual reveal. Enforced by server code.
 
 | Rule | Enforced by | Test |
 | --- | --- | --- |
@@ -177,9 +228,10 @@ No player ever sees another player's answers. They see constellation identities,
 | No sensitive categories (health, sexuality, religion, finances, family trauma, home location) in Muse public text | Sensitive-term filter | Red-team list of 30 |
 | Every chat message screened; no contact info before mutual reveal | M1 + OutputGuard | Contact-info message rejected |
 | Report hides instantly; block prevents future matches | Chat + privacy modules | Reported message gone for reporter |
-| Rooms expire weekly | Expiry job | Post to expired room returns ROOM_EXPIRED |
+| Chats expire 24 hours after opening | Expiry job | Post to expired chat returns ROOM_EXPIRED |
 | Identity only on mutual reveal | Reveal transaction | One-sided request leaks nothing |
-| Sky themes only above threshold (3 demo, 25 production) | Server aggregation | 2-member theme never renders |
+| Event and interest counts shown only bucketed, at 3 or more | Server aggregation | A count of 2 never renders |
+| Event signals stored only with the `eventSignals` opt-in | Consent check | No interest row for a non-consenting player |
 | Flagged distress content excluded from all outputs | M1 flag + server filter | Seeded distress answer never appears |
 | Delete anytime; data expires 14 days after lock | Deletion + TTL job | Deleted answer absent from re-run |
 | Friendship only, 18+, public places only | Consent, venue allowlist | Nudge outside allowlist rejected |
@@ -188,12 +240,13 @@ Distress: a private card shows campus counseling and the 988 Suicide and Crisis 
 
 ## Demo success criteria
 1. 6+ real people answer daily questions from their own phones, including one catch-up.
-2. Saturday lock forms constellations of 3 to 5 by meaning, with names, and the measured time is shown.
-3. Sunday reveal opens anonymous rooms; moderation visibly blocks a contact-info message.
-4. Two players mutually reveal on stage.
-5. The Sky shows guessed vs actual prevalence for themes at 3+.
-6. Muse model name and latency visible on every Muse output.
-7. Every synthetic or simulated element is labeled.
+2. After answering, each player sees the constellations they are in that day, in that day's color, with only the answered-today count shown.
+3. The Saturday sky shows a player's constellations and faint second-degree ones across the whole sky, and the loading screen shows the algorithm trying real connections, with the measured time shown.
+4. Sunday reveal draws a main constellation as the Meta logo and opens a 24-hour anonymous chat; moderation visibly blocks a contact-info message.
+5. Two players mutually reveal on stage.
+6. An event nudge appears with a bucketed count of 3 or more, and one custom-event proposal is approved by the operator.
+7. Muse model name and latency visible on every Muse output.
+8. Every synthetic or simulated element is labeled.
 
 Run sheet: [docs/DEMO.md](docs/DEMO.md).
 
@@ -201,16 +254,16 @@ Run sheet: [docs/DEMO.md](docs/DEMO.md).
 | Stage | Metric |
 | --- | --- |
 | Habit | Daily answer rate; median streak; catch-up share |
-| Reveal | Share who open Sunday reveal |
-| Connect | Share of rooms with 2+ active members; mutual reveals per room |
-| Meet | Share of nudges with 3+ attendees |
+| Reveal | Share who open the Sunday main constellation |
+| Connect | Share of chats with 2+ active members; mutual reveals per chat |
+| Meet | Share of nudges and custom events with 3+ attendees |
 | Retain | Share answering again the next week |
 
 ## Non-goals
-Real Facebook APIs; romantic matching; showing anyone's answers; counseling; leaderboards or seasons (vision only); any impact claim without measurement.
+Real Facebook APIs; romantic matching; showing anyone's answers; counseling; percentages, prevalence stats or names for constellations; leaderboards or seasons (vision only); any impact claim without measurement.
 
 ## Pitch (30 seconds)
-Most people our age feel like they're the only one feeling something: lonely, faking fine, missing home, behind. They aren't, but nobody says it out loud. Facebook Space is a weekly game in Facebook Groups. Every weekday Muse asks one honest question. On Sunday you land in a constellation with the three to five people whose answers meant the same thing as yours, in an anonymous chat that lasts a week. Reveal yourself only when you both want to. Then the Group sees the sky: "You thought 12% felt this. It was 57%."
+Most people our age feel like they're the only one feeling something: lonely, faking fine, missing home, behind. They aren't, but nobody says it out loud. Facebook Space is a weekly game in Facebook Groups. Every weekday Muse asks one honest question, and the moment you answer you see the constellations of people who meant the same thing. On Saturday your whole week lights up across the sky. On Sunday your closest few people appear as the Meta logo, with an anonymous chat that lasts a day. Reveal yourself only when you both want to. No names, no scores, no stats. Just proof you were never the only one.
 
 ## Provenance
-The team referenced the documentation organization of dor-calhacks: shared entry instructions, contracts, role handoffs and an evidence ledger. This project is newly authored; no prior hackathon application code was copied. The Facebook Space direction comes from the team's PRD of Nov 12, 2026. Archived Group Quests infrastructure on `archive/group-quests-before-pivot` is the team's own earlier hackathon code; reusable parts are restored per owner and retested. The weekly-game direction was approved on Nov 12, 2026 (D005).
+The team referenced the documentation organization of dor-calhacks: shared entry instructions, contracts, role handoffs and an evidence ledger. This project is newly authored; no prior hackathon application code was copied. The Facebook Space direction comes from the team's PRD of Nov 12, 2026, redesigned as v3 on the same day ([docs/PRD-v3.md](docs/PRD-v3.md), D012). Archived Group Quests infrastructure on `archive/group-quests-before-pivot` is the team's own earlier hackathon code; reusable parts are restored per owner and retested. The weekly-game direction was approved on Nov 12, 2026 (D005).
