@@ -16,7 +16,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA = Path(__file__).resolve().parents[2] / "db" / "privacy" / "001_privacy.sql"
+MIGRATIONS = Path(__file__).resolve().parents[2] / "db" / "privacy"
 
 
 class PrivacyStore:
@@ -27,20 +27,35 @@ class PrivacyStore:
         if path != ":memory:":
             self._conn.execute("PRAGMA journal_mode = WAL")
         self._lock = threading.RLock()
-        self._conn.executescript(SCHEMA.read_text())
+        self._depth = 0
+        for migration in sorted(MIGRATIONS.glob("[0-9][0-9][0-9]_*.sql")):  # idempotent, in order
+            self._conn.executescript(migration.read_text())
 
     @contextmanager
     def tx(self) -> Iterator[sqlite3.Connection]:
-        """One serialized write transaction; rolls back on any exception."""
+        """One serialized write transaction; rolls back on any exception.
+
+        Reentrant on the same thread: a nested ``tx()`` (for example a privacy
+        call made inside Kai's commit under ``publish_guard``) becomes a
+        SAVEPOINT of the outer transaction instead of a second BEGIN."""
         with self._lock:
-            self._conn.execute("BEGIN IMMEDIATE")
+            depth = self._depth
+            savepoint = f"sp{depth}"
+            self._conn.execute(f"SAVEPOINT {savepoint}" if depth else "BEGIN IMMEDIATE")
+            self._depth += 1  # only after the transaction really started
             try:
                 yield self._conn
             except BaseException:
-                self._conn.execute("ROLLBACK")
+                if depth:
+                    self._conn.execute(f"ROLLBACK TO {savepoint}")
+                    self._conn.execute(f"RELEASE {savepoint}")
+                else:
+                    self._conn.execute("ROLLBACK")
                 raise
             else:
-                self._conn.execute("COMMIT")
+                self._conn.execute(f"RELEASE {savepoint}" if depth else "COMMIT")
+            finally:
+                self._depth -= 1
 
     def ping(self) -> bool:
         try:

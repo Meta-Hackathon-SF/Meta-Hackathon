@@ -68,18 +68,20 @@ class Actor:
             raise TypeError("Actor must come from PrivacyService.require_session")
 
 
-ChangeKind = Literal["consent_granted", "consent_revoked"]
+ChangeKind = Literal["consent_granted", "consent_revoked", "answer_deleted", "data_deleted"]
 
 
 @dataclass(frozen=True)
 class ChangeNotice:
-    """Invalidation notice. Ids and versions only; never private content."""
+    """Invalidation notice. Ids and versions only; never private content.
+    ``consent_version`` is set for consent kinds; ``cycle_id`` for answer_deleted."""
 
     kind: ChangeKind
     player_id: str
-    community_id: str
-    consent_version: int
+    community_id: str | None
+    consent_version: int | None
     occurred_at: str
+    cycle_id: str | None = None
 
 
 Listener = Callable[[ChangeNotice], None]
@@ -127,6 +129,9 @@ class PrivacyService:
     def session_ttl(self) -> timedelta:
         return self._session_ttl
 
+    def now(self) -> datetime:
+        return self._clock()
+
     def _now(self) -> str:
         return format_time(self._clock())
 
@@ -136,6 +141,10 @@ class PrivacyService:
     # ------------------------------------------------------------------ notices
     def add_listener(self, listener: Listener) -> None:
         self._listeners.append(listener)
+
+    def notify(self, notice: ChangeNotice) -> None:
+        """Used by privacy's own answer store; other owners only subscribe."""
+        self._notify(notice)
 
     def _notify(self, notice: ChangeNotice) -> None:
         for listener in self._listeners:
