@@ -23,3 +23,5 @@ Format: UTC timestamp | branch/commit | phase/status | interfaces/files | checks
 2026-11-13T05:55Z | main 70a08ea (PR #24 merged) | tasks 1-6 on main | answer store, OutputGuard, M1, formation lease + publish guard, blocks/reports | 555 passed on merged head before merge | DELIVERED to Kai on #13 | next: task 7 UI
 
 2026-11-13T06:30Z | role/patrik-privacy | step 3/8: role task 7 privacy UI implemented, fixture-verified | web/src/features/constellations/privacy/* | lint/tsc/build pass; Playwright flow on temporary local mount 2/2 passed; existing e2e 32 passed | DELIVERED to Will on PR | Will to mount PrivacyGate
+
+2026-11-13T07:00Z | role/patrik-privacy | registration fix: mount /me/data and /me/blocks in Kai's app | server/privacy/registration.py, tests/privacy/test_privacy_registration.py | pytest tests passed; verified via Kai's real create_app | told Kai on #13 | Kai to pass answers/moderation/resolve_handle in composition

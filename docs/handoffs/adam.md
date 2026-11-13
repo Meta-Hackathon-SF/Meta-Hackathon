@@ -45,7 +45,7 @@ One live Muse call exists: the M2 smoke call above, on a synthetic answer. Every
 ## Blocked on
 Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
 - `@patrikliska13`: nothing. Real `OutputGuard` delivered in PR #24 and verified with my services (tests/planning/test_real_guard.py + 4 live calls).
-- `@beatopia`: router registry for my routes; durable `SelectionStore`/`ClarifyStore`; `ChatPort.postSystem`; the `ConstellationContext` lookup for nudges; mid-week job + operator button calling `NudgeService.propose_and_post`; placing `NudgeCard` in chat.
+- `@beatopia`: router registry, durable `SelectionStore`/`ClarifyStore` and `postSystem` are DELIVERED on role/kai-orchestration b1192cb (not on main yet). Still needed: pass `nudges=NudgeService(muse, guard, VenueCatalog.load(), <ConstellationContext lookup>, ChatSystemPoster(chat))`, `venues` and `room_constellation` into `PlanningRuntime` (today only `questions` is passed, so the nudge route reports unavailable); the mid-week job; placing `NudgeCard` in chat.
 - `@willapat`: nothing further; his cycle service overwrites dates, so the weekStart lookup is only needed for the operator select-week route on a cycle that was not created through his service.
 
 ## Real OutputGuard and card check (2026-11-13T03:05Z)
@@ -53,9 +53,18 @@ Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
 - `python -m tests.planning.live_check` with the real guard: M2 x2, M7, M6 all passed (4 paid calls, 4.6-18.4 s).
 - Nudge card viewed in Chrome at 360 px and 900 px via a temporary, uncommitted preview page; no overflow; replay label shown. No committed browser test.
 
+## Kai composed app check (2026-11-13T05:21Z)
+- Worktree at origin/role/kai-orchestration 057f5aa (b1192cb app): `python -m pytest tests/planning tests/providers tests/orchestration` 271 passed, 2 skipped (PostgreSQL DSN not set). Kai edits none of my paths; every planning name he imports exists.
+- His `ChatService.postSystem(roomId, message)` accepts exactly the `{roomId, handle: "Muse", text, kind}` my nudge sends. Added `ChatSystemPoster` (server/planning/adapters.py) to bridge `post_system` -> `postSystem`; tested against a double copying his input check. Not run against his real chat service. No live calls.
+
+## Operator nudge panel (2026-11-13T05:45Z)
+- `OperatorNudgePanel` + `createNudgeRequester` + `APPROVED_VENUES` in web/src/features/constellations/nudges/ give the demo beat "Muse posts an event nudge" an operator button (Will's console has none). Chat itself only gets the nudge text as a `muse_nudge` bubble (Kai's ChatPanel already renders it).
+- Checks: web lint (no new warnings), build ok, `PLAYWRIGHT_CHANNEL=chrome npx playwright test` 38 passed; `python -m pytest tests` 563 passed, 1 skipped; temporary preview in Chrome covered posted/failure/bad venue/cancel. Not mounted; not run against the server.
+
 ## API budget
 Adam's Muse key has a $100 cap for the whole event including the demo. About 44 live calls so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
 
 ## Next action
-- Me: no unblocked build task left in my role file; then verify the router inside Kai's composed app once #13 lands.
+- Will or Kai: mount `OperatorNudgePanel` in the operator console for an open room.
+- Me: no unblocked build task left. Once Kai wires nudges into `PlanningRuntime`, run the operator nudge route in his app (offline scripted Muse), then one capped live M7.
 - Consumers: Rishi/Patrik register prompts with `contract_spec` (server/providers/README.md). Will calls `ClarifyService.follow_up` and `QuestionService.released` (server/planning/README.md). Kai calls `register_planning_tasks(registry)` and builds one adapter per process.
