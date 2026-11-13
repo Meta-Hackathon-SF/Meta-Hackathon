@@ -52,3 +52,16 @@ def not_found() -> PrivacyError:
 
 def stale() -> PrivacyError:
     return PrivacyError("STALE_REVISION", "This was changed elsewhere. Reload and try again.")
+
+
+def cycle_locked() -> PrivacyError:
+    return PrivacyError("CYCLE_LOCKED", "This week is locked. Answers can't change after Saturday's lock.")
+
+
+def invalid_input(reason: str = "Invalid input.") -> PrivacyError:
+    # ``reason`` must be a fixed server string, never user-supplied text.
+    return PrivacyError("INVALID_INPUT", reason)
+
+
+def provider_unavailable() -> PrivacyError:
+    return PrivacyError("PROVIDER_UNAVAILABLE", "Safety check is unavailable right now. Try again in a moment.")

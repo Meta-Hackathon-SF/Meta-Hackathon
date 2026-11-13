@@ -19,8 +19,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .errors import PrivacyError
+from .answers import AnswerStore
+from .moderation import HandleResolver, ModerationStore
 from .service import Actor, PrivacyService
-from .wire import ApiError, ApiErrorBody, JoinRequest, UpdateConsentRequest
+from .wire import ApiError, ApiErrorBody, BlockRequest, JoinRequest, UpdateConsentRequest
 
 SESSION_COOKIE = "cst_session"
 
@@ -93,7 +95,12 @@ def install_error_handlers(app: FastAPI) -> None:
         return response
 
 
-def build_router(service: PrivacyService) -> APIRouter:
+def build_router(
+    service: PrivacyService,
+    answers: AnswerStore | None = None,
+    moderation: ModerationStore | None = None,
+    resolve_handle: HandleResolver | None = None,
+) -> APIRouter:
     router = APIRouter()
     ActorDep = Annotated[Actor, Depends(actor_dependency(service))]
 
@@ -124,5 +131,25 @@ def build_router(service: PrivacyService) -> APIRouter:
     @router.patch("/me/consent")
     def patch_consent(body: UpdateConsentRequest, actor: ActorDep) -> dict:
         return service.update_consent(actor, body).wire()
+
+    if answers is not None:
+        @router.delete("/me/data", status_code=202)
+        def delete_my_data(actor: ActorDep) -> dict:
+            """Deletes every answer and guess of this player now; Kai's listener
+            drops chat authorship links on the ``data_deleted`` notice."""
+            answers.delete_my_data(actor.player_id)
+            return {"status": "deleted"}
+
+    if moderation is not None and resolve_handle is not None:
+        @router.post("/me/blocks", status_code=204)
+        def block(body: BlockRequest, actor: ActorDep) -> Response:
+            """Always 204: never reveals whether the handle exists or was resolved.
+            Kai's resolver maps (actor, roomId, handle) to a player id server-side."""
+            try:
+                target = resolve_handle(actor, body.room_id, body.handle)
+            except Exception:  # resolver failure must not leak existence either
+                target = None
+            moderation.block(actor, target)
+            return Response(status_code=204)
 
     return router

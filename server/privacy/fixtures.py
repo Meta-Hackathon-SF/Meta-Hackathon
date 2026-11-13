@@ -28,14 +28,16 @@ def seed_community(store: PrivacyStore, community_id: str, name: str, time_zone:
         )
 
 
-def seed_synthetic_players(store: PrivacyStore, path: Path = WEEK_SAMPLE) -> list[str]:
-    """Inserts the fixture's synthetic players as consenting members. Idempotent."""
-    sample = json.loads(path.read_text())
-    community = sample["communityId"]
+def seed_players(store: PrivacyStore, community_id: str, players: list[dict]) -> list[str]:
+    """Will's proposed ``SyntheticSeeder``: ensure labeled synthetic players are
+    consenting members of ``community_id``. Refuses any player not labeled
+    ``isSynthetic: true``. Idempotent."""
     created_at = "2026-11-09T00:00:00Z"
     ids: list[str] = []
     with store.tx() as conn:
-        for p in sample["players"]:
+        if conn.execute("SELECT 1 FROM communities WHERE community_id = ?", (community_id,)).fetchone() is None:
+            raise LookupError("unknown community")
+        for p in players:
             if p.get("isSynthetic") is not True:
                 raise ValueError("fixture players must be labeled isSynthetic=true")
             conn.execute(
@@ -43,17 +45,25 @@ def seed_synthetic_players(store: PrivacyStore, path: Path = WEEK_SAMPLE) -> lis
                 " VALUES (?, ?, ?, 1, ?)",
                 (p["playerId"], p["displayName"], p["avatarColor"], created_at),
             )
+            if conn.execute("SELECT is_synthetic FROM players WHERE player_id = ?", (p["playerId"],)).fetchone()[0] != 1:
+                raise ValueError("a real player id cannot be reused as a synthetic fixture")
             conn.execute(
                 "INSERT OR IGNORE INTO memberships (community_id, player_id, joined_at) VALUES (?, ?, ?)",
-                (community, p["playerId"], created_at),
+                (community_id, p["playerId"], created_at),
             )
             conn.execute(
                 "INSERT OR IGNORE INTO consents (player_id, community_id, version, match_answers,"
                 " anonymous_chat, is_adult, created_at) VALUES (?, ?, 1, 1, 1, 1, ?)",
-                (p["playerId"], community, created_at),
+                (p["playerId"], community_id, created_at),
             )
             ids.append(p["playerId"])
     return ids
+
+
+def seed_synthetic_players(store: PrivacyStore, path: Path = WEEK_SAMPLE) -> list[str]:
+    """The 8 synthetic players of contracts/fixtures/week-sample.json."""
+    sample = json.loads(path.read_text())
+    return seed_players(store, sample["communityId"], sample["players"])
 
 
 def grant_operator(store: PrivacyStore, player_id: str, community_id: str) -> None:
@@ -67,4 +77,4 @@ def grant_operator(store: PrivacyStore, player_id: str, community_id: str) -> No
             raise LookupError("no active membership")
 
 
-__all__ = ["PrivacyService", "grant_operator", "seed_community", "seed_synthetic_players"]
+__all__ = ["PrivacyService", "grant_operator", "seed_community", "seed_players", "seed_synthetic_players"]

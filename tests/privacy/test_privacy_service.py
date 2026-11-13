@@ -183,7 +183,7 @@ def test_listeners_get_ids_and_versions_only(service):
     assert [(n.kind, n.consent_version) for n in notices] == [
         ("consent_granted", 1), ("consent_revoked", 2), ("consent_granted", 3),
     ]
-    assert set(vars(notices[0])) == {"kind", "player_id", "community_id", "consent_version", "occurred_at"}
+    assert set(vars(notices[0])) == {"kind", "player_id", "community_id", "consent_version", "occurred_at", "cycle_id"}
     assert service.get_consent(actor).version == 3  # failing listener did not undo the commit
 
 
@@ -204,3 +204,15 @@ def test_operator_role_only_via_local_grant(service, store):
 def test_grant_operator_requires_membership(store):
     with pytest.raises(LookupError):
         grant_operator(store, "p_nobody", COMMUNITY)
+
+
+def test_seed_players_refuses_unlabeled_or_real_ids(service, store):
+    from server.privacy.fixtures import seed_players
+    with pytest.raises(ValueError):
+        seed_players(store, COMMUNITY, [{"playerId": "p-x", "displayName": "X", "avatarColor": "#7c9cff"}])
+    _, real = joined(service, "Real")
+    with pytest.raises(ValueError):
+        seed_players(store, COMMUNITY, [{"playerId": real.player_id, "displayName": "Fake (synthetic)",
+                                         "avatarColor": "#7c9cff", "isSynthetic": True}])
+    with pytest.raises(LookupError):
+        seed_players(store, "no-such-group", [])
