@@ -89,8 +89,17 @@ def bands_for_viewer(
     return bands
 
 
-def member_context(snap: FormationSnapshot, refs: Sequence[str]) -> dict[str, dict[str, int]]:
-    """playerId -> counts for that viewer. Players without activity get zeros."""
+# Friend ids come from the client (PUT /me/activity) and cannot be verified in this
+# build, so a player could list someone as a friend and read alreadyFriends to learn
+# whether that person is in their anonymous room (audit P1, issues #47/#48). Off until
+# Patrik's side sources friend ids from a verified session; the wire field stays 0.
+COUNT_FRIENDS = False
+
+
+def member_context(snap: FormationSnapshot, refs: Sequence[str], *,
+                   count_friends: bool = COUNT_FRIENDS) -> dict[str, dict[str, int]]:
+    """playerId -> counts for that viewer. Players without activity get zeros.
+    ``alreadyFriends`` is always 0 unless ``count_friends`` (see COUNT_FRIENDS)."""
     by_ref: Mapping[str, ActivitySignals] = snap.activity
     out: dict[str, dict[str, int]] = {}
     for viewer in refs:
@@ -105,7 +114,8 @@ def member_context(snap: FormationSnapshot, refs: Sequence[str]) -> dict[str, di
                     continue
                 shared_group += bool(set(mine.group_ids) & set(theirs.group_ids))
                 same_event += bool(set(mine.event_ids) & set(theirs.event_ids))
-                friends += bool(theirs.profile_id and theirs.profile_id in mine.friend_ids)
+                if count_friends:
+                    friends += bool(theirs.profile_id and theirs.profile_id in mine.friend_ids)
         out[snap.id_map[viewer]] = {
             "sharedGroupStars": shared_group,
             "alreadyFriends": friends,
@@ -148,3 +158,34 @@ def event_heat(
                 counts[event] = counts.get(event, 0) + 1
     rows = [{"eventId": e, "bucket": b} for e, n in counts.items() if (b := heat_bucket(n))]
     return sorted(rows, key=lambda r: (-counts[r["eventId"]], r["eventId"]))
+
+
+MAX_AFFINITY_PAIRS = 4000  # M4In.affinity bound (server/providers/contract.py)
+MAX_AFFINITY_SHARED = 50
+
+
+def affinity_pairs(
+    snap: FormationSnapshot, approved_event_ids: Collection[str] = (),
+    *, max_pairs: int = MAX_AFFINITY_PAIRS,
+) -> tuple[tuple[str, str, int], ...]:
+    """D014 M4 tie-break hints: (refA, refB, shared) for opted-in players who answered.
+
+    shared = shared allowlisted topics + shared Group ids + shared APPROVED event ids.
+    Unapproved event ids never count (empty allowlist -> events never count). Friends never
+    count (client-asserted, see COUNT_FRIENDS). Only pairs with shared >= 1; at most
+    `max_pairs`, strongest first. Only refs and a count leave this function: no topic,
+    Group or Event id reaches Muse."""
+    approved = frozenset(approved_event_ids)
+    answered = set(snap.refs)
+    signals = {
+        ref: (frozenset(s.topics), frozenset(s.group_ids), frozenset(s.event_ids) & approved)
+        for ref, s in snap.activity.items() if ref in answered
+    }
+    out = []
+    for ra, rb in combinations(sorted(signals), 2):
+        (ta, ga, ea), (tb, gb, eb) = signals[ra], signals[rb]
+        shared = len(ta & tb) + len(ga & gb) + len(ea & eb)
+        if shared:
+            out.append((ra, rb, min(MAX_AFFINITY_SHARED, shared)))
+    out.sort(key=lambda p: (-p[2], p[0], p[1]))
+    return tuple(out[:max_pairs])

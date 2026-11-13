@@ -19,6 +19,9 @@ MAX_ANSWER_CHARS = 400
 MAX_LABEL_CHARS = 80
 MAX_NAME_CHARS = 40
 MAX_MEANING_CHARS = 300
+MAX_QUESTIONS = 10  # D014: one week's questions (5) with headroom; mirrors M3In/M4In bounds
+MAX_QUESTION_ID_CHARS = 64
+MAX_QUESTION_CHARS = 300
 
 # Fixed visual sets. shapeId is chosen per size; Muse may only pick from these.
 SHAPES_BY_SIZE: Mapping[int, tuple[str, ...]] = {
@@ -64,10 +67,14 @@ def _require_str(data: Mapping[str, Any], key: str, path: str, *, max_len: int) 
 
 @dataclass(frozen=True)
 class PromptText:
-    """Random per-call ref + text. `id` is a player ref shared by that player's answers."""
+    """Random per-call ref + text. `id` is a player ref shared by that player's answers.
+
+    `question_id` (D014 AnswerText.questionId, optional) says which question the answer
+    replies to; short answers like "nobody" only mean something next to their question."""
     id: str
     text: str
     weight: float = 1.0
+    question_id: str | None = None
 
     @staticmethod
     def from_dict(data: Any, path: str = "answer") -> PromptText:
@@ -79,10 +86,49 @@ class PromptText:
         is_number = isinstance(weight, (int, float)) and not isinstance(weight, bool)
         if not is_number or not 0 < weight <= 1.1:
             raise ValidationError(f"{path}.weight", "expected number in (0, 1.1]")
-        return PromptText(ref, text, float(weight))
+        question_id = None
+        if data.get("questionId") is not None:
+            question_id = _require_str(data, "questionId", path, max_len=MAX_QUESTION_ID_CHARS)
+        return PromptText(ref, text, float(weight), question_id)
 
     def to_wire(self) -> dict:
-        return {"id": self.id, "text": self.text, "weight": self.weight}
+        out: dict[str, Any] = {"id": self.id, "text": self.text, "weight": self.weight}
+        if self.question_id is not None:
+            out["questionId"] = self.question_id
+        return out
+
+
+@dataclass(frozen=True)
+class QuestionText:
+    """D014: one of the week's questions as shown to players. Game text, not player text."""
+    question_id: str
+    text: str
+
+    @staticmethod
+    def from_dict(data: Any, path: str) -> QuestionText:
+        if not isinstance(data, Mapping):
+            raise ValidationError(path, "expected object")
+        if set(data) - {"questionId", "text"}:
+            raise ValidationError(path, "unknown fields")
+        return QuestionText(
+            _require_str(data, "questionId", path, max_len=MAX_QUESTION_ID_CHARS),
+            _require_str(data, "text", path, max_len=MAX_QUESTION_CHARS))
+
+    def to_wire(self) -> dict:
+        return {"questionId": self.question_id, "text": self.text}
+
+
+def _questions(data: Mapping[str, Any]) -> tuple[QuestionText, ...]:
+    raw = data.get("questions", [])
+    if raw is None:
+        raw = []
+    if not isinstance(raw, list) or len(raw) > MAX_QUESTIONS:
+        raise ValidationError("snapshot.questions", f"expected array of at most {MAX_QUESTIONS}")
+    questions = tuple(QuestionText.from_dict(q, f"snapshot.questions[{i}]")
+                      for i, q in enumerate(raw))
+    if len({q.question_id for q in questions}) != len(questions):
+        raise ValidationError("snapshot.questions", "duplicate questionId")
+    return questions
 
 
 def _id_list(data: Mapping[str, Any], key: str, path: str) -> tuple[str, ...]:
@@ -125,6 +171,8 @@ class FormationSnapshot:
     blocked_pairs: tuple[tuple[str, str], ...]  # playerIds
     # D010: by ref, opt-in only
     activity: Mapping[str, ActivitySignals] = field(default_factory=dict)
+    # D014: the week's questions; every answer.question_id is one of these
+    questions: tuple[QuestionText, ...] = ()
 
     @staticmethod
     def from_dict(data: Any) -> FormationSnapshot:
@@ -154,7 +202,13 @@ class FormationSnapshot:
             raise ValidationError("snapshot.activity", "activity for unknown ref")
         activity = {ref: ActivitySignals.from_dict(v, f"snapshot.activity.{ref}")
                     for ref, v in raw_activity.items()}
-        return FormationSnapshot(answers, dict(id_map), tuple((a, b) for a, b in pairs), activity)
+        questions = _questions(data)
+        known_questions = {q.question_id for q in questions}
+        if any(a.question_id is not None and a.question_id not in known_questions
+               for a in answers):
+            raise ValidationError("snapshot.answers", "questionId not in questions")
+        return FormationSnapshot(answers, dict(id_map), tuple((a, b) for a, b in pairs), activity,
+                                 questions)
 
     @property
     def refs(self) -> tuple[str, ...]:
