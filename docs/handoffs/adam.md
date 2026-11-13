@@ -90,6 +90,9 @@ Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
   - In-progress branches: `adam/rishi-formation-v2`, `adam/patrik-guard-fold`, `adam/patrik-muse-classifiers`.
 - `python -m pytest tests`: 898 passed, 2 skipped. Web lint: 0 errors. Build passes.
 
+## D014 ACKed (2026-11-13T08:34Z, recorded 10:00Z)
+All four owners ACKed on #60. Patrik's M9 sign-off has conditions (redaction, cap, consent copy), which he implemented on #59. Rishi: v3 (3.0.0, D012) builds on 2.2.0 and removes M5/M8. #58 was merged by Patrik with his review fixes. Will delivered `server/cycle` `question_texts` (#63); my `QuestionService.question_texts` is an equivalent reader from the planning selection, so Kai uses one of them.
+
 ## API budget
 Adam's Muse key has a $100 cap for the whole event including the demo. About 47 earlier live calls plus 285 eval calls (about $1.21 measured) so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
 
