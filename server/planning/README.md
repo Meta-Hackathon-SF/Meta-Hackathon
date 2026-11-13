@@ -1,7 +1,7 @@
-# server/planning: question bank, weekly selection, M2 follow-up (owner: Adam)
+# server/planning: question bank, weekly selection, M2 follow-up, M7 event nudges (owner: Adam)
 
-Contract: `contracts/protocol.ts` 2.0.0 (`Question`, `DailyQuestion`, `QuestionPort`, `M2In`/`M2Out`).
-Status (2026-11-12): **implemented and offline-tested against fixtures and labeled test-only adapters.** No HTTP route is mounted, nothing is persisted durably, and no live Muse call has run through this code. Event nudges (M7) and question generation (M6) are not implemented.
+Contract: `contracts/protocol.ts` 2.0.0 (`Question`, `DailyQuestion`, `QuestionPort`, `M2In`/`M2Out`, `Venue`, `EventNudge`, `NudgePort`, `M7In`/`M7Out`).
+Status (2026-11-12): **implemented and offline-tested against fixtures and labeled test-only adapters.** No HTTP route is mounted, nothing is persisted durably, and no live Muse call has run through this code. Question generation (M6) is not implemented.
 
 ## What is here
 | File | What |
@@ -10,6 +10,8 @@ Status (2026-11-12): **implemented and offline-tested against fixtures and label
 | `data/question-bank.json` | Curated bank, 32 questions. Superset of `contracts/fixtures/question-bank.json`, row for row. |
 | `selection.py` | `QuestionService.select_week` (QuestionPort), `released`, `question_for_day`, `pick_week`, `InMemorySelectionStore`. |
 | `clarify.py` | `ClarifyService.follow_up` (M2), prompt `clarify.v1`, `InMemoryClarifyStore`. |
+| `venues.py`, `data/venues.json` | `VenueCatalog`: the approved public venue allowlist (same rows as the shared fixture). |
+| `nudges.py` | `NudgeService.propose` (NudgePort), `propose_and_post`, prompt `event_nudge.v1`. |
 | `ports.py` | The ports planning consumes: `OutputGuardPort` (Patrik), `ChatPostPort` (Kai), `WeekStartLookup` (Will). |
 
 ## Weekly selection
@@ -41,9 +43,24 @@ res.evidence  # MuseCallEvidence when Muse answered, else None
 - A proposal must be a single question of at most 140 characters and pass `OutputGuard.check(text, [])`. The reader is the answer's own author, so the no-quote list is empty; sensitive-term, PII and contact checks still apply.
 - Provider failure, invalid JSON after the one retry, or a rejected proposal falls back to the curated `followUpHint` (itself guarded) or to no follow-up, with `source: "fallback"` and no evidence. The answer flow never blocks on Muse. A malformed guard verdict or a guard that raises counts as a rejection.
 
+## M7 event nudges (step 6, cuttable)
+```python
+from server.planning import NudgeService, VenueCatalog
+svc = NudgeService(muse, output_guard, VenueCatalog.load(), constellation_context, chat, time_zone="America/Los_Angeles")
+nudge = await svc.propose(constellation_id)             # EventNudge | None  (NudgePort)
+posted = await svc.propose_and_post(constellation_id)   # {"nudge": EventNudge, "message": ChatMessage}
+```
+`constellation_context` is an async lookup supplied by orchestration: `constellationId -> {constellationId, roomId, sharedMeaning, memberCount, roomOpen, againstAnswers} | None`. `againstAnswers` feeds the no-quote guard only; it is never sent to Muse.
+
+Code enforces: at least 3 members and an open room before any call; `placeId` must be in the catalog; the time window must parse, lie inside the requested window, start in the future and last at most 3 hours; title, why and the final chat line each pass `OutputGuard` against the members' answers plus `sharedMeaning`; `minAttendees` is always 3. The chat line is assembled by code from validated fields. One nudge per constellation, posted at most once; the room is rechecked at post time.
+
+There is **no invented fallback nudge**: `EventNudge.evidence` must be a real Muse call, so a provider failure or a rejected proposal returns `None` (`propose`) or raises retryable `PROVIDER_UNAVAILABLE` (`propose_and_post`). `propose_detailed` returns the code-generated reason for operators.
+
+The mid-week schedule and the operator button are not wired: both call `propose_and_post` once the route and Kai's job runner exist.
+
 ## Not done / needs other owners
 - Routes in contracts/API.md ("Questions and nudges (Adam)") need Kai's router registry and Patrik's operator session check.
-- `OutputGuardPort`, `WeekStartLookup` and the selection/clarify stores are satisfied in tests by `tests/planning/doubles.py` (TEST ONLY) and the in-memory stores. Durable stores belong to orchestration.
+- `OutputGuardPort`, `WeekStartLookup`, `ConstellationContext`, `ChatPostPort` and the selection/clarify/nudge stores are satisfied in tests by `tests/planning/doubles.py` (TEST ONLY) and the in-memory stores. Durable stores belong to orchestration.
 
 ## Tests
 ```sh
