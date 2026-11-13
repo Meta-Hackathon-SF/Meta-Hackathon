@@ -4,7 +4,7 @@ Author: Adam (`@adamzhang06`). Four eval agents ran in parallel through one shar
 
 - **Every call** went through the production `MuseAdapter`, which does schema validation, retries and evidence logging.
 - **Prompts:** the real ones for existing tasks; experiment prompts were registered under separate prompt versions.
-- **Spend:** about $1.21 over 285 calls, all valid on first try or after one retry (`ledger-2026-11-13.jsonl`, counts only).
+- **Spend:** about $1.21 over 285 calls, plus about $0.14 in the formation-v2 and classifier checks, all valid on first try or after one retry (`ledger-2026-11-13.jsonl`, counts only).
 - **Ledger fields:** agent, model, task, prompt version, outcome, attempts, latency, token counts and estimated cost. No payloads or outputs.
 - **Reproducing:** scripts, corpora and results are in `tests/providers/live_evals/`. They are manual and paid, and pytest never collects them.
 
@@ -38,6 +38,20 @@ Failure modes seen:
 - **Ignored hints:** Spark ignored the hints once.
 - **Uncalibrated confidence:** wrong groupings also reported 0.7-0.9.
 - **Near-paraphrase:** `sharedMeaning` sometimes came close to an answer's wording.
+
+### A2. Formation v2 (`adam/rishi-formation-v2`, real FormationService and OutputGuard, Ember low, sequential)
+
+Prompt `constellation_formation.v2`: question context, affinity hints, "prefer fuller groups", a correction on re-solve, and a guard on `sharedMeaning`.
+
+- **First draft:** the question sentence said every answer "carries a questionId". One gold-set run scored 0.6, and a provider outage (`unavailable` on 9 calls) stopped the reruns.
+- **After making the sentence conditional:**
+  - Gold set: 1.0/1.0, 1.0/1.0, 0.89/0.77, 0.87/0.87 (mean about 0.94/0.91; v1 Ember was 0.98/0.89).
+  - Question-dependent set: 1.0/1.0 twice.
+  - M4 took 2-17 s. All results were valid, and only one run had size-3 groups.
+- **Spark in the same session:** the first M4 attempt timed out at 75 s in 3 of 4 runs. The 20 s naming cap cut off every name in 3 of 8 runs; that was before naming was routed to Wonder (12 s) with an Ember fallback.
+- **Cost:** about $0.13 for this round (separate ledger).
+
+The M4 route is now **Ember low, 30 s, 1 attempt, Spark fallback**.
 
 ## B. Post topics (proposed M9 `activity_classification`)
 
@@ -79,9 +93,9 @@ Part 3, production M1 `safety.v1`:
 | M6 questions | Spark low | Good; Wonder not clearly better |
 | M7 nudge | Spark low | Better venue fit than Ember |
 | M8 Sky | Wonder low | Spark failed the number or guard checks in 3 of 6 runs (mixed up percents and counts). **Never Spark for M8.** |
-| M4 grouping | Ember low with questions (pending E-formation-v2 confirmation) | On par with Spark, 3-5x faster, ~10x cheaper; weakest without questions |
+| M4 grouping | Ember low | On par with Spark, 3-5x faster, ~10x cheaper; Spark timed out at 75 s in 3 of 4 first attempts (A2) |
 
-These are implemented as `MEASURED_ROUTES` in `server/providers/router.py`, with fallbacks on timeout, rate limit, outage or malformed output. Fallbacks never run past the caller's deadline. M3 and M4 stay on the base model until questions reach the formation payload.
+These are implemented as `MEASURED_ROUTES` in `server/providers/router.py`, with fallbacks on timeout, rate limit, outage or malformed output. Fallbacks never run past the caller's deadline. M3 stays on the base model (not compared head to head).
 
 ## What changed because of this
 
@@ -90,6 +104,6 @@ These are implemented as `MEASURED_ROUTES` in `server/providers/router.py`, with
 | Model router with measured routes; Wonder and Ember support; token and cost logging | `server/providers` | On `role/adam-planning`. Kai must build the port with `build_muse_router`. |
 | Contract 2.2.0 (D014): questionId, questions and affinity for M3/M4; M9 and M10 | `contracts/protocol.ts`, `server/providers/contract.py` | **PROPOSED, needs ACKs** |
 | Sky no-quote fix; client-asserted friend count switched off | `server/matching` (#53) | Awaiting Rishi's review |
-| Formation v2: questions, affinity, correction on re-solve, sharedMeaning guard | `adam/rishi-formation-v2` | In progress, for Rishi's review |
-| Guard folding, terms, pre-screen, approved event ids at `PUT /me/activity` | `adam/patrik-guard-fold` | In progress, for Patrik's review |
-| M9 topic classifier, M10 sensitivity screen, snapshot questionId | `adam/patrik-muse-classifiers` | In progress, for Patrik's review and **privacy sign-off** (post text would go to Muse transiently) |
+| Formation v2: questions, affinity, correction on re-solve, sharedMeaning guard | `adam/rishi-formation-v2` | Done; PR for Rishi's review |
+| Guard folding, terms, pre-screen, approved event ids at `PUT /me/activity` | #58 | For Patrik's review: names 8/44 to 39/44, plurals, homoglyphs and leet all caught, 0/53 benign false positives on the corpus (some outside it) |
+| M9 topic classifier, M10 sensitivity screen, snapshot questionId | #59 (draft) | For Patrik's review and **privacy sign-off** (post text would go to Muse transiently) |

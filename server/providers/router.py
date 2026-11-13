@@ -80,10 +80,15 @@ SPARK, WONDER, EMBER = "muse-spark-1.3", "muse-wonder-1.0", "muse-ember-1.0"
 #    F1 0.98 with 34/34 sensitive texts flagged (M9) and 113/114 recall with 1/70
 #    false positives (M10, Spark 114/114 but one 72.8 s call). Callers run after
 #    OutputGuard, which stays as the code backstop; Spark is the fallback.
-# Tasks not listed (M3 themes, M4 grouping) stay on the base model until their
-# evals report.
+#  - constellation_formation (M4) with D014 questions: Ember low gold-set P/R
+#    1.0, 1.0, 0.89/0.77, 0.87/0.87 and question-dependent set 1.0 x2 (v2 prompt,
+#    sequential), M4 2-17 s; Spark's first M4 attempt timed out at 75 s in 3 of 4
+#    runs in the same session. Ember v1 (no questions) was 0.98/0.89. One attempt
+#    per call: FormationService does its own re-solve with a correction.
+# theme_discovery (M3) stays on the base model (not compared head to head).
 MEASURED_ROUTES: dict[str, Route] = {
     "safety_screen": Route(EMBER, "low", 8.0, (SPARK,), max_attempts=1),
+    "constellation_formation": Route(EMBER, "low", 30.0, (SPARK,), max_attempts=1),
     "activity_classification": Route(EMBER, "low", 20.0, (SPARK,)),
     "sensitivity_screen": Route(EMBER, "low", 15.0, (SPARK,), max_attempts=1),
     "clarify": Route(EMBER, "minimal", 6.0, (SPARK,), max_attempts=1),
