@@ -1,5 +1,5 @@
 # patrik handoff
-Current step: 3 (Daily loop), see docs/PLAN.md. Role tasks 1-3 done offline (1-2 merged to main via PR #15); tasks 4 (M1) and 5 (OutputGuard) done offline; next is task 6 (formationSnapshot + publish gate, pending Kai's reply on #13) and report/block storage.
+Current step: 3 (Daily loop), see docs/PLAN.md. Role tasks 1-3 done offline (1-2 merged to main via PR #15); tasks 1-6 done offline; next is task 7 (consent screen + support card UI).
 Status: implemented + tested offline (fixture/in-memory only). Not mounted in a composed app; no live journey.
 Branch + commit: `role/patrik-privacy`, based on main `0ab9713`. See git log for the checkpoint commit.
 Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
@@ -11,6 +11,7 @@ Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
 3. Private answer + guess store (`server/privacy/answers.py`, `db/privacy/002_answers.sql`) implementing Will's proposed `AnswerStore` port method-for-method, plus `mark_locked`, `purge_expired` (14 days after lock), `delete_my_data`, `eligible_answers` (unflagged, fully consenting, active members only; base for task 6). `DELETE /me/data` route. `fixtures.seed_players` = Will's proposed `SyntheticSeeder`.
 5. OutputGuard (`server/privacy/guard.py`): protocol `check`, `check_chat(..., revealed)`, `text_guard()` for Will. 30-item sensitive red-team list, 5-word quote fuzz with disguises, PII/contact cases, and no false positives on all 44 question-bank questions and the fixture public texts.
 4. M1 safety screening (`server/privacy/safety.py`): `register_safety_task`, `SafetyScreener(muse).screen` with a code pre-screen that Muse cannot downgrade, retryable `PROVIDER_UNAVAILABLE` on provider failure, `sync_screen()` for Will. No live M1 call made.
+6. `formationSnapshot` lease + `publish_guard` per Kai's CHANGE on #13 (`server/privacy/formation.py`), block/report storage (`server/privacy/moderation.py`, `db/privacy/003_blocks_reports.sql`), `POST /me/blocks`. Fix: a player with any flagged answer is now excluded entirely (week-sample `expectedFormation.excluded`).
 
 ## Changed interfaces and files
 - Ports: `require_session(token) -> Actor(player_id, session_id, community_id, is_operator)`, `actor_dependency`, `require_consent`, `require_operator`, `add_listener(ChangeNotice)`, `build_router`, `install_privacy_error_handler`. Details in server/privacy/README.md.
@@ -21,6 +22,7 @@ Shared-file claims: docs/DECISIONS.md (ACKs for D005/D006, new D007).
 - `ChangeNotice` gained kinds `answer_deleted` (with `cycle_id`) and `data_deleted`; `consent_version` is now optional (None for non-consent kinds).
 
 ## Checks run + actual result
+- Task 6 (2026-11-13): formation/moderation tests 22 passed: snapshot passes Rishi's `FormationSnapshot.from_dict`; guard goes stale on delete/edit/revoke/block/flagged player/forged revision; a concurrent consent change waits for the guard (thread test); nested calls and rollback work. Full `pytest tests` **527 passed**. Mutations (guard never stale, flagged player kept, lock released before commit body) fail 6/2/2 tests.
 - Task 4 (2026-11-13): safety tests 26 passed with Adam's labeled FixtureMuse (scripted, `source: replay`); composition test: distress answer through Will's real CycleService is stored flagged and excluded from `eligible_answers`. Full `pytest tests` **503 passed**. Mutations (disabled pre-screen, model downgrade allowed) each fail 5 tests. No live model call.
 - Task 5 (2026-11-13): `tests/privacy/test_privacy_guard.py` 138 passed; full `pytest tests` **476 passed**. Mutation checks: no zero-width stripping, 6-word quote window, no sensitive check, contact blocked after reveal each fail the suite. Verified through Adam's `guard_allows` and Rishi's `sky._guard_ok` helpers.
 - 2026-11-13 composition: `tests/privacy/test_privacy_cycle_composition.py` runs Will's real `CycleService` (main) with Patrik's real `AnswerStore` + `seed_players` and Adam's real `CycleQuestionPort`: submit, read back as Will's model, edit, guess, delete, revoked consent rejected, synthetic top-up, lock freezes writes, distress fixture excluded. Full `pytest tests` on merged main: **338 passed**. Found and fixed: reads returned privacy's snake_case model; Will's code needs his camelCase model, now injected by the composition root.
@@ -39,8 +41,7 @@ All evidence is offline (in-memory SQLite, synthetic names). No model call. No c
 
 ## Blocked on
 - `@willapat` / `@beatopia`: wire `AnswerStore(store, privacy, answer_model=DailyAnswer, guess_model=PrevalenceGuess)` in place of the test-only adapter; call `mark_locked(cycleId, lockedAt)` on Saturday lock (or Kai's `on_locked` hook does). The store accepts his `DailyAnswer` model or a camelCase dict.
-- `@beatopia` (Kai): ACK of D007 (SQLite storage vs D002) and restored `server/app` registry to mount `build_router` + `actor_dependency`. Independent work continues.
-- `@willapat` (Will): ACK of the join/session response shape in D007.
+- `@beatopia` (Kai): ACK or CHANGE on the delivered `prepare_formation` / `publish_guard` / `ModerationStore` seams (#13); wire `resolve_handle` for `POST /me/blocks`. D007 ACKs (Kai, Will) received and copied.
 
 ## Next action
 Consumers should swap their stand-ins for `server.privacy.OutputGuard` (Rishi `live_eval._AllowAll`, Adam planning guard, Will `guard=OutputGuard().text_guard()`, Kai chat `check_chat`). Then task 4: M1 safety screening (`PrivacyPort.screen`) via Adam's MusePort `safety_screen`, with a deterministic fail-closed fallback for chat and retryable error for answers. Task 5: OutputGuard (5-word quote, sensitive terms, PII, contact info). Both are independent of other owners.
