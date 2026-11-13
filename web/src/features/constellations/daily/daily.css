@@ -23,12 +23,10 @@
   justify-content: center;
   flex-shrink: 0;
   border-radius: 50%;
-  background: var(--cst-gradient);
-  box-shadow: inset 0 0 0 1px #0000000d;
 }
 .cst-mark svg {
-  width: 72%;
-  height: 72%;
+  width: 100%;
+  height: 100%;
 }
 .cst-group-avatar {
   width: 40px;
