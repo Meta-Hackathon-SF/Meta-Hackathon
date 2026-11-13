@@ -18,6 +18,35 @@ from server.providers.fixture import decode_user_message
 from .runtime_helpers import COMMUNITY, runtime_environment
 
 
+def test_composition_uses_approved_router_without_live_calls(monkeypatch):
+    from server.app.config import Settings
+    from server.app.weekly import build_weekly_app
+    from server.privacy import PrivacyStore
+    from server.providers import MuseRouter
+    from tests.orchestration.storage_adapter import TestWorkflowRepository
+
+    monkeypatch.setattr("server.app.weekly.load_muse_config", lambda: None)
+    repository = TestWorkflowRepository()
+    privacy_store = PrivacyStore(":memory:")
+    try:
+        app = build_weekly_app(
+            repository=repository,
+            privacy_store=privacy_store,
+            settings=Settings(environment="test"),
+            start_worker=False,
+        )
+        router = app.state.muse.muse
+        assert isinstance(router, MuseRouter)
+        assert router.route_for("safety_screen").model == "muse-ember-1.0"
+        assert not router.configured
+    finally:
+        repository.close()
+        privacy_store.close()
+
+    with runtime_environment() as env:
+        assert not isinstance(env.app.state.muse.muse, MuseRouter)
+
+
 class SyntheticPlayer(SimpleNamespace):
     def __repr__(self):
         return "<SyntheticPlayer>"
