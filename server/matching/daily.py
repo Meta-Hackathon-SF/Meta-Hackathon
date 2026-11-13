@@ -149,7 +149,7 @@ def star_indices(week_seed: str, refs: Sequence[str], count: int = SKY_STARS) ->
         raise MatchingError("INVALID_INPUT", "More players than stars", retryable=False)
     rng = random.Random(f"stars:{week_seed}")
     slots = rng.sample(range(count), len(refs))
-    return dict(zip(sorted(refs), slots))
+    return dict(zip(sorted(refs), slots, strict=True))
 
 
 def second_degree(

@@ -2,7 +2,7 @@
 
     port = FormationV3(muse=..., snapshots=privacy_day_source, store=InMemoryDayStore())
     await port.dailyPlace(cycle, 2, player_id)   # instant, no Muse
-    await port.closeDay(cycle, 2)                # M3 proposes tags; code assigns; fallback on failure
+    await port.closeDay(cycle, 2)  # M3 proposes tags; code assigns; fallback on failure
     await port.weekGraph(cycle); await port.mainConstellation(cycle); await port.skyLayout(cycle)
 
 Results are counts and opaque ids. Views (`daily_view`, `my_sky`, `main_view`) return star or room
@@ -108,7 +108,7 @@ def _best_band(bands: Mapping[str, str]) -> str:
 
 
 def tags_from_themes(themes: tuple[tuple, ...], answers: tuple[PromptText, ...]) -> tuple[Tag, ...]:
-    """Turn Muse's M3 themes into keyword tags: the keywords its members share. Never trusts members."""
+    """Turn M3 themes into keyword tags (keywords members share). Never trusts members."""
     by_ref: dict[str, set[str]] = {}
     for a in answers:
         by_ref.setdefault(a.id, set()).update(tokens(a.text))
@@ -331,7 +331,7 @@ class FormationV3:
             return {"main": None, "reason": "no_match"}
         order = list(range(len(group)))
         random.Random(f"room:{room_id}").shuffle(order)
-        idx = dict(zip(group, order))
+        idx = dict(zip(group, order, strict=True))
         n = max(len(group) - 1, 1)
         return {
             "main": {
