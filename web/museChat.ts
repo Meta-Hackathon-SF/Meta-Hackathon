@@ -175,7 +175,8 @@ export async function handleMuseChat(body: unknown, config: MuseConfig | null, c
                 draftTime: { type: "string" },
                 draftDescription: { type: "string" },
               },
-              required: ["text"],
+              // For create, every draft field is required (optional ones were skipped in live tests).
+              required: kind === "create" ? ["text", "draftTitle", "draftPlaceId", "draftDay", "draftTime", "draftDescription"] : ["text"],
             },
           },
         },
