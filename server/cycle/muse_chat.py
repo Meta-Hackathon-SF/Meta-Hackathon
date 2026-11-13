@@ -71,6 +71,19 @@ _SCHEMA = {
 }
 
 
+_DRAFT_FIELDS = ("draftTitle", "draftPlaceId", "draftDay", "draftTime", "draftDescription")
+
+
+def _schema(kind: str) -> dict[str, Any]:
+    """Required fields per task: live tests showed Muse skips optional ones."""
+    extra = {
+        "hangout": ["eventIds"],
+        "supplies": ["itemIds"],
+        "create": list(_DRAFT_FIELDS),
+    }.get(kind, [])
+    return {**_SCHEMA, "required": ["text", *extra]}
+
+
 class MuseChatError(Exception):
     """Carries one of the cycle API error codes; never the request or provider body."""
 
@@ -331,7 +344,11 @@ class MuseChat:
             "max_completion_tokens": 900,
             "response_format": {
                 "type": "json_schema",
-                "json_schema": {"name": "group_chat_line", "strict": False, "schema": _SCHEMA},
+                "json_schema": {
+                    "name": "group_chat_line",
+                    "strict": False,
+                    "schema": _schema(kind),
+                },
             },
             "messages": [
                 {"role": "developer", "content": INSTRUCTIONS},
@@ -348,16 +365,22 @@ class MuseChat:
             "content-type": "application/json",
             "accept": "application/json",
         }
-        try:
-            status, raw = self._send(
-                f"{config.base_url}/chat/completions",
-                headers,
-                json.dumps(payload).encode(),
-                config.timeout_s,
-            )
-        except Exception as exc:  # noqa: BLE001 - network failures become one code
-            log.warning("muse-chat transport failed: %s", type(exc).__name__)
-            raise MuseChatError("PROVIDER_UNAVAILABLE") from None
+        status, raw = 0, b""
+        for attempt in range(2):  # one retry on a transient failure, like the providers default
+            try:
+                status, raw = self._send(
+                    f"{config.base_url}/chat/completions",
+                    headers,
+                    json.dumps(payload).encode(),
+                    config.timeout_s,
+                )
+            except Exception as exc:  # noqa: BLE001 - network failures become one code
+                log.warning("muse-chat transport failed: %s", type(exc).__name__)
+                status = 0
+            if status == 200 or (status and status < 500 and status != 429):
+                break
+            if attempt == 0:
+                time.sleep(0.4)
         if status != 200:
             log.warning("muse-chat provider status %s", status)
             raise MuseChatError("PROVIDER_UNAVAILABLE")

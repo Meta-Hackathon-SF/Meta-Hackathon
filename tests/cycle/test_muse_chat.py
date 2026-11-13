@@ -7,7 +7,13 @@ from fastapi.testclient import TestClient
 
 from server.cycle import CycleService
 from server.cycle.api import build_router, install_cycle_error_handler
-from server.cycle.muse_chat import MuseChat, MuseChatConfig, load_catalog, load_config
+from server.cycle.muse_chat import (
+    MuseChat,
+    MuseChatConfig,
+    MuseChatError,
+    load_catalog,
+    load_config,
+)
 from server.cycle.testing import (
     FixtureAnswerStore,
     FixtureQuestionPort,
@@ -241,3 +247,60 @@ def test_draft_from_flat_fields_or_json_string_and_ids_never_shown_as_text():
         {"kind": "create", "context": CONTEXT}, "p1"
     )
     assert out["draft"]["placeId"] == "v-quad" and out["draft"]["day"] == "Friday"
+
+
+def test_create_requests_require_every_draft_field_in_the_schema():
+    fake = FakeMuse({"text": "Draft below."})
+    MuseChat(CONFIG, send=fake).reply({"kind": "create", "context": CONTEXT}, "p1")
+    MuseChat(CONFIG, send=fake).reply({"kind": "hangout", "context": CONTEXT}, "p1")
+    create, hangout = (
+        c["body"]["response_format"]["json_schema"]["schema"]["required"] for c in fake.calls
+    )
+    assert create == [
+        "text",
+        "draftTitle",
+        "draftPlaceId",
+        "draftDay",
+        "draftTime",
+        "draftDescription",
+    ]
+    assert hangout == ["text", "eventIds"]
+
+
+def test_one_retry_on_a_transient_failure_but_not_on_a_client_error():
+    class Flaky(FakeMuse):
+        def __init__(self, statuses):
+            super().__init__({"text": "Board game night.", "eventIds": ["ev-board-games"]})
+            self.statuses = list(statuses)
+
+        def __call__(self, url, headers, body, timeout_s):
+            status, raw = super().__call__(url, headers, body, timeout_s)
+            return self.statuses.pop(0), raw
+
+    flaky = Flaky([502, 200])
+    assert MuseChat(CONFIG, send=flaky).reply({"kind": "hangout", "context": CONTEXT}, "p1")["text"]
+    assert len(flaky.calls) == 2
+    down = Flaky([503, 503])
+    try:
+        MuseChat(CONFIG, send=down).reply({"kind": "hangout", "context": CONTEXT}, "p1")
+        raise AssertionError("expected PROVIDER_UNAVAILABLE")
+    except MuseChatError as error:
+        assert error.code == "PROVIDER_UNAVAILABLE"
+    assert len(down.calls) == 2
+    bad_key = Flaky([401])
+    try:
+        MuseChat(CONFIG, send=bad_key).reply({"kind": "hangout", "context": CONTEXT}, "p1")
+    except MuseChatError:
+        pass
+    assert len(bad_key.calls) == 1  # no retry on a client error
+
+
+def test_supplies_requires_item_ids_and_barter_requires_only_text():
+    fake = FakeMuse({"text": "ok"})
+    for kind in ("supplies", "barter"):
+        MuseChat(CONFIG, send=fake).reply({"kind": kind, "context": CONTEXT}, "p1")
+    supplies, barter = (
+        c["body"]["response_format"]["json_schema"]["schema"]["required"] for c in fake.calls
+    )
+    assert supplies == ["text", "itemIds"]
+    assert barter == ["text"]
