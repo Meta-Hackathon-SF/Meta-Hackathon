@@ -13,6 +13,7 @@ from server.app.config import Settings
 from server.app.cycles import SerializedCycle
 from server.app.errors import ServiceError
 from server.app.main import create_app
+from server.app.nudges import GuardedNudges
 from server.app.operator import operator_registration
 from server.app.planning_stores import (
     DurableClarifyStore,
@@ -277,7 +278,14 @@ def build_weekly_app(
         if job_id is not None:
             tasks.add_task(runtime.run_job, job_id)
 
-    planning = PlanningRuntime(questions=questions, muse_configured=muse.configured)
+    nudges = GuardedNudges(runtime, chat, muse, VERIFIED_TOKEN.get)
+    planning = PlanningRuntime(
+        questions=questions,
+        nudges=nudges,
+        venues=nudges.venues,
+        room_constellation=nudges.room_constellation,
+        muse_configured=muse.configured,
+    )
     registrations = [
         ServiceRegistration(
             "privacy",
@@ -301,6 +309,7 @@ def build_weekly_app(
     install_cycle_error_handler(app)
     install_planning_error_handler(app)
     app.state.runtime, app.state.chat, app.state.cycles = runtime, chat, cycles
+    app.state.nudges = nudges
     app.state.privacy, app.state.answers, app.state.muse = privacy, answers, muse
     previous = app.router.lifespan_context
 

@@ -42,8 +42,8 @@ production requires CONSTELLATIONS_ALLOWED_ORIGINS and disables docs/OpenAPI.
 
 Mutations validate one bounded Idempotency-Key header. Actor/route/body binding
 and replay must be implemented transactionally by each service; header validation
-alone does not provide idempotency. Workflow schema has no API grants. Production
-privacy transactions and cycle revision gates remain blocked on owner ACKs.
+alone does not provide idempotency. Workflow schema has no API grants. The weekly factory composes the delivered privacy publish guard and app cycle
+serialization gate; owner cycle persistence remains process-local.
 No fixture adapter is imported by server code. Ordinary tests make no model calls.
 
 ```sh
@@ -69,3 +69,23 @@ a multi-Group global log. Output is projected to MuseCallEvidence/Report fields
 and runtime-validated. A missing source returns 503, never a fake empty queue.
 Combine this router into the orchestration registration when adding formation
 routes rather than registering the same area twice.
+
+
+## Composed weekly game
+
+Use `server.app.bootstrap:create_configured_app --factory` with uvicorn rather
+than the foundation-only `server.app.main:app` for the composed game. Configure
+server-only `CONSTELLATIONS_WORKFLOW_DSN` and durable `CST_PRIVACY_DB`; apply
+workflow migrations in numeric order. No fixture/provider fallback is installed.
+
+`build_weekly_app` mounts the operator nudge route using Adam's public service,
+catalog and ChatSystemPoster. Kai's async room/constellation lookups enforce the
+verified operator's community and fresh formation/consent. Answer texts are
+private guard inputs, never M7 payloads, API output or workflow records. The
+system chat commit rechecks authorization after M1 and guards against the current
+shared meaning. Durable first-proposal wins and chat replay prevent duplicate
+posts, including a crash before marking the post complete. Saved nudges bind to
+the cycle and formation version and follow private-data invalidation/retention.
+The route is an explicit operator action; no mid-week scheduler is installed.
+The venue allowlist describes the fictional demo campus. Tests use labeled
+scripted Muse and never call a live model.

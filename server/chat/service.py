@@ -179,7 +179,7 @@ class ChatService:
     async def send(self, actor, room_id, text, key, *, token=None):
         return await self._post(actor, room_id, text, key, token=token, kind="player")
 
-    async def _post(self, actor, room_id, text, key, *, token=None, kind):
+    async def _post(self, actor, room_id, text, key, *, token=None, kind, validate=None):
         if not isinstance(text, str) or not text.strip() or not 1 <= len(text) <= 500:
             raise ServiceError("INVALID_INPUT")
         cycle_id = self._location(room_id)
@@ -199,6 +199,8 @@ class ChatService:
                 else state.chat.rooms[room_id]
             )
             self._writable(room, cycle, effective_now(cycle, self.clock))
+            if validate is not None:
+                validate(state, cycle, lease, room)
             fingerprint, previous = policy.replay_command(state.chat, actor_id, route, key, body)
             if previous is not None:
                 message = room.messages.get(previous["messageId"])
@@ -240,6 +242,8 @@ class ChatService:
                 else state.chat.rooms[room_id]
             )
             self._writable(room, cycle, effective_now(cycle, self.clock))
+            if validate is not None:
+                validate(state, cycle, lease, room)
             _, previous = policy.replay_command(state.chat, actor_id, route, key, body)
             if previous is not None:
                 return previous
@@ -262,7 +266,7 @@ class ChatService:
                 kind=kind,
             )
 
-    async def postSystem(self, roomId, message):
+    async def postSystem(self, roomId, message, *, validate=None):
         if (
             not isinstance(message, dict)
             or set(message) != {"roomId", "handle", "text", "kind"}
@@ -272,7 +276,9 @@ class ChatService:
         ):
             raise ServiceError("INVALID_INPUT")
         key = sha256(json.dumps(message, sort_keys=True).encode()).hexdigest()
-        return await self._post(None, roomId, message["text"], key, kind=message["kind"])
+        return await self._post(
+            None, roomId, message["text"], key, kind=message["kind"], validate=validate
+        )
 
     def report(self, actor, room_id, handle, message_id, reason, key, *, token=None):
         cycle_id = self._location(room_id)

@@ -88,6 +88,11 @@ class WeeklyRuntime:
             for key, value in state.records.get("publicEvents", {}).items()
             if value.get("cycleId") != cycle_id
         }
+        state.records["nudges"] = {
+            key: value
+            for key, value in state.records.get("nudges", {}).items()
+            if value.get("cycleId") != cycle_id
+        }
         retained = {player for room in state.chat.rooms.values() for player in room.members}
         state.records["chatProfiles"] = {
             player: profile
@@ -602,6 +607,11 @@ class WeeklyRuntime:
                             ):
                                 state.records["formations"].pop(cycle_id, None)
                                 state.records.get("skies", {}).pop(cycle_id, None)
+                                state.records["nudges"] = {
+                                    key: row
+                                    for key, row in state.records.get("nudges", {}).items()
+                                    if row.get("cycleId") != cycle_id
+                                }
             except BaseException:
                 for unprocessed in notices[index:]:
                     self.notices.put(unprocessed)
