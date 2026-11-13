@@ -278,6 +278,9 @@ export function createFixtureClient(): CycleClient {
           constellations: placed(cycleId, day),
         };
       },
+      async sendQuietSignal() {
+        return { sent: true, pulses: 1 }; // demo only: no other members exist in fixture mode
+      },
       async week(cycleId): Promise<WeekView> {
         await wait();
         const cycle = cycleOf(cycleId);
