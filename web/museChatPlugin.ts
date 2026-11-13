@@ -1,13 +1,14 @@
 /**
  * Dev-server mount for POST /api/muse-chat. Reads the gitignored Muse key from
  * server/providers/muse.env; the request handling is shared with the Vercel
- * Function in api/muse-chat.ts. The browser never sees the key.
+ * Function in the repo-root api/muse-chat.ts. The browser never sees the key.
  */
 import fs from "node:fs";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
-import { handleMuseChat, type MuseConfig } from "./api/muse-chat.ts";
+import { handleMuseChat, type MuseConfig } from "../api/muse-chat.ts";
+import catalog from "./src/data/catalog.json" with { type: "json" };
 
 function readKey(root: string): MuseConfig | null {
   const file = path.resolve(root, "../server/providers/muse.env");
@@ -54,7 +55,7 @@ export function museChatPlugin(): Plugin {
           send(res, 405, { error: "POST only" });
           return;
         }
-        const result = await handleMuseChat(await readBody(req), readKey(server.config.root));
+        const result = await handleMuseChat(await readBody(req), readKey(server.config.root), catalog);
         send(res, result.status, result.body);
       });
     },
