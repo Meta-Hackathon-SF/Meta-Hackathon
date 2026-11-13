@@ -15,6 +15,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from server.matching.models import SHAPES_BY_SIZE
+
 FIXTURE = Path(__file__).resolve().parents[2] / "contracts" / "fixtures" / "week-sample.json"
 LABEL = "TEST-ONLY adapter"
 
@@ -99,7 +101,8 @@ class FakeMuse:
                 {"memberIds": g, "sharedMeaning": "fake meaning", "confidence": 0.8}
                 for g in groups]}, "evidence": evidence("M4")}
         if task == "constellation_naming":
-            return {"output": {"name": self.m5_name, "shapeId": payload["shapeIds"][0],
+            shape = SHAPES_BY_SIZE[payload["size"]][0]
+            return {"output": {"name": self.m5_name, "shapeId": shape,
                                "colorId": "dusk"}, "evidence": evidence("M5")}
         raise ValueError(f"unexpected task {task}")
 
