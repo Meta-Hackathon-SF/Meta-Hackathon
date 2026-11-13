@@ -14,7 +14,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
-CONTRACT_VERSION = "2.0.0"
+CONTRACT_VERSION = "2.1.0"
 
 CycleStatus = Literal["open", "locked", "forming", "revealed", "closed"]
 STATUS_ORDER: tuple[CycleStatus, ...] = ("open", "locked", "forming", "revealed", "closed")

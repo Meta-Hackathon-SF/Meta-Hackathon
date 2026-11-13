@@ -9,6 +9,7 @@
  * no authentication and every screen shows "Fixture mode".
  */
 import type { Consent, ErrorCode, Player } from "../../../../../contracts/protocol.ts";
+import { deriveTopics } from "./topics";
 
 export interface ConsentToggles {
   matchAnswers: boolean;
@@ -33,6 +34,51 @@ export class PrivacyError extends Error {
   }
 }
 
+/** D010: what the page collects for "use my activity". Texts never leave as text in fixture mode. */
+export interface ActivityInput {
+  profileId: string | null;
+  groupIds: string[];
+  eventIds: string[];
+  friendIds: string[];
+  texts: string[];
+}
+export interface ActivityResult {
+  useActivity: boolean;
+  topics: string[];
+}
+/** Fixture only: the stored signals (no text), so the fixture cycle can compute brightness. */
+export interface FixtureActivity {
+  profileId: string | null;
+  groupIds: string[];
+  eventIds: string[];
+  friendIds: string[];
+  topics: string[];
+}
+const ACTIVITY_KEY = "cst-activity-fixture";
+export function readFixtureActivity(): FixtureActivity | null {
+  try {
+    const raw = sessionStorage.getItem(ACTIVITY_KEY);
+    return raw ? (JSON.parse(raw) as FixtureActivity) : null;
+  } catch {
+    return null;
+  }
+}
+function writeFixtureActivity(value: FixtureActivity | null) {
+  try {
+    if (value) sessionStorage.setItem(ACTIVITY_KEY, JSON.stringify(value));
+    else sessionStorage.removeItem(ACTIVITY_KEY);
+  } catch {
+    /* storage blocked: the demo just has no activity signals */
+  }
+  try {
+    window.dispatchEvent(new Event(ACTIVITY_EVENT));
+  } catch {
+    /* no window (tests) */
+  }
+}
+/** Fired after the fixture activity changes, so pages can recompute. */
+export const ACTIVITY_EVENT = "cst-activity-changed";
+
 export interface PrivacyClient {
   readonly mode: "live" | "fixture";
   /** null when there is no session for this Group (not joined, expired, signed out). */
@@ -41,6 +87,8 @@ export interface PrivacyClient {
   updateConsent(expectedVersion: number, toggles: ConsentToggles): Promise<Consent>;
   signOut(): Promise<void>;
   deleteMyData(): Promise<void>;
+  /** D010: turn "use my activity" on (with the collected signals) or off (deletes them). */
+  setActivity(useActivity: boolean, input?: ActivityInput): Promise<ActivityResult>;
 }
 
 export const allOn = (t: ConsentToggles): boolean => t.matchAnswers && t.anonymousChat && t.isAdult;
@@ -75,6 +123,7 @@ export function parseConsent(v: unknown): Consent {
     isAdult: bool(v.isAdult),
     version,
     revokedAt,
+    useActivity: v.useActivity === undefined ? false : bool(v.useActivity),
   };
 }
 
@@ -146,6 +195,12 @@ export function httpPrivacyClient(base: string): PrivacyClient {
     async deleteMyData() {
       await call("/me/data", { method: "DELETE" });
     },
+    async setActivity(useActivity, input) {
+      const body = JSON.stringify(useActivity && input ? { useActivity, ...input } : { useActivity });
+      const v = await call("/me/activity", { method: "PUT", body });
+      if (!isObj(v) || !Array.isArray(v.topics)) fail();
+      return { useActivity: bool(v.useActivity), topics: (v.topics as unknown[]).map(str) };
+    },
   };
 }
 
@@ -216,6 +271,27 @@ export function fixturePrivacyClient(): PrivacyClient {
     },
     async deleteMyData() {
       if (!view) throw new PrivacyError("UNAUTHENTICATED", "Join this Group's Constellations to continue.");
+      writeFixtureActivity(null);
+      save({ ...view, consent: { ...view.consent, useActivity: false } });
+    },
+    async setActivity(useActivity, input) {
+      if (!view) throw new PrivacyError("UNAUTHENTICATED", "Join Facebook Space to continue.");
+      if (useActivity && !allOn(view.consent)) throw new PrivacyError("CONSENT_REQUIRED", "Turn the three switches on first.");
+      if (!useActivity || !input) {
+        writeFixtureActivity(null);
+        save({ ...view, consent: { ...view.consent, useActivity: false } });
+        return { useActivity: false, topics: [] };
+      }
+      const topics = deriveTopics(input.texts); // texts are dropped here, like the server
+      writeFixtureActivity({
+        profileId: input.profileId,
+        groupIds: [...new Set(input.groupIds)].sort(),
+        eventIds: [...new Set(input.eventIds)].sort(),
+        friendIds: [...new Set(input.friendIds)].sort(),
+        topics,
+      });
+      save({ ...view, consent: { ...view.consent, useActivity: true } });
+      return { useActivity: true, topics };
     },
   };
 }

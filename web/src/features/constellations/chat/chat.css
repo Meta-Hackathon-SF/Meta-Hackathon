@@ -1,0 +1,237 @@
+.cst-chat,
+.cst-sky {
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e3e7ee;
+  border-radius: 22px;
+  padding: clamp(20px, 4vw, 32px);
+  font:
+    15px/1.6 "Segoe UI",
+    sans-serif;
+  color: #273044;
+  min-width: 0;
+  max-width: 100%;
+  box-shadow: 0 8px 32px #17284a08;
+}
+.cst-chat *,
+.cst-sky * {
+  box-sizing: border-box;
+}
+.cst-chat h2,
+.cst-sky h2 {
+  font-size: clamp(25px, 4vw, 34px);
+  line-height: 1.2;
+  letter-spacing: -1px;
+  margin: 0;
+  color: #142138;
+}
+.cst-chat p,
+.cst-sky p {
+  overflow-wrap: anywhere;
+}
+.cst-chat button,
+.cst-sky button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid #cbd4e3;
+  border-radius: 9px;
+  background: #f7f9fc;
+  color: #284568;
+  padding: 7px 11px;
+  min-height: 40px;
+}
+.cst-chat button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.cst-chat button:focus-visible,
+.cst-chat textarea:focus-visible {
+  outline: 3px solid #346be9;
+  outline-offset: 3px;
+}
+.cst-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.cst-eyebrow {
+  color: #4267a9;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+.cst-orbit {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #eaf0ff;
+  color: #5375c9;
+  font-size: 32px;
+}
+.cst-muted {
+  color: #626d80;
+  font-size: 14px;
+}
+.cst-notice,
+.cst-expiry {
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  background: #f0f4ff;
+  color: #425d8c;
+}
+.cst-expiry {
+  background: #f5f7fa;
+  color: #586477;
+}
+.cst-members {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0;
+  border-bottom: 1px solid #edf0f5;
+}
+.cst-members li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-top: 1px solid #edf0f5;
+}
+.cst-star {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px #f3f6fc;
+}
+.cst-member-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-left: auto;
+}
+.cst-member-actions button {
+  font-size: 11px;
+  min-height: 34px;
+}
+.cst-messages {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.cst-messages li {
+  background: #f4f6fa;
+  padding: 13px 16px;
+  border-radius: 4px 15px 15px;
+  max-width: 94%;
+  align-self: flex-start;
+  overflow-wrap: anywhere;
+}
+.cst-messages li.cst-own-message {
+  align-self: flex-end;
+  background: #eaf0ff;
+  border-radius: 15px 4px 15px 15px;
+}
+.cst-message-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 12px;
+}
+.cst-message-meta time {
+  color: #788299;
+  font-size: 10px;
+}
+.cst-messages li p {
+  margin: 6px 0;
+  white-space: pre-wrap;
+}
+.cst-messages button {
+  font-size: 10px;
+  min-height: 28px;
+  padding: 2px 8px;
+  margin-top: 5px;
+  background: transparent;
+}
+.cst-chip {
+  display: block;
+  color: #5b6380;
+  font-size: 10px;
+  margin-top: 8px;
+}
+.cst-mutual {
+  background: #edf8f0;
+  border: 1px solid #cbe5d2;
+  border-radius: 10px;
+  padding: 14px;
+}
+.cst-mutual p {
+  margin-bottom: 0;
+}
+.cst-composer label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 20px 0 6px;
+}
+.cst-composer textarea {
+  font: inherit;
+  resize: vertical;
+  min-height: 90px;
+  width: 100%;
+  border: 1px solid #d8dfeb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+.cst-composer-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+.cst-composer-footer small {
+  font-size: 10px;
+  color: #69758a;
+}
+.cst-composer-footer button {
+  background: #315cb3;
+  border-color: #315cb3;
+  color: #fff;
+}
+.cst-error {
+  font-size: 13px;
+  background: #fff1f0;
+  color: #99382e;
+  padding: 12px;
+  border-radius: 8px;
+}
+@media (max-width: 480px) {
+  .cst-member-actions {
+    margin-left: 20px;
+    width: 100%;
+  }
+  .cst-messages li {
+    max-width: 100%;
+  }
+  .cst-orbit {
+    width: 44px;
+    height: 44px;
+  }
+  .cst-chat,
+  .cst-sky {
+    border-radius: 16px;
+  }
+}

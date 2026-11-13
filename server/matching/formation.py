@@ -21,6 +21,7 @@ from server.matching.baseline import (
     same_group,
     similarity_matrix,
 )
+from server.matching.closeness import member_context, pair_closeness
 from server.matching.models import (
     COLOR_IDS,
     FALLBACK_LABEL,
@@ -286,7 +287,8 @@ class FormationService:
                 shared_meaning=meaning, confidence=confidence,
                 is_loose_match=used_fallback or confidence < LOOSE_MATCH_CONFIDENCE,
                 name=name, shape_id=shape, color_id=color,
-                baseline_agrees=same_group(baseline, refs), is_fallback=used_fallback)
+                baseline_agrees=same_group(baseline, refs), is_fallback=used_fallback,
+                closeness=pair_closeness(snap, refs), member_context=member_context(snap, refs))
             for i, ((refs, meaning, confidence), (name, shape, color))
             in enumerate(zip(proposal, names, strict=False)))
         return FormationResult("ok", constellations=constellations, themes=theme_objs,
