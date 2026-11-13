@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
+import { Activity, CalendarDays, Flag, RotateCcw, Sparkles, UserPlus, Users } from "lucide-react";
 import {
   ClientError,
   type CurrentCycle,
@@ -14,26 +15,62 @@ import { FormationDebug } from "../formation";
 import "../daily/daily.css";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-const NEXT_STATUS: Record<string, string> = {
-  open: "Lock the week (Saturday 12:00)",
-  locked: "Start formation",
-  forming: "Reveal constellations (Sunday 10:00)",
-  revealed: "Close the week",
+const STEPS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Lock", "Form", "Reveal", "Close"];
+const STATUS_STEP: Record<string, number> = { locked: 5, forming: 6, revealed: 7, closed: 8 };
+
+const NEXT: Record<string, { label: string; effect: string }> = {
+  open: {
+    label: "Lock the week (Saturday 12:00)",
+    effect: "Freezes every answer and guess. Catch-up closes.",
+  },
+  locked: { label: "Start formation", effect: "Muse groups everyone by meaning; code checks every rule." },
+  forming: {
+    label: "Reveal constellations (Sunday 10:00)",
+    effect: "Players see their constellation and its anonymous chat opens.",
+  },
+  revealed: { label: "Close the week", effect: "Ends the week. Chats close at the next lock." },
 };
 
-function nextStep(cycle: WeeklyCycle): string | null {
+function nextStep(cycle: WeeklyCycle): { label: string; effect: string } | null {
   if (cycle.status === "closed") return null;
-  if (cycle.status === "open" && cycle.currentDay < 5) return `Advance to ${DAY_NAMES[cycle.currentDay]}`;
-  return NEXT_STATUS[cycle.status];
+  if (cycle.status === "open" && cycle.currentDay < 5)
+    return {
+      label: `Advance to ${DAY_NAMES[cycle.currentDay]}`,
+      effect: `Releases ${DAY_NAMES[cycle.currentDay]}'s question. ${DAY_NAMES[cycle.currentDay - 1]} becomes a catch-up day.`,
+    };
+  return NEXT[cycle.status];
 }
 
 function describe(cycle: WeeklyCycle): string {
-  return cycle.status === "open" ? `Open · ${DAY_NAMES[cycle.currentDay - 1]}` : cycle.status[0].toUpperCase() + cycle.status.slice(1);
+  return cycle.status === "open"
+    ? `Open · ${DAY_NAMES[cycle.currentDay - 1]}`
+    : cycle.status[0].toUpperCase() + cycle.status.slice(1);
+}
+
+function stepOf(cycle: WeeklyCycle): number {
+  return cycle.status === "open" ? cycle.currentDay - 1 : STATUS_STEP[cycle.status];
 }
 
 function text(error: unknown): string {
-  return error instanceof ClientError ? `${error.code}: ${error.message}` : "Something went wrong.";
+  if (error instanceof ClientError) {
+    if (error.code === "UNAUTHENTICATED") return "Sign in from the Constellations page first.";
+    if (error.code === "FORBIDDEN") return "This account isn't an operator for this Group.";
+    return `${error.code}: ${error.message}`;
+  }
+  return "Something went wrong.";
 }
+
+function shortTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+}
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+type Confirm = "reset" | "new" | null;
 
 export default function OperatorConsole() {
   const { communityId = "" } = useParams();
@@ -44,6 +81,7 @@ export default function OperatorConsole() {
   const [reports, setReports] = useState<Report[] | string>("Loading…");
   const [formation, setFormation] = useState<FormationDebugProps | string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState<Confirm>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const request = useRef(0);
@@ -62,7 +100,10 @@ export default function OperatorConsole() {
         );
       else setFormation(null);
     } catch (err) {
-      if (id === request.current) setError(text(err));
+      if (id === request.current) {
+        setLoaded(true);
+        setError(text(err));
+      }
     }
     // These lists belong to other services; a failure is shown, never faked.
     client.calls().then(
@@ -76,9 +117,10 @@ export default function OperatorConsole() {
   }, [client]);
 
   useEffect(() => {
+    const counter = request;
     void refresh();
     return () => {
-      request.current++;
+      counter.current++;
     };
   }, [refresh]);
 
@@ -86,6 +128,7 @@ export default function OperatorConsole() {
     setBusy(true);
     setError(null);
     setStatus(null);
+    setConfirm(null);
     try {
       const note = await work();
       setStatus(note ?? label);
@@ -100,21 +143,31 @@ export default function OperatorConsole() {
   if (!COMMUNITIES[communityId]) {
     return (
       <main className="cst-page" id="main-content">
-        <h1>Group not found</h1>
+        <section className="cst-card cst-empty">
+          <h1 className="cst-question">Group not found</h1>
+        </section>
       </main>
     );
   }
 
   const cycle = current?.cycle ?? null;
   const next = cycle ? nextStep(cycle) : null;
+  const step = cycle ? stepOf(cycle) : -1;
+  const startNew = () =>
+    void run("New week opened on Monday.", async () => void (await client.createCycle()));
 
   return (
     <main className="cst-page cst-page-wide" id="main-content">
       <header className="cst-header">
-        <p className="cst-breadcrumb">
-          <Link to={`/groups/${communityId}/constellations`}>Constellations</Link> · {COMMUNITIES[communityId]}
-        </p>
+        <nav className="cst-breadcrumb" aria-label="Breadcrumb">
+          <Link to={`/groups/${communityId}/constellations`}>Constellations</Link>
+          <span aria-hidden="true">/</span>
+          <span>{COMMUNITIES[communityId]}</span>
+        </nav>
         <h1>Operator console</h1>
+        <p className="cst-tagline">
+          Run the week by hand for the demo. Same rules as real time: forward only, one step at a time.
+        </p>
         <p className="cst-chips">
           <span className="cst-chip">Simulated Facebook</span>
           <span className="cst-chip cst-chip-warn">Demo timing</span>
@@ -124,79 +177,75 @@ export default function OperatorConsole() {
             </span>
           )}
         </p>
-        <p className="cst-lede">
-          Buttons move the week forward by hand. Same rules as real time: forward only, one step at a time.
-        </p>
       </header>
 
-      <section className="cst-card" aria-labelledby="cst-op-cycle">
-        <h2 id="cst-op-cycle" className="cst-question">
-          Weekly cycle
-        </h2>
-        {!loaded && <p className="cst-note">Loading…</p>}
-        {loaded && !cycle && <p className="cst-note">No cycle yet. Start one to open Monday's question.</p>}
-        {cycle && (
-          <dl className="cst-facts">
-            <div>
-              <dt>State</dt>
-              <dd data-testid="cst-op-state">{describe(cycle)}</dd>
-            </div>
-            <div>
-              <dt>Week of</dt>
-              <dd>{cycle.weekStart}</dd>
-            </div>
-            <div>
-              <dt>Timing</dt>
-              <dd>{cycle.demoTiming ? "Demo timing (operator)" : "Real time (clock)"}</dd>
-            </div>
-          </dl>
+      <section className="cst-card cst-op-main" aria-labelledby="cst-op-cycle">
+        <div className="cst-op-head">
+          <h2 id="cst-op-cycle" className="cst-question">
+            <CalendarDays size={18} aria-hidden="true" /> This week
+          </h2>
+          {cycle && (
+            <span className={`cst-pill is-${cycle.status}`} data-testid="cst-op-state">
+              {describe(cycle)}
+            </span>
+          )}
+        </div>
+
+        {!loaded && <div className="cst-skel cst-skel-steps" role="status" aria-label="Loading" />}
+        {loaded && !cycle && (
+          <p className="cst-hint">No week yet. Start one to release Monday's question to every player.</p>
         )}
-        <div className="cst-row cst-row-wrap">
-          {cycle && next && (
+
+        {cycle && (
+          <>
+            <ol className="cst-steps" aria-label="Week progress">
+              {STEPS.map((label, index) => (
+                <li
+                  key={label}
+                  className={`cst-step ${index < step ? "is-done" : index === step ? "is-current" : "is-upcoming"}${index === 5 ? " is-weekend" : ""}`}
+                  aria-current={index === step ? "step" : undefined}
+                >
+                  <span className="cst-step-dot" aria-hidden="true" />
+                  <span className="cst-step-label">{label}</span>
+                </li>
+              ))}
+            </ol>
+            <dl className="cst-facts">
+              <div>
+                <dt>Week of</dt>
+                <dd>{cycle.weekStart}</dd>
+              </div>
+              <div>
+                <dt>Locks</dt>
+                <dd>{shortTime(cycle.locksAt)}</dd>
+              </div>
+              <div>
+                <dt>Reveals</dt>
+                <dd>{shortTime(cycle.revealsAt)}</dd>
+              </div>
+              <div>
+                <dt>Timing</dt>
+                <dd>{cycle.demoTiming ? "Demo (operator)" : "Real time (clock)"}</dd>
+              </div>
+            </dl>
+          </>
+        )}
+
+        {cycle && next && (
+          <div className="cst-op-next">
             <button
               type="button"
-              className="button-primary"
+              className="button-primary cst-op-advance"
               disabled={busy}
               onClick={() => void run("Advanced.", async () => void (await client.advance(cycle.cycleId)))}
             >
-              {next}
+              {next.label}
             </button>
-          )}
-          <button
-            type="button"
-            className="button-secondary"
-            disabled={busy}
-            onClick={() => void run("New cycle opened on Monday.", async () => void (await client.createCycle()))}
-          >
-            New cycle
-          </button>
-          {cycle && (
-            <>
-              <button
-                type="button"
-                className="button-secondary"
-                disabled={busy || cycle.status !== "open"}
-                onClick={() =>
-                  void run("", async () => {
-                    const result = await client.topUp(cycle.cycleId);
-                    return `${result.label} top-up: ${result.syntheticPlayers} synthetic players, ${result.answersAdded} answers added.`;
-                  })
-                }
-              >
-                Synthetic top-up
-              </button>
-              <button
-                type="button"
-                className="button-secondary"
-                disabled={busy}
-                onClick={() => void run("Cycle reset to Monday. Answers cleared.", async () => void (await client.reset(cycle.cycleId)))}
-              >
-                Reset
-              </button>
-            </>
-          )}
-        </div>
-        <p className="cst-note" role="status" data-testid="cst-op-status">
+            <p className="cst-hint">{next.effect}</p>
+          </div>
+        )}
+
+        <p className="cst-op-status" role="status" data-testid="cst-op-status">
           {status}
         </p>
         {error && (
@@ -204,56 +253,185 @@ export default function OperatorConsole() {
             {error}
           </p>
         )}
-        <p className="cst-note">
-          Synthetic top-up adds players labeled “Synthetic player”. Reset works on demo cycles only and never touches
+
+        <div className="cst-op-tools">
+          {confirm === "new" ? (
+            <div className="cst-confirm" role="group" aria-label="Confirm new week">
+              <span>Start a new week? Players move to its Monday question.</span>
+              <button type="button" className="cst-danger" onClick={startNew} disabled={busy}>
+                Start new week
+              </button>
+              <button type="button" className="cst-text-button" onClick={() => setConfirm(null)}>
+                Cancel
+              </button>
+            </div>
+          ) : confirm === "reset" && cycle ? (
+            <div className="cst-confirm" role="group" aria-label="Confirm reset">
+              <span>Reset this demo week to Monday? Answers and guesses are cleared.</span>
+              <button
+                type="button"
+                className="cst-danger"
+                disabled={busy}
+                onClick={() =>
+                  void run("Week reset to Monday. Answers cleared.", async () => void (await client.reset(cycle.cycleId)))
+                }
+              >
+                Reset week
+              </button>
+              <button type="button" className="cst-text-button" onClick={() => setConfirm(null)}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="button-secondary"
+                disabled={busy}
+                onClick={() => (cycle && cycle.status !== "closed" ? setConfirm("new") : startNew())}
+              >
+                <CalendarDays size={16} aria-hidden="true" /> New cycle
+              </button>
+              {cycle && (
+                <>
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    disabled={busy || cycle.status !== "open"}
+                    onClick={() =>
+                      void run("", async () => {
+                        const result = await client.topUp(cycle.cycleId);
+                        return `${result.label} top-up: ${result.syntheticPlayers} synthetic players, ${result.answersAdded} answers added.`;
+                      })
+                    }
+                  >
+                    <UserPlus size={16} aria-hidden="true" /> Synthetic top-up
+                  </button>
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    disabled={busy}
+                    onClick={() => setConfirm("reset")}
+                  >
+                    <RotateCcw size={16} aria-hidden="true" /> Reset
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+        <p className="cst-hint">
+          Synthetic top-up adds players labeled “Synthetic player”. Reset works on demo weeks only and never touches
           real sessions.
         </p>
       </section>
 
-      <section className="cst-card" aria-labelledby="cst-op-calls">
-        <h2 id="cst-op-calls" className="cst-question">
-          Muse calls
-        </h2>
-        {typeof calls === "string" ? (
-          <p className="cst-note">{calls}</p>
-        ) : calls.length === 0 ? (
-          <p className="cst-note">
-            {client.mode === "fixture" ? "None. Fixture mode never calls Muse." : "No calls recorded yet."}
-          </p>
-        ) : (
-          <table className="cst-table">
-            <thead>
-              <tr>
-                <th scope="col">Call</th>
-                <th scope="col">Model</th>
-                <th scope="col">Source</th>
-                <th scope="col">Latency</th>
-              </tr>
-            </thead>
-            <tbody>
-              {calls.map((call, index) => (
-                <tr key={`${call.generatedAt}-${index}`}>
-                  <td>{call.callType}</td>
-                  <td>{call.model}</td>
-                  <td>{call.source === "replay" ? "Replay of a saved cycle" : "Live"}</td>
-                  <td>{(call.latencyMs / 1000).toFixed(1)} s</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+      <div className="cst-op-grid">
+        <section className="cst-card" aria-labelledby="cst-op-calls">
+          <h2 id="cst-op-calls" className="cst-question cst-card-title">
+            <Sparkles size={18} aria-hidden="true" /> Muse calls
+          </h2>
+          {typeof calls === "string" ? (
+            <p className="cst-hint">{calls}</p>
+          ) : calls.length === 0 ? (
+            <p className="cst-hint">
+              {client.mode === "fixture" ? "None. Fixture mode never calls Muse." : "No calls recorded yet."}
+            </p>
+          ) : (
+            <>
+              <dl className="cst-stats">
+                <div>
+                  <dt>Calls</dt>
+                  <dd>{calls.length}</dd>
+                </div>
+                <div>
+                  <dt>Live</dt>
+                  <dd>{calls.filter((c) => c.source === "live").length}</dd>
+                </div>
+                <div>
+                  <dt>Median latency</dt>
+                  <dd>{(median(calls.map((c) => c.latencyMs)) / 1000).toFixed(1)} s</dd>
+                </div>
+              </dl>
+              <div className="cst-table-wrap">
+                <table className="cst-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Call</th>
+                      <th scope="col">Model</th>
+                      <th scope="col">Source</th>
+                      <th scope="col">Latency</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {calls.map((call, index) => (
+                      <tr key={`${call.generatedAt}-${index}`}>
+                        <td>{call.callType}</td>
+                        <td>{call.model}</td>
+                        <td>
+                          {call.source === "replay" ? (
+                            <span className="cst-chip cst-chip-warn">Replay of a saved cycle</span>
+                          ) : (
+                            "Live"
+                          )}
+                        </td>
+                        <td className="cst-num">{(call.latencyMs / 1000).toFixed(1)} s</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </section>
+
+        <section className="cst-card" aria-labelledby="cst-op-reports">
+          <h2 id="cst-op-reports" className="cst-question cst-card-title">
+            <Flag size={18} aria-hidden="true" /> Report queue
+          </h2>
+          {typeof reports === "string" ? (
+            <p className="cst-hint">{reports}</p>
+          ) : reports.length === 0 ? (
+            <p className="cst-hint">No open reports.</p>
+          ) : (
+            <div className="cst-table-wrap">
+              <table className="cst-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Handle</th>
+                    <th scope="col">Reason</th>
+                    <th scope="col">Room</th>
+                    <th scope="col">When</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.map((report) => (
+                    <tr key={report.reportId}>
+                      <td>{report.reportedHandle}</td>
+                      <td>{report.reason.replace("_", " ")}</td>
+                      <td>{report.roomId}</td>
+                      <td>{new Date(report.createdAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="cst-hint">Removing a message or member happens in the chat tools.</p>
+        </section>
+      </div>
 
       <section className="cst-card" aria-labelledby="cst-op-formation">
-        <h2 id="cst-op-formation" className="cst-question">
-          Formation
+        <h2 id="cst-op-formation" className="cst-question cst-card-title">
+          <Users size={18} aria-hidden="true" /> Formation
         </h2>
         {typeof formation === "string" ? (
-          <p className="cst-note">{formation}</p>
+          <p className="cst-hint">{formation}</p>
         ) : formation ? (
           <FormationDebug {...formation} />
         ) : (
-          <p className="cst-note" data-testid="cst-op-formation-empty">
+          <p className="cst-hint" data-testid="cst-op-formation-empty">
+            <Activity size={14} aria-hidden="true" />{" "}
             {client.mode === "fixture"
               ? "Formation runs on the server. Fixture mode has no formation result."
               : cycle && cycle.status !== "open"
@@ -261,39 +439,6 @@ export default function OperatorConsole() {
                 : "Formation runs when the week locks."}
           </p>
         )}
-      </section>
-
-      <section className="cst-card" aria-labelledby="cst-op-reports">
-        <h2 id="cst-op-reports" className="cst-question">
-          Report queue
-        </h2>
-        {typeof reports === "string" ? (
-          <p className="cst-note">{reports}</p>
-        ) : reports.length === 0 ? (
-          <p className="cst-note">No open reports.</p>
-        ) : (
-          <table className="cst-table">
-            <thead>
-              <tr>
-                <th scope="col">Handle</th>
-                <th scope="col">Reason</th>
-                <th scope="col">Room</th>
-                <th scope="col">When</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reports.map((report) => (
-                <tr key={report.reportId}>
-                  <td>{report.reportedHandle}</td>
-                  <td>{report.reason.replace("_", " ")}</td>
-                  <td>{report.roomId}</td>
-                  <td>{new Date(report.createdAt).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        <p className="cst-note">Removing a message or member happens in the chat tools.</p>
       </section>
     </main>
   );
