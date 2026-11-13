@@ -158,3 +158,34 @@ def event_heat(
                 counts[event] = counts.get(event, 0) + 1
     rows = [{"eventId": e, "bucket": b} for e, n in counts.items() if (b := heat_bucket(n))]
     return sorted(rows, key=lambda r: (-counts[r["eventId"]], r["eventId"]))
+
+
+MAX_AFFINITY_PAIRS = 4000  # M4In.affinity bound (server/providers/contract.py)
+MAX_AFFINITY_SHARED = 50
+
+
+def affinity_pairs(
+    snap: FormationSnapshot, approved_event_ids: Collection[str] = (),
+    *, max_pairs: int = MAX_AFFINITY_PAIRS,
+) -> tuple[tuple[str, str, int], ...]:
+    """D014 M4 tie-break hints: (refA, refB, shared) for opted-in players who answered.
+
+    shared = shared allowlisted topics + shared Group ids + shared APPROVED event ids.
+    Unapproved event ids never count (empty allowlist -> events never count). Friends never
+    count (client-asserted, see COUNT_FRIENDS). Only pairs with shared >= 1; at most
+    `max_pairs`, strongest first. Only refs and a count leave this function: no topic,
+    Group or Event id reaches Muse."""
+    approved = frozenset(approved_event_ids)
+    answered = set(snap.refs)
+    signals = {
+        ref: (frozenset(s.topics), frozenset(s.group_ids), frozenset(s.event_ids) & approved)
+        for ref, s in snap.activity.items() if ref in answered
+    }
+    out = []
+    for ra, rb in combinations(sorted(signals), 2):
+        (ta, ga, ea), (tb, gb, eb) = signals[ra], signals[rb]
+        shared = len(ta & tb) + len(ga & gb) + len(ea & eb)
+        if shared:
+            out.append((ra, rb, min(MAX_AFFINITY_SHARED, shared)))
+    out.sort(key=lambda p: (-p[2], p[0], p[1]))
+    return tuple(out[:max_pairs])

@@ -11,8 +11,12 @@ from typing import Any, Protocol
 
 class MusePortLike(Protocol):
     async def run(self, *, task: str, requestId: str, promptVersion: str,
-                  payload: Any, signal: Any | None = None) -> Mapping[str, Any]:
-        """Returns {"output": <task output>, "evidence": MuseCallEvidence wire dict}."""
+                  payload: Any, signal: Any | None = None,
+                  correction: str | None = None) -> Mapping[str, Any]:
+        """Returns {"output": <task output>, "evidence": MuseCallEvidence wire dict}.
+
+        `correction` (optional) is code-generated re-ask feedback; formation only passes it
+        when the port's run() accepts it."""
         ...
 
 
