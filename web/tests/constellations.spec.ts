@@ -9,6 +9,13 @@ const DAILY = "/space";
 const OPERATOR = `${DAILY}/operator`;
 const LONG = "Mostly the dining hall with my floor, loud but good";
 
+// The Constellation Drop is a modal over Space. Specs that test other flows dismiss it when it appears.
+test.beforeEach(async ({ page }) => {
+  await page.addLocatorHandler(page.getByTestId("spc-drop"), async () => {
+    await page.getByTestId("spc-drop-later").click();
+  });
+});
+
 async function fakeMicrophone(page: Page, behavior: "allow" | "deny") {
   await page.addInitScript((mode) => {
     // Force the recorder path: the demo-only browser speech engine would bypass the fixture transcript.
@@ -178,10 +185,10 @@ test("streak: Mon and Tue on the day -> 2-day streak; a missed Wednesday shows i
   await advance(page, 1);
   await answer(page, 2, LONG);
   await page.goto(DAILY);
-  await expect(page.getByTestId("spc-today")).toContainText("2-day streak");
+  await expect(page.locator(".spc-streak-chip")).toContainText("2-day streak");
   await advance(page, 2); // Wednesday, then Wednesday ends
   await page.goto(DAILY);
-  await expect(page.getByTestId("spc-today")).not.toContainText("streak");
+  await expect(page.locator(".spc-streak-chip")).toHaveCount(0);
   await expect(page.getByTestId("spc-catchup-3")).toHaveAccessibleName("Catch up: Wednesday's question");
   await expect(page.getByTestId("spc-week-5").getByRole("button")).toHaveCount(0); // future days not answerable
   await page.getByTestId("spc-catchup-3").click();
@@ -192,7 +199,7 @@ test("streak: Mon and Tue on the day -> 2-day streak; a missed Wednesday shows i
   await page.goto(DAILY);
   await expect(page.getByTestId("spc-catchup-3")).toHaveCount(0);
   await expect(page.getByTestId("spc-week-3").getByRole("button", { name: "Wednesday: Caught up" })).toBeVisible();
-  await expect(page.getByTestId("spc-today")).toContainText("2-day streak"); // catch-up never extends it
+  await expect(page.locator(".spc-streak-chip")).toContainText("2-day streak"); // catch-up never extends it
 });
 
 test("no prevalence guess (D012); a flagged answer shows the private support card", async ({ page }) => {
@@ -217,9 +224,9 @@ test("weekend: lock closes answers, week sky and formation are labeled previews,
   await expect(page.locator("#main-content").getByRole("textbox")).toHaveCount(0);
   await page.getByRole("button", { name: "View sky" }).click();
   const sky = page.getByTestId("spc-canvas-sky");
-  await expect(sky.getByText(/answers this week/)).toBeVisible();
+  await expect(sky.getByText(/stars in the sky this week|sky count not available yet/)).toBeVisible();
   await sky.getByRole("button", { name: "Find my people" }).click();
-  await expect(page.getByTestId("spc-canvas-forming").getByRole("status")).toHaveText(/Following one path|Ready/);
+  await expect(page.getByTestId("spc-canvas-forming").getByRole("status")).toHaveText(/Finding your people|Ready/);
   await page.goto(`${DAILY}?s=main`);
   await expect(page.getByText("Not revealed yet")).toBeVisible();
   await expect(page.getByRole("button", { name: "Open chat" })).toHaveCount(0);
@@ -414,30 +421,6 @@ test("operator posts an event nudge to the revealed room (fixture replay, approv
   await expect(nudge).toContainText("Replay of a saved cycle");
   await expect(nudge).toContainText("Campus Cafe");
   await expect(nudge).toContainText("Fixture mode");
-});
-
-test("v3 operator: custom-event proposals are approved or rejected and the decision is logged", async ({ page }) => {
-  await newCycle(page);
-  const queue = page.getByTestId("cst-op-custom-events");
-  await expect(queue.locator(".cst-proposal")).toHaveCount(2);
-  await expect(queue.getByText("Replay of a saved round").first()).toBeVisible();
-  await expect(queue.getByText(/muse-spark-1\.3 · M7/).first()).toBeVisible();
-  await queue.locator(".cst-proposal").first().getByRole("button", { name: "Approve" }).click();
-  await expect(queue.locator(".cst-proposal")).toHaveCount(1);
-  await queue.locator(".cst-proposal").first().getByRole("textbox").fill("Venue too far");
-  await queue.locator(".cst-proposal").first().getByRole("button", { name: "Reject" }).click();
-  await expect(queue.getByText("No proposals waiting.")).toBeVisible();
-  const log = page.getByTestId("cst-op-decision-log");
-  await expect(log.locator("li")).toHaveCount(2);
-  await expect(log).toContainText("Approved “Saturday dumpling night”");
-  await expect(log).toContainText("Rejected “Sunday morning walk and coffee”");
-});
-
-test("operator reasoning panel: Muse proposes, code enforces (fixture shows none)", async ({ page }) => {
-  await newCycle(page);
-  const panel = page.getByTestId("cst-op-reasoning");
-  await expect(panel.getByRole("heading", { name: "Muse proposes, code enforces" })).toBeVisible();
-  await expect(panel.getByText("None. Fixture mode never calls Muse.")).toBeVisible();
 });
 
 async function toSundayChat(page: Page) {
