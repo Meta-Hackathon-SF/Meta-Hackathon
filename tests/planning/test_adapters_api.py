@@ -78,16 +78,18 @@ class CycleAdapterTests(unittest.TestCase):
 
 @unittest.skipUnless(HAVE_FASTAPI, "FastAPI not installed")
 class OperatorRouterTests(unittest.TestCase):
-    def client(self, *, nudge_steps=(GOOD,), muse_configured=True):
+    def client(self, *, nudge_steps=(GOOD,), muse_configured=True, with_trace=False):
         questions = QuestionService(load_default_bank(), InMemorySelectionStore(), TestOnlyWeekStart())
         m, _ = muse("event_nudge", *nudge_steps)
         self.chat = TestOnlyChat()
-        nudges = NudgeService(m, TestOnlyOutputGuard(), VenueCatalog.load(), Context(), self.chat, now=lambda: NOW)
+        nudges = NudgeService(m, TestOnlyOutputGuard(), VenueCatalog.load(), Context(), self.chat, now=lambda: NOW,
+                              trace=m.reasoning_trace)
 
         async def room_constellation(room_id):
             return {"room-orion": "c-1"}.get(room_id)
 
-        self.runtime = PlanningRuntime(questions, nudges, room_constellation, VenueCatalog.load(), muse_configured)
+        self.runtime = PlanningRuntime(questions, nudges, room_constellation, VenueCatalog.load(), muse_configured,
+                                       trace=m.reasoning_trace if with_trace else None)
 
         def session(request: Request):  # TEST-ONLY stand-in for Patrik's verified-session dependency
             role = request.headers.get("x-test-role")
@@ -112,6 +114,24 @@ class OperatorRouterTests(unittest.TestCase):
             self.assertEqual(set(body["error"]), {"code", "message", "requestId", "retryable"})
             self.assertEqual(body["error"]["code"], "FORBIDDEN")
         self.assertEqual(self.chat.posted, [])
+
+    def test_reasoning_route_shows_call_and_code_verdicts_without_text(self):
+        c = self.client(with_trace=True)
+        self.assertEqual(c.get("/api/v1/operator/reasoning", headers={"x-test-role": "player"}).status_code, 403)
+        self.assertEqual(c.post("/api/v1/operator/rooms/room-orion/nudge", headers=self.OP).status_code, 200)
+        rows = c.get("/api/v1/operator/reasoning?task=event_nudge", headers=self.OP).json()
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual((row["callType"], row["source"], row["outcome"]), ("M7", "replay", "ok"))
+        self.assertIn({"stage": "checked", "code": "venue_time_text_ok", "count": 1}, row["checks"])
+        blob = json.dumps(rows)
+        for text in (GOOD["why"], GOOD["title"], "They end up having most meals"):
+            self.assertNotIn(text, blob)
+        self.assertEqual(c.get("/api/v1/operator/reasoning?task=nope", headers=self.OP).status_code, 400)
+
+    def test_reasoning_route_absent_without_trace(self):
+        c = self.client()
+        self.assertEqual(c.get("/api/v1/operator/reasoning", headers=self.OP).status_code, 404)
 
     def test_questions_list_and_filters(self):
         c = self.client()

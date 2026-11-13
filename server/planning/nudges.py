@@ -23,7 +23,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable, Protocol
 from zoneinfo import ZoneInfo
 
-from server.providers import MUSE_VOICE, MusePort, MuseRequest, ProviderError, TaskRegistry, contract_spec
+from server.providers import MUSE_VOICE, MusePort, NullTrace, MuseRequest, ProviderError, TaskRegistry, contract_spec
 
 from .errors import PlanningError
 from .ports import ChatPostPort, OutputGuardPort, guard_allows
@@ -110,8 +110,9 @@ class NudgeService:
                  store: InMemoryNudgeStore | None = None,
                  now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
                  time_zone: str = "America/Los_Angeles",
-                 new_id: Callable[[], str] = lambda: uuid.uuid4().hex) -> None:
+                 new_id: Callable[[], str] = lambda: uuid.uuid4().hex, trace: Any = None) -> None:
         self._muse = muse
+        self._trace = trace if trace is not None else NullTrace()
         self._guard = guard
         self._catalog = catalog
         self._context = context
@@ -142,16 +143,19 @@ class NudgeService:
             "window": {"start": to_utc(start), "end": to_utc(end)},
             "campusEvents": self._catalog.events_between(start, end),
         }
+        rid = request_id or f"nudge-{self._new_id()[:12]}"
         try:
             result = await self._muse.run(MuseRequest(
-                task="event_nudge", request_id=request_id or f"nudge-{self._new_id()[:12]}",
+                task="event_nudge", request_id=rid,
                 prompt_version=NUDGE_PROMPT_VERSION, payload=payload,
             ))
         except ProviderError as exc:
             return NudgeOutcome(None, f"provider_{exc.kind}")
+        self._trace.note(rid, "input", "approved_venues", len(payload["venues"]))
         against = [*ctx.get("againstAnswers", []), ctx["sharedMeaning"]]
         reason = self._reject_reason(result.output, start, end, against)
         if reason is not None:
+            self._trace.note(rid, "refused", reason)
             return NudgeOutcome(None, reason)
         out = result.output
         nudge = {
@@ -166,7 +170,9 @@ class NudgeService:
             "evidence": dict(result.evidence),
         }
         if not guard_allows(self._guard, self.chat_text(nudge), against):
+            self._trace.note(rid, "refused", "guard_rejected_text")
             return NudgeOutcome(None, "guard_rejected_text")
+        self._trace.note(rid, "checked", "venue_time_text_ok")
         self._store.put(constellation_id, nudge)
         return NudgeOutcome(dict(nudge), "ok")
 

@@ -100,9 +100,12 @@ async def main() -> int:
         try:
             gen = await generator.generate(
                 count=3, request_id="live-m6", category_mix={"belonging": 2, "small_joys": 1, "routine": 1},
-                aggregate_signals=[{"tag": "solitude", "share": 0.43}, {"tag": "meals", "share": 0.57}],
+                # Synthetic D010-style community topic shares (as signals.aggregate_signals would emit).
+                aggregate_signals=[{"tag": "music", "share": 0.45}, {"tag": "coffee", "share": 0.35},
+                                   {"tag": "outdoors", "share": 0.3}, {"tag": "study", "share": 0.6}],
                 recent_question_ids=[q["questionId"] for q in bank.questions][:12])
-            report.append({"call": "M6", "kept": gen.pending, "rejected": gen.rejected, "evidence": gen.evidence,
+            report.append({"call": "M6", "kept": gen.pending, "rejected": gen.rejected, "rejections": gen.rejections,
+                           "basis": gen.basis, "evidence": gen.evidence,
                            "wallS": round(time.monotonic() - started, 1)})
         except PlanningError as exc:
             report.append({"call": "M6", "error": exc.code, "message": exc.message})

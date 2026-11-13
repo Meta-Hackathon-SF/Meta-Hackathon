@@ -17,7 +17,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, Protocol
 
-from server.providers import MUSE_VOICE, MusePort, MuseRequest, ProviderError, TaskRegistry, contract_spec
+from server.providers import MUSE_VOICE, MusePort, MuseRequest, NullTrace, ProviderError, TaskRegistry, contract_spec
 
 from .errors import PlanningError
 from .ports import OutputGuardPort, guard_allows
@@ -104,8 +104,9 @@ def follow_up_problems(text: Any, *, curated: bool = False) -> list[str]:
 
 class ClarifyService:
     def __init__(self, muse: MusePort, guard: OutputGuardPort, store: ClarifyStore | None = None, *,
-                 new_id: Callable[[], str] = lambda: uuid.uuid4().hex) -> None:
+                 new_id: Callable[[], str] = lambda: uuid.uuid4().hex, trace: Any = None) -> None:
         self._muse = muse
+        self._trace = trace if trace is not None else NullTrace()
         self._guard = guard
         self._store = store if store is not None else InMemoryClarifyStore()
         self._new_id = new_id
@@ -142,17 +143,27 @@ class ClarifyService:
             ))
         except ProviderError:
             # A follow-up is optional: never block the answer on the provider.
-            return self._fallback(question)
+            return self._fallback(question, request_id)
         out = result.output
         if not out["needsFollowup"]:
+            self._trace.note(request_id, "decision", "no_followup_needed")
             return ClarifyResult(dict(NO_FOLLOW_UP), "muse", dict(result.evidence))
         proposed = out["question"]
-        if follow_up_problems(proposed) or not guard_allows(self._guard, proposed, []):
-            return self._fallback(question)
+        problems = follow_up_problems(proposed)
+        if problems:
+            for code in problems:
+                self._trace.note(request_id, "validate", code)
+            return self._fallback(question, request_id)
+        if not guard_allows(self._guard, proposed, []):
+            self._trace.note(request_id, "guard", "rejected")
+            return self._fallback(question, request_id)
+        self._trace.note(request_id, "decision", "followup_shown")
         return ClarifyResult({"needsFollowup": True, "question": proposed}, "muse", dict(result.evidence))
 
-    def _fallback(self, question: dict[str, Any]) -> ClarifyResult:
+    def _fallback(self, question: dict[str, Any], request_id: str = "") -> ClarifyResult:
         hint = question.get("followUpHint")
         if not follow_up_problems(hint, curated=True) and guard_allows(self._guard, hint, []):
+            self._trace.note(request_id, "fallback", "curated_hint")
             return ClarifyResult({"needsFollowup": True, "question": hint}, "fallback")
+        self._trace.note(request_id, "fallback", "no_followup")
         return ClarifyResult(dict(NO_FOLLOW_UP), "fallback")

@@ -78,7 +78,7 @@ result.evidence  # MuseCallEvidence {model, source, generatedAt, latencyMs, call
 - Timeout / 429 / 5xx: bounded by `MUSE_MAX_ATTEMPTS` (default 2) and the overall `deadline_s`, honoring `Retry-After`. Auth and 400 are not retried.
 - Cancel by cancelling the awaiting asyncio task (the AbortSignal equivalent). Late results are discarded.
 - Evidence: every successful call returns `MuseCallEvidence` and appends it (plus `requestId`) to `muse.evidence_log`, the source for `GET /operator/calls`. Failed calls add none.
-- Telemetry sink receives only `requestId, task, callType, promptVersion, model, attempts, outcome, latencyMs` (+`status` on errors). No payloads, prompts or outputs.
+- Telemetry sink receives only `requestId, task, callType, promptVersion, model, source, attempts, outcome, latencyMs` (+`status` on errors). No payloads, prompts or outputs.
 - Semantic checks (ids in the pool, numbers equal to server counts, OutputGuard) stay with the calling owner. Pass a code-generated `correction` string on a re-ask; never put player text in it.
 - [`voice.py`](voice.py) holds `MUSE_VOICE`, the shared style block for player-facing text. Style only; guards decide.
 
