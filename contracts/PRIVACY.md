@@ -15,6 +15,8 @@ Owner: Patrik. Every owner enforces it at their boundary. No player ever sees an
 | Sky aggregate | Everyone in community | Everyone | Yes | Counts only (M8) |
 | Event nudge | Room | Room | Yes | Venue list + sharedMeaning (M7) |
 | Operator trace | n/a | Never | Sanitized metadata | No secrets |
+| Activity post/comment text (D010, opt-in) | Own, on submit only | Never | Transient only: never stored or logged | **D014 M9 (signed off by Patrik with conditions):** text + random per-call id for classification, after code redacts emails, links, phone/id numbers, street addresses and @mentions and caps each text at 2,000 chars; only allowlisted labels are kept |
+| Public game text (names, Sky labels/headlines, nudges, generated questions) | As shown | As shown | Yes | **D014 M10 (signed off by Patrik):** text + random per-call id for the sensitivity screen, after OutputGuard |
 
 ## Rules
 - Identity from the server session. Browser never gets provider or service credentials.
@@ -30,6 +32,8 @@ Owner: Patrik. Every owner enforces it at their boundary. No player ever sees an
 - Mutual reveal only when both asked; a one-sided request leaks nothing.
 - Synthetic players and signals always labeled; never counted as real participants.
 - No raw answers or chat text in logs or telemetry.
+- **D014 (signed off by Patrik with conditions):** Activity post/comment text is sent to Muse transiently for classification (M9 `activity_classification`) only after code redaction (`redact_for_model`: emails, links, phone/id numbers, street addresses, @mentions) and a 2,000-char cap; never stored or logged; only allowlisted labels are kept. The opt-in copy says Muse reads posts and comments. Sensitive texts are dropped whole and a provider failure keeps no labels. The keyword list is a labeled offline fallback used only when no Muse port is configured.
+- **D014 (signed off by Patrik):** After OutputGuard passes, every public Muse text (M5 names, Sky labels and M8 headlines, M7 nudges, M6 generated questions) also passes the M10 `sensitivity_screen`; anything but a single clean `none` is blocked, and a provider failure blocks everything.
 
 ## Required tests
 Another session gets 403 on any answer route; prompt payload unit tests; no-quote fuzz; 30-item sensitive red-team list; 2-member theme never renders; seeded distress answer and distress chat message never appear; deleted answer absent from re-run; TTL expiry; forged playerId; client-set demo mode; contact info in chat before reveal rejected; one-sided reveal leaks nothing; blocked pair rejected and re-solved; venue outside allowlist rejected.
