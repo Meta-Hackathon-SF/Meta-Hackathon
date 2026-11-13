@@ -47,15 +47,18 @@ Owners (branches unchanged):
 - Will: weekly cycle, daily-answer experience, voice, streaks, weighted submissions, operator controls, Groups tab.
 - Patrik: verification, sessions, consent, private answer storage, safety screening, output guards, retention.
 - Kai: anonymous chat, moderation pipeline, expiration, mutual reveal, realtime delivery, API composition, Sky UI.
-Status: approved by Rishi (team lead direction). ACK pending `@adamzhang06`, `@willapat`, `@beatopia`.
-ACK evidence: `@patrikliska13` ACK 2026-11-13T02:40Z (recorded here from role/patrik-privacy; no PR thread was reachable from Patrik's agent).
+Status: approved by Rishi (team lead direction). ACK pending `@willapat`, `@beatopia`.
+ACK `@adamzhang06` 2026-11-12: ACK (https://github.com/willapat/Meta-Hackathon/pull/12).
+ACK `@patrikliska13` 2026-11-13T02:40Z: ACK (recorded here from role/patrik-privacy; no PR thread was reachable from Patrik's agent).
 Verification: docs/roles/*.md list tasks and acceptance checks.
 
 ## D006: Contract 2.0.0
 ID / UTC timestamp: D006 / 2026-11-12T23:00Z
 Decision and rationale: `contracts/protocol.ts` 2.0.0 replaces 1.0.0. New types: Question, WeeklyCycle, DailyQuestion, DailyAnswer (server weights), Streak, CatchUpState, PrevalenceGuess, ChatRoom, AnonymousHandle, ChatMessage, Report, RevealRequest, MutualReveal, EventNudge, Venue, SyntheticSignal, StreamEvent. Ports: MusePort, PrivacyPort, OutputGuard, FormationPort, QuestionPort, NudgePort, CyclePort, ChatPort. Shared fixtures in `contracts/fixtures/`.
 Status: proposed. Each producer ACKs its shapes; changes go through a PR plus an entry here.
-ACK evidence: `@patrikliska13` ACK 2026-11-13T02:40Z for Player, Consent, Block, SafetyFlag, PrivacyPort, OutputGuard, M1 (producer). Pending other owners.
+ACK evidence: pending `@willapat`, `@rishibagri`, `@beatopia`.
+ACK `@adamzhang06` 2026-11-12: ACK for Question, QuestionPort, MusePort, MuseCallEvidence, M2, M6, M7, EventNudge, Venue, NudgePort; no change requested (https://github.com/willapat/Meta-Hackathon/pull/12).
+ACK `@patrikliska13` 2026-11-13T02:40Z: ACK for Player, Consent, Block, SafetyFlag, PrivacyPort, OutputGuard, M1 (producer); no change requested.
 Contract version / migration: 2.0.0; 1.0.0 retired, no data to migrate.
 Verification: `npx -p typescript@5.6.3 tsc --noEmit --strict --target es2020 --lib es2020,dom contracts/protocol.ts` passes at the commit that adds it; fixtures parse as JSON.
 
