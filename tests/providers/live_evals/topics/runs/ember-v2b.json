@@ -1,0 +1,510 @@
+{
+ "summary": {
+  "label": "ember-v2b",
+  "model": "muse-ember-1.0",
+  "subset": "all",
+  "batchSize": 8,
+  "n": 38,
+  "costUsd": 0.002392,
+  "inputTokens": 5370,
+  "outputTokens": 3711,
+  "batches": [
+   {
+    "batch": 0,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 1858,
+    "wallMs": 1860,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 1,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 2706,
+    "wallMs": 2707,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 2,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 2544,
+    "wallMs": 2545,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 3,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 3347,
+    "wallMs": 3352,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 4,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 8033,
+    "wallMs": 8037,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   }
+  ]
+ },
+ "results": {
+  "v22": {
+   "kept": [
+    "gaming"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "gaming",
+     "positive"
+    ]
+   ]
+  },
+  "v25": {
+   "kept": [
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "positive"
+    ]
+   ]
+  },
+  "v14": {
+   "kept": [
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "positive"
+    ]
+   ]
+  },
+  "v26": {
+   "kept": [
+    "art"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "art",
+     "positive"
+    ]
+   ]
+  },
+  "v03": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "coffee",
+     "negative"
+    ]
+   ]
+  },
+  "v28": {
+   "kept": [
+    "outdoors"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "outdoors",
+     "positive"
+    ]
+   ]
+  },
+  "v02": {
+   "kept": [],
+   "sensitive": true,
+   "raw": []
+  },
+  "v31": {
+   "kept": [
+    "outdoors",
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "neutral"
+    ],
+    [
+     "outdoors",
+     "neutral"
+    ]
+   ]
+  },
+  "v11": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "coding",
+     "positive"
+    ],
+    [
+     "food",
+     "positive"
+    ],
+    [
+     "gaming",
+     "neutral"
+    ]
+   ]
+  },
+  "v13": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "music",
+     "negative"
+    ]
+   ]
+  },
+  "v30": {
+   "kept": [
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "positive"
+    ]
+   ]
+  },
+  "v37": {
+   "kept": [
+    "film"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "film",
+     "positive"
+    ]
+   ]
+  },
+  "v07": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "sports",
+     "neutral"
+    ]
+   ]
+  },
+  "v36": {
+   "kept": [
+    "art"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "art",
+     "positive"
+    ]
+   ]
+  },
+  "v15": {
+   "kept": [
+    "books"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "books",
+     "positive"
+    ]
+   ]
+  },
+  "v32": {
+   "kept": [
+    "food"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "food",
+     "positive"
+    ]
+   ]
+  },
+  "v27": {
+   "kept": [
+    "film"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "film",
+     "positive"
+    ]
+   ]
+  },
+  "v04": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "food",
+     "positive"
+    ]
+   ]
+  },
+  "v23": {
+   "kept": [
+    "design"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "design",
+     "neutral"
+    ]
+   ]
+  },
+  "v38": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "gaming",
+     "negative"
+    ]
+   ]
+  },
+  "v09": {
+   "kept": [],
+   "sensitive": true,
+   "raw": []
+  },
+  "v05": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "coffee",
+     "positive"
+    ]
+   ]
+  },
+  "v35": {
+   "kept": [
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "positive"
+    ]
+   ]
+  },
+  "v10": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "food",
+     "positive"
+    ]
+   ]
+  },
+  "v24": {
+   "kept": [
+    "gaming"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "gaming",
+     "positive"
+    ]
+   ]
+  },
+  "v29": {
+   "kept": [
+    "coffee",
+    "study"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "study",
+     "neutral"
+    ],
+    [
+     "coffee",
+     "neutral"
+    ]
+   ]
+  },
+  "v33": {
+   "kept": [
+    "film"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "film",
+     "positive"
+    ]
+   ]
+  },
+  "v21": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "music",
+     "negative"
+    ]
+   ]
+  },
+  "v19": {
+   "kept": [
+    "coding"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "coding",
+     "positive"
+    ]
+   ]
+  },
+  "v06": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "food",
+     "neutral"
+    ]
+   ]
+  },
+  "v34": {
+   "kept": [
+    "coding"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "coding",
+     "positive"
+    ]
+   ]
+  },
+  "v18": {
+   "kept": [
+    "sports"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "sports",
+     "positive"
+    ]
+   ]
+  },
+  "v17": {
+   "kept": [
+    "coffee"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "coffee",
+     "positive"
+    ]
+   ]
+  },
+  "v08": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "gaming",
+     "neutral"
+    ]
+   ]
+  },
+  "v12": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "sports",
+     "neutral"
+    ]
+   ]
+  },
+  "v20": {
+   "kept": [
+    "food"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "food",
+     "positive"
+    ]
+   ]
+  },
+  "v01": {
+   "kept": [],
+   "sensitive": true,
+   "raw": []
+  },
+  "v16": {
+   "kept": [
+    "coffee",
+    "study"
+   ],
+   "sensitive": false,
+   "raw": [
+    [
+     "study",
+     "neutral"
+    ],
+    [
+     "coffee",
+     "positive"
+    ]
+   ]
+  }
+ }
+}

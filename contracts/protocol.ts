@@ -8,7 +8,7 @@
  * PUBLIC  = safe in responses to authorized session holders as annotated.
  * Fixtures that conform to this file: contracts/fixtures/*.json.
  */
-export const CONTRACT_VERSION = "2.1.0" as const; // 2.1.0 = D009 + D010, additive
+export const CONTRACT_VERSION = "2.2.0" as const; // 2.1.0 = D009 + D010; 2.2.0 = D014 (all additive)
 export type Id = string;
 export type IsoTime = string; // RFC3339 UTC
 export type IsoDate = string; // YYYY-MM-DD in the community time zone
@@ -188,7 +188,7 @@ export type StreamEvent =
 export interface ModelEvidence {
   model: string; source: "live" | "replay"; generatedAt: IsoTime; latencyMs: number;
 }
-export type MuseCallType = "M1" | "M2" | "M3" | "M4" | "M5" | "M6" | "M7" | "M8";
+export type MuseCallType = "M1" | "M2" | "M3" | "M4" | "M5" | "M6" | "M7" | "M8" | "M9" | "M10";
 export interface MuseCallEvidence extends ModelEvidence { callType: MuseCallType }
 export type ErrorCode =
   | "INVALID_INPUT" | "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND"
@@ -203,16 +203,27 @@ export interface ApiError {
 // session tokens. Outputs are schema-validated, then code-checked (OutputGuard).
 export type MuseTask =
   | "safety_screen" | "clarify" | "theme_discovery" | "constellation_formation"
-  | "constellation_naming" | "question_generation" | "event_nudge" | "sky_narration";
+  | "constellation_naming" | "question_generation" | "event_nudge" | "sky_narration"
+  | "activity_classification" | "sensitivity_screen"; // M9, M10 (D014)
 export interface PromptText { id: string; text: string; weight?: number } // id random per call
+/** D014: an answer sent to M3/M4 says which question it replies to ("nobody" means
+ *  different things under different questions). Optional for migration. */
+export interface AnswerText extends PromptText { questionId?: string }
 
 export interface M1In { text: PromptText; subjectType: "answer" | "chat_message" } // Patrik
 export interface M1Out { flag: SafetyLevel; reason: string }
 export interface M2In { question: string; answer: PromptText } // Adam, called by Will
 export interface M2Out { needsFollowup: boolean; question: string }
-export interface M3In { answers: PromptText[]; questions: { questionId: string; text: string }[] } // Rishi
+export interface M3In { answers: AnswerText[]; questions: { questionId: string; text: string }[] } // Rishi
 export interface M3Out { themes: { id: string; label: string; description: string; memberIds: string[] }[] }
-export interface M4In { themes: M3Out["themes"]; answers: PromptText[]; blockedPairs: [string, string][] } // Rishi
+export interface M4In { // Rishi
+  themes: M3Out["themes"]; answers: AnswerText[]; blockedPairs: [string, string][];
+  questions?: { questionId: string; text: string }[]; // D014
+  /** D014, D010 opt-in only: server-computed soft hints (pairs of random refs and how
+   *  many interests, Groups or Events they share). No topics or ids reach Muse.
+   *  Meaning comes first; affinity may only break ties. */
+  affinity?: { memberIds: [string, string]; shared: number }[];
+}
 export interface M4Out { constellations: { memberIds: string[]; sharedMeaning: string; confidence: number }[] }
 export interface M5In { sharedMeaning: string; size: number } // Rishi
 export interface M5Out { name: string; shapeId: string; colorId: string }
@@ -231,6 +242,23 @@ export interface M8In { // Rishi; counts only
   themes: { label: string; count: number; actualPercent: number; guessedPercentMedian: number }[];
 }
 export interface M8Out { headlines: string[] } // every number must equal an input number
+/** D014 M9, Patrik: a player's own opted-in posts/comments (and "liked: ..." items),
+ *  transient, never stored or logged; only validated labels are kept. */
+export type ActivityTopic =
+  | "ai" | "coding" | "design" | "music" | "gaming" | "vr" | "study" | "coffee"
+  | "food" | "outdoors" | "sports" | "film" | "art" | "books";
+export interface M9In { texts: { id: string; text: string }[] } // id random per call, 1-10 texts
+export interface M9Out {
+  results: { id: string; sensitive: boolean;
+    labels: { topic: ActivityTopic; stance: "positive" | "neutral" | "negative" }[] }[]; // <= 3 labels
+}
+/** D014 M10, Patrik: public game text (constellation names, Sky labels and headlines,
+ *  nudges, generated questions) -> one category; code blocks anything but "none". */
+export type SensitivityCategory =
+  | "none" | "health" | "mental_health" | "sexuality" | "religion" | "money"
+  | "family" | "location" | "identity" | "substance" | "violence";
+export interface M10In { items: { id: string; text: string }[] } // 1-40 items
+export interface M10Out { results: { id: string; category: SensitivityCategory }[] }
 
 export interface MuseJobMap {
   safety_screen: { in: M1In; out: M1Out };
@@ -241,6 +269,8 @@ export interface MuseJobMap {
   question_generation: { in: M6In; out: M6Out };
   event_nudge: { in: M7In; out: M7Out };
   sky_narration: { in: M8In; out: M8Out };
+  activity_classification: { in: M9In; out: M9Out };
+  sensitivity_screen: { in: M10In; out: M10Out };
 }
 
 // ---- Ports between owners (server-side; Python mirrors these) -----------

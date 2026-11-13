@@ -1,4 +1,4 @@
-"""Formation wire models mirroring contracts/protocol.ts 2.1.0 (camelCase on the wire).
+"""Formation wire models mirroring contracts/protocol.ts 2.2.0 (camelCase on the wire).
 
 Stdlib only. Every constructor path that accepts external data validates it; dataclasses are
 frozen so nothing is mutated after validation.
@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-CONTRACT_VERSION = "2.1.0"
+CONTRACT_VERSION = "2.2.0"
 MIN_CONSTELLATION_SIZE = 3
 MAX_CONSTELLATION_SIZE = 5
 LOOSE_MATCH_CONFIDENCE = 0.5
@@ -27,7 +27,7 @@ SHAPES_BY_SIZE: Mapping[int, tuple[str, ...]] = {
     5: ("w-cass", "house", "pentagon", "dipper-5"),
 }
 COLOR_IDS: tuple[str, ...] = ("ember", "tide", "moss", "dusk", "gold", "rose", "frost", "violet")
-MUSE_CALL_TYPES = frozenset({"M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8"})
+MUSE_CALL_TYPES = frozenset({"M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10"})
 EVIDENCE_SOURCES = frozenset({"live", "replay"})
 FALLBACK_LABEL = "Fallback grouping"
 

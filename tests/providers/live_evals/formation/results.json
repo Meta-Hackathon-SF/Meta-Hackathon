@@ -1,0 +1,4725 @@
+{
+ "E1_baseline_truth": {
+  "runs": [
+   {
+    "model": "muse-spark-1.3",
+    "run": 1,
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "rf4068f",
+      "r851ab8",
+      "re2f3e0",
+      "re9ae12",
+      "r74037f"
+     ],
+     [
+      "r2ad879",
+      "r7142ad",
+      "r73dfe3",
+      "rea5f00",
+      "rc56f56"
+     ],
+     [
+      "r6dc911",
+      "r407a9e",
+      "r9bba41",
+      "r4abb70",
+      "rb4d1f7"
+     ],
+     [
+      "r1445f0",
+      "r67de1f",
+      "r73a03a",
+      "r66c737",
+      "r7f5432"
+     ],
+     [
+      "rd85d26",
+      "ref1d48",
+      "raa9b8a",
+      "rfdd092",
+      "rb6efdd"
+     ],
+     [
+      "r57341a",
+      "rdb5f67",
+      "r32d4f4",
+      "r79b7ad",
+      "rf9513f"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 9952,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 9951,
+      "inputTokens": 1165,
+      "outputTokens": 1347,
+      "reasoningTokens": 959,
+      "estCostUsd": 0.007181,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Putting on a cheerful front for others while feeling low and",
+       "Overloaded by too many demands with no time to rest or breat",
+       "Eating alone to avoid being seen without company",
+       "Feeling behind while others seem settled socially and academ",
+       "Longing for home and a place where one is deeply known",
+       "Finding small steady routines and places that bring calm and"
+      ],
+      "confidences": [
+       0.92,
+       0.9,
+       0.88,
+       0.87,
+       0.89,
+       0.85
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 9952,
+    "costUsd": 0.00718
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 2,
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "rf4068f",
+      "r851ab8",
+      "re9ae12",
+      "re2f3e0"
+     ],
+     [
+      "r2ad879",
+      "r7142ad",
+      "r73dfe3",
+      "rea5f00",
+      "rc56f56"
+     ],
+     [
+      "rd85d26",
+      "ref1d48",
+      "raa9b8a",
+      "rfdd092"
+     ],
+     [
+      "r6dc911",
+      "r407a9e",
+      "r9bba41",
+      "r4abb70",
+      "rb4d1f7"
+     ],
+     [
+      "r1445f0",
+      "r67de1f",
+      "r73a03a"
+     ],
+     [
+      "r66c737",
+      "rb6efdd",
+      "r7f5432",
+      "r74037f"
+     ],
+     [
+      "r57341a",
+      "rdb5f67",
+      "r32d4f4",
+      "r79b7ad",
+      "rf9513f"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 11739,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 11738,
+      "inputTokens": 1165,
+      "outputTokens": 1654,
+      "reasoningTokens": 1247,
+      "estCostUsd": 0.008486,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       4,
+       4,
+       4,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.902,
+       "recall": 0.767,
+       "goldPairs": 60,
+       "groupedPairs": 51,
+       "goldPairsGrouped": 46
+      },
+      "meanings": [
+       "Putting on a cheerful front while privately struggling",
+       "Feeling overwhelmed by relentless workload and no downtime",
+       "Aching for home and holding onto family ties from afar",
+       "Eating alone and feeling exposed without company at meals",
+       "Worrying you are falling behind while peers seem confident",
+       "Feeling like an outsider arriving after bonds already formed",
+       "Finding small steady routines that bring calm and familiarit"
+      ],
+      "confidences": [
+       0.92,
+       0.9,
+       0.91,
+       0.89,
+       0.85,
+       0.82,
+       0.78
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.902,
+     "recall": 0.767,
+     "goldPairs": 60,
+     "groupedPairs": 51,
+     "goldPairsGrouped": 46
+    },
+    "latencyMs": 11739,
+    "costUsd": 0.00849
+   },
+   {
+    "model": "muse-wonder-1.0",
+    "run": 1,
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "rf4068f",
+      "r851ab8",
+      "re9ae12",
+      "re2f3e0",
+      "r74037f"
+     ],
+     [
+      "r2ad879",
+      "r7142ad",
+      "r73dfe3",
+      "rea5f00",
+      "rc56f56"
+     ],
+     [
+      "r6dc911",
+      "r407a9e",
+      "r9bba41",
+      "r4abb70",
+      "rb4d1f7"
+     ],
+     [
+      "r66c737",
+      "r1445f0",
+      "r67de1f",
+      "r73a03a",
+      "r7f5432"
+     ],
+     [
+      "rd85d26",
+      "ref1d48",
+      "raa9b8a",
+      "rfdd092",
+      "rb6efdd"
+     ],
+     [
+      "r57341a",
+      "rdb5f67",
+      "r32d4f4",
+      "r79b7ad",
+      "rf9513f"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 8523,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 8523,
+      "inputTokens": 1025,
+      "outputTokens": 1274,
+      "reasoningTokens": 959,
+      "estCostUsd": 0.02958,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Putting on a positive front for others while privately strug",
+       "Feeling overloaded by commitments with little time to rest",
+       "Experiencing loneliness and discomfort around eating alone",
+       "Feeling behind or like an outsider compared to peers",
+       "Missing home and feeling disconnected from one's earlier lif",
+       "Finding small comforting routines and moments of belonging"
+      ],
+      "confidences": [
+       0.9,
+       0.92,
+       0.93,
+       0.9,
+       0.88,
+       0.85
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 8523,
+    "costUsd": 0.02958
+   }
+  ],
+  "keywordBaseline": {
+   "precision": 0.133,
+   "recall": 0.133,
+   "goldPairs": 60,
+   "groupedPairs": 60,
+   "goldPairsGrouped": 8
+  },
+  "dataset": "repo gold set, 30 players, random refs"
+ },
+ "_spend": {
+  "agentUsd": 0.445096,
+  "agentCalls": 39
+ },
+ "E5_model_choice": {
+  "runs": [
+   {
+    "model": "muse-ember-1.0",
+    "run": 1,
+    "groups": [
+     [
+      "rd85d26",
+      "rb6efdd",
+      "ref1d48",
+      "raa9b8a",
+      "rfdd092"
+     ],
+     [
+      "rf4068f",
+      "r851ab8",
+      "re9ae12",
+      "re2f3e0",
+      "r74037f"
+     ],
+     [
+      "r2ad879",
+      "r7142ad",
+      "r73dfe3",
+      "rea5f00",
+      "rc56f56"
+     ],
+     [
+      "r6dc911",
+      "r407a9e",
+      "r9bba41",
+      "r4abb70",
+      "rb4d1f7"
+     ],
+     [
+      "r66c737",
+      "r1445f0",
+      "r67de1f",
+      "r73a03a",
+      "r7f5432"
+     ],
+     [
+      "r57341a",
+      "rdb5f67",
+      "r32d4f4",
+      "r79b7ad",
+      "rf9513f"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 3734,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 3734,
+      "inputTokens": 1165,
+      "outputTokens": 1211,
+      "reasoningTokens": 887,
+      "estCostUsd": 0.000722,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Longing for home and the familiar life and people left behin",
+       "Presenting as fine to others while struggling privately unde",
+       "Feeling overwhelmed by too many demands with no time to rest",
+       "Eating alone and feeling isolated around meals",
+       "Feeling behind others who seem already settled, competent, a",
+       "Finding small pockets of comfort, routine, and quiet enjoyme"
+      ],
+      "confidences": [
+       0.85,
+       0.82,
+       0.85,
+       0.83,
+       0.78,
+       0.8
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 3734,
+    "costUsd": 0.00072
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 2,
+    "groups": [
+     [
+      "rd85d26",
+      "rb6efdd",
+      "ref1d48",
+      "raa9b8a",
+      "rfdd092"
+     ],
+     [
+      "r2ad879",
+      "r7142ad",
+      "r73dfe3",
+      "rea5f00",
+      "rc56f56"
+     ],
+     [
+      "rf4068f",
+      "r851ab8",
+      "re9ae12",
+      "re2f3e0"
+     ],
+     [
+      "r1445f0",
+      "r67de1f",
+      "r73a03a"
+     ],
+     [
+      "r6dc911",
+      "r407a9e",
+      "r9bba41",
+      "r4abb70",
+      "rb4d1f7"
+     ],
+     [
+      "r57341a",
+      "rdb5f67",
+      "r32d4f4",
+      "r79b7ad",
+      "rf9513f"
+     ],
+     [
+      "r66c737",
+      "r7f5432",
+      "r74037f"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 3075,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 3075,
+      "inputTokens": 1165,
+      "outputTokens": 1520,
+      "reasoningTokens": 1157,
+      "estCostUsd": 0.000877,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       3,
+       4,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.962,
+       "recall": 0.833,
+       "goldPairs": 60,
+       "groupedPairs": 52,
+       "goldPairsGrouped": 50
+      },
+      "meanings": [
+       "Longing for home and a former identity, with everyday remind",
+       "Feeling overloaded by competing demands with no time to rest",
+       "Presenting a fine exterior to others while struggling privat",
+       "Comparing oneself unfavorably to peers who seem more prepare",
+       "Eating alone and avoiding communal meals out of loneliness a",
+       "Finding small, grounding moments of comfort and connection i",
+       "Feeling like an outsider who arrived too late to form close "
+      ],
+      "confidences": [
+       0.9,
+       0.9,
+       0.85,
+       0.85,
+       0.9,
+       0.85,
+       0.8
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.962,
+     "recall": 0.833,
+     "goldPairs": 60,
+     "groupedPairs": 52,
+     "goldPairsGrouped": 50
+    },
+    "latencyMs": 3075,
+    "costUsd": 0.00088
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 3,
+    "groups": [
+     [
+      "rd85d26",
+      "ref1d48",
+      "raa9b8a",
+      "rfdd092"
+     ],
+     [
+      "r2ad879",
+      "r7142ad",
+      "r73dfe3",
+      "rea5f00",
+      "rc56f56"
+     ],
+     [
+      "rf4068f",
+      "r851ab8",
+      "re9ae12",
+      "re2f3e0",
+      "r74037f"
+     ],
+     [
+      "r6dc911",
+      "r407a9e",
+      "r9bba41",
+      "r4abb70",
+      "rb4d1f7"
+     ],
+     [
+      "r1445f0",
+      "r67de1f",
+      "r73a03a"
+     ],
+     [
+      "r66c737",
+      "rb6efdd",
+      "r7f5432"
+     ],
+     [
+      "r57341a",
+      "rdb5f67",
+      "r32d4f4",
+      "r79b7ad",
+      "rf9513f"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 2919,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 2918,
+      "inputTokens": 1165,
+      "outputTokens": 1201,
+      "reasoningTokens": 847,
+      "estCostUsd": 0.000717,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       3,
+       4,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.962,
+       "recall": 0.833,
+       "goldPairs": 60,
+       "groupedPairs": 52,
+       "goldPairsGrouped": 50
+      },
+      "meanings": [
+       "Longing for family and familiar routines from before moving ",
+       "Feeling overloaded by commitments with no time to rest or re",
+       "Presenting a cheerful exterior while struggling privately in",
+       "Eating meals alone and feeling exposed or sad about it",
+       "Comparing themselves unfavorably to peers who seem more prep",
+       "Feeling like an outsider who arrived after connections were ",
+       "Finding small moments of comfort, connection, or belonging i"
+      ],
+      "confidences": [
+       0.9,
+       0.92,
+       0.88,
+       0.9,
+       0.85,
+       0.84,
+       0.82
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.962,
+     "recall": 0.833,
+     "goldPairs": 60,
+     "groupedPairs": 52,
+     "goldPairsGrouped": 50
+    },
+    "latencyMs": 2919,
+    "costUsd": 0.00072
+   }
+  ],
+  "note": "Spark and Wonder rows are the E1 runs"
+ },
+ "E4_themes_into_m4": {
+  "runs": [
+   {
+    "model": "muse-spark-1.3",
+    "run": 1,
+    "condition": "M3->M4 with themes",
+    "groups": [
+     [
+      "r74037f",
+      "r851ab8",
+      "re2f3e0",
+      "re9ae12",
+      "rf4068f"
+     ],
+     [
+      "r2ad879",
+      "r7142ad",
+      "r73dfe3",
+      "rc56f56",
+      "rea5f00"
+     ],
+     [
+      "r407a9e",
+      "r4abb70",
+      "r6dc911",
+      "r9bba41",
+      "rb4d1f7"
+     ],
+     [
+      "raa9b8a",
+      "rd85d26",
+      "ref1d48",
+      "rfdd092"
+     ],
+     [
+      "r32d4f4",
+      "r57341a",
+      "r79b7ad",
+      "rdb5f67",
+      "rf9513f"
+     ],
+     [
+      "r66c737",
+      "r7f5432",
+      "rb6efdd"
+     ],
+     [
+      "r1445f0",
+      "r67de1f",
+      "r73a03a"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 9089,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 9088,
+      "inputTokens": 1553,
+      "outputTokens": 1420,
+      "reasoningTokens": 1002,
+      "estCostUsd": 0.007976,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       3,
+       4,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.962,
+       "recall": 0.833,
+       "goldPairs": 60,
+       "groupedPairs": 52,
+       "goldPairsGrouped": 50
+      },
+      "meanings": [
+       "Keeping a cheerful front for others while feeling low or lon",
+       "Feeling overloaded by many demands with little rest or breat",
+       "Finding shared meals awkward and often eating alone to cope",
+       "Missing family and familiar home routines while adjusting to",
+       "Noticing small calm moments and friendly routines that lift ",
+       "Feeling socially behind and unknown after arriving after bon",
+       "Worrying others are further ahead in classes and future plan"
+      ],
+      "confidences": [
+       0.92,
+       0.9,
+       0.88,
+       0.9,
+       0.85,
+       0.86,
+       0.87
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.962,
+     "recall": 0.833,
+     "goldPairs": 60,
+     "groupedPairs": 52,
+     "goldPairsGrouped": 50
+    },
+    "latencyMs": 9089,
+    "costUsd": 0.01831,
+    "m3": {
+     "wallMs": 15663,
+     "outcome": "ok",
+     "attempts": 1,
+     "latencyMs": 15662,
+     "inputTokens": 1175,
+     "outputTokens": 2084,
+     "reasoningTokens": 1608,
+     "estCostUsd": 0.010326,
+     "themes": 6,
+     "labels": [
+      "Bright Outside, Tender Inside",
+      "Much On Your Plate",
+      "Figuring Out Mealtimes",
+      "Hearts Back Home",
+      "Little Lights In The Week",
+      "Joining In Midway"
+     ],
+     "themeMetrics": {
+      "precision": 0.918,
+      "recall": 0.933,
+      "goldPairs": 60,
+      "groupedPairs": 61,
+      "goldPairsGrouped": 56
+     },
+     "overlapRefs": 0
+    },
+    "sequentialLatencyMs": 24752
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 2,
+    "condition": "M3->M4 with themes",
+    "groups": [
+     [
+      "r74037f",
+      "r851ab8",
+      "re2f3e0",
+      "re9ae12",
+      "rf4068f"
+     ],
+     [
+      "r2ad879",
+      "r7142ad",
+      "r73dfe3",
+      "rc56f56",
+      "rea5f00"
+     ],
+     [
+      "raa9b8a",
+      "rb6efdd",
+      "rd85d26",
+      "ref1d48",
+      "rfdd092"
+     ],
+     [
+      "r407a9e",
+      "r4abb70",
+      "r6dc911",
+      "rb4d1f7"
+     ],
+     [
+      "r66c737",
+      "r7f5432",
+      "r9bba41"
+     ],
+     [
+      "r1445f0",
+      "r67de1f",
+      "r73a03a"
+     ],
+     [
+      "r32d4f4",
+      "r57341a",
+      "r79b7ad",
+      "rdb5f67",
+      "rf9513f"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 13397,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 13396,
+      "inputTokens": 1575,
+      "outputTokens": 1851,
+      "reasoningTokens": 1426,
+      "estCostUsd": 0.009836,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       3,
+       4,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.962,
+       "recall": 0.833,
+       "goldPairs": 60,
+       "groupedPairs": 52,
+       "goldPairsGrouped": 50
+      },
+      "meanings": [
+       "Putting on a cheerful front for others while privately feeli",
+       "Feeling overwhelmed by packed schedules and constant obligat",
+       "Longing for family, home routines, and familiar surroundings",
+       "Avoiding communal eating and feeling uneasy about dining aro",
+       "Feeling behind socially after arriving late and settling int",
+       "Worrying about falling behind peers in classes and future pl",
+       "Finding comfort and steadiness in small daily rituals and qu"
+      ],
+      "confidences": [
+       0.92,
+       0.9,
+       0.9,
+       0.88,
+       0.85,
+       0.89,
+       0.87
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.962,
+     "recall": 0.833,
+     "goldPairs": 60,
+     "groupedPairs": 52,
+     "goldPairsGrouped": 50
+    },
+    "latencyMs": 13397,
+    "costUsd": 0.02007,
+    "m3": {
+     "wallMs": 15966,
+     "outcome": "ok",
+     "attempts": 1,
+     "latencyMs": 15964,
+     "inputTokens": 1175,
+     "outputTokens": 2061,
+     "reasoningTokens": 1563,
+     "estCostUsd": 0.010228,
+     "themes": 6,
+     "labels": [
+      "Keeping Up a Brave Face",
+      "Feeling Stretched Too Thin",
+      "Missing Familiar Comforts",
+      "Finding Your Place With Others",
+      "Wondering If You Are Keeping Up",
+      "Small Moments That Help"
+     ],
+     "themeMetrics": {
+      "precision": 0.844,
+      "recall": 0.9,
+      "goldPairs": 60,
+      "groupedPairs": 64,
+      "goldPairsGrouped": 54
+     },
+     "overlapRefs": 0
+    },
+    "sequentialLatencyMs": 29363
+   }
+  ],
+  "note": "M4-alone comparison rows are E1 Spark runs"
+ },
+ "E2_questions_matter": {
+  "runs": [
+   {
+    "model": "muse-spark-1.3",
+    "run": 1,
+    "condition": "answers_only",
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "r46b6cf",
+      "ra6dd48",
+      "r27f4f0",
+      "re2109b"
+     ],
+     [
+      "re7d40d",
+      "r6ff4af",
+      "r9555c5",
+      "r5ed337"
+     ],
+     [
+      "rbc4abb",
+      "rd898cc",
+      "r6fe60c",
+      "rbb503c"
+     ],
+     [
+      "rf92d6b",
+      "r873c00",
+      "rcc877e"
+     ],
+     [
+      "rd42753",
+      "rd151bb",
+      "r54c847"
+     ],
+     [
+      "r935b5e",
+      "re46588",
+      "r3ea414",
+      "r5edd35",
+      "rb59fec"
+     ],
+     [
+      "r3e7eb8",
+      "r514dfd",
+      "r65ec01",
+      "r869188"
+     ],
+     [
+      "r813fe9",
+      "rb5a4e9",
+      "r9b1908"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 30543,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 30542,
+      "inputTokens": 1594,
+      "outputTokens": 4262,
+      "reasoningTokens": 3830,
+      "estCostUsd": 0.020106,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       4,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.721,
+       "recall": 0.517,
+       "goldPairs": 60,
+       "groupedPairs": 43,
+       "goldPairsGrouped": 31
+      },
+      "meanings": [
+       "Longing for distant family, childhood home, and old close bo",
+       "Finding belonging through shared meals and close proximity w",
+       "Contentment with chosen alone time and relief from social de",
+       "Sense of total absence of contact or meaningful events",
+       "Quiet loneliness spent by oneself in personal living space",
+       "Feeling stuck in monotonous routine while craving novelty an",
+       "Pressure from overloaded schedules with work and academic ob",
+       "Experience of constant daily immersion with many others arou"
+      ],
+      "confidences": [
+       0.9,
+       0.85,
+       0.88,
+       0.9,
+       0.82,
+       0.86,
+       0.8,
+       0.7
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.721,
+     "recall": 0.517,
+     "goldPairs": 60,
+     "groupedPairs": 43,
+     "goldPairsGrouped": 31
+    },
+    "latencyMs": 30543,
+    "costUsd": 0.02011
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 1,
+    "condition": "with_questions",
+    "promptVersion": "m4.exp.q1",
+    "groups": [
+     [
+      "re7d40d",
+      "r813fe9",
+      "r5ed337",
+      "r6ff4af",
+      "rb5a4e9"
+     ],
+     [
+      "rf92d6b",
+      "r873c00",
+      "rd151bb",
+      "rbb503c",
+      "r54c847"
+     ],
+     [
+      "rd42753",
+      "rcc877e",
+      "rd898cc",
+      "rbc4abb",
+      "r6fe60c"
+     ],
+     [
+      "r514dfd",
+      "r65ec01",
+      "r869188",
+      "r3e7eb8",
+      "r9b1908"
+     ],
+     [
+      "r46b6cf",
+      "ra6dd48",
+      "r27f4f0",
+      "r9555c5",
+      "re2109b"
+     ],
+     [
+      "r935b5e",
+      "re46588",
+      "r3ea414",
+      "r5edd35",
+      "rb59fec"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 18280,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 18280,
+      "inputTokens": 2145,
+      "outputTokens": 2538,
+      "reasoningTokens": 2168,
+      "estCostUsd": 0.013468,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Feeling anchored by close everyday companionship nearby",
+       "Experiencing solitude without nearby support to turn to",
+       "Feeling at ease and self-sufficient with current demands",
+       "Feeling overloaded by obligations and short on personal time",
+       "Longing for distant loved ones and familiar home life",
+       "Feeling stuck in monotony and wanting fresh excitement"
+      ],
+      "confidences": [
+       0.9,
+       0.9,
+       0.85,
+       0.85,
+       0.82,
+       0.83
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 18280,
+    "costUsd": 0.01347
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 2,
+    "condition": "answers_only",
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "r46b6cf",
+      "ra6dd48",
+      "r27f4f0",
+      "re2109b"
+     ],
+     [
+      "rd42753",
+      "rcc877e",
+      "rbc4abb",
+      "rd898cc",
+      "r6fe60c"
+     ],
+     [
+      "rd151bb",
+      "r54c847",
+      "rf92d6b",
+      "rbb503c",
+      "r873c00"
+     ],
+     [
+      "r813fe9",
+      "r6ff4af",
+      "re7d40d",
+      "rb5a4e9",
+      "r5ed337"
+     ],
+     [
+      "r3e7eb8",
+      "r514dfd",
+      "r65ec01",
+      "r869188",
+      "r9b1908"
+     ],
+     [
+      "re46588",
+      "r3ea414",
+      "r935b5e"
+     ],
+     [
+      "rb59fec",
+      "r5edd35",
+      "r9555c5"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 28038,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 28037,
+      "inputTokens": 1594,
+      "outputTokens": 3697,
+      "reasoningTokens": 3289,
+      "estCostUsd": 0.017705,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       3,
+       4,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.962,
+       "recall": 0.833,
+       "goldPairs": 60,
+       "groupedPairs": 52,
+       "goldPairsGrouped": 50
+      },
+      "meanings": [
+       "aching for family, childhood home and faraway loved ones lef",
+       "content and at ease with quiet solitude and needing little f",
+       "feeling isolated and spending time alone without much contac",
+       "surrounded daily by close peers and shared communal life",
+       "stretched thin by relentless work, study and time pressure",
+       "weary of sameness and longing for novelty and spontaneity",
+       "mourning the absence of shared rituals worth anticipating to"
+      ],
+      "confidences": [
+       0.88,
+       0.9,
+       0.82,
+       0.86,
+       0.84,
+       0.87,
+       0.78
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.962,
+     "recall": 0.833,
+     "goldPairs": 60,
+     "groupedPairs": 52,
+     "goldPairsGrouped": 50
+    },
+    "latencyMs": 28038,
+    "costUsd": 0.0177
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 2,
+    "condition": "with_questions",
+    "promptVersion": "m4.exp.q1",
+    "groups": [
+     [
+      "re7d40d",
+      "r813fe9",
+      "r5ed337",
+      "r6ff4af",
+      "rb5a4e9"
+     ],
+     [
+      "rf92d6b",
+      "rd151bb",
+      "r873c00",
+      "rbb503c",
+      "r54c847"
+     ],
+     [
+      "rbc4abb",
+      "rcc877e",
+      "rd898cc",
+      "rd42753",
+      "r6fe60c"
+     ],
+     [
+      "r3e7eb8",
+      "r514dfd",
+      "r65ec01",
+      "r869188",
+      "r9b1908"
+     ],
+     [
+      "r46b6cf",
+      "re2109b",
+      "ra6dd48",
+      "r27f4f0",
+      "r9555c5"
+     ],
+     [
+      "r935b5e",
+      "rb59fec",
+      "re46588",
+      "r3ea414",
+      "r5edd35"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 17471,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 17468,
+      "inputTokens": 2145,
+      "outputTokens": 2524,
+      "reasoningTokens": 2141,
+      "estCostUsd": 0.013408,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Embedded in a close local circle with frequent everyday toge",
+       "Socially isolated with no nearby confidant and almost no in-",
+       "At ease in solitude by choice with nothing feeling burdensom",
+       "Overwhelmed by demanding obligations and starved for persona",
+       "Longing for distant home ties while feeling disconnected whe",
+       "Weighed down by sameness and craving novelty and something a"
+      ],
+      "confidences": [
+       0.92,
+       0.9,
+       0.88,
+       0.85,
+       0.86,
+       0.84
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 17471,
+    "costUsd": 0.01341
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 1,
+    "condition": "answers_only",
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "rd42753",
+      "rf92d6b",
+      "rcc877e",
+      "r873c00",
+      "r54c847"
+     ],
+     [
+      "rbc4abb",
+      "rd898cc",
+      "r6fe60c",
+      "rd151bb",
+      "rbb503c"
+     ],
+     [
+      "re7d40d",
+      "r813fe9",
+      "re2109b",
+      "r6ff4af",
+      "r5ed337"
+     ],
+     [
+      "r935b5e",
+      "re46588",
+      "r3ea414",
+      "r5edd35",
+      "rb5a4e9"
+     ],
+     [
+      "r3e7eb8",
+      "r514dfd",
+      "r869188",
+      "rb59fec",
+      "r65ec01"
+     ],
+     [
+      "r46b6cf",
+      "r27f4f0",
+      "r9555c5",
+      "ra6dd48",
+      "r9b1908"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 5201,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 5198,
+      "inputTokens": 1594,
+      "outputTokens": 2714,
+      "reasoningTokens": 2394,
+      "estCostUsd": 0.001516,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.533,
+       "recall": 0.533,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 32
+      },
+      "meanings": [
+       "Experiencing a complete absence of companionship",
+       "Being alone in a private space and feeling content with that",
+       "Finding connection through being together with a wider group",
+       "Feeling worn down by sameness and unchanging daily patterns",
+       "Being constrained by work obligations and a lack of free tim",
+       "Missing familiar people and places, with contact that is dis"
+      ],
+      "confidences": [
+       0.88,
+       0.82,
+       0.85,
+       0.84,
+       0.78,
+       0.74
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.533,
+     "recall": 0.533,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 32
+    },
+    "latencyMs": 5201,
+    "costUsd": 0.00152
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 1,
+    "condition": "with_questions",
+    "promptVersion": "m4.exp.q1",
+    "groups": [
+     [
+      "rf92d6b",
+      "rd151bb",
+      "r873c00",
+      "rbb503c",
+      "r54c847"
+     ],
+     [
+      "rd42753",
+      "rcc877e",
+      "rd898cc",
+      "r6fe60c",
+      "rbc4abb"
+     ],
+     [
+      "re7d40d",
+      "r813fe9",
+      "r6ff4af",
+      "r5ed337",
+      "rb5a4e9"
+     ],
+     [
+      "r514dfd",
+      "r65ec01",
+      "r869188",
+      "r9b1908",
+      "r3e7eb8"
+     ],
+     [
+      "re46588",
+      "r3ea414",
+      "r5edd35",
+      "r935b5e",
+      "rb59fec"
+     ],
+     [
+      "r46b6cf",
+      "re2109b",
+      "r27f4f0",
+      "ra6dd48",
+      "r9555c5"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 4157,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 4154,
+      "inputTokens": 2145,
+      "outputTokens": 2156,
+      "reasoningTokens": 1764,
+      "estCostUsd": 0.001293,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Feeling locally isolated with no close person to turn to and",
+       "Content with an unobstructed week, experiencing no interfere",
+       "Embedded in frequent, communal social life with many nearby ",
+       "Overloaded by work and academic obligations, feeling time-pr",
+       "Stuck in monotony and repetition with little planned or nove",
+       "Missing home and distant loved ones, with important connecti"
+      ],
+      "confidences": [
+       0.85,
+       0.8,
+       0.85,
+       0.75,
+       0.7,
+       0.65
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 4157,
+    "costUsd": 0.00129
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 2,
+    "condition": "answers_only",
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "rd42753",
+      "rf92d6b",
+      "rcc877e",
+      "r873c00",
+      "rbb503c"
+     ],
+     [
+      "rbc4abb",
+      "rd898cc",
+      "r6fe60c",
+      "rd151bb",
+      "r54c847"
+     ],
+     [
+      "re7d40d",
+      "r813fe9",
+      "r6ff4af",
+      "rb5a4e9",
+      "r5ed337"
+     ],
+     [
+      "r46b6cf",
+      "ra6dd48",
+      "r27f4f0",
+      "re2109b",
+      "r9555c5"
+     ],
+     [
+      "r65ec01",
+      "r514dfd",
+      "r3e7eb8",
+      "r935b5e",
+      "r5edd35"
+     ],
+     [
+      "rb59fec",
+      "re46588",
+      "r3ea414",
+      "r869188",
+      "r9b1908"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 5513,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 5510,
+      "inputTokens": 1594,
+      "outputTokens": 2849,
+      "reasoningTokens": 2542,
+      "estCostUsd": 0.001584,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.6,
+       "recall": 0.6,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 36
+      },
+      "meanings": [
+       "Experiencing little to no social contact",
+       "Preferring time alone and finding solitude restorative",
+       "Being frequently surrounded by peers and enjoying collective",
+       "Missing people and places from home kept at a distance",
+       "Feeling trapped in repetitive obligations with little free t",
+       "Craving novelty, variety, and anticipation of new experience"
+      ],
+      "confidences": [
+       0.85,
+       0.75,
+       0.8,
+       0.7,
+       0.7,
+       0.55
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.6,
+     "recall": 0.6,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 36
+    },
+    "latencyMs": 5513,
+    "costUsd": 0.00158
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 2,
+    "condition": "with_questions",
+    "promptVersion": "m4.exp.q1",
+    "groups": [
+     [
+      "rf92d6b",
+      "r873c00",
+      "rd151bb",
+      "r54c847",
+      "rbb503c"
+     ],
+     [
+      "re7d40d",
+      "r813fe9",
+      "r5ed337",
+      "r6ff4af",
+      "rb5a4e9"
+     ],
+     [
+      "rd42753",
+      "rcc877e",
+      "rd898cc",
+      "rbc4abb",
+      "r6fe60c"
+     ],
+     [
+      "r514dfd",
+      "r65ec01",
+      "r869188",
+      "r3e7eb8",
+      "r9b1908"
+     ],
+     [
+      "r46b6cf",
+      "ra6dd48",
+      "r27f4f0",
+      "r9555c5",
+      "re2109b"
+     ],
+     [
+      "r935b5e",
+      "rb59fec",
+      "re46588",
+      "r3ea414",
+      "r5edd35"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 3478,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 3475,
+      "inputTokens": 2145,
+      "outputTokens": 1972,
+      "reasoningTokens": 1611,
+      "estCostUsd": 0.0012,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Feeling socially isolated with no close person to rely on an",
+       "Embedded in a daily social circle, frequently around others,",
+       "Unburdened and content with solitude, reporting no interfere",
+       "Overloaded by work, deadlines and scheduling demands, wantin",
+       "Longing for home, family and familiar people and places left",
+       "Bored by sameness and routine, missing novelty, spontaneity "
+      ],
+      "confidences": [
+       0.82,
+       0.8,
+       0.78,
+       0.76,
+       0.72,
+       0.74
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 3478,
+    "costUsd": 0.0012
+   },
+   {
+    "model": "muse-wonder-1.0",
+    "run": 1,
+    "condition": "answers_only",
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "r6ff4af",
+      "r813fe9",
+      "r9555c5"
+     ],
+     [
+      "re7d40d",
+      "re2109b",
+      "r5ed337",
+      "rb5a4e9"
+     ],
+     [
+      "r46b6cf",
+      "ra6dd48",
+      "r27f4f0"
+     ],
+     [
+      "r514dfd",
+      "r3e7eb8",
+      "r869188",
+      "r65ec01"
+     ],
+     [
+      "r935b5e",
+      "r3ea414",
+      "re46588",
+      "r5edd35",
+      "rb59fec"
+     ],
+     [
+      "rd151bb",
+      "rbc4abb",
+      "rbb503c",
+      "r54c847"
+     ],
+     [
+      "rf92d6b",
+      "rd42753",
+      "r873c00",
+      "r6fe60c"
+     ],
+     [
+      "rd898cc",
+      "rcc877e",
+      "r9b1908"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 19893,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 19890,
+      "inputTokens": 1454,
+      "outputTokens": 3108,
+      "reasoningTokens": 2753,
+      "estCostUsd": 0.067976,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       3,
+       3,
+       4,
+       4,
+       4,
+       4,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.674,
+       "recall": 0.483,
+       "goldPairs": 60,
+       "groupedPairs": 43,
+       "goldPairsGrouped": 29
+      },
+      "meanings": [
+       "Shared communal meals and large-group gathering places are c",
+       "Constant, positive closeness to nearby peers and close compa",
+       "Connection to distant family and a former home",
+       "Time and choices dominated by work, study, and scheduling de",
+       "Feeling stuck in repetition and wanting novelty or something",
+       "Spending time alone in a private personal space",
+       "Reporting an absence of people or occurrences",
+       "Minimal, brief, or absent experiences described in broad ter"
+      ],
+      "confidences": [
+       0.84,
+       0.78,
+       0.86,
+       0.74,
+       0.8,
+       0.85,
+       0.82,
+       0.45
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.674,
+     "recall": 0.483,
+     "goldPairs": 60,
+     "groupedPairs": 43,
+     "goldPairsGrouped": 29
+    },
+    "latencyMs": 19893,
+    "costUsd": 0.06798
+   },
+   {
+    "model": "muse-wonder-1.0",
+    "run": 1,
+    "condition": "with_questions",
+    "promptVersion": "m4.exp.q1",
+    "groups": [
+     [
+      "re7d40d",
+      "r813fe9",
+      "r6ff4af",
+      "r5ed337",
+      "rb5a4e9"
+     ],
+     [
+      "rf92d6b",
+      "rd151bb",
+      "r873c00",
+      "r54c847",
+      "rbb503c"
+     ],
+     [
+      "rbc4abb",
+      "rd42753",
+      "rcc877e",
+      "rd898cc",
+      "r6fe60c"
+     ],
+     [
+      "r869188",
+      "r514dfd",
+      "r65ec01",
+      "r9b1908",
+      "r3e7eb8"
+     ],
+     [
+      "r46b6cf",
+      "ra6dd48",
+      "r27f4f0",
+      "re2109b",
+      "r9555c5"
+     ],
+     [
+      "r935b5e",
+      "re46588",
+      "r3ea414",
+      "r5edd35",
+      "rb59fec"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 13166,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 13164,
+      "inputTokens": 2005,
+      "outputTokens": 2133,
+      "reasoningTokens": 1795,
+      "estCostUsd": 0.05068,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Strong local social connection, communal daily life, and fre",
+       "Social isolation locally, with solitary routines and no clos",
+       "Contentment with the current situation, with little interfer",
+       "Feeling overloaded by obligations and schedules, with limite",
+       "Missing home and distant loved ones, with important support ",
+       "Feeling stuck in monotony and missing novelty, variety, and "
+      ],
+      "confidences": [
+       0.86,
+       0.9,
+       0.85,
+       0.84,
+       0.82,
+       0.87
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 13166,
+    "costUsd": 0.05068
+   }
+  ],
+  "keywordBaseline": {
+   "precision": 0.133,
+   "recall": 0.133,
+   "goldPairs": 60,
+   "groupedPairs": 60,
+   "goldPairsGrouped": 8
+  },
+  "dataset": "synthetic 30 players, 6 latent groups x5, 2 short answers each to 6 questions; surface words collide across groups",
+  "questionIdOnlyBaseline": {
+   "precision": 0.117,
+   "recall": 0.117,
+   "goldPairs": 60,
+   "groupedPairs": 60,
+   "goldPairsGrouped": 7
+  },
+  "keywordBaselineWithQuestionText": {
+   "precision": 0.2,
+   "recall": 0.2,
+   "goldPairs": 60,
+   "groupedPairs": 60,
+   "goldPairsGrouped": 12
+  }
+ },
+ "E3_activity": {
+  "runs": [
+   {
+    "model": "muse-spark-1.3",
+    "run": 1,
+    "condition": "before_answers_only",
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ],
+     [
+      "r5b176a",
+      "r4beb51",
+      "r90f5b5",
+      "rf1edf4",
+      "re63175"
+     ],
+     [
+      "r44a45a",
+      "r303fb7",
+      "ra74be9",
+      "r326708",
+      "rea2975"
+     ],
+     [
+      "rc31de5",
+      "rca2631",
+      "r4debd3",
+      "rd386c0",
+      "rd3eeb3"
+     ],
+     [
+      "r0fa3e8",
+      "rb3eb93",
+      "r73398b",
+      "rd0b9ab",
+      "r9317e2"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 15993,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 15991,
+      "inputTokens": 1084,
+      "outputTokens": 1861,
+      "reasoningTokens": 1489,
+      "estCostUsd": 0.009264,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.6,
+       "recall": 0.6,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 36
+      },
+      "meanings": [
+       "Navigating mealtimes with a sense of isolation and solitude",
+       "Feeling stretched thin by packed obligations and little rest",
+       "Longing for familiar people and places from back home",
+       "Enjoying a tranquil period with little stress",
+       "Finding the recent stretch ordinary yet stable",
+       "Appreciating a generally upbeat and settled period"
+      ],
+      "confidences": [
+       0.92,
+       0.9,
+       0.88,
+       0.85,
+       0.85,
+       0.85
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.6,
+     "recall": 0.6,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 36
+    },
+    "latencyMs": 15993,
+    "costUsd": 0.00926,
+    "tieVsActivityGold": {
+     "precision": 0.2,
+     "recall": 0.2,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 6
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 1,
+    "condition": "after_with_activity",
+    "promptVersion": "m4.exp.act1",
+    "groups": [
+     [
+      "ra74be9",
+      "r0fa3e8",
+      "r303fb7",
+      "rd386c0",
+      "r73398b"
+     ],
+     [
+      "rea2975",
+      "r326708",
+      "r9317e2",
+      "rd3eeb3",
+      "r4debd3"
+     ],
+     [
+      "rca2631",
+      "rd0b9ab",
+      "r44a45a",
+      "rb3eb93",
+      "rc31de5"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ],
+     [
+      "r5b176a",
+      "r4beb51",
+      "re63175",
+      "r90f5b5",
+      "rf1edf4"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 17276,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 17275,
+      "inputTokens": 1993,
+      "outputTokens": 2449,
+      "reasoningTokens": 2069,
+      "estCostUsd": 0.012899,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Had a calm and uneventful week with nothing to complain abou",
+       "Experienced a smooth and settled week feeling steady",
+       "Enjoyed a relaxed and pleasant week that felt fine overall",
+       "Feeling lonely around meals and eating alone to avoid being ",
+       "Feeling overwhelmed by a packed schedule with no time to res",
+       "Missing home and feeling disconnected from familiar roots"
+      ],
+      "confidences": [
+       0.95,
+       0.95,
+       0.94,
+       0.92,
+       0.93,
+       0.91
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 17276,
+    "costUsd": 0.0129,
+    "tieVsActivityGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0,
+    "movedVsBefore": 15
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 2,
+    "condition": "before_answers_only",
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ],
+     [
+      "r5b176a",
+      "r4beb51",
+      "rf1edf4",
+      "re63175",
+      "r90f5b5"
+     ],
+     [
+      "r0fa3e8",
+      "rc31de5",
+      "rd3eeb3",
+      "rd386c0",
+      "rb3eb93"
+     ],
+     [
+      "rca2631",
+      "r326708",
+      "r44a45a",
+      "r303fb7",
+      "ra74be9"
+     ],
+     [
+      "rea2975",
+      "r73398b",
+      "r4debd3",
+      "rd0b9ab",
+      "r9317e2"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 19530,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 19529,
+      "inputTokens": 1084,
+      "outputTokens": 1521,
+      "reasoningTokens": 1143,
+      "estCostUsd": 0.007819,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.617,
+       "recall": 0.617,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 37
+      },
+      "meanings": [
+       "Feeling lonely and isolated around meals, eating alone to co",
+       "Feeling overwhelmed by a packed schedule with no time to res",
+       "Missing home and feeling disconnected from familiar roots",
+       "Having a steady, uneventful week that felt generally positiv",
+       "Experiencing a calm and relaxed week with ease",
+       "Feeling content and settled with no major concerns"
+      ],
+      "confidences": [
+       0.92,
+       0.93,
+       0.88,
+       0.9,
+       0.9,
+       0.9
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.617,
+     "recall": 0.617,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 37
+    },
+    "latencyMs": 19530,
+    "costUsd": 0.00782,
+    "tieVsActivityGold": {
+     "precision": 0.233,
+     "recall": 0.233,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 7
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0,
+    "movedNoiseBeforeRun1vs2": 11
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 2,
+    "condition": "after_with_activity",
+    "promptVersion": "m4.exp.act1",
+    "groups": [
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ],
+     [
+      "r5b176a",
+      "r4beb51",
+      "re63175",
+      "r90f5b5",
+      "rf1edf4"
+     ],
+     [
+      "r8b9552",
+      "rbf07d8",
+      "r617782",
+      "r42f5aa",
+      "r2cb127"
+     ],
+     [
+      "r0fa3e8",
+      "rc31de5",
+      "rca2631",
+      "r326708",
+      "rea2975"
+     ],
+     [
+      "rd3eeb3",
+      "rd386c0",
+      "r44a45a",
+      "r303fb7",
+      "ra74be9"
+     ],
+     [
+      "rb3eb93",
+      "r73398b",
+      "r4debd3",
+      "rd0b9ab",
+      "r9317e2"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 9689,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 9684,
+      "inputTokens": 1993,
+      "outputTokens": 1405,
+      "reasoningTokens": 1030,
+      "estCostUsd": 0.008462,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.617,
+       "recall": 0.617,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 37
+      },
+      "meanings": [
+       "Feeling lonely around meals and eating alone to avoid being ",
+       "Missing home and feeling disconnected from familiar identity",
+       "Feeling overwhelmed by an overloaded schedule with no rest",
+       "Having a steady, pleasant week with nothing wrong",
+       "Experiencing a calm and relaxed week without stress",
+       "Feeling settled and satisfied with a solid week"
+      ],
+      "confidences": [
+       0.92,
+       0.9,
+       0.93,
+       0.88,
+       0.88,
+       0.89
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.617,
+     "recall": 0.617,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 37
+    },
+    "latencyMs": 9689,
+    "costUsd": 0.00846,
+    "tieVsActivityGold": {
+     "precision": 0.233,
+     "recall": 0.233,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 7
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0,
+    "movedVsBefore": 11,
+    "movedNoiseAfterRun1vs2": 15
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 1,
+    "condition": "before_answers_only",
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "r0fa3e8",
+      "rc31de5",
+      "rd3eeb3",
+      "rca2631",
+      "r326708"
+     ],
+     [
+      "rd386c0",
+      "rea2975",
+      "r44a45a",
+      "r303fb7",
+      "rb3eb93"
+     ],
+     [
+      "ra74be9",
+      "r73398b",
+      "r4debd3",
+      "rd0b9ab",
+      "r9317e2"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ],
+     [
+      "r4beb51",
+      "r5b176a",
+      "r90f5b5",
+      "rf1edf4",
+      "re63175"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 2361,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 2358,
+      "inputTokens": 1084,
+      "outputTokens": 1088,
+      "reasoningTokens": 751,
+      "estCostUsd": 0.000652,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.6,
+       "recall": 0.6,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 36
+      },
+      "meanings": [
+       "A generally positive, uneventful week experienced as smooth ",
+       "A calm, steady, low-stress week with nothing notable to comp",
+       "An overall good and settled week, feeling relaxed and fine",
+       "Overwhelmed by excessive commitments, deadlines, and lack of",
+       "Homesickness and longing for family, home, and a former iden",
+       "Loneliness around meals and eating alone, avoiding social ea"
+      ],
+      "confidences": [
+       0.92,
+       0.9,
+       0.9,
+       0.93,
+       0.88,
+       0.9
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.6,
+     "recall": 0.6,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 36
+    },
+    "latencyMs": 2361,
+    "costUsd": 0.00065,
+    "tieVsActivityGold": {
+     "precision": 0.2,
+     "recall": 0.2,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 6
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 1,
+    "condition": "after_with_activity",
+    "promptVersion": "m4.exp.act1",
+    "groups": [
+     [
+      "r0fa3e8",
+      "rd386c0",
+      "r303fb7",
+      "ra74be9",
+      "r73398b"
+     ],
+     [
+      "rc31de5",
+      "rca2631",
+      "r44a45a",
+      "rb3eb93",
+      "rd0b9ab"
+     ],
+     [
+      "rd3eeb3",
+      "r326708",
+      "rea2975",
+      "r4debd3",
+      "r9317e2"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ],
+     [
+      "re63175",
+      "r5b176a",
+      "r4beb51",
+      "r90f5b5",
+      "rf1edf4"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 2418,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 2414,
+      "inputTokens": 1993,
+      "outputTokens": 1362,
+      "reasoningTokens": 1050,
+      "estCostUsd": 0.00088,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "A generally positive, calm and uneventful week",
+       "A pleasant, relaxed and satisfactory week with nothing amiss",
+       "A steady, settled and quietly positive week",
+       "Feeling lonely around meals and eating alone",
+       "Overwhelmed by a packed schedule and lack of rest",
+       "Homesickness and missing life back home"
+      ],
+      "confidences": [
+       0.95,
+       0.95,
+       0.95,
+       0.92,
+       0.92,
+       0.9
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 2418,
+    "costUsd": 0.00088,
+    "tieVsActivityGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0,
+    "movedVsBefore": 15
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 2,
+    "condition": "before_answers_only",
+    "promptVersion": "constellation_formation.v1",
+    "groups": [
+     [
+      "r0fa3e8",
+      "rc31de5",
+      "rd3eeb3",
+      "rca2631",
+      "r326708"
+     ],
+     [
+      "rd386c0",
+      "rea2975",
+      "r44a45a",
+      "r303fb7",
+      "rb3eb93"
+     ],
+     [
+      "ra74be9",
+      "r73398b",
+      "r4debd3",
+      "rd0b9ab",
+      "r9317e2"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ],
+     [
+      "re63175",
+      "r5b176a",
+      "r4beb51",
+      "r90f5b5",
+      "rf1edf4"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 1886,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 1882,
+      "inputTokens": 1084,
+      "outputTokens": 1058,
+      "reasoningTokens": 749,
+      "estCostUsd": 0.000637,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.6,
+       "recall": 0.6,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 36
+      },
+      "meanings": [
+       "Steady contentment with an uneventful, manageable period",
+       "Calm satisfaction and lack of notable complaints",
+       "Relaxed stability and feeling settled overall",
+       "Overload from competing demands and no time to rest",
+       "Loneliness around meals and eating alone",
+       "Homesickness and longing for family and former life"
+      ],
+      "confidences": [
+       0.92,
+       0.92,
+       0.92,
+       0.9,
+       0.9,
+       0.9
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.6,
+     "recall": 0.6,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 36
+    },
+    "latencyMs": 1886,
+    "costUsd": 0.00064,
+    "tieVsActivityGold": {
+     "precision": 0.2,
+     "recall": 0.2,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 6
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0,
+    "movedNoiseBeforeRun1vs2": 0
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 2,
+    "condition": "after_with_activity",
+    "promptVersion": "m4.exp.act1",
+    "groups": [
+     [
+      "ra74be9",
+      "r0fa3e8",
+      "r303fb7",
+      "rd386c0",
+      "r73398b"
+     ],
+     [
+      "rea2975",
+      "r326708",
+      "r9317e2",
+      "rd3eeb3",
+      "r4debd3"
+     ],
+     [
+      "rca2631",
+      "rd0b9ab",
+      "r44a45a",
+      "rb3eb93",
+      "rc31de5"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ],
+     [
+      "re63175",
+      "r5b176a",
+      "r4beb51",
+      "r90f5b5",
+      "rf1edf4"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 2451,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 2446,
+      "inputTokens": 1993,
+      "outputTokens": 1289,
+      "reasoningTokens": 980,
+      "estCostUsd": 0.000844,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "A generally positive, calm and uneventful week",
+       "A generally positive, calm and uneventful week",
+       "A generally positive, calm and uneventful week",
+       "Feeling overloaded and pressed for time",
+       "Longing for home and family from before",
+       "Eating alone and feeling socially isolated at meals"
+      ],
+      "confidences": [
+       0.95,
+       0.95,
+       0.95,
+       0.92,
+       0.92,
+       0.92
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 2451,
+    "costUsd": 0.00084,
+    "tieVsActivityGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0,
+    "movedVsBefore": 15,
+    "movedNoiseAfterRun1vs2": 0
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 3,
+    "condition": "after_with_activity",
+    "promptVersion": "m4.exp.act1",
+    "groups": [
+     [
+      "r0fa3e8",
+      "rd386c0",
+      "r303fb7",
+      "ra74be9",
+      "r73398b"
+     ],
+     [
+      "rc31de5",
+      "rca2631",
+      "r44a45a",
+      "rb3eb93",
+      "rd0b9ab"
+     ],
+     [
+      "rd3eeb3",
+      "r326708",
+      "rea2975",
+      "r4debd3",
+      "r9317e2"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ],
+     [
+      "r5b176a",
+      "r4beb51",
+      "re63175",
+      "r90f5b5",
+      "rf1edf4"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 13702,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 13700,
+      "inputTokens": 1993,
+      "outputTokens": 1954,
+      "reasoningTokens": 1568,
+      "estCostUsd": 0.010796,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Had a calm, uneventful week with nothing major to report",
+       "Had a calm, uneventful week with nothing major to report",
+       "Had a calm, uneventful week with nothing major to report",
+       "Feeling overwhelmed and stretched thin by too many obligatio",
+       "Feeling lonely and isolated around meals and social eating s",
+       "Missing home, family, and familiar identity from before movi"
+      ],
+      "confidences": [
+       0.95,
+       0.95,
+       0.95,
+       0.92,
+       0.9,
+       0.88
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 13702,
+    "costUsd": 0.0108,
+    "tieVsActivityGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 4,
+    "condition": "after_with_activity",
+    "promptVersion": "m4.exp.act1",
+    "groups": [
+     [
+      "rea2975",
+      "r326708",
+      "r9317e2",
+      "rd3eeb3",
+      "r4debd3"
+     ],
+     [
+      "ra74be9",
+      "r0fa3e8",
+      "r303fb7",
+      "rd386c0",
+      "r73398b"
+     ],
+     [
+      "rc31de5",
+      "rca2631",
+      "r44a45a",
+      "rb3eb93",
+      "rd0b9ab"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ],
+     [
+      "r5b176a",
+      "r4beb51",
+      "r90f5b5",
+      "rf1edf4",
+      "re63175"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 16107,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 16105,
+      "inputTokens": 1993,
+      "outputTokens": 2091,
+      "reasoningTokens": 1709,
+      "estCostUsd": 0.011378,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Having a steady, settled week where things felt easy and fin",
+       "Having a calm, unremarkable week with nothing to complain ab",
+       "Having a pleasant, relaxed week that felt good overall",
+       "Feeling lonely around meals and avoiding eating around other",
+       "Missing home and feeling disconnected from familiar people a",
+       "Feeling overwhelmed by a packed schedule with no time to res"
+      ],
+      "confidences": [
+       0.95,
+       0.95,
+       0.93,
+       0.92,
+       0.91,
+       0.94
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 16107,
+    "costUsd": 0.01138,
+    "tieVsActivityGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 1,
+    "condition": "after_with_affinity_pairs",
+    "promptVersion": "m4.exp.act2",
+    "groups": [
+     [
+      "r0fa3e8",
+      "r303fb7",
+      "r73398b",
+      "ra74be9",
+      "rd386c0"
+     ],
+     [
+      "r326708",
+      "r4debd3",
+      "r9317e2",
+      "rd3eeb3",
+      "rea2975"
+     ],
+     [
+      "rc31de5",
+      "rca2631",
+      "r44a45a",
+      "rb3eb93",
+      "rd0b9ab"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "r008499",
+      "r4668d0",
+      "rb592f6"
+     ],
+     [
+      "r5b176a",
+      "r4beb51",
+      "r90f5b5",
+      "rf1edf4",
+      "re63175"
+     ],
+     [
+      "r8b9552",
+      "rbf07d8",
+      "r617782",
+      "r42f5aa",
+      "r2cb127"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 17306,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 17304,
+      "inputTokens": 1974,
+      "outputTokens": 2368,
+      "reasoningTokens": 1984,
+      "estCostUsd": 0.012531,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Having a calm and steady week with nothing major to report",
+       "Experiencing an easy, settled week that felt smooth and fine",
+       "Enjoying a relaxed and pleasant week overall",
+       "Feeling lonely around meals and eating alone to avoid being ",
+       "Missing home, family, and a familiar sense of self while awa",
+       "Feeling overwhelmed by a packed schedule with no time to res"
+      ],
+      "confidences": [
+       0.92,
+       0.92,
+       0.9,
+       0.9,
+       0.9,
+       0.91
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 17306,
+    "costUsd": 0.01253,
+    "tieVsActivityGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 2,
+    "condition": "after_with_affinity_pairs",
+    "promptVersion": "m4.exp.act2",
+    "groups": [
+     [
+      "r0fa3e8",
+      "r303fb7",
+      "r73398b",
+      "ra74be9",
+      "rd386c0"
+     ],
+     [
+      "r326708",
+      "r4debd3",
+      "r9317e2",
+      "rd3eeb3",
+      "rea2975"
+     ],
+     [
+      "r44a45a",
+      "rb3eb93",
+      "rc31de5",
+      "rca2631",
+      "rd0b9ab"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "r008499",
+      "r4668d0",
+      "rb592f6"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "r617782",
+      "rbf07d8",
+      "r2cb127"
+     ],
+     [
+      "r5b176a",
+      "r4beb51",
+      "re63175",
+      "r90f5b5",
+      "rf1edf4"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 13204,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 13201,
+      "inputTokens": 1974,
+      "outputTokens": 2135,
+      "reasoningTokens": 1760,
+      "estCostUsd": 0.011541,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "Having a calm and steady week with nothing to complain about",
+       "Experiencing a smooth and settled week that feels good",
+       "Enjoying a relaxed and pleasant week overall",
+       "Feeling lonely and isolated around mealtimes",
+       "Feeling overwhelmed by a packed schedule and too many demand",
+       "Missing home and family while adjusting to a new place"
+      ],
+      "confidences": [
+       0.95,
+       0.95,
+       0.95,
+       0.92,
+       0.93,
+       0.9
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 13204,
+    "costUsd": 0.01154,
+    "tieVsActivityGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 1,
+    "condition": "after_with_affinity_pairs",
+    "promptVersion": "m4.exp.act2",
+    "groups": [
+     [
+      "r0fa3e8",
+      "r303fb7",
+      "r73398b",
+      "ra74be9",
+      "rd386c0"
+     ],
+     [
+      "r326708",
+      "r4debd3",
+      "r9317e2",
+      "rd3eeb3",
+      "rea2975"
+     ],
+     [
+      "r44a45a",
+      "rb3eb93",
+      "rc31de5",
+      "rca2631",
+      "rd0b9ab"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ],
+     [
+      "re63175",
+      "r5b176a",
+      "r4beb51",
+      "r90f5b5",
+      "rf1edf4"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 3257,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 3253,
+      "inputTokens": 1974,
+      "outputTokens": 1346,
+      "reasoningTokens": 1027,
+      "estCostUsd": 0.00087,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "A calm, good week with nothing major to complain about",
+       "An easy, steady, settled good week",
+       "A relaxed, decent, normal and fine week overall",
+       "Overwhelmed and overloaded with commitments, deadlines and n",
+       "Eating alone and feeling lonely or excluded at meals",
+       "Homesick and missing home, family and life back home"
+      ],
+      "confidences": [
+       0.92,
+       0.92,
+       0.92,
+       0.9,
+       0.9,
+       0.88
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 3257,
+    "costUsd": 0.00087,
+    "tieVsActivityGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 2,
+    "condition": "after_with_affinity_pairs",
+    "promptVersion": "m4.exp.act2",
+    "groups": [
+     [
+      "r0fa3e8",
+      "r303fb7",
+      "r73398b",
+      "ra74be9",
+      "rd386c0"
+     ],
+     [
+      "r326708",
+      "r4debd3",
+      "r9317e2",
+      "rd3eeb3",
+      "rea2975"
+     ],
+     [
+      "r44a45a",
+      "rb3eb93",
+      "rc31de5",
+      "rca2631",
+      "rd0b9ab"
+     ],
+     [
+      "re63175",
+      "r5b176a",
+      "r4beb51",
+      "r90f5b5",
+      "rf1edf4"
+     ],
+     [
+      "r5aea11",
+      "r5cf0a7",
+      "rb592f6",
+      "r008499",
+      "r4668d0"
+     ],
+     [
+      "r8b9552",
+      "r42f5aa",
+      "rbf07d8",
+      "r617782",
+      "r2cb127"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 2451,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 2448,
+      "inputTokens": 1974,
+      "outputTokens": 1327,
+      "reasoningTokens": 1006,
+      "estCostUsd": 0.000861,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       5,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 1.0,
+       "recall": 1.0,
+       "goldPairs": 60,
+       "groupedPairs": 60,
+       "goldPairsGrouped": 60
+      },
+      "meanings": [
+       "A generally positive, uneventful week with no notable proble",
+       "A generally positive, uneventful week with no notable proble",
+       "A generally positive, uneventful week with no notable proble",
+       "Longing for home and family life left behind",
+       "Eating alone and feeling socially isolated around meals",
+       "Overwhelmed by a packed schedule and too many demands"
+      ],
+      "confidences": [
+       0.95,
+       0.95,
+       0.95,
+       0.9,
+       0.9,
+       0.9
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 60,
+     "groupedPairs": 60,
+     "goldPairsGrouped": 60
+    },
+    "latencyMs": 2451,
+    "costUsd": 0.00086,
+    "tieVsActivityGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongVsMeaningGold": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "goldPairs": 30,
+     "groupedPairs": 30,
+     "goldPairsGrouped": 30
+    },
+    "strongPairsSameTopicDiffMeaning": 0,
+    "strongPairs": 30,
+    "mixedStrongTieGroups": 0
+   }
+  ],
+  "keywordBaseline": {
+   "precision": 0.117,
+   "recall": 0.117,
+   "goldPairs": 60,
+   "groupedPairs": 60,
+   "goldPairsGrouped": 7
+  },
+  "dataset": "synthetic 30: 15 strong-meaning (3 feelings x5, activity topics cross-cut meaning) + 15 tie (same generic meaning, activity splits into music/outdoors/gaming x5)",
+  "affinityPairs": 45
+ },
+ "X_validity_stress": {
+  "runs": [
+   {
+    "model": "muse-spark-1.3",
+    "run": 1,
+    "groups": [
+     [
+      "r33feff",
+      "rc1626e",
+      "reeb975",
+      "rdba41e"
+     ],
+     [
+      "r9243a8",
+      "r254770",
+      "r5ec84d",
+      "rc48bbf"
+     ],
+     [
+      "r729fae",
+      "r149d43",
+      "r371c17",
+      "rb7a767"
+     ],
+     [
+      "r9536b3",
+      "rf58904",
+      "rb1612d"
+     ],
+     [
+      "r9cb0eb",
+      "rd272d1",
+      "r8f219e",
+      "r53a130",
+      "r923d5a"
+     ],
+     [
+      "rcccc3f",
+      "rc76fb0",
+      "rf506b4",
+      "r47ccf2"
+     ],
+     [
+      "r0928b5",
+      "r216fda",
+      "r53f169",
+      "rabfe22"
+     ],
+     [
+      "r8dbc74",
+      "ra4c123",
+      "r43b026",
+      "r4fd12a"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 27294,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 27293,
+      "inputTokens": 1239,
+      "outputTokens": 3562,
+      "reasoningTokens": 3122,
+      "estCostUsd": 0.016687,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       4,
+       4,
+       4,
+       4,
+       4,
+       4,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.796,
+       "recall": 0.557,
+       "goldPairs": 70,
+       "groupedPairs": 49,
+       "goldPairsGrouped": 39
+      },
+      "meanings": [
+       "Aching for home and familiar comforts while living elsewhere",
+       "Overwhelmed by a packed schedule with no time to breathe",
+       "Hiding struggle behind a cheerful front for others",
+       "Feeling behind while comparing self to peers achievements",
+       "Finding steadiness in small personal routines and places",
+       "Avoiding shared meals from fear of seeming friendless",
+       "Feeling unseen and on the outside of social belonging",
+       "Adjusting to a new solo chapter that feels lonely and relent"
+      ],
+      "confidences": [
+       0.9,
+       0.88,
+       0.92,
+       0.9,
+       0.82,
+       0.94,
+       0.85,
+       0.78
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.796,
+     "recall": 0.557,
+     "goldPairs": 70,
+     "groupedPairs": 49,
+     "goldPairsGrouped": 39
+    },
+    "latencyMs": 27294,
+    "costUsd": 0.01669,
+    "finalViolations": []
+   },
+   {
+    "model": "muse-spark-1.3",
+    "run": 2,
+    "groups": [
+     [
+      "r33feff",
+      "rdba41e",
+      "rc1626e",
+      "reeb975"
+     ],
+     [
+      "rcccc3f",
+      "rc76fb0",
+      "r47ccf2",
+      "rf506b4"
+     ],
+     [
+      "r729fae",
+      "r149d43",
+      "rb7a767",
+      "r371c17"
+     ],
+     [
+      "r9243a8",
+      "r254770",
+      "r5ec84d",
+      "rc48bbf"
+     ],
+     [
+      "r9536b3",
+      "rf58904",
+      "rb1612d"
+     ],
+     [
+      "r0928b5",
+      "r53f169",
+      "r216fda",
+      "rabfe22"
+     ],
+     [
+      "r9cb0eb",
+      "rd272d1",
+      "r8f219e",
+      "r53a130",
+      "r923d5a"
+     ],
+     [
+      "r8dbc74",
+      "ra4c123",
+      "r43b026",
+      "r4fd12a"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 24107,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 24105,
+      "inputTokens": 1239,
+      "outputTokens": 3032,
+      "reasoningTokens": 2586,
+      "estCostUsd": 0.014435,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       4,
+       4,
+       4,
+       4,
+       4,
+       4,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.796,
+       "recall": 0.557,
+       "goldPairs": 70,
+       "groupedPairs": 49,
+       "goldPairsGrouped": 39
+      },
+      "meanings": [
+       "Aching for home and family familiarity while settling into a",
+       "Avoiding shared meals and hiding aloneness around food",
+       "Masking struggle by appearing cheerful to others and family",
+       "Feeling overloaded by constant obligations and lack of rest",
+       "Worrying you are behind while peers seem confident academica",
+       "Feeling unseen and out of sync socially despite being around",
+       "Finding steadiness through small personal rituals and famili",
+       "Adjusting to a new daily rhythm that feels lonely and relent"
+      ],
+      "confidences": [
+       0.92,
+       0.94,
+       0.9,
+       0.88,
+       0.9,
+       0.85,
+       0.82,
+       0.78
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.796,
+     "recall": 0.557,
+     "goldPairs": 70,
+     "groupedPairs": 49,
+     "goldPairsGrouped": 39
+    },
+    "latencyMs": 24107,
+    "costUsd": 0.01443,
+    "finalViolations": []
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 1,
+    "groups": [
+     [
+      "r33feff",
+      "rdba41e",
+      "rc1626e",
+      "reeb975",
+      "r53f169"
+     ],
+     [
+      "r8dbc74",
+      "rcccc3f",
+      "ra4c123",
+      "rc76fb0",
+      "rf506b4"
+     ],
+     [
+      "r9243a8",
+      "r4fd12a",
+      "r5ec84d",
+      "rc48bbf"
+     ],
+     [
+      "r729fae",
+      "r149d43",
+      "rabfe22",
+      "rb7a767",
+      "r371c17"
+     ],
+     [
+      "r9cb0eb",
+      "rd272d1",
+      "r53a130",
+      "r923d5a",
+      "r8f219e"
+     ],
+     [
+      "r43b026",
+      "r216fda",
+      "r47ccf2"
+     ],
+     [
+      "r0928b5",
+      "r9536b3",
+      "rf58904",
+      "rb1612d",
+      "r254770"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 8154,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 8153,
+      "inputTokens": 1239,
+      "outputTokens": 4212,
+      "reasoningTokens": 3850,
+      "estCostUsd": 0.00223,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       4,
+       5,
+       5,
+       5,
+       5,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.881,
+       "recall": 0.743,
+       "goldPairs": 70,
+       "groupedPairs": 59,
+       "goldPairsGrouped": 52
+      },
+      "meanings": [
+       "Homesickness and longing for family, home, and the self from",
+       "Loneliness around eating alone and hiding that solitude from",
+       "Overwhelmed by a packed schedule with no rest or slow mornin",
+       "Masking struggles by presenting as fine and upbeat to others",
+       "Finding small comforts, routines, and quiet moments that mak",
+       "Feeling like an outsider in social settings despite being ar",
+       "Feeling behind others and overwhelmed trying to keep up"
+      ],
+      "confidences": [
+       0.9,
+       0.92,
+       0.9,
+       0.88,
+       0.82,
+       0.78,
+       0.68
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.881,
+     "recall": 0.743,
+     "goldPairs": 70,
+     "groupedPairs": 59,
+     "goldPairsGrouped": 52
+    },
+    "latencyMs": 8154,
+    "costUsd": 0.00223,
+    "finalViolations": []
+   },
+   {
+    "model": "muse-ember-1.0",
+    "run": 2,
+    "groups": [
+     [
+      "r33feff",
+      "rc1626e",
+      "reeb975",
+      "r53f169"
+     ],
+     [
+      "r8dbc74",
+      "rcccc3f",
+      "rc76fb0",
+      "rf506b4"
+     ],
+     [
+      "r0928b5",
+      "r47ccf2",
+      "rabfe22",
+      "r216fda"
+     ],
+     [
+      "r43b026",
+      "r9536b3",
+      "rf58904",
+      "rb1612d"
+     ],
+     [
+      "r729fae",
+      "r149d43",
+      "rb7a767",
+      "r371c17"
+     ],
+     [
+      "r9243a8",
+      "r254770",
+      "r5ec84d",
+      "rc48bbf"
+     ],
+     [
+      "r9cb0eb",
+      "rd272d1",
+      "r8f219e",
+      "r53a130",
+      "r923d5a"
+     ],
+     [
+      "rdba41e",
+      "r4fd12a",
+      "ra4c123"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 4864,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 4860,
+      "inputTokens": 1239,
+      "outputTokens": 2051,
+      "reasoningTokens": 1696,
+      "estCostUsd": 0.001149,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       4,
+       4,
+       4,
+       4,
+       4,
+       4,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.837,
+       "recall": 0.586,
+       "goldPairs": 70,
+       "groupedPairs": 49,
+       "goldPairsGrouped": 41
+      },
+      "meanings": [
+       "Longing for home and the familiar life left behind",
+       "Eating alone and avoiding being seen alone",
+       "Feeling socially on the outside despite being around others",
+       "Believing peers are further ahead and more settled",
+       "Presenting a fine exterior while struggling privately",
+       "Overloaded schedule with no time to recover",
+       "Finding small routines and places that bring comfort",
+       "Solitary, hurried daily routine far from family"
+      ],
+      "confidences": [
+       0.85,
+       0.9,
+       0.8,
+       0.85,
+       0.9,
+       0.9,
+       0.75,
+       0.6
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.837,
+     "recall": 0.586,
+     "goldPairs": 70,
+     "groupedPairs": 49,
+     "goldPairsGrouped": 41
+    },
+    "latencyMs": 4864,
+    "costUsd": 0.00115,
+    "finalViolations": []
+   },
+   {
+    "model": "muse-wonder-1.0",
+    "run": 1,
+    "groups": [
+     [
+      "r33feff",
+      "rdba41e",
+      "rc1626e",
+      "reeb975"
+     ],
+     [
+      "r729fae",
+      "r149d43",
+      "rb7a767",
+      "r371c17"
+     ],
+     [
+      "r9243a8",
+      "r254770",
+      "r5ec84d",
+      "rc48bbf"
+     ],
+     [
+      "r0928b5",
+      "r9536b3",
+      "rf58904",
+      "rb1612d"
+     ],
+     [
+      "r43b026",
+      "r53f169",
+      "r216fda",
+      "rabfe22"
+     ],
+     [
+      "r8dbc74",
+      "rcccc3f",
+      "rc76fb0",
+      "r47ccf2"
+     ],
+     [
+      "r9cb0eb",
+      "rd272d1",
+      "r8f219e",
+      "r53a130",
+      "r923d5a"
+     ],
+     [
+      "r4fd12a",
+      "ra4c123",
+      "rf506b4"
+     ]
+    ],
+    "fallback": false,
+    "resolves": 0,
+    "calls": [
+     {
+      "wallMs": 18041,
+      "outcome": "ok",
+      "attempts": 1,
+      "latencyMs": 18038,
+      "inputTokens": 1099,
+      "outputTokens": 2095,
+      "reasoningTokens": 1724,
+      "estCostUsd": 0.046296,
+      "error": null
+     }
+    ],
+    "judge": [
+     {
+      "parse": "ok",
+      "rawSizes": [
+       3,
+       4,
+       4,
+       4,
+       4,
+       4,
+       4,
+       5
+      ],
+      "violations": [],
+      "unknownRefs": 0,
+      "missingRefs": 0,
+      "placedTwice": 0,
+      "rawMetrics": {
+       "precision": 0.857,
+       "recall": 0.6,
+       "goldPairs": 70,
+       "groupedPairs": 49,
+       "goldPairsGrouped": 42
+      },
+      "meanings": [
+       "Missing home and holding onto familiar connections from befo",
+       "Presenting as okay to others while privately struggling",
+       "Feeling overwhelmed by an overloaded, relentless schedule",
+       "Feeling behind peers socially, academically, and professiona",
+       "Feeling like an outsider who is not truly known or included ",
+       "Dreading shared meals and withdrawing to be alone around foo",
+       "Finding small, grounding moments of comfort, creativity, or ",
+       "Living hurried, solitary daily routines with little pause or"
+      ],
+      "confidences": [
+       0.88,
+       0.92,
+       0.9,
+       0.82,
+       0.84,
+       0.87,
+       0.85,
+       0.58
+      ],
+      "repairedGroups": 0
+     }
+    ],
+    "metrics": {
+     "precision": 0.857,
+     "recall": 0.6,
+     "goldPairs": 70,
+     "groupedPairs": 49,
+     "goldPairsGrouped": 42
+    },
+    "latencyMs": 18041,
+    "costUsd": 0.0463,
+    "finalViolations": []
+   }
+  ],
+  "dataset": "gold 32 players (6/6/5/5/5/5 per feeling) + 3 within-feeling blocked pairs",
+  "keywordBaseline": {
+   "precision": 0.069,
+   "recall": 0.057,
+   "goldPairs": 70,
+   "groupedPairs": 58,
+   "goldPairsGrouped": 4
+  }
+ }
+}

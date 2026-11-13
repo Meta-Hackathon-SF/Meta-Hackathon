@@ -28,7 +28,8 @@ def ts_interface_keys(name: str) -> set[str]:
     while depth:
         depth += {"{": 1, "}": -1}.get(PROTOCOL[i], 0)
         i += 1
-    text = re.sub(r"//.*", "", PROTOCOL[start:i - 1])
+    text = re.sub(r"/\*.*?\*/", "", PROTOCOL[start:i - 1], flags=re.S)
+    text = re.sub(r"//.*", "", text)
     while re.search(r"\{[^{}]*\}", text):
         text = re.sub(r"\{[^{}]*\}", "", text)
     return set(re.findall(r"(\w+)\??:", text))
@@ -36,7 +37,7 @@ def ts_interface_keys(name: str) -> set[str]:
 
 class ProtocolDriftTests(unittest.TestCase):
     def test_contract_version_is_current(self):
-        self.assertIn('CONTRACT_VERSION = "2.1.0"', PROTOCOL)
+        self.assertIn('CONTRACT_VERSION = "2.2.0"', PROTOCOL)
 
     def test_task_list_and_call_types_match_protocol(self):
         tasks = ts_union("MuseTask")
@@ -88,6 +89,34 @@ class FixtureConformanceTests(unittest.TestCase):
         for q in doc["questions"]:
             row = {k: q[k] for k in ("text", "category", "sensitivity", "signalTags", "followUpHint")}
             validate(row, item)
+
+    def test_d014_shapes(self):
+        validate({"themes": [], "answers": [{"id": "a", "text": "nobody", "questionId": "q-1"}],
+                  "blockedPairs": [], "questions": [{"questionId": "q-1", "text": "Who was around?"}],
+                  "affinity": [{"memberIds": ["a", "b"], "shared": 2}]}, c.M4_IN)
+        validate({"answers": [{"id": "a", "text": "t", "questionId": "q-1"}],
+                  "questions": [{"questionId": "q-1", "text": "Q?"}]}, c.M3_IN)
+        validate({"texts": [{"id": "t1", "text": "jazz night was great"}]}, c.M9_IN)
+        validate({"results": [{"id": "t1", "sensitive": False,
+                               "labels": [{"topic": "music", "stance": "positive"}]}]}, c.M9_OUT)
+        validate({"items": [{"id": "i1", "text": "Late-night snackers"}]}, c.M10_IN)
+        validate({"results": [{"id": "i1", "category": "none"}]}, c.M10_OUT)
+        bad = [
+            ({"themes": [], "answers": [{"id": "a", "text": "t"}], "blockedPairs": [],
+              "affinity": [{"memberIds": ["a", "b"], "shared": 2, "topics": ["music"]}]}, c.M4_IN),
+            ({"themes": [], "answers": [{"id": "a", "text": "t"}], "blockedPairs": [],
+              "affinity": [{"memberIds": ["a"], "shared": 1}]}, c.M4_IN),
+            ({"results": [{"id": "t1", "sensitive": False,
+                           "labels": [{"topic": "religion", "stance": "positive"}]}]}, c.M9_OUT),
+            ({"results": [{"id": "t1", "sensitive": False, "labels": [
+                {"topic": "music", "stance": "positive"}] * 4}]}, c.M9_OUT),
+            ({"texts": [{"id": "t1", "text": "x", "playerId": "p-maya"}]}, c.M9_IN),
+            ({"results": [{"id": "i1", "category": "fine"}]}, c.M10_OUT),
+            ({"items": []}, c.M10_IN),
+        ]
+        for value, schema in bad:
+            with self.assertRaises(SchemaViolation, msg=str(value)):
+                validate(value, schema)
 
     def test_examples_accept_and_reject(self):
         validate({"flag": "distress", "reason": ""}, c.M1_OUT)
