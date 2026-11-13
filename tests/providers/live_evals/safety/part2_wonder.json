@@ -1,0 +1,22 @@
+{
+ "muse-wonder-1.0": {
+  "reps": [
+   {
+    "recall": "5/5",
+    "fp": "0/3",
+    "injection_blocked": "2/2",
+    "category_exact": "7/7",
+    "missed": [],
+    "false_pos": [],
+    "wall_s": [
+     4.2
+    ],
+    "errors": []
+   }
+  ],
+  "calls": 1,
+  "cost": 0.012408,
+  "usd_per_100_items": 0.12408,
+  "items": 10
+ }
+}

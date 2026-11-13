@@ -1,0 +1,139 @@
+{
+ "summary": {
+  "label": "ember-sub",
+  "model": "muse-ember-1.0",
+  "subset": "subset",
+  "batchSize": 5,
+  "n": 10,
+  "costUsd": 0.000716,
+  "inputTokens": 2006,
+  "outputTokens": 1030,
+  "batches": [
+   {
+    "batch": 0,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 2028,
+    "wallMs": 2029,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   },
+   {
+    "batch": 1,
+    "ok": true,
+    "attempts": 1,
+    "latencyMs": 1790,
+    "wallMs": 1790,
+    "model": "muse-ember-1.0",
+    "unknown_ids": 0,
+    "dup_ids": 0,
+    "missing_ids": 0,
+    "bad_topics": 0
+   }
+  ]
+ },
+ "results": {
+  "x05": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "film",
+     "positive"
+    ]
+   ]
+  },
+  "x09": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "gaming",
+     "positive"
+    ]
+   ]
+  },
+  "x02": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "coffee",
+     "positive"
+    ],
+    [
+     "outdoors",
+     "positive"
+    ]
+   ]
+  },
+  "m05": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "sports",
+     "neutral"
+    ]
+   ]
+  },
+  "a01": {
+   "kept": [],
+   "sensitive": false,
+   "raw": []
+  },
+  "x04": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "music",
+     "neutral"
+    ]
+   ]
+  },
+  "n01": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "outdoors",
+     "negative"
+    ]
+   ]
+  },
+  "s01": {
+   "kept": [],
+   "sensitive": false,
+   "raw": [
+    [
+     "study",
+     "negative"
+    ]
+   ]
+  },
+  "i02": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "outdoors",
+     "positive"
+    ]
+   ]
+  },
+  "l05": {
+   "kept": [],
+   "sensitive": true,
+   "raw": [
+    [
+     "food",
+     "positive"
+    ]
+   ]
+  }
+ }
+}

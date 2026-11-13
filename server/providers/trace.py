@@ -29,7 +29,8 @@ _CODE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 _RID = re.compile(r"^[A-Za-z0-9_.:-]{1,120}$")
 MAX_CHECKS_PER_CALL = 40
 MAX_COUNT = 100_000
-CALL_FIELDS = ("task", "callType", "promptVersion", "model", "source", "outcome", "attempts", "latencyMs")
+CALL_FIELDS = ("task", "callType", "promptVersion", "model", "source", "outcome", "attempts", "latencyMs",
+               "inputTokens", "outputTokens", "reasoningTokens", "estCostUsd")
 
 
 def _now() -> str:

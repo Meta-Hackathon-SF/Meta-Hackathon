@@ -277,7 +277,7 @@ export function parseEvidence(v: unknown): MuseCallEvidence {
     source: oneOf(o.source, ["live", "replay"] as const),
     generatedAt: isoTime(o.generatedAt),
     latencyMs: num(o.latencyMs),
-    callType: oneOf(o.callType, ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8"] as const),
+    callType: oneOf(o.callType, ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10"] as const),
   };
 }
 
