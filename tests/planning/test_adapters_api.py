@@ -160,9 +160,45 @@ class OperatorRouterTests(unittest.TestCase):
         self.client(muse_configured=False)
         self.assertFalse(asyncio.run(self.runtime.ready()))
 
-    def test_generate_route_is_not_registered(self):
+    def test_generate_routes_exist_only_with_a_generator(self):
         c = self.client()
-        self.assertEqual(c.post("/api/v1/operator/questions/generate", headers=self.OP).status_code, 404)
+        self.assertEqual(c.post("/api/v1/operator/questions/generate", headers=self.OP, json={"count": 1}).status_code, 404)
+        self.assertEqual(c.post("/api/v1/operator/questions/q-x/approve", headers=self.OP).status_code, 404)
+
+    def test_generate_approve_flow_over_http(self):
+        from server.planning import QuestionGenerator
+
+        from .test_generation import PROPOSALS
+        c = self.client()
+        m, _ = muse("question_generation", {"questions": PROPOSALS[:2]})
+        self.runtime.generator = QuestionGenerator(m, TestOnlyOutputGuard(), self.runtime.questions)
+
+        def session(request: Request):
+            return {"communityId": COMMUNITY, "isOperator": request.headers.get("x-test-role") == "operator"}
+
+        app = FastAPI()
+        install_planning_error_handler(app)
+        app.include_router(build_router(self.runtime, session), prefix="/api/v1")
+        c = TestClient(app)
+        body = {"count": 2, "aggregateSignals": [{"tag": "solitude", "share": 0.4}]}
+        self.assertEqual(c.post("/api/v1/operator/questions/generate", json=body).status_code, 403)
+        res = c.post("/api/v1/operator/questions/generate", headers=self.OP, json=body)
+        self.assertEqual(res.status_code, 202)
+        out = res.json()
+        self.assertEqual(out["status"], "pending")
+        self.assertEqual(out["evidence"]["callType"], "M6")
+        qid = out["questions"][0]["questionId"]
+        self.assertFalse(out["questions"][0]["active"])
+        before = len(c.get("/api/v1/operator/questions", headers=self.OP).json())
+        self.assertEqual(len(c.get("/api/v1/operator/questions/pending", headers=self.OP).json()), 2)
+        approved = c.post(f"/api/v1/operator/questions/{qid}/approve", headers=self.OP).json()
+        self.assertTrue(approved["active"])
+        self.assertEqual(len(c.get("/api/v1/operator/questions", headers=self.OP).json()), before + 1)
+        other = out["questions"][1]["questionId"]
+        self.assertEqual(c.post(f"/api/v1/operator/questions/{other}/reject", headers=self.OP).status_code, 204)
+        self.assertEqual(c.post(f"/api/v1/operator/questions/{other}/approve", headers=self.OP).status_code, 404)
+        bad = c.post("/api/v1/operator/questions/generate", headers=self.OP, json={"count": 2, "answers": ["x"]})
+        self.assertEqual(bad.status_code, 400)
 
 
 if __name__ == "__main__":
