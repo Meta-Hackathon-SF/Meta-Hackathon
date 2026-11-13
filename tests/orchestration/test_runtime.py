@@ -554,3 +554,19 @@ def test_v3_live_routes_serve_indices_only_from_the_verified_session():
         assert "player" not in str(body).lower().replace("placement", "")
         sky = call(client, a, "GET", f"/cycles/{cycle_id}/sky/stars")
         assert sky.status_code == 200 and sky.json()["stars"]["count"] == 10000
+
+
+def test_v3_scheduler_closes_days_and_forms_main_from_cycle_hooks():
+    import time
+
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        _players, cycle_id = prepare_locked(env, client)  # advance to locked fires the publish hook
+        store = env.app.state.v3_store
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and not (
+            store.load_days(cycle_id).get(1) and store.load_main(cycle_id) is not None
+        ):
+            time.sleep(0.02)
+        day = store.load_days(cycle_id).get(1)
+        assert day is not None and day.final  # closed by the hook, no operator close-day call
+        assert store.load_main(cycle_id) is not None

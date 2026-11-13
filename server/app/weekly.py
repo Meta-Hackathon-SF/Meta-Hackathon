@@ -2,6 +2,7 @@
 
 import asyncio
 import contextvars
+import logging
 from contextlib import asynccontextmanager, contextmanager
 from copy import copy
 from uuid import uuid4
@@ -147,12 +148,21 @@ def build_weekly_app(
     v3_store = _Store()
     v3_scheduler = V3Scheduler(answers, KeywordMusePort(muse), guard, v3_store)
 
-    def _v3_tick(cycle):
-        # Fire and forget on the running loop; a v3 failure never blocks the cycle.
+    async def _v3_run(cycle):
         try:
-            asyncio.get_running_loop().create_task(v3_scheduler.on_cycle(cycle))
+            await v3_scheduler.on_cycle(cycle)
+        except Exception:  # a v3 failure never blocks the cycle, but it must be visible
+            logging.getLogger(__name__).exception("v3 scheduler step failed")
+
+    def _v3_tick(cycle):
+        # Fire and forget. Cycle hooks run in async routes, in sync routes (threadpool, no
+        # running loop) and in the worker, so fall back to the app loop captured at startup.
+        try:
+            asyncio.get_running_loop().create_task(_v3_run(cycle))
         except RuntimeError:
-            pass
+            loop = holder.get("loop")
+            if loop is not None and loop.is_running():
+                asyncio.run_coroutine_threadsafe(_v3_run(cycle), loop)
 
     hooks = CycleHooks(
         publish_cycle=lambda c: (holder["runtime"].on_changed(c), _v3_tick(c))[0],
@@ -339,12 +349,14 @@ def build_weekly_app(
     install_planning_error_handler(app)
     app.state.runtime, app.state.chat, app.state.cycles = runtime, chat, cycles
     app.state.nudges = nudges
+    app.state.v3_store, app.state.v3_scheduler = v3_store, v3_scheduler
     app.state.privacy, app.state.answers, app.state.muse = privacy, answers, muse
     previous = app.router.lifespan_context
 
     @asynccontextmanager
     async def lifespan(application):
         async with previous(application):
+            holder["loop"] = asyncio.get_running_loop()
             worker = asyncio.create_task(runtime.loop(chat)) if start_worker else None
             try:
                 yield

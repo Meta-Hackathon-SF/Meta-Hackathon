@@ -149,18 +149,21 @@ class V3Scheduler:
         self._closed: set[tuple[str, int]] = set()
         self._main_done: set[str] = set()
 
-    def _port(self, cycle) -> FormationV3:
+    def _port(self, community_id: str) -> FormationV3:
         return FormationV3(
-            self._muse, AnswersDaySource(self._answers, cycle.communityId), self._store, guard=self._guard
+            self._muse, AnswersDaySource(self._answers, community_id), self._store, guard=self._guard
         )
 
     async def on_cycle(self, cycle) -> None:
-        v3 = self._port(cycle)
-        last_finished = cycle.currentDay if cycle.status != "open" else cycle.currentDay - 1
+        # The publish hook hands over the wire dict; direct callers may pass the model.
+        read = cycle.get if isinstance(cycle, dict) else lambda key: getattr(cycle, key)
+        cycle_id, status, current_day = read("cycleId"), read("status"), read("currentDay")
+        v3 = self._port(read("communityId"))
+        last_finished = current_day if status != "open" else current_day - 1
         for day in range(1, max(0, last_finished) + 1):
-            if (cycle.cycleId, day) not in self._closed:
-                self._closed.add((cycle.cycleId, day))
-                await v3.closeDay(cycle.cycleId, day)
-        if cycle.status != "open" and cycle.cycleId not in self._main_done:
-            self._main_done.add(cycle.cycleId)
-            await v3.mainConstellation(cycle.cycleId)
+            if (cycle_id, day) not in self._closed:
+                self._closed.add((cycle_id, day))
+                await v3.closeDay(cycle_id, day)
+        if status != "open" and cycle_id not in self._main_done:
+            self._main_done.add(cycle_id)
+            await v3.mainConstellation(cycle_id)
