@@ -22,6 +22,12 @@ class RequestContextMiddleware:
             return
         request_id = str(uuid4())
         scope.setdefault("state", {})["request_id"] = request_id
+        # Downstream owner routers see the same generated ID, never a caller value.
+        scope = {
+            **scope,
+            "headers": [(k, v) for k, v in scope["headers"] if k.lower() != b"x-request-id"]
+            + [(b"x-request-id", request_id.encode("ascii"))],
+        }
 
         async def send_with_headers(message: Message) -> None:
             if message["type"] == "http.response.start":
