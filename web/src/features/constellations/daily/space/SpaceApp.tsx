@@ -10,8 +10,7 @@ import { MoonStar } from "lucide-react";
 import type { MutualReveal } from "../../../../../../contracts/protocol";
 import { currentUser } from "../../../../data/demo";
 import { getPrivacyClient, usePrivacySession, type SessionView } from "../../privacy";
-import type { AnswerResult, CycleClient, CycleDay, FollowUp } from "../client";
-import { ClientError } from "../client";
+import { ClientError, type AnswerResult, type CycleClient, type CycleDay, type FollowUp, type WeeklyCycle } from "../client";
 import { getCycleClient } from "../clientContext";
 import { PLAY_COMMUNITY } from "../communities";
 import { MAX_CHARS, message, useDaily } from "../useDaily";
@@ -84,6 +83,25 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
     const r = await client.topUp(id);
     setNote(`${r.syntheticPlayers} players added, each labeled "${r.label}". ${r.answersAdded} answers added.`);
   };
+  /**
+   * After the lock the server starts matching on its own (about 20 s live). Asking for the
+   * reveal before it finishes returns 503; wait and retry instead of showing an error.
+   */
+  const advanceWhenReady = async (id: string): Promise<WeeklyCycle> => {
+    const started = Date.now();
+    for (;;) {
+      try {
+        const next = await client.advance(id);
+        setNote(null);
+        return next;
+      } catch (err) {
+        const waiting = err instanceof ClientError && err.code === "PROVIDER_UNAVAILABLE" && Date.now() - started < 180_000;
+        if (!waiting) throw err;
+        setNote(`Muse is finding everyone's constellation… ${Math.round((Date.now() - started) / 1000)}s`);
+        await new Promise((r) => setTimeout(r, 4000));
+      }
+    }
+  };
   const skipToSunday = async () => {
     let cycle = cycleId ? (await client.current())?.cycle ?? null : null;
     if (!cycle || cycle.status === "closed") cycle = cycle ? await client.reset(cycle.cycleId) : await client.createCycle();
@@ -96,19 +114,7 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
         if (!mine.some((a) => a.day === d)) await client.submit(id, { day: d as CycleDay, text: DEMO_ANSWERS[d - 1], source: "text" });
       cycle = await client.advance(id);
     }
-    if (cycle.status === "locked") cycle = await client.advance(id);
-    if (cycle.status === "forming") {
-      const deadline = Date.now() + 120_000;
-      for (;;) {
-        try {
-          cycle = await client.advance(id);
-          break;
-        } catch (err) {
-          if (!(err instanceof ClientError) || err.code !== "PROVIDER_UNAVAILABLE" || Date.now() >= deadline) throw err;
-          await new Promise((resolve) => window.setTimeout(resolve, 1000));
-        }
-      }
-    }
+    while (cycle.status === "locked" || cycle.status === "forming") cycle = await advanceWhenReady(id);
   };
   const act = async (work: () => Promise<unknown>) => {
     setBusy(true);
@@ -132,7 +138,7 @@ function DemoPanel({ client, cycleId, status, day, refresh }: { client: CycleCli
       <p className="spc-fine">Any account can run the demo week. Every step uses the real cycle rules, for everyone in the demo.</p>
       <div className="spc-row is-wrap">
         {cycleId && status !== "closed" ? (
-          <button type="button" className="spc-btn spc-btn-gray spc-btn-sm" disabled={busy} onClick={() => void act(() => client.advance(cycleId))} data-testid="spc-demo-next">
+          <button type="button" className="spc-btn spc-btn-gray spc-btn-sm" disabled={busy} onClick={() => void act(() => (status === "open" ? client.advance(cycleId) : advanceWhenReady(cycleId)))} data-testid="spc-demo-next">
             {nextLabel(status, day)}
           </button>
         ) : (
