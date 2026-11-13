@@ -2,6 +2,7 @@
 
     python -m server.matching.live_eval --players 30          # offline, scripted Muse
     python -m server.matching.live_eval --players 30 --live   # real Muse, needs MUSE_API_KEY
+    python -m server.matching.live_eval --gold --live         # quality vs gold set + baseline
 
 All players are synthetic ("Synthetic player"). Prints timings, sizes, fallback use and
 evidence only; never answer text or prompts.
@@ -16,7 +17,10 @@ import time
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from server.matching.baseline import baseline_groups
+from server.matching.evaluation import gold_snapshot, pair_metrics
 from server.matching.formation import FormationService
+from server.matching.models import FormationSnapshot
 from server.matching.muse_specs import register_formation_specs
 from server.matching.sky import SkyService
 from server.providers import (
@@ -99,15 +103,26 @@ def build_port(live: bool, players: int) -> KeywordMusePort:
     return KeywordMusePort(build_muse_adapter(registry, config))
 
 
-async def evaluate(players: int, live: bool, threshold: int = 3) -> dict:
+def _quality(snap: dict, result_groups: Sequence[Sequence[str]], gold: Mapping[str, str]) -> dict:
+    parsed = FormationSnapshot.from_dict(snap)
+    base = [[parsed.id_map[r] for r in g] for g in baseline_groups(parsed.answers)]
+    return {"muse": pair_metrics(result_groups, gold).to_wire(),
+            "keywordBaseline": pair_metrics(base, gold).to_wire()}
+
+
+async def evaluate(players: int, live: bool, threshold: int = 3, gold: bool = False) -> dict:
     port = build_port(live, players)
-    snap = synthetic_snapshot(players)
+    gold_labels: dict[str, str] = {}
+    if gold:
+        snap, gold_labels = gold_snapshot(players)
+    else:
+        snap = synthetic_snapshot(players)
     formation = FormationService(port, _Snapshots(snap), _AllowAll())
     started = time.monotonic()
     result = await formation.form("eval-cycle")
     if result.status != "ok":
         return {"label": SYNTHETIC_LABEL, "status": "failed", "error": result.error.code}
-    guesses = {p: (int(p.split("-")[1]) * 7) % 100 for p in snap["idMap"].values()}
+    guesses = {p: (sum(map(ord, p)) * 7) % 100 for p in snap["idMap"].values()}
     stats = await SkyService(port, _AllowAll()).compute("eval-cycle", result, guesses,
                                                         threshold)
     return {
@@ -119,6 +134,11 @@ async def evaluate(players: int, live: bool, threshold: int = 3) -> dict:
         "baselineAgrees": sum(c.baseline_agrees for c in result.constellations),
         "skyThemesShown": len(stats.themes), "skyThemesSuppressed": stats.suppressed_themes,
         "evidence": [e.to_wire() for e in (*result.evidence, *stats.evidence)],
+        **({"quality": _quality(snap, [c.member_ids for c in result.constellations],
+                                gold_labels),
+            "qualityNote": "fixture Muse is scripted; only --live measures Muse quality"
+            if not live else "live Muse vs keyword baseline on synthetic gold set"}
+           if gold else {}),
     }
 
 
@@ -126,10 +146,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--players", type=int, default=30)
     parser.add_argument("--live", action="store_true")
+    parser.add_argument("--gold", action="store_true", help="score against synthetic gold set")
     args = parser.parse_args(argv)
     if not 3 <= args.players <= 200:
         parser.error("--players must be 3-200")
-    report = asyncio.run(evaluate(args.players, args.live))
+    report = asyncio.run(evaluate(args.players, args.live, gold=args.gold))
     json.dump(report, sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0 if report["status"] == "ok" else 1

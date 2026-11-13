@@ -47,9 +47,10 @@ Owners (branches unchanged):
 - Will: weekly cycle, daily-answer experience, voice, streaks, weighted submissions, operator controls, Groups tab.
 - Patrik: verification, sessions, consent, private answer storage, safety screening, output guards, retention.
 - Kai: anonymous chat, moderation pipeline, expiration, mutual reveal, realtime delivery, API composition, Sky UI.
-Status: approved by Rishi (team lead direction). ACK pending `@beatopia`.
+Status: approved by Rishi (team lead direction). ACKed by all five owners.
 ACK `@adamzhang06` 2026-11-12: ACK (https://github.com/willapat/Meta-Hackathon/pull/12).
 ACK `@patrikliska13` 2026-11-13T02:40Z: ACK (recorded here from role/patrik-privacy; no PR thread was reachable from Patrik's agent).
+ACK `@beatopia` 2026-11-13: ACK for Kai-owned ChatPort, rooms, messages, reveal, SSE and API composition (https://github.com/willapat/Meta-Hackathon/pull/11).
 ACK `@willapat` 2026-11-13: https://github.com/willapat/Meta-Hackathon/pull/14
 Verification: docs/roles/*.md list tasks and acceptance checks.
 
@@ -57,7 +58,9 @@ Verification: docs/roles/*.md list tasks and acceptance checks.
 ID / UTC timestamp: D006 / 2026-11-12T23:00Z
 Decision and rationale: `contracts/protocol.ts` 2.0.0 replaces 1.0.0. New types: Question, WeeklyCycle, DailyQuestion, DailyAnswer (server weights), Streak, CatchUpState, PrevalenceGuess, ChatRoom, AnonymousHandle, ChatMessage, Report, RevealRequest, MutualReveal, EventNudge, Venue, SyntheticSignal, StreamEvent. Ports: MusePort, PrivacyPort, OutputGuard, FormationPort, QuestionPort, NudgePort, CyclePort, ChatPort. Shared fixtures in `contracts/fixtures/`.
 Status: proposed. Each producer ACKs its shapes; changes go through a PR plus an entry here.
-ACK evidence: pending `@rishibagri`, `@beatopia`.
+ACK evidence: all five owners, below.
+ACK `@rishibagri` 2026-11-13: ACK for Theme, Constellation, SkyStats, SyntheticSignal, FormationPort, M3, M4, M5, M8 (producer). `isFallback` is internal only; fallback is public via the guarded `name` suffix "(Fallback grouping)" plus `isLooseMatch` (https://github.com/willapat/Meta-Hackathon/pull/16).
+ACK `@beatopia` 2026-11-13: ACK, no contract edits proposed; rejects undeclared wire fields (https://github.com/willapat/Meta-Hackathon/pull/11).
 ACK `@adamzhang06` 2026-11-12: ACK for Question, QuestionPort, MusePort, MuseCallEvidence, M2, M6, M7, EventNudge, Venue, NudgePort; no change requested (https://github.com/willapat/Meta-Hackathon/pull/12).
 ACK `@patrikliska13` 2026-11-13T02:40Z: ACK for Player, Consent, Block, SafetyFlag, PrivacyPort, OutputGuard, M1 (producer); no change requested.
 ACK `@willapat` 2026-11-13 (WeeklyCycle, DailyQuestion, DailyAnswer, WEIGHTS, Streak, CatchUpState, PrevalenceGuess, CyclePort): https://github.com/willapat/Meta-Hackathon/pull/14
@@ -73,3 +76,12 @@ ACK evidence: pending `@beatopia` (storage vs D002, composition).
 ACK `@willapat` 2026-11-13: ACK for the session shape `{playerId, communityId, isOperator}` and the join/session response `{player, consent, isOperator}` (https://github.com/willapat/Meta-Hackathon/pull/14).
 Contract version / migration: 2.0.0 unchanged; no data to migrate.
 Verification: `server/.venv/bin/python -m pytest tests/privacy -q` 68 passed offline; mutation checks (unscoped consent query, removed synthetic-session filter, removed join consent gate) each fail the suite.
+
+## D008: Streak rule with catch-up
+ID / UTC timestamp: D008 / 2026-11-13T03:00Z
+Decision and rationale: Resolves the conflict Will raised in #14 between contracts/WORKFLOW.md ("missing a day resets to 0") and the role acceptance check ("Mon, Tue on day, Wed catch-up -> current 2"). A question day answered on the day extends the streak. A day caught up before Saturday lock is neutral: it neither extends nor breaks. A day with no answer at all breaks the streak. Between the missed day ending and the catch-up, `current` shows 0; after the catch-up it is restored. Players are rewarded for showing up on the day without being punished for catching up.
+Owner and affected: decided by Rishi; producer Will (`server/cycle/streaks.py`); consumers Will UI.
+Status: accepted.
+ACK evidence: proposal by `@willapat` in https://github.com/willapat/Meta-Hackathon/pull/14; accepted by `@rishibagri`.
+Contract version / migration: 2.0.0 unchanged (Streak shape unchanged); contracts/WORKFLOW.md streak paragraph updated.
+Verification: Will's streak fixture tests.
