@@ -292,6 +292,10 @@ def load_matching_result(value: dict) -> FormationResult:
                 color_id=c.colorId,
                 baseline_agrees=c.baselineAgrees,
                 is_fallback=c.constellationId in fallback,
+                closeness=tuple((p.a, p.b, p.score) for p in c.closeness),
+                member_context={
+                    player: ctx.model_dump() for player, ctx in c.memberContext.items()
+                },
             )
             for c in saved.wire.constellations
         )

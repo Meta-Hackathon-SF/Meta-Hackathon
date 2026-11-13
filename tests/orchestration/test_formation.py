@@ -60,7 +60,9 @@ def test_formation_keys_are_exact_shared_contract_fields():
 
     body = re.search(r"export interface Constellation \{(.*?)\n\}", protocol, re.S)[1]
     body = re.sub(r"//[^\n]*", "", body)
-    keys = set(re.findall(r"(\w+)\s*:", body))
+    # Inline private pair objects have their own keys; compare top-level fields.
+    top_level = re.sub(r"\{[^{}]*\}", "", body)
+    keys = set(re.findall(r"(\w+)\??\s*:", top_level))
     assert keys == set(Constellation.model_fields)
     assert FormationSuccess.model_validate(formation_wire()).model_dump() == formation_wire()
 

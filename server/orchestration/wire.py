@@ -44,6 +44,18 @@ class MuseCallEvidence(Wire):
     latencyMs: Annotated[float, Field(ge=0)]
 
 
+class PairCloseness(Wire):
+    a: Text
+    b: Text
+    score: Annotated[float, Field(ge=0, le=1)]
+
+
+class ConstellationContext(Wire):
+    sharedGroupStars: NonNegative
+    alreadyFriends: NonNegative
+    sameEventStars: NonNegative
+
+
 class Constellation(Wire):
     constellationId: Text
     cycleId: Text
@@ -55,11 +67,31 @@ class Constellation(Wire):
     shapeId: Text
     colorId: Text
     baselineAgrees: bool
+    # Optional PRIVATE producer metadata from main's 2.1.0. Never returned by
+    # room/message/SSE projections; omission keeps existing 2.0.0 data valid.
+    closeness: list[PairCloseness] = Field(default_factory=list, exclude_if=lambda v: not v)
+    memberContext: dict[Text, ConstellationContext] = Field(
+        default_factory=dict, exclude_if=lambda v: not v
+    )
 
     @model_validator(mode="after")
     def members(self):
         if not 3 <= len(self.memberIds) <= 5 or len(set(self.memberIds)) != len(self.memberIds):
             raise ValueError("invalid constellation size")
+        pairs = set()
+        for pair in self.closeness:
+            key = frozenset({pair.a, pair.b})
+            if len(key) != 2 or not key <= set(self.memberIds) or key in pairs:
+                raise ValueError("invalid private closeness lineage")
+            pairs.add(key)
+        if not set(self.memberContext) <= set(self.memberIds):
+            raise ValueError("invalid private context member")
+        if any(
+            count > len(self.memberIds) - 1
+            for context in self.memberContext.values()
+            for count in context.model_dump().values()
+        ):
+            raise ValueError("invalid private context count")
         return self
 
 
