@@ -13,6 +13,7 @@ from .api import (
 )
 from .answers import AnswerStore
 from .errors import PrivacyError
+from .guard import OutputGuard
 from .service import Actor, ChangeNotice, JoinResult, PrivacyService
 from .store import PrivacyStore
 
@@ -21,6 +22,7 @@ __all__ = [
     "AnswerStore",
     "ChangeNotice",
     "JoinResult",
+    "OutputGuard",
     "PrivacyError",
     "PrivacyService",
     "PrivacyStore",

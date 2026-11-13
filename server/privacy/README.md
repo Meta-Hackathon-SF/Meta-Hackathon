@@ -1,6 +1,6 @@
 # server/privacy (Patrik): verification, sessions, consent
 
-Contract 2.0.0. Status: **implemented and tested offline** (role tasks 1-3: restore, sessions/consent v2/operator, private answer + guess store with TTL). Not yet mounted in Kai's composed app (server/app is not restored on main).
+Contract 2.0.0. Status: **implemented and tested offline** (role tasks 1-3 and 5: restore, sessions/consent v2/operator, private answer + guess store with TTL, OutputGuard). Not yet mounted in Kai's composed app (server/app is not restored on main).
 
 ## Storage
 SQLite from the Python standard library (`server/privacy/store.py`, schema `db/privacy/001_privacy.sql`). No database server, no container. `PrivacyStore(":memory:")` in tests; a file path via `CST_PRIVACY_DB` for the demo. Proposed in docs/DECISIONS.md D007 (needs Kai's ACK because D002 named PostgreSQL).
@@ -16,6 +16,7 @@ There is no database-level RLS. Every private query is keyed to `actor.player_id
 | `PrivacyService.require_operator(actor)` | Raises `FORBIDDEN` for non-operators. |
 | `PrivacyService.add_listener(fn)` | `ChangeNotice(kind, player_id, community_id, consent_version, occurred_at)`; `consent_revoked` whenever the player is no longer fully consented. |
 | `AnswerStore(store, service, answer_model=None, guess_model=None)` | Pass Will's `server.cycle.wire.DailyAnswer` / `PrevalenceGuess` as the models so reads come back as his camelCase types (privacy never imports them). Implements Will's `AnswerStore` port (server/cycle/ports.py): `get`, `list_for_player`, `save(answer, flag)`, `delete`, `save_guess`, `get_guess`, `purge_cycle`. Plus `mark_locked(cycleId, lockedAt)` (call on Saturday lock: refuses later writes with `CYCLE_LOCKED`, starts the 14-day clock), `purge_expired()`, `delete_my_data(playerId)`, `eligible_answers(cycleId)` (server-only: unflagged answers of fully consenting active members). `save` rejects a weight that is not the WEIGHTS rule and any player without full consent. Deleting removes the row and emits `answer_deleted`. |
+| `OutputGuard()` | `check(text, againstAnswers) -> {"ok", "reasons"}` per protocol.ts, the strict mode for every Muse public text: `quote_5_words` (5+ consecutive words of any answer, after case/punctuation/zero-width/fullwidth normalization), `sensitive_term` (health, sexuality, religion, finances, family trauma, home location), `pii`, `contact_info`. `check_chat(text, againstAnswers, revealed=bool)` for chat: quotes and PII always, contact info until a mutual reveal, no topic block (M1 handles distress). `text_guard()` is Will's `TextGuard` for M2 follow-ups. Deterministic, no model call. |
 | `build_router(service, answers=None)`, `install_privacy_error_handler(app)` | Routes below and the `ApiError` envelope for `PrivacyError`. |
 
 ## Routes (mounted under /api/v1)
@@ -40,5 +41,5 @@ CST_COOKIE_INSECURE_DEV=1 server/.venv/bin/uvicorn server.privacy.devapp:app --p
 
 Schema: `db/privacy/001_privacy.sql` (players, communities, memberships, consents, sessions) and `002_answers.sql` (answers, guesses, cycle_locks). The store applies every `NNN_*.sql` in order.
 
-## Not yet built (role tasks 4-7)
-M1 safety screening, OutputGuard, `formationSnapshot` (built on `eligible_answers`), blocks/reports storage, consent screen and support card UI.
+## Not yet built (role tasks 4, 6, 7)
+M1 safety screening, `formationSnapshot` (built on `eligible_answers`), blocks/reports storage, consent screen and support card UI.
