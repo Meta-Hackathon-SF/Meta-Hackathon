@@ -346,13 +346,13 @@ export function PrivacySettings({
 
       <h3>Delete my data</h3>
       <p className="cstp-detail">
-        Deletes every answer and guess you've written, now. Answers are also deleted automatically 14 days after each
+        Deletes every answer you've written and your event interests and RSVPs, now. Answers are also deleted automatically 14 days after each
         week locks.
       </p>
       {!confirmDelete ? (
         <button type="button" className="cstp-danger" disabled={busy} onClick={() => setConfirmDelete(true)}
           data-testid="cstp-delete">
-          Delete my answers and guesses
+          Delete my answers and event data
         </button>
       ) : (
         <div className="cstp-row" role="group" aria-label="Confirm delete">
@@ -365,7 +365,7 @@ export function PrivacySettings({
               run(async () => {
                 await client.deleteMyData();
                 setConfirmDelete(false);
-                setNotice("Your answers and guesses were deleted.");
+                setNotice("Your answers and event data were deleted.");
                 onDataDeleted?.();
               })
             }

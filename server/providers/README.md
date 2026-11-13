@@ -2,7 +2,7 @@
 
 Contract: `contracts/protocol.ts` 2.0.0 (`MusePort`, `MuseTask`, `MuseCallEvidence`, M1-M8 I/O).
 
-Status (2026-11-13): **restored from the archive, renamed to 2.0.0, offline-tested, and live-verified.** Live calls through this adapter so far: M2, M6 and M7 (planning live checks), M3/M4/M5/M8 (Rishi's formation timing runs on Adam's key; see docs/updates/adam.md), and one M7 inside Kai's composed app. M1 has not been called live through this adapter by Adam. These are small synthetic runs, not latency or quality benchmarks.
+Status (2026-11-13): **live-verified across all three Muse text models and every task (M1-M8), plus prototype M9/M10.** 285 capped calls on synthetic inputs through this adapter (about $1.21) are summarized in [docs/audits/2026-11-13-live-evals.md](../../docs/audits/2026-11-13-live-evals.md), with scripts and the counts-only cost ledger in [tests/providers/live_evals/](../../tests/providers/live_evals/). These are small samples (1-10 runs per cell): directional evidence, not benchmarks. Contract 2.2.0 (D014: M9 `activity_classification`, M10 `sensitivity_screen`, questionId and affinity for M3/M4) is **PROPOSED** and awaits ACKs.
 
 ## Live evidence (2.0.0 adapter, synthetic input)
 | Date (UTC) | Task | Settings | Outcome | Provider-reported model | Latency |
@@ -28,17 +28,18 @@ Source: Meta's official Meta Model API docs at dev.meta.ai, read 2026-11-12 (`/d
 | --- | --- | --- |
 | Endpoint | `POST https://api.meta.ai/v1/chat/completions` (OpenAI-compatible) | yes |
 | Auth | `Authorization: Bearer <key>`; docs name the env var `MODEL_API_KEY` | `MUSE_API_KEY`, `MODEL_API_KEY` accepted |
-| Models | `muse-spark-1.3` (recommended), `muse-spark-1.2`, `muse-spark-1.1` | default `muse-spark-1.3` |
+| Models | GET /v1/models for the team key (2026-11-13): `muse-wonder-1.0` (preview, most capable), `muse-spark-1.3/1.2/1.1`, `muse-ember-1.0` (low cost), plus non-text models (`muse-image-1.0`, `muse-voice-transcribe-1.0`, `sam-3.1`) | default `muse-spark-1.3`; Wonder, Spark and Ember accepted; per-task choice in `router.py` |
 | `-contributor` variants | Meta may train on prompts/responses | **rejected** by config (participant data) |
+| Pricing | per 1M tokens in/out: Wonder $4/$20, Spark 1.3 $1.25/$4.25, Ember $0.10/$0.50 (dev.meta.ai/docs/pricing-rate-limits, read 2026-11-13); 3,000 RPM / 4M TPM per model | `pricing.py` estimates cost per call from reported usage |
 | Structured output | `response_format: {type: "json_schema", json_schema: {name, schema, strict}}`; `strict` defaults false | sent with `strict: false`; local validation is authoritative |
 | Response text | `choices[0].message.content`; `model` echoed | evidence uses the echoed model id |
 | Roles | `developer` preferred over `system` | `developer` + `user` |
 | Errors | 400/401/402/403/404/413/429(`Retry-After`)/500/503(`Retry-After`)/504 | mapped in `transport.classify_status` |
-| Reasoning | Muse Spark always reasons; default `reasoning_effort` "high"; `"none"` returns 400 | optional `MUSE_REASONING_EFFORT` pass-through |
+| Reasoning | Muse models always reason; Wonder/Ember document `minimal` to `max` (default `max`); Spark 1.3 accepted `minimal` and `max` live; `"none"` returns 400 | per-model allowlist `MODEL_EFFORTS`; reasoning tokens are about 95% of output |
 | Audio | `input_audio` content parts (1.3 audio "not fully supported"); separate `muse-voice-transcribe-1.0` STT at `POST /v1/asr/transcribe` | not used here (Will owns transcription) |
-| Timeouts | not stated | from the environment: 60 s/attempt and `reasoning_effort=low` by default (the settings every live check and formation timing run used); override with `MUSE_TIMEOUT_S` / `MUSE_REASONING_EFFORT` (low, medium, high) |
+| Timeouts | not stated | from the environment: 60 s/attempt and `reasoning_effort=low` by default (the settings every live check and formation timing run used); override with `MUSE_TIMEOUT_S` / `MUSE_REASONING_EFFORT`; routes set per-task timeouts |
 
-Not verified: latency under load, structured-output adherence on the 2.0.0 schemas, rate limits for the team key, and whether `strict: true` accepts our schema keywords.
+Not verified: latency under real load (Ember stalled ~68 s on 3 of 10 burst calls; Wonder ranged 3-74 s), rate limits in practice, and whether `strict: true` accepts our schema keywords. Structured output held on 285 of 285 eval calls with `strict: false` plus local validation.
 
 ## Configuration
 Copy [`muse.env.example`](muse.env.example) to `server/providers/muse.env` (git-ignored, mode 600) or set real environment variables, which take precedence. Server-only; never expose as `VITE_*`. With no key, `load_muse_config()` returns `None` and every call fails closed with `PROVIDER_UNAVAILABLE` (`kind: not_configured`). There is no silent fixture fallback.
@@ -78,7 +79,12 @@ result.evidence  # MuseCallEvidence {model, source, generatedAt, latencyMs, call
 - Timeout / 429 / 5xx: bounded by `MUSE_MAX_ATTEMPTS` (default 2) and the overall `deadline_s`, honoring `Retry-After`. Auth and 400 are not retried.
 - Cancel by cancelling the awaiting asyncio task (the AbortSignal equivalent). Late results are discarded.
 - Evidence: every successful call returns `MuseCallEvidence` and appends it (plus `requestId`) to `muse.evidence_log`, the source for `GET /operator/calls`. Failed calls add none.
-- Telemetry sink receives only `requestId, task, callType, promptVersion, model, source, attempts, outcome, latencyMs` (+`status` on errors). No payloads, prompts or outputs.
+- Telemetry sink receives only `requestId, task, callType, promptVersion, model, source, attempts, outcome, latencyMs`, plus `inputTokens, outputTokens, reasoningTokens` (summed across attempts) and `estCostUsd` when the provider reports usage, and `status` on errors. No payloads, prompts or outputs.
+- `adapter.reasoning_trace` ([`trace.py`](trace.py)): one entry per call plus code verdicts `(stage, code, count)` noted by services; fixed vocabulary, no text; fixture runs say `replay`. Served by the PROPOSED `GET /operator/reasoning` once Kai passes it to `PlanningRuntime(trace=...)`.
+- Malformed-output retries tell Muse which schema location failed (sanitized; never model or player text).
+
+## Router ([`router.py`](router.py))
+`build_muse_router(registry, config)` returns one MusePort that serves each task with its measured model (`MEASURED_ROUTES`): M1 Ember low (8 s, 1 attempt, then Spark), M2 Ember minimal (6 s, 1 attempt, then Spark), M5 and M8 Wonder low (12 s / 30 s, 1 attempt, then Ember; never Spark for M8), M6 and M7 Spark low (45 s, then Ember). M3/M4 stay on the base model until D014 questions reach the payload. Fallback only on rate limit, outage, timeout or malformed output, never past the caller's `deadline_s`, and every fallback is noted in the trace. Shares one evidence log and trace across models. Override with `MUSE_ROUTES` via `parse_routes`. **Kai's composed app still builds a single-model adapter**; switching is one line in `server/app/weekly.py` (requested on #49).
 - Semantic checks (ids in the pool, numbers equal to server counts, OutputGuard) stay with the calling owner. Pass a code-generated `correction` string on a re-ask; never put player text in it.
 - [`voice.py`](voice.py) holds `MUSE_VOICE`, the shared style block for player-facing text. Style only; guards decide.
 

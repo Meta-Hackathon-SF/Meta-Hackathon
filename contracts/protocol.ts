@@ -284,7 +284,8 @@ export interface MusePort {
 export interface PrivacyPort {
   requireSession(token: string): Promise<{ playerId: Id; communityId: Id; isOperator: boolean }>;
   formationSnapshot(cycleId: Id): Promise<{
-    answers: PromptText[]; idMap: Record<string, Id>; blockedPairs: [Id, Id][];
+    answers: AnswerText[]; idMap: Record<string, Id>; blockedPairs: [Id, Id][];
+    questions?: { questionId: string; text: string }[]; // D014: when the cycle's question texts are available
     activity?: Record<string, ActivitySignals>; // D010: by ref, only for players with useActivity
   }>;
   screen(text: string, subjectType: "answer" | "chat_message"): Promise<SafetyFlag["flag"]>;

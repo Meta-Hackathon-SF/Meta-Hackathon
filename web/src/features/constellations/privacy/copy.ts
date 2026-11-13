@@ -20,7 +20,6 @@ export const TOGGLES: { key: keyof ConsentToggles; label: string; detail: string
 
 export const PRIVATE_ITEMS = [
   "Your daily answers and how you answered",
-  "Your guess about the Group",
   "Your streak and catch-up days",
   "Anything flagged by the safety check",
 ];

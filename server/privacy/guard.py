@@ -6,6 +6,12 @@ returns ``{"ok": bool, "reasons": [...]}`` with reasons drawn from
 strict mode for every Muse-written public text (constellation names, Sky
 labels/headlines, nudges, generated questions, follow-ups).
 
+Quote and sensitive-term checks run on folded text (``textfold.fold``): accents,
+Cyrillic/Greek look-alikes, leet inside mixed tokens ("d3pression"), ``._-``
+separators and spaced-out letters cannot dodge them. ``quote_5_words`` means 5
+consecutive folded, plural-stemmed words of any answer, or 4 when that answer
+has at most 12 tokens (the protocol literal keeps its name).
+
 ``check_chat(text, against_answers, revealed=...)`` is the chat variant Kai
 calls for every player message: no quotes of answers, no PII, and no contact
 info until a mutual reveal exists. Sensitive *topics* are not blocked in chat
@@ -20,28 +26,38 @@ text it inspected.
 from __future__ import annotations
 
 import re
-import unicodedata
 from collections.abc import Callable, Iterable, Sequence
 from typing import Literal
+
+from .textfold import fold, folded_chunks, folded_words, normalize, stem
 
 Reason = Literal["quote_5_words", "sensitive_term", "pii", "contact_info"]
 REASON_ORDER: tuple[Reason, ...] = ("quote_5_words", "sensitive_term", "pii", "contact_info")
 QUOTE_WORDS = 5
+# Short answers are easier to quote whole: against an answer of at most
+# SHORT_ANSWER_TOKENS folded tokens, a SHORT_QUOTE_WORDS-word run also counts.
+SHORT_QUOTE_WORDS = 4
+SHORT_ANSWER_TOKENS = 12
+# Single-word terms this long are also matched inside a chunk with no spaces
+# ("#depressionsquad", "TherapyBuddies", "the.rapist").
+COMPACT_MIN_LETTERS = 7
 
 # ---------------------------------------------------------------- normalizing
-_APOSTROPHES = str.maketrans({"’": "'", "‘": "'", "`": "'", "´": "'"})
+# ``normalize`` is kept for PII/contact matching (digits and "@" must survive).
+# Quote and sensitive-term checks run on ``fold`` (textfold.py): accents,
+# Cyrillic/Greek look-alikes, leet inside mixed tokens, separators and
+# spaced-out letters are folded first.
 _WORD = re.compile(r"[a-z0-9]+(?:'[a-z0-9]+)*")
 
 
-def normalize(text: str) -> str:
-    """NFKC, drop invisible format chars (zero-width etc.), lowercase, unify apostrophes."""
-    text = unicodedata.normalize("NFKC", text)
-    text = "".join(ch for ch in text if unicodedata.category(ch) not in {"Cf", "Cc"} or ch in "\n\t ")
-    return text.translate(_APOSTROPHES).lower()
-
-
 def words(text: str) -> list[str]:
+    """Normalized (not folded) word tokens. Kept for existing callers."""
     return [w.replace("'", "") for w in _WORD.findall(normalize(text))]
+
+
+def quote_tokens(text: str) -> list[str]:
+    """Folded, plural-stemmed tokens used by the no-quote check."""
+    return [stem(w) for w in folded_words(text)]
 
 
 def _ngrams(tokens: Sequence[str], n: int) -> set[tuple[str, ...]]:
@@ -50,9 +66,14 @@ def _ngrams(tokens: Sequence[str], n: int) -> set[tuple[str, ...]]:
 
 # ------------------------------------------------------------ sensitive terms
 # Categories from contracts/README.md: health, sexuality, religion, finances,
-# family trauma, home location. Matched as whole words/phrases after
-# normalization, so "therapist" is caught but "the rapist"-style splits are
-# not invented and "homework" does not match "home".
+# family trauma, home location, plus immigration status and substance use from
+# the safety eval. Matched as whole folded words/phrases with an optional
+# plural "s"/"es" ("therapists", "churches"), so "homework" does not match
+# "home" and "rentals" does not match "rent". Single-word terms of at least
+# COMPACT_MIN_LETTERS letters are also found inside one space-free chunk
+# ("#depressionsquad", "the.rapist").
+# Deliberately NOT listed (false positives on benign names in the eval): high,
+# straight, visa, dead, temple, closet, pills, sick, belt, mass.
 SENSITIVE_TERMS: dict[str, tuple[str, ...]] = {
     "health": (
         "depression", "depressed", "anxiety", "anxious", "adhd", "autism", "autistic", "bipolar",
@@ -62,29 +83,49 @@ SENSITIVE_TERMS: dict[str, tuple[str, ...]] = {
         "chronic illness", "panic attack", "panic attacks", "mental health", "mental illness",
         "diagnosis", "diagnosed", "hospital", "hospitalized", "rehab", "addiction", "addicted",
         "sober", "sobriety", "hiv", "std", "stds", "sti", "insomnia", "schizophrenia", "trauma",
+        # safety eval additions (physical health)
+        "chemo", "insulin", "inhaler", "wheelchair", "sleeping pills", "surgery", "infertility",
+        "pregnancy scare",
+        # safety eval additions (mental health)
+        "prozac", "zoloft", "lexapro", "ssri", "xanax", "adderall", "shrink", "counseling",
+        "psychiatrist", "medicated", "antidepressant", "cutter", "starving", "relapse",
     ),
     "sexuality": (
         "gay", "lesbian", "bisexual", "queer", "trans", "transgender", "nonbinary", "non binary",
         "asexual", "lgbt", "lgbtq", "lgbtqia", "closeted", "coming out", "sexuality",
-        "sexual orientation", "sex life",
+        "sexual orientation", "sex life", "sapphic",
     ),
     "religion": (
         "christian", "christians", "muslim", "muslims", "jewish", "jew", "hindu", "buddhist", "sikh",
         "atheist", "atheists", "catholic", "mormon", "evangelical", "church", "mosque", "synagogue",
         "religion", "religious", "faith", "bible", "quran", "torah", "prayer", "praying", "god",
         "ramadan", "sabbath",
+        # safety eval additions
+        "sunday mass", "hijab", "hijabi", "kosher", "halal", "rosary", "gurdwara", "ex mormon", "lds",
+        "pastor", "rabbi", "imam", "baptized", "born again",
     ),
     "finances": (
         "broke", "debt", "debts", "student loan", "student loans", "loan", "loans", "rent money",
         "cant afford", "cannot afford", "can't afford", "poverty", "poor", "food stamps",
         "financial aid", "paycheck", "salary", "income", "bankrupt", "bankruptcy", "money problems",
         "evicted", "eviction", "homeless", "homelessness", "unemployed", "overdraft",
+        # safety eval additions
+        "rent", "scholarship", "first gen", "food bank", "credit card", "in the red", "trailer park",
+        "paycheck to paycheck", "pell grant", "overdue",
     ),
     "family_trauma": (
         "divorce", "divorced", "abuse", "abused", "abusive", "neglect", "neglected", "foster care",
         "orphan", "orphaned", "estranged", "grief", "grieving", "passed away", "funeral",
         "alcoholic", "domestic violence", "custody", "deported", "deportation", "miscarriage",
         "disowned", "kicked out",
+        # safety eval additions
+        "died", "widowed", "lost a parent", "in heaven", "addicts", "prison", "incarcerated",
+    ),
+    "immigration_status": (
+        "undocumented", "overstay", "immigrant", "refugee", "daca", "green card",
+    ),
+    "substance_use": (
+        "stoner", "weed", "molly", "drunk", "alcohol", "edibles", "blackout",
     ),
     "home_location": (
         "home address", "my address", "their address", "lives at", "lives on", "apartment", "apt",
@@ -94,12 +135,38 @@ SENSITIVE_TERMS: dict[str, tuple[str, ...]] = {
 }
 
 
-def _phrase_pattern(phrases: Iterable[str]) -> re.Pattern[str]:
-    alts = sorted({" ".join(words(p)) for p in phrases if words(p)}, key=len, reverse=True)
-    return re.compile(r"(?<![a-z0-9])(?:" + "|".join(re.escape(a) for a in alts) + r")(?![a-z0-9])")
+def _folded_terms() -> list[str]:
+    return sorted({fold(t) for terms in SENSITIVE_TERMS.values() for t in terms if fold(t)},
+                  key=len, reverse=True)
 
 
-_SENSITIVE = _phrase_pattern(t for terms in SENSITIVE_TERMS.values() for t in terms)
+def _term_pattern(terms: Iterable[str]) -> re.Pattern[str]:
+    return re.compile(r"(?<![a-z0-9])(?:" + "|".join(re.escape(t) for t in terms) + r")(?:s|es)?(?![a-z0-9])")
+
+
+_TERMS = _folded_terms()
+_SENSITIVE = _term_pattern(_TERMS)
+_COMPACT_TERMS = tuple(t for t in _TERMS if " " not in t and len(t) >= COMPACT_MIN_LETTERS)
+
+
+# Ordinary words that merely contain a sensitive term. The compact (embedded)
+# check skips exactly these chunks; whole-word matching still applies to them.
+# Add a word here only for a reviewed false positive, never to unblock content.
+BENIGN_EMBEDDED = frozenset({
+    "hospitality", "hospitable", "inhospitable", "aromatherapy", "aromatherapist",
+})
+
+
+def _has_sensitive(text: str) -> bool:
+    if _SENSITIVE.search(fold(text)):
+        return True
+    return any(
+        term in chunk
+        for chunk in folded_chunks(text)
+        if chunk not in BENIGN_EMBEDDED
+        for term in _COMPACT_TERMS
+    )
+
 
 # ---------------------------------------------------------------------- PII
 _PII = [
@@ -204,21 +271,37 @@ def redact_for_model(text: str) -> str:
 class OutputGuard:
     """Stateless; one instance can be shared across owners and threads."""
 
-    def __init__(self, quote_words: int = QUOTE_WORDS):
+    def __init__(self, quote_words: int = QUOTE_WORDS, *, short_quote_words: int = SHORT_QUOTE_WORDS,
+                 short_answer_tokens: int = SHORT_ANSWER_TOKENS):
         if quote_words < 2:
             raise ValueError("quote_words must be >= 2")
+        if not 2 <= short_quote_words <= quote_words:
+            raise ValueError("short_quote_words must be between 2 and quote_words")
         self._n = quote_words
+        self._short_n = short_quote_words
+        self._short_max = short_answer_tokens
 
     # ----------------------------------------------------------------- checks
     def quotes_answer(self, text: str, against_answers: Sequence[str]) -> bool:
-        grams = _ngrams(words(text), self._n)
-        if not grams:
+        """True if ``text`` shares a run of ``quote_words`` folded, plural-stemmed
+        tokens with any answer, or a run of ``short_quote_words`` with an answer of
+        at most ``short_answer_tokens`` tokens."""
+        tokens = quote_tokens(text)
+        if len(tokens) < min(self._n, self._short_n):
             return False
-        return any(grams & _ngrams(words(a), self._n) for a in against_answers)
+        grams: dict[int, set[tuple[str, ...]]] = {}
+        for answer in against_answers:
+            answer_tokens = quote_tokens(answer)
+            n = self._short_n if len(answer_tokens) <= self._short_max else self._n
+            if n not in grams:
+                grams[n] = _ngrams(tokens, n)
+            if grams[n] & _ngrams(answer_tokens, n):
+                return True
+        return False
 
     @staticmethod
     def has_sensitive_term(text: str) -> bool:
-        return bool(_SENSITIVE.search(" ".join(words(text))))
+        return _has_sensitive(text)
 
     @staticmethod
     def has_pii(text: str) -> bool:

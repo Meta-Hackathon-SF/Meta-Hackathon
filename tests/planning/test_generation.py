@@ -166,6 +166,29 @@ class GenerationTests(unittest.TestCase):
         self.assertIsNone(res.pending[0]["followUpHint"])
         self.assertEqual(res.rejected, 0)
 
+    def test_sensitivity_screen_blocks_after_guard_and_fails_closed(self):
+        class Screen:
+            def __init__(self, verdicts=None, boom=False):
+                self.verdicts, self.boom, self.seen = verdicts, boom, []
+
+            async def allowed(self, texts):
+                self.seen.append(list(texts))
+                if self.boom:
+                    raise RuntimeError("provider down")
+                return [t not in self.verdicts for t in texts]
+
+        props = [proposal("What helps you settle in after a long day of classes?", followUpHint="What part of it matters most?"),
+                 proposal("Where do you go when you want a quiet hour?", category="belonging")]
+        for screen, kept in ((Screen({"Where do you go when you want a quiet hour?"}), 1), (Screen(set(), boom=True), 0)):
+            transport = ScriptedTransport().queue("question_generation", {"questions": props})
+            muse = FixtureMuse(register_planning_tasks(TaskRegistry()), transport)
+            questions = QuestionService(load_default_bank(), InMemorySelectionStore(), TestOnlyWeekStart())
+            g = QuestionGenerator(muse, TestOnlyOutputGuard(), questions, sensitivity=screen)
+            res = run(g.generate(count=2, request_id="req-sens", aggregate_signals=SIGNALS))
+            self.assertEqual(len(res.pending), kept)
+            self.assertEqual(res.rejections.get("sensitive_text"), 2 - kept)
+            self.assertIn(["What helps you settle in after a long day of classes?", "What part of it matters most?"], screen.seen)
+
     def test_generation_verdicts_are_traced(self):
         transport = ScriptedTransport().queue("question_generation", {"questions": [PROPOSALS[0], PROPOSALS[0]]})
         muse = FixtureMuse(register_planning_tasks(TaskRegistry()), transport)

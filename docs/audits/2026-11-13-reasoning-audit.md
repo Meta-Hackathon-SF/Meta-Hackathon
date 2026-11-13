@@ -8,6 +8,23 @@ How each finding was checked:
 
 No live calls were made except the two M6 calls listed under "Fixed in this PR".
 
+## Status update (2026-11-13T09:00Z)
+
+Live evals have since measured most of these findings: `docs/audits/2026-11-13-live-evals.md`.
+- **Muse vs keywords:** Muse decides grouping. On the gold set it scored 0.95-1.0, while keywords scored 0.13.
+- **Questions, activity, topics, sensitivity:** each now has measured fixes. They need contract 2.2.0 (D014, proposed).
+
+| Finding | State |
+|---|---|
+| P2 Sky no-quote | Fixed in #53 (theme labels guarded at formation; M3 gets voice rules), awaiting Rishi's review |
+| P1 friend oracle | Friend count off by default in #53. Server-side id checks and the approved-eventId check at the door are on `adam/patrik-guard-fold` (in progress). Group and event counts still use client ids. |
+| P3/P4 guard gaps | Measured (8/44 names, 0/14 plurals, 0/8 leet). Fold plus terms on `adam/patrik-guard-fold`; M10 sensitivity screen on `adam/patrik-muse-classifiers` (in progress) |
+| Muse never sees questions or activity | Measured: questions raised P/R to 1.0 in every run, and affinity broke ties without overriding meaning. D014 plus `adam/rishi-formation-v2` (in progress). Patrik's snapshot and Kai's wiring still needed. |
+| Keyword topics | Measured F1 0.47 vs Ember 0.98. M9 on `adam/patrik-muse-classifiers` (in progress); needs privacy sign-off |
+| R2 identical M4 retry | Correction pass-through done; formation v2 uses it (in progress) |
+| Model choice | Router with measured routes on `role/adam-planning`; Kai must switch to `build_muse_router` |
+| R1 120 s deadline, R3 repair share, R4 large communities, R6 follow-up question lost, P5, P6 | Not yet addressed |
+
 ## Bottom line
 
 Most guarantees are well enforced. Every Muse output is checked against a schema. Player text reaches Muse only as delimited untrusted data. Unknown or duplicate ids, group sizes, blocked pairs and Sky numbers are all checked by code. M1 fails closed.
