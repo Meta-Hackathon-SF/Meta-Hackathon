@@ -223,3 +223,77 @@ class OperatorRouterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(HAVE_FASTAPI, "FastAPI not installed")
+class V3EventRouteTests(unittest.TestCase):
+    def client(self, with_v3=True):
+        from datetime import datetime, timezone
+
+        from server.planning import CustomEventService, EventNudgeService, EventsService
+
+        from .test_v3_events import CATALOG, GOOD_COPY, NOW, PROPOSAL, Screen
+
+        transport = ScriptedTransport().queue("event_nudge", GOOD_COPY, GOOD_COPY, PROPOSAL)
+        m = FixtureMuse(register_planning_tasks(TaskRegistry()), transport)
+        questions = QuestionService(load_default_bank(), InMemorySelectionStore(), TestOnlyWeekStart())
+        self.custom = CustomEventService(m, TestOnlyOutputGuard(), CATALOG, area="Berkeley", sensitivity=Screen())
+        self.nudges = EventNudgeService(m, TestOnlyOutputGuard(), CATALOG, sensitivity=Screen(),
+                                        approved_events=self.custom.approved_events)
+        events = EventsService(CATALOG, custom_events=self.custom.approved_events)
+        self.now = NOW
+        rt = PlanningRuntime(questions, muse_configured=True, now=lambda: self.now,
+                             **({"events": events, "event_nudges": self.nudges, "custom_events": self.custom}
+                                if with_v3 else {}))
+
+        def session(request: Request):  # TEST-ONLY stand-in for Patrik's verified-session dependency
+            pid = request.headers.get("x-test-player")
+            return {"playerId": pid, "communityId": COMMUNITY, "isOperator": request.headers.get("x-test-role") == "operator"}
+
+        app = FastAPI()
+        install_planning_error_handler(app)
+        app.include_router(build_router(rt, session), prefix="/api/v1")
+        return TestClient(app)
+
+    P1, P2, OP = {"x-test-player": "p-1"}, {"x-test-player": "p-2"}, {"x-test-player": "p-op", "x-test-role": "operator"}
+
+    def test_events_require_a_verified_player_and_return_event_views(self):
+        c = self.client()
+        self.assertEqual(c.get("/api/v1/events").status_code, 403)
+        rows = c.get("/api/v1/events", headers=self.P1).json()
+        self.assertEqual([r["eventId"] for r in rows], ["ev-volleyball", "ev-open-mic", "ev-board-games", "ev-film-club"])
+        self.assertEqual(c.get("/api/v1/events/ev-open-mic", headers=self.P1).json()["kind"], "catalog")
+        self.assertEqual(c.get("/api/v1/events/ev-invented", headers=self.P1).status_code, 404)
+        self.assertEqual(c.get("/api/v1/events?window=year", headers=self.P1).status_code, 422)
+
+    def test_nudges_are_own_only_and_dismissable(self):
+        c = self.client()
+        n = asyncio.run(self.nudges.propose_for("p-1", [{"eventId": "ev-open-mic", "bucket": "3-5"}], now=self.now))
+        self.assertEqual([x["nudgeId"] for x in c.get("/api/v1/me/nudges", headers=self.P1).json()], [n["nudgeId"]])
+        self.assertEqual(c.get("/api/v1/me/nudges", headers=self.P2).json(), [])
+        self.assertEqual(c.post(f"/api/v1/nudges/{n['nudgeId']}/dismiss", headers=self.P2).status_code, 404)
+        self.assertEqual(c.post(f"/api/v1/nudges/{n['nudgeId']}/dismiss", headers=self.P1).status_code, 204)
+        self.assertEqual(c.get("/api/v1/me/nudges", headers=self.P1).json(), [])
+
+    def test_operator_routes_and_custom_event_decision(self):
+        c = self.client()
+        for method, path in (("get", "/api/v1/operator/custom-events"), ("get", "/api/v1/operator/events/nudges"),
+                             ("post", "/api/v1/operator/events/ev-open-mic/nudge-preview")):
+            self.assertEqual(getattr(c, method)(path, headers=self.P1, **({"json": {"interestBucket": "3-5"}} if method == "post" else {})).status_code, 403)
+        preview = c.post("/api/v1/operator/events/ev-open-mic/nudge-preview", headers=self.OP, json={"interestBucket": "3-5"}).json()
+        self.assertEqual(set(preview), {"eventId", "interestBucket", "copy", "source", "guardOk"})
+        self.assertEqual(c.post("/api/v1/operator/events/ev-open-mic/nudge-preview", headers=self.OP, json={"interestBucket": "2"}).status_code, 400)
+        p = asyncio.run(self.custom.propose({"clusterSize": 9, "tags": ["coffee", "music"]},
+                                            [{"start": "2026-11-21T01:00:00Z", "end": "2026-11-21T04:00:00Z"}]))
+        self.assertEqual([r["proposalId"] for r in c.get("/api/v1/operator/custom-events", headers=self.OP).json()], [p["proposalId"]])
+        bad = c.post(f"/api/v1/operator/custom-events/{p['proposalId']}/decision", headers=self.OP, json={"decision": "approve", "extra": 1})
+        self.assertEqual(bad.status_code, 400)
+        ok = c.post(f"/api/v1/operator/custom-events/{p['proposalId']}/decision", headers=self.OP, json={"decision": "approve"})
+        self.assertEqual(ok.json()["status"], "approved")
+        ids = [r["eventId"] for r in c.get("/api/v1/events", headers=self.P1).json()]
+        self.assertIn(f"ev-custom-{p['proposalId']}", ids)
+
+    def test_v3_routes_absent_without_services(self):
+        c = self.client(with_v3=False)
+        for path in ("/api/v1/events", "/api/v1/me/nudges", "/api/v1/operator/custom-events"):
+            self.assertEqual(c.get(path, headers=self.OP).status_code, 404)

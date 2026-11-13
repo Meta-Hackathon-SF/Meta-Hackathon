@@ -48,7 +48,7 @@ def joined(app, name="Tester (synthetic)") -> TestClient:
 
 def body(**over):
     b = {"useActivity": True, "groupIds": ["g-hackathon", "g-xr"], "eventIds": ["e-boardgames"],
-         "friendIds": ["f-maya"], "texts": [SECRET]}
+         "friendIds": [], "texts": [SECRET]}
     b.update(over)
     return b
 
@@ -134,7 +134,7 @@ def test_snapshot_carries_activity_by_ref_only(store, service, parts, app):
     ref = next(iter(snap["idMap"]))
     assert set(snap["activity"]) == {ref}  # keyed by the random ref, never the player id
     assert snap["activity"][ref] == {"profileId": None, "groupIds": ["g-hackathon", "g-xr"], "eventIds": ["e-boardgames"],
-                                     "friendIds": ["f-maya"], "topics": ["food", "gaming"]}
+                                     "friendIds": [], "topics": ["food", "gaming"]}
     assert player not in json.dumps(snap["activity"])
 
 

@@ -1,8 +1,26 @@
 # adam handoff
-Current step: 7 (question generation) done offline. All six tasks in docs/roles/adam.md are implemented offline; what remains is live verification and integration with other owners
-Status: Muse adapter restored for 2.0.0; question bank, weekly selection, M2 follow-up, M7 event nudges, the nudge card and M6 question generation implemented. Offline-verified only.
-Branch + commit: `role/adam-planning`; PRs #12 and #17 merged to main; question generation in the follow-up PR. PR #12 merged to main (655903a); nudges in the follow-up PR.
-Updated: 2026-11-13T03:05Z
+Current step: integration + deployment. Ownership relaxed 2026-11-13 ~11:40Z: Adam and Rishi own the whole repo (Will, Kai, Patrik offline); contract ACKs no longer gate merges
+Status: v3 events (#76), per-task Muse router in the app (#87), Dockerfile (#89) merged; Railway now auto-deploys main from GitHub and runs ff68afc (verified 12:05Z)
+Branch + commit: `role/adam-planning` synced with main ff68afc+; merged today: #76, #87, #88, #89
+Updated: 2026-11-13T12:10Z
+
+## Deployment (live, verified 2026-11-13T15:05Z)
+Full description, every issue hit and its fix: **docs/DEPLOYMENT.md, "Live deployment"**. Summary:
+- Web on Vercel (https://constellations-demo-zeta.vercel.app), API + Postgres on Railway; both deploy on every merge to `main`.
+- Browser → Vercel `/api/v1` rewrite (#91) → Railway → Vercel Muse relay `/api/muse/v1` (#93) → `api.meta.ai`. The relay exists because Meta lists zero models for our key from Railway's IPs.
+- Verified in a real browser (15:25Z to 15:35Z): join, start week, answers, advance to Friday, synthetic top-up (38 labeled players), formation (M3, M4, 12x M5, 2x M8 live in about 10 s), reveal, real Sky numbers, event stream through Vercel.
+- Not verified live: a real chat message, mutual reveal, room nudge.
+- **Biggest gap:** the Space tab's constellation and chat screens are hardcoded previews and do not read the server's real constellations or rooms.
+- "Skip to Sunday" fails with 503 because it reveals before formation finishes; press "Reveal (Sunday)" after about 10 s.
+- **A redeploy erases the current week** (in-memory cycle store). No merges or Railway variable changes during the demo.
+- Operator role: granted per player in the container only (`grant_operator`); test player `p_a0c715cbb0da42a10781999b` has it.
+- Still off: v3 per-viewer routes uncomposed in `server/app/weekly.py` (404), so the day count shows 0.
+
+## Stage view and synthetic cast (2026-11-13)
+- `/space/stage` (D017): presenter screen, two opted-in phones and the Muse pipeline, week controls. Merged in #104. Not yet run against production with two real sessions.
+- Synthetic cast (D018): 100 personas in `server/privacy/data/demo_population.json`; top-up adds them (108 with the fixture players), their guesses and activity signals. Feed regenerated: `python -m server.privacy.demo_population --export-feed web/src/data/population.json`.
+- Fixed on the way: Sunday failed for any constellation over five members (#107). Formation prompt is now v3 (specific groups of 5 to 10); v2 made one group of 79.
+- The cast enters the production database only when someone presses "Add synthetic players" on an open demo week.
 
 ## Completed tasks
 1. `server/providers/` restored from `archive/group-quests-before-pivot`, renamed, extended to the 2.0.0 `MuseTask` list (M1-M8), retested. **Live call re-verified 2026-11-13T02:25Z**: `python3 -m server.providers.smoke` -> ok, `clarify` (M2), provider echoed `muse-spark-1.3`, 16.2 s, attempt 1, `reasoning_effort=low`.
@@ -93,8 +111,13 @@ Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
 ## D014 ACKed (2026-11-13T08:34Z, recorded 10:00Z)
 All four owners ACKed on #60. Patrik's M9 sign-off has conditions (redaction, cap, consent copy), which he implemented on #59. Rishi: v3 (3.0.0, D012) builds on 2.2.0 and removes M5/M8. #58 was merged by Patrik with his review fixes. Will delivered `server/cycle` `question_texts` (#63); my `QuestionService.question_texts` is an equivalent reader from the planning selection, so Kai uses one of them.
 
+## v3 events and custom events + live audit (2026-11-13T10:00Z)
+- Live full-loop audit: 4 agents, 947 calls, $2.81. Findings filed as #70 (Kai), #71 (Patrik), #72 (Rishi), #73 (Will) and #74 (mine). The formation break it found (#59 + #62) was fixed by Patrik's #69.
+- 3.0.0 review on #68: ACK on my shapes. CHANGE proposals: (1) catalog `end`, done; (2) M7 copy shapes; (3) `custom_event` stays under `event_nudge`; (4) align the v3 fixtures to the catalog. 2-4 await Rishi.
+- Built offline: `EventsService`, `EventNudgeService` (copy and cadence), `CustomEventService`, the v3 routes, `sensitivity_allows(required=True)` for v3 paths, and catalog end times. `python -m pytest tests`: 1343 passed, 2 skipped, 12 xfailed. Not composed by Kai yet.
+
 ## API budget
-Adam's Muse key has a $100 cap for the whole event including the demo. About 47 earlier live calls plus 285 eval calls (about $1.21 measured) so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
+Adam's Muse key has a $100 cap for the whole event including the demo. About 47 earlier calls, 285 eval calls ($1.21) and 947 audit calls ($2.81) so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
 
 ## Next action
 - DONE (Will, #38 f88311f): `OperatorNudgePanel` mounted in the operator console; verified on main 6d7dc62: Playwright 55 passed incl. the nudge test on desktop+mobile, pytest 565 passed 1 skipped.

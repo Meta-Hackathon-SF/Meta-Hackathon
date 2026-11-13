@@ -21,7 +21,7 @@ import {
   parseTranscript,
   type CycleClient,
 } from "./client";
-import { parseDailyConstellations, parseProposal, parseWeekView } from "./v3";
+import { parseDailyConstellations, parseMain, parseMySky, parseProgress, parseProposal, parseSkyStars, parseWeekView } from "./v3";
 import { parseReasoning } from "../operator/reasoning";
 import { toWav } from "./wav";
 
@@ -155,9 +155,18 @@ export function createHttpClient(
     // PROPOSED routes from docs/PRD-v3.md (contract 3.0.0, D012). Until the producers
     // mount them these calls fail and the UI shows its pending/unavailable state.
     v3: {
+      skyStars: (id, signal) => call("GET", `${c(id)}/sky/stars`, parseSkyStars, { signal }),
+      skyMine: (id, signal) => call("GET", `${c(id)}/sky/mine`, parseMySky, { signal }),
+      formationProgress: (id, signal) => call("GET", `${c(id)}/formation/progress`, parseProgress, { signal }),
+      main: (id, signal) => call("GET", `${c(id)}/main`, parseMain, { signal }),
       dailyConstellations: (id, day, signal) =>
         call("GET", `${c(id)}/days/${day}/constellations`, parseDailyConstellations, { signal }),
       week: (id, signal) => call("GET", `${c(id)}/week`, parseWeekView, { signal }),
+      sendQuietSignal: (id, constellationId) =>
+        call("POST", `${c(id)}/constellations/${encodeURIComponent(constellationId)}/quiet-signal`, (v) => {
+          const r = v as { sent?: unknown; pulses?: unknown } | null;
+          return { sent: r?.sent === true, pulses: typeof r?.pulses === "number" ? r.pulses : 0 };
+        }, { body: {} }),
       closeDay: (id, day) =>
         mutate(
           call("POST", `${op(id)}/close-day`, (v) => {

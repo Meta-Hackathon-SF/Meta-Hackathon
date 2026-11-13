@@ -121,7 +121,7 @@ M4_OUT = _obj({
 
 M5_IN = _obj({
     "sharedMeaning": _str(400),
-    "size": {"type": "integer", "minimum": 3, "maximum": 5},
+    "size": {"type": "integer", "minimum": 3, "maximum": MAX_ANSWERS},  # D016: no max; the 5+ rule is enforced by matching
 })
 M5_OUT = _obj({"name": _str(60), "shapeId": _ID, "colorId": _ID})
 
@@ -192,6 +192,23 @@ M10_OUT = _obj({"results": _arr(_obj({
     "id": _SHORT_ID,
     "category": {"type": "string", "enum": list(SENSITIVITY_CATEGORIES)},
 }), 40)})
+
+# v3 (3.0.0) M7 extensions, same task "event_nudge" with their own prompt versions
+# (proposed on #68): nudge copy for EventNudgeView and operator-gated custom events.
+INTEREST_BUCKETS = ("3-5", "6-9", "10+")
+M7_COPY_IN = _obj({
+    "event": _obj({"title": _str(80), "venueName": _str(80), "startsAt": _ISO_TIME}),
+    "interestBucket": {"type": "string", "enum": list(INTEREST_BUCKETS)},
+})
+M7_COPY_OUT = _obj({"copy": _str(140)})
+CUSTOM_EVENT_IN = _obj({
+    "clusterSize": {"type": "integer", "minimum": 3, "maximum": 30},
+    "interestTags": _arr({"type": "string", "enum": list(ACTIVITY_TOPICS)}, 5),
+    "area": _str(60),
+    "windows": _arr(TIME_WINDOW, 5, 1),
+    "venues": _arr(VENUE, 50, 1),
+})
+CUSTOM_EVENT_OUT = _obj({"title": _str(80), "why": _str(240), "placeId": _ID, "timeWindow": TIME_WINDOW})
 
 IN_SCHEMAS: dict[str, dict[str, Any]] = {
     "safety_screen": M1_IN, "clarify": M2_IN, "theme_discovery": M3_IN,

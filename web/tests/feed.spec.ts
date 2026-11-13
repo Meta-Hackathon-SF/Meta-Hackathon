@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("home renders 14 posts with local images and no runtime errors", async ({
+test("home renders 158 posts (14 + 144 from the demo population) with local images and no runtime errors", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -14,7 +14,7 @@ test("home renders 14 posts with local images and no runtime errors", async ({
   });
   await page.goto("/");
   await expect(page.getByRole("main", { name: "News Feed" })).toBeVisible();
-  await expect(page.locator(".feed-posts > article")).toHaveCount(14);
+  await expect(page.locator(".feed-posts > article")).toHaveCount(158);
   await expect(
     page.getByRole("region", { name: "Stories", exact: true }),
   ).toBeVisible();
@@ -61,7 +61,7 @@ test("create a post, validate empty input, and persist it", async ({
   await expect(page.locator(".feed-posts > article").first()).toContainText(
     "Building a closer campus together! Test post.",
   );
-  await expect(page.locator(".feed-posts > article")).toHaveCount(15);
+  await expect(page.locator(".feed-posts > article")).toHaveCount(159);
   await page.reload();
   await expect(page.locator(".feed-posts > article").first()).toContainText(
     "Building a closer campus together! Test post.",

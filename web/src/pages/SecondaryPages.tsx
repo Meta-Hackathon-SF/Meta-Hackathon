@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router";
 import {
   Bookmark,
-  CalendarDays,
   Camera,
   Check,
   ChevronRight,
@@ -12,7 +11,6 @@ import {
   Pencil,
   Play,
   Plus,
-  Send,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -21,6 +19,7 @@ import Avatar from "../components/common/Avatar";
 import PostCard from "../components/feed/PostCard";
 import Composer from "../components/feed/Composer";
 import { currentUser, notifications, people, photo } from "../data/demo";
+import MessengerInbox from "../features/constellations/messenger/MessengerInbox";
 import { useApp } from "../state/context";
 
 export function FriendsPage() {
@@ -115,6 +114,13 @@ export function GroupsPage() {
       title="Groups"
       description="Discover people who share your interests."
     >
+      <section className="card empty-state" data-testid="groups-space-card">
+        <h2>Facebook Space</h2>
+        <p>Answer one question a day with people in this Group. Anonymous until you both choose.</p>
+        <Link to="/space" className="button-primary">
+          Open Facebook Space
+        </Link>
+      </section>
       <h2 className="section-heading">Suggested for you</h2>
       <div className="discovery-grid">
         {[
@@ -170,70 +176,6 @@ export function GroupsPage() {
   );
 }
 
-export function MarketplacePage() {
-  const { notify } = useApp();
-  return (
-    <PageFrame
-      title="Marketplace"
-      description="Discover a few finds in your community."
-    >
-      <div className="section-heading">
-        <h2>Today's picks</h2>
-        <span className="location-label">
-          <MapPin size={16} />
-          Santa Cruz · 40 mi
-        </span>
-      </div>
-      <div className="marketplace-grid">
-        {[
-          {
-            image: "code",
-            price: "$250",
-            title: "Laptop and desk setup",
-            place: "Santa Cruz, CA",
-          },
-          {
-            image: "headset",
-            price: "$120",
-            title: "VR headset · like new",
-            place: "San Jose, CA",
-          },
-          {
-            image: "coffee",
-            price: "$20",
-            title: "Coffee set for your next study session",
-            place: "Santa Cruz, CA",
-          },
-          {
-            image: "library",
-            price: "Free",
-            title: "Textbook exchange",
-            place: "Campus pickup",
-          },
-        ].map((item) => (
-          <button
-            className="marketplace-item"
-            key={item.title}
-            onClick={() =>
-              notify(
-                `${item.title} · Demo listing. Buying and messaging sellers will be available in a future version.`,
-              )
-            }
-          >
-            <img src={photo(item.image)} alt={item.title} />
-            <strong>{item.price}</strong>
-            <span>{item.title}</span>
-            <small>{item.place}</small>
-          </button>
-        ))}
-      </div>
-      <p className="muted demo-page-note">
-        Demonstration listings only. No purchases or payments.
-      </p>
-    </PageFrame>
-  );
-}
-
 export function WatchPage() {
   const { notify } = useApp();
   return (
@@ -259,42 +201,6 @@ export function WatchPage() {
         >
           <Play size={34} fill="white" />
         </button>
-      </section>
-    </PageFrame>
-  );
-}
-
-export function EventsPage() {
-  const [going, setGoing] = useState(false);
-  return (
-    <PageFrame title="Events" description="Make plans. Make connections.">
-      <section className="card event-card">
-        <img src={photo("team")} alt="Community members building together" />
-        <div>
-          <p className="event-eyebrow">SAT, NOV 14 · 6 PM</p>
-          <h2>Build together: community demo night</h2>
-          <p className="muted">Student Innovation Lab · Fictional demo event</p>
-          <p>
-            Bring your prototype, meet other student builders, and share what
-            you've learned.
-          </p>
-          <button
-            className={going ? "button-secondary" : "button-primary"}
-            onClick={() => setGoing(!going)}
-          >
-            {going ? (
-              <>
-                <Check size={18} />
-                Going
-              </>
-            ) : (
-              <>
-                <CalendarDays size={18} />
-                Interested
-              </>
-            )}
-          </button>
-        </div>
       </section>
     </PageFrame>
   );
@@ -466,82 +372,12 @@ export function NotificationsPage() {
 }
 
 export function MessagesPage() {
-  const [selected, setSelected] = useState(people[0]);
-  const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<Record<string, string[]>>({});
   return (
     <PageFrame
       title="Messenger"
-      description="A local chat preview. Messages stay in this page."
+      description="A temporary Sunday group moves here once everyone agrees to keep it."
     >
-      <section className="card messenger-page">
-        <div className="conversation-list">
-          {people.slice(0, 4).map((person) => (
-            <button
-              key={person.name}
-              className={selected.name === person.name ? "selected" : ""}
-              onClick={() => setSelected(person)}
-              aria-label={`Chat with ${person.name}`}
-            >
-              <Avatar person={person} online />
-              <span>{person.name}</span>
-            </button>
-          ))}
-        </div>
-        <div className="conversation">
-          <header>
-            <Avatar person={selected} size={36} online />
-            <span>
-              <strong>{selected.name}</strong>
-              <small>Demo conversation</small>
-            </span>
-          </header>
-          <div className="conversation-body">
-            <Avatar person={selected} size={56} />
-            <h2>{selected.name}</h2>
-            <p className="muted">
-              You're connected in the hackathon community.
-            </p>
-            <p className="received-message">
-              Hey! See you at the next build session? 👋
-            </p>
-            {messages[selected.name]?.map((text, index) => (
-              <p className="sent-message" key={index}>
-                {text}
-              </p>
-            ))}
-          </div>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!draft.trim()) return;
-              setMessages((previous) => ({
-                ...previous,
-                [selected.name]: [
-                  ...(previous[selected.name] || []),
-                  draft.trim(),
-                ],
-              }));
-              setDraft("");
-            }}
-          >
-            <input
-              aria-label="Message"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Aa"
-              maxLength={2000}
-            />
-            <button
-              type="submit"
-              aria-label="Send message"
-              disabled={!draft.trim()}
-            >
-              <Send size={21} />
-            </button>
-          </form>
-        </div>
-      </section>
+      <MessengerInbox />
     </PageFrame>
   );
 }
@@ -581,7 +417,7 @@ export function GamingPage() {
       <section className="card empty-state">
         <Gamepad2 size={40} />
         <h2>Looking for a game? Try this week's questions.</h2>
-        <p>One question a day, a streak to keep, and on Sunday you meet your constellation.</p>
+        <p>One question a day, a streak that rewards showing up, and on Sunday you meet your constellation.</p>
         <Link to="/space" className="button-primary">
           Play Facebook Space
         </Link>

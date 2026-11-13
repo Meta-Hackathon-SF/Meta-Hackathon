@@ -1,3 +1,13 @@
+/* Shared motion tokens: one easing family and a short duration ladder for every Space transition. */
+:root {
+  --spc-ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --spc-ease-in-out: cubic-bezier(0.45, 0, 0.2, 1);
+  --spc-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spc-dur-fast: 150ms;
+  --spc-dur-base: 280ms;
+  --spc-dur-slow: 560ms;
+  --spc-dur-scene: 1400ms;
+}
 /* Facebook Space tab, V4 design. Scoped under .spc-* (Will). Tokens from docs/DESIGN.md. */
 .spc-page,
 .spc-feed {
@@ -542,8 +552,11 @@
 .spc-textarea::placeholder {
   color: #8a8d91;
 }
-.spc-composer:focus-within {
-  box-shadow: 0 0 0 2px var(--spc-blue) inset;
+.spc-composer:focus-within,
+.spc-composer textarea:focus,
+.spc-composer textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 .spc-float {
   position: absolute;
@@ -816,8 +829,10 @@
 .spc-textarea.is-short {
   height: 120px;
 }
-.spc-textarea:focus {
-  box-shadow: 0 0 0 2px var(--spc-blue) inset;
+.spc-textarea:focus,
+.spc-textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 .spc-fu-q {
   margin: 8px 0 0;
@@ -1043,7 +1058,7 @@
   opacity: 0;
   transform: translateY(30px);
   pointer-events: none;
-  transition: opacity 700ms ease, transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity var(--spc-dur-slow) var(--spc-ease-out), transform var(--spc-dur-slow) var(--spc-ease-out);
 }
 .spc-stage-ui.is-in {
   opacity: 1;
@@ -1159,6 +1174,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 8px 14px;
   background: rgba(255, 255, 255, 0.06);
@@ -1194,6 +1210,11 @@
 }
 .spc-keep-btn.is-kept {
   background: rgba(255, 255, 255, 0.14);
+}
+a.spc-keep-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 .spc-msgs {
   position: relative;
@@ -1274,8 +1295,10 @@
 .spc-chat-input::placeholder {
   color: #8c9bc2;
 }
-.spc-chat-input:focus {
-  box-shadow: 0 0 0 2px var(--spc-blue);
+.spc-chat-input:focus,
+.spc-chat-input:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 .spc-send {
   display: grid;
@@ -1307,7 +1330,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px 20px 0 0;
   background: #0e1c40;
-  animation: spc-sheet-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: spc-sheet-in var(--spc-dur-base) var(--spc-ease-out);
 }
 @keyframes spc-sheet-in {
   from {
@@ -1485,6 +1508,9 @@
   .spc-stage-ui {
     transition: none;
   }
+  .spc-msgsend {
+    display: none;
+  }
 }
 
 /* ---------- home feed card ---------- */
@@ -1568,8 +1594,11 @@
   border-radius: 20px;
   background: var(--spc-bg);
 }
-.spc-feed-box:focus-within {
-  box-shadow: 0 0 0 2px var(--spc-blue) inset;
+.spc-feed-box:focus-within,
+.spc-feed-box textarea:focus,
+.spc-feed-box textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 .spc-feed-box textarea {
   height: 64px;
@@ -2301,4 +2330,338 @@
 }
 .spc-weeklist-foot {
   padding: 4px 16px 10px;
+}
+
+/* ---- Telescoping entry: a lens aperture opens while the sky pulls back from a tight zoom ---- */
+.spc-telescope {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  pointer-events: none;
+}
+.spc-telescope-mask {
+  position: absolute;
+  inset: 0;
+  background: #02030a;
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent var(--r, 6%), #000 calc(var(--r, 6%) + 2%));
+  mask: radial-gradient(circle at 50% 50%, transparent var(--r, 6%), #000 calc(var(--r, 6%) + 2%));
+  animation: spc-aperture var(--spc-dur-scene) var(--spc-ease-out) forwards;
+}
+.spc-telescope-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150vmax;
+  height: 150vmax;
+  margin: -75vmax 0 0 -75vmax;
+  border-radius: 50%;
+  border: 1px solid rgba(170, 200, 255, 0.55);
+  box-shadow: 0 0 18px rgba(80, 150, 255, 0.45);
+  transform: scale(0.06);
+  animation: spc-lens var(--spc-dur-scene) var(--spc-ease-out) forwards;
+}
+.spc-telescope-ring.is-inner {
+  border-color: rgba(170, 200, 255, 0.25);
+  box-shadow: none;
+  animation-delay: 70ms;
+}
+@property --r {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 6%;
+}
+@keyframes spc-aperture {
+  to {
+    --r: 85%;
+    opacity: 0;
+  }
+}
+@keyframes spc-lens {
+  70% {
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+.spc-stage .spc-canvas {
+  animation: spc-zoom-settle var(--spc-dur-scene) var(--spc-ease-out) both;
+}
+@keyframes spc-zoom-settle {
+  from {
+    transform: scale(1.9);
+    filter: blur(3px);
+  }
+  to {
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spc-telescope {
+    display: none;
+  }
+  .spc-stage .spc-canvas {
+    animation: none;
+  }
+}
+
+/* ---- Minimised 24-hour room: floating chat head ---- */
+.spc-dock {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 10px 14px 10px 12px;
+  border: 1px solid rgba(160, 190, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(8, 14, 36, 0.92);
+  color: #fff;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 18px rgba(69, 153, 255, 0.25);
+  cursor: pointer;
+  animation: spc-dock-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.spc-dock-stars {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+.spc-dock-stars i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px #4599ff;
+}
+.spc-dock-stars i:nth-child(1) { left: 2px; top: 18px; }
+.spc-dock-stars i:nth-child(2) { left: 12px; top: 3px; background: #2cc7c0; }
+.spc-dock-stars i:nth-child(3) { left: 21px; top: 17px; background: #f5b841; }
+.spc-dock-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+.spc-dock-text strong { font-size: 14px; }
+.spc-dock-text small {
+  font-size: 12px;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@keyframes spc-dock-in {
+  from { transform: translateY(24px) scale(0.9); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spc-dock { animation: none; }
+}
+.spc-chat-min {
+  margin-left: auto;
+}
+.spc-keep-note {
+  font-size: 12px;
+  opacity: 0.7;
+  padding: 0 16px 6px;
+}
+.spc-expired {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+/* ---- Home card: bigger, and answering is one tap ---- */
+.spc-feed {
+  border: 1px solid rgba(24, 119, 242, 0.25);
+  box-shadow: 0 2px 14px rgba(8, 20, 60, 0.12);
+}
+.spc-feed-head {
+  padding: 16px 18px;
+  gap: 14px;
+}
+.spc-feed-name {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+.spc-feed-sky {
+  padding: 40px 28px 44px;
+  min-height: 200px;
+  justify-content: center;
+}
+.spc-feed-q {
+  font-size: clamp(24px, 4.4vw, 32px);
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+}
+.spc-feed-compose {
+  padding: 14px 18px 18px;
+}
+.spc-feed .spc-comment-box textarea {
+  font-size: 15px;
+  min-height: 40px;
+}
+.spc-feed .spc-comment-icon.is-send:not(:disabled) {
+  color: var(--spc-blue, #1877f2);
+}
+.spc-starters {
+  margin: 6px 0 0 42px;
+  font-size: 13px;
+  color: var(--spc-sub, #65676b);
+}
+.spc-starter {
+  padding: 0;
+  margin-right: 12px;
+  border: 0;
+  background: none;
+  color: var(--spc-sub, #65676b);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: #ced0d4;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.spc-starter:hover {
+  color: var(--spc-text, #050505);
+}
+
+/* Mobile: sit above the bottom tab bar (which now also carries the Space tab). */
+@media (max-width: 820px) {
+  .spc-dock {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    right: 12px;
+  }
+}
+
+/* ---- Chat -> Messenger send: the panel becomes the Messenger bubble, folds to a plane, flies to the icon ---- */
+.spc-msgsend {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.spc-msgsend-card {
+  position: relative;
+  width: min(300px, 80vw);
+  height: min(380px, 60vh);
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #00b2ff 0%, #006aff 55%, #a033ff 100%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 120, 255, 0.45);
+  color: #fff;
+  will-change: transform, opacity;
+}
+.spc-msgsend-body {
+  display: grid;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+}
+.spc-msgsend-body span {
+  font-size: 14px;
+  opacity: 0.85;
+}
+.spc-msgsend-plane {
+  position: absolute;
+  opacity: 0;
+}
+
+/* ---- Text boxes: flat and native. One neutral fill, a hairline on focus, no blue rings or glow. ---- */
+.spc-composer,
+.spc-textarea,
+.spc-comment-box {
+  background: #f0f2f5;
+  border-radius: 10px;
+  box-shadow: none;
+  transition: background 120ms ease;
+}
+.spc-comment-box {
+  border-radius: 18px;
+}
+.spc-composer:focus-within,
+.spc-textarea:focus,
+.spc-comment-box:focus-within {
+  box-shadow: none;
+  background: #e8eaee;
+}
+.spc-composer textarea,
+.spc-textarea {
+  font-size: 16px;
+  line-height: 1.45;
+}
+.spc-chat-input {
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.spc-chat-input:focus {
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.14);
+}
+@media (prefers-color-scheme: dark) {
+  .spc-composer, .spc-textarea, .spc-comment-box { background: #3a3b3c; }
+  .spc-composer:focus-within, .spc-textarea:focus, .spc-comment-box:focus-within { background: #4a4b4d; }
+}
+
+/* ---------- design pass: screen enter, flat inputs, press feedback, rhythm ---------- */
+/* One enter for every screen: opacity + 6px rise, ease-out, 200ms. No exit animation, so a new tap interrupts instantly. */
+@keyframes spc-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes spc-enter-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.spc-with-demo.spc-enter { animation: spc-enter 200ms var(--spc-ease-out) both; }
+.spc-with-demo.spc-enter.is-dark,
+.spc-with-demo.spc-enter:has(> .spc-stage) { animation-name: spc-enter-fade; }
+
+/* Flat, native-feeling text boxes: no inset ring on focus, a quiet underline-weight shift instead. */
+.spc-composer,
+.spc-textarea {
+  border-radius: 8px;
+  background: var(--spc-bg);
+  transition: background-color var(--spc-dur-fast) ease-out;
+}
+.spc-composer:focus-within,
+.spc-textarea:focus {
+  box-shadow: none;
+  background: #e8eaee;
+}
+.spc-composer textarea::placeholder,
+.spc-textarea::placeholder { color: #5f6368; }
+
+/* Press feedback on buttons and tabs. */
+.spc-btn, .spc-round, .spc-tab { transition: transform var(--spc-dur-fast) var(--spc-ease-out), background-color var(--spc-dur-fast) ease-out; }
+.spc-btn:active, .spc-round:active { transform: scale(0.97); }
+
+/* Type rhythm: tighter display, balanced headings, readable prose measure. */
+.spc-cover-title { letter-spacing: -0.02em; text-wrap: balance; }
+.spc-qcard p, .spc-topbar-title { text-wrap: balance; }
+.spc-sub, .spc-fine { max-width: 65ch; text-wrap: pretty; }
+.spc-weeklist .spc-list-main { line-height: 1.4; }
+.spc-day-badge { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .spc-with-demo.spc-enter { animation: none; }
+  .spc-btn:active, .spc-round:active { transform: none; }
+}
+.spc-event-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.spc-event-wrap .cat-card {
+  max-width: none;
 }

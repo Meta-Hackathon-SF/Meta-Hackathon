@@ -129,7 +129,7 @@ class FixtureConformanceTests(unittest.TestCase):
             ({"flag": "severe", "reason": ""}, c.M1_OUT),
             ({"needsFollowup": "yes", "question": ""}, c.M2_OUT),
             ({"themes": [], "answers": [{"id": "a", "text": "t"}], "blockedPairs": [["a"]]}, c.M4_IN),
-            ({"sharedMeaning": "x", "size": 6}, c.M5_IN),
+            ({"sharedMeaning": "x", "size": 0}, c.M5_IN),
             ({"sharedMeaning": "x", "size": 4, "memberNames": ["Maya"]}, c.M5_IN),
             ({"answer": {"id": "a", "text": "t", "playerId": "p-maya"}, "question": "q"}, c.M2_IN),
             ({"questions": [{"text": "Too short", "category": "routine", "sensitivity": "low",

@@ -76,7 +76,8 @@ class Constellation(Wire):
 
     @model_validator(mode="after")
     def members(self):
-        if not 3 <= len(self.memberIds) <= 5 or len(set(self.memberIds)) != len(self.memberIds):
+        # D016: no maximum size; matching enforces its own minimum (5).
+        if len(self.memberIds) < 3 or len(set(self.memberIds)) != len(self.memberIds):
             raise ValueError("invalid constellation size")
         pairs = set()
         for pair in self.closeness:

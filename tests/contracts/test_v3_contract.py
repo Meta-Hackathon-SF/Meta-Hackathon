@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import json
 import re
 from pathlib import Path
@@ -51,7 +50,10 @@ def test_daily_view_keys_and_privacy():
             assert len(c["starIndices"]) >= 3 and view["myStarIndex"] in c["starIndices"]
     assert len(data["view"]["constellations"]) <= 3
     assert data["pending"]["constellations"] == []
-    assert not {"name", "label", "sharedMeaning", "size"} & set(data["view"]["constellations"][0])
+    # sharedMeaning joined the daily view (guard-checked, null under 3 members); names and sizes stay out.
+    assert not {"name", "label", "size"} & set(data["view"]["constellations"][0])
+    for c in data["view"]["constellations"]:
+        assert c["sharedMeaning"] is None or isinstance(c["sharedMeaning"], str)
 
 
 def test_sky_views_and_second_degree_floor():

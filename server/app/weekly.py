@@ -2,6 +2,7 @@
 
 import asyncio
 import contextvars
+import logging
 from contextlib import asynccontextmanager, contextmanager
 from copy import copy
 from uuid import uuid4
@@ -20,6 +21,7 @@ from server.app.planning_stores import (
     DurableSelectionStore,
 )
 from server.app.registry import ServiceRegistration
+from server.app.stage import build_stage_router
 from server.chat.api import build_router as chat_router
 from server.chat.service import ChatService
 from server.cycle import CycleService
@@ -37,6 +39,7 @@ from server.planning import (
     CycleQuestionPort,
     QuestionService,
     SyncClarify,
+    VenueCatalog,
     load_default_bank,
     register_planning_tasks,
 )
@@ -51,13 +54,16 @@ from server.privacy import (
     PrivacyService,
     SafetyScreener,
     actor_dependency,
+    demo_population,
     install_privacy_error_handler,
     register_safety_task,
     session_token,
 )
 from server.privacy import build_router as privacy_router
 from server.privacy.fixtures import seed_players
-from server.providers import KeywordMusePort, TaskRegistry, build_muse_adapter, load_muse_config
+from server.privacy.sensitivity import register_sensitivity_task
+from server.privacy.topics import register_activity_task
+from server.providers import KeywordMusePort, TaskRegistry, build_muse_router, load_muse_config
 
 VERIFIED_TOKEN = contextvars.ContextVar("verified_session_token", default=None)
 
@@ -115,10 +121,13 @@ def build_weekly_app(
     registry = register_planning_tasks(TaskRegistry())
     register_safety_task(registry)
     register_formation_specs(registry)
+    register_activity_task(registry)
+    register_sensitivity_task(registry)
     base_muse = (
         muse_factory(registry)
         if muse_factory is not None
-        else build_muse_adapter(registry, load_muse_config())
+        # Measured per-task models (server/providers/router.py), MUSE_ROUTES can override.
+        else build_muse_router(registry, load_muse_config())
     )
     muse = ScopedMuse(base_muse, repository)
     privacy = PrivacyService(privacy_store, clock=clock)
@@ -126,9 +135,16 @@ def build_weekly_app(
         privacy_store, privacy, answer_model=DailyAnswer, guess_model=PrevalenceGuess
     )
     moderation = ModerationStore(privacy_store, privacy)
-    formation = PrivacyFormation(privacy_store, answers, moderation)
-    guard, safety = OutputGuard(), SafetyScreener(muse)
     holder = {}
+    formation = PrivacyFormation(
+        privacy_store,
+        answers,
+        moderation,
+        question_texts=lambda cycle_id, community_id: holder["cycles"].question_texts(
+            cycle_id, community_id
+        ),
+    )
+    guard, safety = OutputGuard(), SafetyScreener(muse)
 
     async def week_start(cycle_id):
         cycle = holder["cycles"].gate(cycle_id).cycle
@@ -141,8 +157,34 @@ def build_weekly_app(
         ClarifyService(muse, guard, DurableClarifyStore(repository)), questions.bank
     )
     screen = safety.sync_screen()
+    from server.app.v3_routes import InMemoryDayStore as _Store
+    from server.app.v3_routes import V3Scheduler
+
+    v3_store = _Store()
+    v3_scheduler = V3Scheduler(answers, KeywordMusePort(muse), guard, v3_store)
+
+    async def _v3_run(cycle):
+        try:
+            await v3_scheduler.on_cycle(cycle)
+        except Exception:  # a v3 failure never blocks the cycle, but it must be visible
+            logging.getLogger(__name__).exception("v3 scheduler step failed")
+
+    def _v3_tick(cycle):
+        # Fire and forget. Cycle hooks run in async routes, in sync routes (threadpool, no
+        # running loop) and in the worker, so fall back to the app loop captured at startup.
+        try:
+            asyncio.get_running_loop().create_task(_v3_run(cycle))
+        except RuntimeError:
+            loop = holder.get("loop")
+            if loop is not None and loop.is_running():
+                asyncio.run_coroutine_threadsafe(_v3_run(cycle), loop)
+
     hooks = CycleHooks(
-        publish_cycle=lambda c: holder["runtime"].on_changed(c),
+        publish_cycle=lambda c: (
+            holder["stage_note"](c),
+            holder["runtime"].on_changed(c),
+            _v3_tick(c),
+        )[1],
         enqueue_formation=lambda c: holder["runtime"].on_locked(c),
         reveal_cycle=lambda c: holder["runtime"].on_revealed(c),
     )
@@ -151,6 +193,8 @@ def build_weekly_app(
         # This is the authorized operator synthetic-top-up feature, not an auth
         # stand-in. The owner refuses any real-player fixture/reused real ID.
         ids = seed_players(privacy_store, community_id, players)
+        # Their Groups, approved event RSVPs and post topics (labels only; no text stored).
+        demo_population.seed_activity(privacy_store, community_id)
         with repository.transaction() as state:
             labeled = state.records.setdefault("syntheticPlayers", {})
             for player_id in ids:
@@ -194,6 +238,8 @@ def build_weekly_app(
             guesses=LeaseGuesses(lease, answers),
             guard=guard,
             themes=themes,
+            approved_event_ids=VenueCatalog.load().event_ids(),
+            precompute_threshold=None,
         )
 
     runtime = holder["runtime"] = WeeklyRuntime(
@@ -268,15 +314,47 @@ def build_weekly_app(
             data = state.records.get("formations", {}).get(cycleId)
             if not data:
                 raise ServiceError("NOT_FOUND")
-            _ = data["privateFormation"]
-        # Actual baseline groups are not part of FormationResult. Never invent a
-        # comparison from baselineAgrees flags; wait for the producer's artifact.
-        raise ServiceError("PROVIDER_UNAVAILABLE")
+            debug = (data["privateFormation"] or {}).get("debug") or {}
+        if not debug:
+            raise ServiceError("NOT_FOUND")
+        # Operator-only: player ids (synthetic in the demo), never answer text.
+        return {
+            "label": "Keyword grouping next to Muse grouping. Synthetic players.",
+            "keywordGroups": debug.get("baselineGroups", []),
+            "museGroups": debug.get("museGroups", []),
+            "splitByKeywords": debug.get("splitByBaseline", []),
+            "agreements": debug.get("agreements", 0),
+            "fallbackGrouping": bool(debug.get("usedFallback")),
+        }
+
+    # Demo stage: opt-in slots for two players and the operator's big-screen view.
+    stage_router, holder["stage_note"] = build_stage_router(
+        repository=repository,
+        privacy=privacy,
+        answers=answers,
+        cycles=cycles,
+        guard=guard,
+        calls=calls,
+    )
+    matching.routes.extend(stage_router.routes)
 
     def sky_refresh(room_id, tasks):
         job_id = runtime.request_sky_for_room(room_id)
         if job_id is not None:
             tasks.add_task(runtime.run_job, job_id)
+
+    from server.app.v3_routes import build_v3_router
+
+    # Re-register the v3 handlers as plain routes: the registry accepts only direct HTTP routes.
+    for route in build_v3_router(
+        answers=answers,
+        cycles=cycles,
+        privacy_actor=privacy,
+        muse=KeywordMusePort(muse),
+        guard=guard,
+        store=v3_store,
+    ).routes:
+        matching.routes.append(route)
 
     nudges = GuardedNudges(runtime, chat, muse, VERIFIED_TOKEN.get)
     planning = PlanningRuntime(
@@ -310,12 +388,14 @@ def build_weekly_app(
     install_planning_error_handler(app)
     app.state.runtime, app.state.chat, app.state.cycles = runtime, chat, cycles
     app.state.nudges = nudges
+    app.state.v3_store, app.state.v3_scheduler = v3_store, v3_scheduler
     app.state.privacy, app.state.answers, app.state.muse = privacy, answers, muse
     previous = app.router.lifespan_context
 
     @asynccontextmanager
     async def lifespan(application):
         async with previous(application):
+            holder["loop"] = asyncio.get_running_loop()
             worker = asyncio.create_task(runtime.loop(chat)) if start_worker else None
             try:
                 yield

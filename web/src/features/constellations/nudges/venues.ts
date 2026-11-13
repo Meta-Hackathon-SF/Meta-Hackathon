@@ -20,13 +20,14 @@ export interface ApprovedEvent {
   title: string
   placeId: string
   start: string
+  end: string
 }
 
 export const APPROVED_EVENTS: readonly ApprovedEvent[] = [
-  { eventId: 'ev-open-mic', title: 'Open mic night', placeId: 'v-cafe', start: '2026-11-19T03:00:00Z' },
-  { eventId: 'ev-volleyball', title: 'Pickup volleyball', placeId: 'v-rec', start: '2026-11-18T23:00:00Z' },
-  { eventId: 'ev-board-games', title: 'Board game night', placeId: 'v-library-commons', start: '2026-11-20T01:00:00Z' },
-  { eventId: 'ev-film-club', title: 'Film club screening', placeId: 'v-quad', start: '2026-11-21T02:00:00Z' },
+  { eventId: 'ev-open-mic', title: 'Open mic night', placeId: 'v-cafe', start: '2026-11-19T03:00:00Z', end: '2026-11-19T05:00:00Z' },
+  { eventId: 'ev-volleyball', title: 'Pickup volleyball', placeId: 'v-rec', start: '2026-11-18T23:00:00Z', end: '2026-11-19T01:00:00Z' },
+  { eventId: 'ev-board-games', title: 'Board game night', placeId: 'v-library-commons', start: '2026-11-20T01:00:00Z', end: '2026-11-20T03:00:00Z' },
+  { eventId: 'ev-film-club', title: 'Film club screening', placeId: 'v-quad', start: '2026-11-21T02:00:00Z', end: '2026-11-21T04:00:00Z' },
 ]
 
 export function eventFor(eventId: string): ApprovedEvent | null {

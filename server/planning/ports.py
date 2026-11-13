@@ -44,10 +44,16 @@ class SensitivityPort(Protocol):
     async def allowed(self, texts: list[str]) -> list[bool]: ...
 
 
-async def sensitivity_allows(screen: "SensitivityPort | None", texts: list[str]) -> bool:
-    """True when no screen is configured or every text is allowed. Any error blocks."""
+async def sensitivity_allows(screen: "SensitivityPort | None", texts: list[str], *,
+                             required: bool = False) -> bool:
+    """True when every text is allowed. Any error blocks.
+
+    With no screen configured: ``required=True`` blocks (v3 public text: nudge copy,
+    custom events). ``required=False`` allows, which is kept only for the
+    deprecated v2 room nudge and M6 until Kai wires M10 (audit #74 item 1).
+    """
     if screen is None:
-        return True
+        return not required
     try:
         verdicts = await screen.allowed(list(texts))
     except Exception:

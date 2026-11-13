@@ -7,7 +7,7 @@ import { currentUser, initialPosts, people } from "../../../data/demo";
 import type { Post } from "../../../types/feed";
 import type { ActivityInput } from "../privacy";
 
-const FEED_KEY = "closer-together-feed-v2"; // the shell's demo feed (AppProvider)
+const FEED_KEY = "closer-together-feed-v3"; // the shell's demo feed (AppProvider)
 const INTERESTED_KEY = "cst-interested-events";
 
 /** Groups shown in "Your shortcuts" in the left sidebar. */

@@ -88,8 +88,12 @@ def test_router_accepts_an_actor_and_checks_consent_before_writes():
 
     ok = client.post(f"{path}/answers", headers={"X-Test-Actor": "maya"}, json=body)
     assert ok.status_code == 202 and ok.json()["answer"]["playerId"] == "p-maya"
-    assert client.post(f"/api/v1/operator/cycles/{cycle.cycleId}/advance", headers={"X-Test-Actor": "maya"}).status_code == 403
-    assert client.post(f"/api/v1/operator/cycles/{cycle.cycleId}/advance", headers={"X-Test-Actor": "op"}).json()["currentDay"] == 2
+    # Demo-timing week: any member may run the demo controls (operators too).
+    demo = cycle.demoTiming is True
+    expected = 200 if demo else 403
+    assert client.post(f"/api/v1/operator/cycles/{cycle.cycleId}/advance", headers={"X-Test-Actor": "maya"}).status_code == expected
+    day = 3 if demo else 2
+    assert client.post(f"/api/v1/operator/cycles/{cycle.cycleId}/advance", headers={"X-Test-Actor": "op"}).json()["currentDay"] == day
     assert client.get("/api/v1/cycles/current", headers={"X-Test-Actor": "junk"}).status_code == 401
 
     revoked.add("p-maya")

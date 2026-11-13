@@ -18,6 +18,7 @@ GET /cycles/{id}/answers (own answers only) and POST /voice/transcribe.
 
 from __future__ import annotations
 
+import json
 import uuid
 from collections.abc import Callable
 from typing import Any, TypeVar
@@ -32,6 +33,7 @@ from server.voice.live import default_connect, origin_allowed
 from server.voice.live import relay as live_relay
 from server.voice.muse_stt import MuseSttConfig
 
+from .muse_chat import MuseChat, MuseChatError
 from .ports import Session
 from .service import ERRORS, CycleError, CycleService
 from .wire import (
@@ -117,8 +119,11 @@ def build_router(
     live_stt: MuseSttConfig | None = None,
     live_origins: tuple[str, ...] = (),
     live_connect: Callable[[str], Any] | None = None,
+    muse_chat: MuseChat | None = None,
 ) -> APIRouter:
     router = APIRouter()
+    # Configures itself from MUSE_API_KEY on the API host when not injected (503 without a key).
+    group_muse = muse_chat or MuseChat.from_env()
     stt: Transcriber = transcriber or UnconfiguredTranscriber()
     actor_dependency = session_dependency
 
@@ -131,10 +136,15 @@ def build_router(
             require_consent(actor)
         return _as_session(actor)
 
-    def operator(session: Session = Depends(session_dependency)) -> Session:
-        if session.isOperator is not True:
-            raise CycleError("FORBIDDEN")
+    # Demo controls (Will's call for the hackathon demo): any signed-in member may
+    # start a demo-timing week and run it (advance, synthetic top-up, reset), so
+    # every account can walk through the game. Real-calendar weeks stay operator-only.
+    def demo_runner(session: Session = Depends(session_dependency)) -> Session:
         return session
+
+    def require_demo_or_operator(session: Session, cycle_id: str) -> None:
+        if session.isOperator is not True and not service.is_demo_cycle(cycle_id):
+            raise CycleError("FORBIDDEN")
 
     call = run_in_threadpool
 
@@ -174,6 +184,21 @@ def build_router(
     async def guess(cycle_id: str, request: Request, session: Session = Depends(consenting)):
         body = await _body(request, GuessRequest)
         return _json(await call(service.put_guess, session, cycle_id, body))
+
+    @router.post("/muse-chat")
+    async def muse_chat_line(request: Request, session: Session = Depends(session_dependency)):
+        """Sunday Messenger group: one checked Muse suggestion (server/cycle/muse_chat.py)."""
+        raw = await request.body()
+        if len(raw) > MAX_BODY_BYTES:
+            raise CycleError("INVALID_INPUT")
+        try:
+            body = json.loads(raw or b"{}")
+        except ValueError:
+            raise CycleError("INVALID_INPUT") from None  # never echo the input
+        try:
+            return _json(await call(group_muse.reply, body, session.playerId))
+        except MuseChatError as error:
+            raise CycleError(error.code) from None
 
     @router.post("/voice/transcribe")
     async def transcribe(request: Request, session: Session = Depends(session_dependency)):
@@ -231,26 +256,31 @@ def build_router(
 
     # ---- operator ("Demo timing") -------------------------------------------
     @router.post("/operator/cycles")
-    async def new_cycle(request: Request, session: Session = Depends(operator)):
+    async def new_cycle(request: Request, session: Session = Depends(demo_runner)):
         body = await _body(request, NewCycleRequest)
         if body.communityId != session.communityId:
             raise CycleError("FORBIDDEN")
+        if session.isOperator is not True and body.demoTiming is not True:
+            raise CycleError("FORBIDDEN")  # only operators start real-calendar weeks
         return _json(await call(service.create_cycle, body), 201)
 
     @router.post("/operator/cycles/{cycle_id}/advance")
-    async def advance(cycle_id: str, request: Request, session: Session = Depends(operator)):
+    async def advance(cycle_id: str, request: Request, session: Session = Depends(demo_runner)):
         body = await _body(request, AdvanceRequest, optional=True)
         await call(service.released_questions, session, cycle_id)  # community check
+        await call(require_demo_or_operator, session, cycle_id)
         return _json(await call(service.advance, cycle_id, body.to))
 
     @router.post("/operator/cycles/{cycle_id}/synthetic-topup")
-    async def topup(cycle_id: str, session: Session = Depends(operator)):
+    async def topup(cycle_id: str, session: Session = Depends(demo_runner)):
         await call(service.released_questions, session, cycle_id)
+        await call(require_demo_or_operator, session, cycle_id)
         return _json(await call(service.synthetic_topup, cycle_id))
 
     @router.post("/operator/cycles/{cycle_id}/reset")
-    async def reset(cycle_id: str, session: Session = Depends(operator)):
+    async def reset(cycle_id: str, session: Session = Depends(demo_runner)):
         await call(service.released_questions, session, cycle_id)
+        await call(require_demo_or_operator, session, cycle_id)
         return _json(await call(service.reset, cycle_id))
 
     return router

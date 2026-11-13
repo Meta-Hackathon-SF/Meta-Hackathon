@@ -27,8 +27,13 @@ from typing import Any, Awaitable, Callable, Literal
 from fastapi import APIRouter, Body, Depends, FastAPI, Query, Request, Response
 from fastapi.responses import JSONResponse
 
+from datetime import datetime, timezone
+
+from .custom_events import CustomEventService
 from .errors import PlanningError
+from .events import EventsService
 from .generation import QuestionGenerator
+from .nudge_copy import EventNudgeService
 from .nudges import NudgeService
 from .selection import QuestionService
 from .venues import VenueCatalog
@@ -58,6 +63,13 @@ class PlanningRuntime:
     # The adapter's ReasoningTrace (``adapter.reasoning_trace``): every Muse call
     # plus the code verdicts on it. PROPOSED route, see build_router.
     trace: Any = None
+    # v3 (3.0.0, PRD S13/S14): events list, event nudges, custom events. Each route
+    # group mounts only when its service is supplied.
+    events: EventsService | None = None
+    event_nudges: EventNudgeService | None = None
+    custom_events: CustomEventService | None = None
+    # Server clock (Kai's demo-aware effective now); never the client's.
+    now: Callable[[], datetime] = lambda: datetime.now(timezone.utc)
 
     async def ready(self) -> bool:
         """Readiness for the registry. Local state only; never probes the paid model."""
@@ -71,6 +83,15 @@ class PlanningRuntime:
             return True
         except Exception:
             return False
+
+
+def _player_id(session: Any) -> str | None:
+    """The verified player id from Patrik's Actor or a wire-shaped session."""
+    for name in ("player_id", "playerId"):
+        value = session.get(name) if isinstance(session, dict) else getattr(session, name, None)
+        if isinstance(value, str) and value:
+            return value
+    return None
 
 
 def _session_fields(session: Any) -> tuple[str | None, bool]:
@@ -191,5 +212,69 @@ def build_router(runtime: PlanningRuntime, session_dependency: Callable[..., Any
         async def reject(question_id: str, _community: str = Depends(operator)) -> Response:
             generator.reject(question_id)
             return Response(status_code=204)
+
+    def player(session: Any = Depends(session_dependency)) -> tuple[str, Any]:
+        player_id = _player_id(session)
+        if player_id is None:
+            raise PlanningError("FORBIDDEN", "verified session required")
+        return player_id, session
+
+    if runtime.events is not None:
+        events = runtime.events
+
+        @router.get("/events")
+        async def list_events(window: Literal["week"] = Query(default="week"),
+                              who: tuple[str, Any] = Depends(player)) -> list[dict[str, Any]]:
+            return await events.list(who[1], now=runtime.now())
+
+        @router.get("/events/{event_id}")
+        async def get_event(event_id: str, who: tuple[str, Any] = Depends(player)) -> dict[str, Any]:
+            if not (1 <= len(event_id) <= 80):
+                raise PlanningError("INVALID_INPUT", "bad event id")
+            return await events.get(who[1], event_id)
+
+    if runtime.event_nudges is not None:
+        nudges_v3 = runtime.event_nudges
+
+        @router.get("/me/nudges")
+        async def my_nudges(who: tuple[str, Any] = Depends(player)) -> list[dict[str, Any]]:
+            return nudges_v3.active(who[0], now=runtime.now())
+
+        @router.post("/nudges/{nudge_id}/dismiss", status_code=204)
+        async def dismiss_nudge(nudge_id: str, who: tuple[str, Any] = Depends(player)) -> Response:
+            if not nudges_v3.dismiss(who[0], nudge_id):
+                raise PlanningError("NOT_FOUND", "no such nudge")
+            return Response(status_code=204)
+
+        @router.get("/operator/events/nudges")
+        async def nudge_counts(_community: str = Depends(operator)) -> dict[str, Any]:
+            return {"activeByBucket": nudges_v3.bucket_counts(now=runtime.now())}
+
+        @router.post("/operator/events/{event_id}/nudge-preview")
+        async def nudge_preview(event_id: str, body: dict[str, Any] = Body(...),
+                                _community: str = Depends(operator)) -> dict[str, Any]:
+            if set(body) != {"interestBucket"} or body["interestBucket"] not in ("3-5", "6-9", "10+"):
+                raise PlanningError("INVALID_INPUT", "body must be {interestBucket}")
+            try:
+                return await nudges_v3.preview(event_id, body["interestBucket"], now=runtime.now())
+            except ValueError:
+                raise PlanningError("NOT_FOUND", "no approved event with that id") from None
+
+    if runtime.custom_events is not None:
+        custom = runtime.custom_events
+
+        @router.get("/operator/custom-events")
+        async def pending_custom_events(_community: str = Depends(operator)) -> list[dict[str, Any]]:
+            return custom.pending()
+
+        @router.post("/operator/custom-events/{proposal_id}/decision")
+        async def decide_custom_event(proposal_id: str, body: dict[str, Any] = Body(...),
+                                      _community: str = Depends(operator)) -> dict[str, Any]:
+            if set(body) - {"decision", "note"} or "decision" not in body:
+                raise PlanningError("INVALID_INPUT", "body must be {decision, note?}")
+            note = body.get("note")
+            if note is not None and (not isinstance(note, str) or len(note) > 280):
+                raise PlanningError("INVALID_INPUT", "note must be at most 280 characters")
+            return custom.decide(proposal_id, body["decision"])
 
     return router

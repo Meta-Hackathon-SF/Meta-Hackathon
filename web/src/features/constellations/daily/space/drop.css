@@ -1,0 +1,20 @@
+/* Constellation Drop: the day's sky, full screen, drawn by the same renderer as every other Space sky. */
+.spc-drop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  background: #03081a;
+  color: #fff;
+}
+.spc-drop .spc-stage-ui {
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+}
+.spc-drop .spc-stage-ui .spc-btn {
+  width: min(340px, 100%);
+}
+.spc-drop-chip {
+  margin: 0;
+  font-size: 12px;
+  color: #9fb0d6;
+}

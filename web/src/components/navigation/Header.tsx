@@ -16,6 +16,7 @@ import { currentUser, notifications, people } from "../../data/demo";
 import { useApp } from "../../state/context";
 import { primaryNavigation, sidebarNavigation } from "./navigation";
 import NavigationIcon from "./NavigationIcon";
+import { SpaceTabIcon } from "./AppIcons";
 
 type Panel =
   "menu" | "messages" | "notifications" | "profile" | "search" | null;
@@ -154,6 +155,13 @@ export default function Header() {
           onClick={() => toggle("search")}
         >
           <Search />
+        </IconButton>
+        <IconButton
+          label="Facebook Space"
+          className="desktop-control"
+          onClick={() => navigate("/space")}
+        >
+          <SpaceTabIcon />
         </IconButton>
         <IconButton
           label="Menu"

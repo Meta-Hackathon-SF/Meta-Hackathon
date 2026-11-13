@@ -1,6 +1,22 @@
 # will handoff
-Current step: Facebook Space V4 redesign (home feed card + Space tab), fixture-verified on `role/will-voice-ui`.
-Updated: 2026-11-13T09:50Z
+Current step: Sunday constellation chat promotes into Messenger, with Muse suggestions for a hangout. Fixture-verified; live Muse is the Vite dev route only.
+Updated: 2026-11-13T11:18Z
+
+## Messenger promotion and Muse suggestions, 2026-11-13
+- Keeping the Sunday preview chat (all five votes) reveals Maya Chen, Jordan Davis, Sofia Patel, and Daniel Kim and copies the thread into this browser's Messenger (`sessionStorage` key `fb-space-messenger-demo`). It is not a live multi-phone room.
+- The Sunday thread has Plan a hangout, Find supplies, and Ask a vendor. Each stays off until a message is typed, then sends that note with `@muse`.
+- Muse may only phrase the demo catalog: Library Commons board game night Thursday 7 PM, the Marketplace coffee set or textbook exchange, and a draft ask to Campus Cafe. A live line that says Muse will bring or buy something, or that a table is already held, is dropped and the catalog sentence is shown as Muse · catalog. Nothing is booked or purchased.
+- The key stays in gitignored `server/providers/muse.env`. The browser calls Vite-only `POST /api/muse-chat`. Ordinary Playwright tests mock that route.
+- Verification: `PLAYWRIGHT_CHANNEL=chrome npx playwright test tests/constellations.spec.ts -g "everyone keeping the Sunday chat"` — 2 passed (desktop and mobile). Live Muse replies for hangout, supplies, books, and the cafe ask were checked against the same truth rules and accepted.
+
+## Demo controls for every account, 2026-11-13
+- Will's call for the demo: any signed-in member may start a demo-timing week and run it (advance, synthetic top-up, reset) via `/operator/cycles...` in `server/cycle/api.py`. Real-calendar weeks (`demoTiming: false`) stay operator-only to start and to run. Other operator routes (call log, reports, reasoning, custom events, formation debug) are unchanged and still operator-only.
+- Space "Demo week" panel no longer links to the operator console.
+
+## Messenger follow-up, 2026-11-13
+- Product decision (Will): keeping the Sunday chat is the consent to show names. The button reads "Keep & show names"; names show only once all five keep it. @patrikliska13 please confirm the privacy copy.
+- Muse in the Sunday group: hosted app calls `POST /api/v1/muse-chat` on the Railway backend (`server/cycle/muse_chat.py`, mounted by the cycle router, session + Idempotency-Key, 12/min per player), so the Muse key stays on Railway. Fixture/local mode uses the dev twin `web/museChat.ts` via `web/museChatPlugin.ts`. Catalog lives at `server/cycle/data/catalog.json` (the API image ships `server/`, not `web/`). No Vercel function and no Vercel key needed.
+- Messenger UX: mention @muse in the normal composer (code picks hangout/supplies/vendor), chips only fill the box; Preview labels on the group and "Same vibe"; in-app links; unique message ids; member names come from the constellation.
 
 ## Space V4 redesign, 2026-11-13
 Source: the V4 phone design ("Artifact sharing request" folder, SpaceV4Phone). Facebook shell unchanged (header, left sidebar, mobile tabs).

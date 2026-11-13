@@ -1,12 +1,13 @@
 /* Light (Facebook-style) Space screens: answer, follow-up, support, events, invite, privacy, join, empty home bar. */
+import { StageOptIn } from "../../stage/StageOptIn";
 import { useState } from "react";
 import { Settings } from "lucide-react";
 import type { ConsentToggles, PrivacyClient, SessionView } from "../../privacy";
 import type { CycleClient, CycleDay, DailyQuestion } from "../client";
 import { MAX_CHARS } from "../useDaily";
 import { DAY_LONG, dayHex, type Screen } from "./model";
-import { Glyph, MicIcon, PreviewTag, StarField, Toggle, TopBar, Waveform } from "./parts";
-import { PREVIEW_EVENTS, PREVIEW_INVITE, SUPPORT_RESOURCES } from "./preview";
+import { Glyph, MicIcon, StarField, Toggle, TopBar, Waveform } from "./parts";
+import { SUPPORT_RESOURCES } from "./preview";
 import { useVoiceInput } from "./useVoiceInput";
 
 export type Go = (screen: Screen, day?: number) => void;
@@ -192,13 +193,11 @@ export function DistressScreen({ onBack }: { onBack: () => void }) {
 }
 
 // ---------------------------------------------------------------- events / invite
+
 export function EventsScreen({ onBack, eventsOn, enable }: { onBack: () => void; eventsOn: boolean; enable: () => void }) {
-  const [interest, setInterest] = useState<Record<number, boolean>>({});
   return (
     <div className="spc-screen">
-      <TopBar title="Where your people are going" onBack={onBack}>
-        <PreviewTag />
-      </TopBar>
+      <TopBar title="Where your people are going" onBack={onBack} />
       <div className="spc-pad spc-col">
         {!eventsOn && (
           <div className="spc-card spc-rounded spc-row spc-pad-md">
@@ -208,41 +207,10 @@ export function EventsScreen({ onBack, eventsOn, enable }: { onBack: () => void;
             </button>
           </div>
         )}
-        {PREVIEW_EVENTS.map((e, i) => {
-          const on = Boolean(interest[i]);
-          return (
-            <div className="spc-card spc-rounded spc-event" key={e.title}>
-              <div className="spc-cal" aria-hidden="true">
-                <span>{e.mon}</span>
-                <b>{e.day}</b>
-              </div>
-              <div className="spc-grow">
-                <div className="spc-strong">{e.title}</div>
-                <div className="spc-sub">{e.sub}</div>
-                {eventsOn && e.bucket && (
-                  <div className="spc-bucket">
-                    <span aria-hidden="true">
-                      <i style={{ background: "#F5B841" }} />
-                      <i style={{ background: "#2CC7C0" }} />
-                      <i style={{ background: "#F07196" }} />
-                    </span>
-                    {e.bucket}
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                className={`spc-plus${on ? " is-on" : ""}`}
-                aria-pressed={on}
-                aria-label={`Interested in ${e.title}`}
-                disabled={!eventsOn}
-                onClick={() => setInterest({ ...interest, [i]: !on })}
-              >
-                {on ? "✓" : "+"}
-              </button>
-            </div>
-          );
-        })}
+        <section className="spc-card spc-empty" data-testid="spc-events-empty">
+          <h2>Nothing yet</h2>
+          <p className="spc-sub">Events your people are interested in will show up here.</p>
+        </section>
         <p className="spc-fine">Interest is private. Groups under 3 people are never shown.</p>
       </div>
     </div>
@@ -250,49 +218,14 @@ export function EventsScreen({ onBack, eventsOn, enable }: { onBack: () => void;
 }
 
 export function InviteScreen({ onBack }: { onBack: () => void }) {
-  const [rsvp, setRsvp] = useState<"none" | "going" | "not_going">("none");
-  const [confirmed, setConfirmed] = useState(false);
-  const status = confirmed
-    ? { label: "It's on", cls: "is-ok" }
-    : { label: `On if ${PREVIEW_INVITE.threshold} people go`, cls: "" };
   return (
     <div className="spc-screen spc-white">
-      <TopBar title="You're invited" onBack={onBack}>
-        <PreviewTag />
-      </TopBar>
+      <TopBar title="You're invited" onBack={onBack} />
       <div className="spc-pad spc-col">
-        <div className="spc-cal is-big" aria-hidden="true">
-          <span>{PREVIEW_INVITE.mon}</span>
-          <b>{PREVIEW_INVITE.day}</b>
-        </div>
-        <h3 className="spc-h1">{PREVIEW_INVITE.title}</h3>
-        <p className="spc-sub">{PREVIEW_INVITE.sub}</p>
-        <div className={`spc-status ${status.cls}`} role="status">
-          <i />
-          {status.label}
-        </div>
-        <div className="spc-flex" />
-        <div className="spc-row">
-          <button
-            type="button"
-            className={`spc-btn spc-btn-lg spc-grow ${rsvp === "going" ? "spc-btn-primary" : "spc-btn-gray"}`}
-            aria-pressed={rsvp === "going"}
-            onClick={() => {
-              setRsvp("going");
-              window.setTimeout(() => setConfirmed(true), 1500);
-            }}
-          >
-            Going
-          </button>
-          <button
-            type="button"
-            className={`spc-btn spc-btn-lg spc-grow ${rsvp === "not_going" ? "spc-btn-dark" : "spc-btn-gray"}`}
-            aria-pressed={rsvp === "not_going"}
-            onClick={() => setRsvp("not_going")}
-          >
-            Can't go
-          </button>
-        </div>
+        <section className="spc-card spc-empty" data-testid="spc-invite-empty">
+          <h2>No invites yet</h2>
+          <p className="spc-sub">When an event your people want to go to is on, it will show up here.</p>
+        </section>
       </div>
     </div>
   );
@@ -375,7 +308,11 @@ export function SettingsScreen({
             {error}
           </p>
         )}
+        <StageOptIn />
         <div className="spc-card spc-rounded spc-pad-md spc-col is-tight">
+          <button type="button" className="spc-btn spc-btn-gray" disabled={busy} onClick={() => void run(async () => { await privacy.signOut(); onDeleted(); })}>
+            Sign out
+          </button>
           {step === 0 && (
             <button type="button" className="spc-link-danger" onClick={() => setStep(1)}>
               Delete all my data
@@ -446,16 +383,17 @@ export function JoinScreen({
   onBack?: () => void;
 }) {
   const [on, setOn] = useState<Record<string, boolean>>({ matchAnswers: false, anonymousChat: false, events: false, voice: false, isAdult: false });
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const all = JOIN_ROWS.every((r) => on[r.key]);
-  const ready = JOIN_ROWS.filter((r) => r.required).every((r) => on[r.key]);
+  const ready = name.trim().length > 0 && JOIN_ROWS.filter((r) => r.required).every((r) => on[r.key]);
   const join = async () => {
     if (!ready || busy) return;
     setBusy(true);
     setError(null);
     try {
-      const view = await privacy.join(communityId, displayName, { matchAnswers: on.matchAnswers, anonymousChat: on.anonymousChat, isAdult: on.isAdult });
+      const view = await privacy.join(communityId, name.trim(), { matchAnswers: on.matchAnswers, anonymousChat: on.anonymousChat, isAdult: on.isAdult });
       onJoined(view, { events: on.events, voice: on.voice });
     } catch (err) {
       setError((err as Error).message || "Couldn't join. Try again.");
@@ -469,6 +407,9 @@ export function JoinScreen({
         <div>
           <h3 className="spc-h1">Before you play</h3>
           <p className="spc-sub is-lg">Nothing is saved until you join.</p>
+          <p className="spc-sub">Simulated Facebook profile: {displayName} is not a verified identity.</p>
+          <label htmlFor="spc-display-name">Display name</label>
+          <input id="spc-display-name" maxLength={40} autoComplete="nickname" value={name} onChange={(e) => setName(e.target.value)} data-testid="cstp-name" />
         </div>
         <div className="spc-selectall">
           <span className="spc-strong">Select all</span>
@@ -495,8 +436,9 @@ export function JoinScreen({
         )}
         <div className="spc-flex" />
         <button type="button" className="spc-btn spc-btn-primary spc-btn-lg" disabled={!ready || busy} onClick={() => void join()} data-testid="cstp-join-submit">
-          {busy ? "Joining…" : "Join this week"}
+          {busy ? "Joining…" : "Join Facebook Space"}
         </button>
+        <a href="/space/operator">Demo host sign in</a>
         <p className="spc-from">
           from <b>Meta</b>
         </p>

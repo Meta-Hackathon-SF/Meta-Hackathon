@@ -9,8 +9,18 @@ const DAILY = "/space";
 const OPERATOR = `${DAILY}/operator`;
 const LONG = "Mostly the dining hall with my floor, loud but good";
 
+// The Constellation Drop is a modal over Space. Specs that test other flows dismiss it when it appears.
+test.beforeEach(async ({ page }) => {
+  await page.addLocatorHandler(page.getByTestId("spc-drop"), async () => {
+    await page.getByTestId("spc-drop-later").click();
+  });
+});
+
 async function fakeMicrophone(page: Page, behavior: "allow" | "deny") {
   await page.addInitScript((mode) => {
+    // Force the recorder path: the demo-only browser speech engine would bypass the fixture transcript.
+    Object.defineProperty(window, "SpeechRecognition", { configurable: true, value: undefined });
+    Object.defineProperty(window, "webkitSpeechRecognition", { configurable: true, value: undefined });
     const stream = { getTracks: () => [{ stop() {} }] };
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true,
@@ -58,6 +68,7 @@ async function advance(page: Page, times: number) {
 /** Join screen (fixture privacy client): Select all, then Join this week. */
 async function join(page: Page) {
   await expect(page.getByTestId("cstp-join")).toBeVisible();
+  await page.getByTestId("cstp-name").fill("Synthetic player");
   await page.getByTestId("spc-join-all").click();
   await page.getByTestId("cstp-join-submit").click();
   await expect(page.getByTestId("cstp-join")).toHaveCount(0);
@@ -81,11 +92,19 @@ async function answer(page: Page, day: number, text: string) {
   await expect(page).toHaveURL(/s=(daily|followup|distress)/);
 }
 
+test("fixture demo host can skip to Sunday", async ({ page }) => {
+  await openSpace(page);
+  await page.getByTestId("spc-demo-skip").click();
+  await expect(page.getByTestId("spc-demo-skip")).toHaveCount(0, { timeout: 30000 });
+  await expect(page.getByTestId("cst-mode")).toContainText("Fixture");
+});
+
 test("Space tab: truth labels, join is gated by the required consents, old links redirect", async ({ page }) => {
   await page.goto("/groups/hackathon-builders/constellations");
   await expect(page).toHaveURL(new RegExp(`${DAILY}$`));
   const joinForm = page.getByTestId("cstp-join");
   await expect(joinForm.getByRole("heading", { name: "Before you play" })).toBeVisible();
+  await page.getByTestId("cstp-name").fill("Synthetic player");
   await expect(page.getByTestId("cstp-join-submit")).toBeDisabled();
   await page.getByTestId("cstp-toggle-matchAnswers").click();
   await page.getByTestId("cstp-toggle-anonymousChat").click();
@@ -175,10 +194,10 @@ test("streak: Mon and Tue on the day -> 2-day streak; a missed Wednesday shows i
   await advance(page, 1);
   await answer(page, 2, LONG);
   await page.goto(DAILY);
-  await expect(page.getByTestId("spc-today")).toContainText("2-day streak");
+  await expect(page.locator(".spc-streak-chip")).toContainText("2-day streak");
   await advance(page, 2); // Wednesday, then Wednesday ends
   await page.goto(DAILY);
-  await expect(page.getByTestId("spc-today")).not.toContainText("streak");
+  await expect(page.locator(".spc-streak-chip")).toHaveCount(0);
   await expect(page.getByTestId("spc-catchup-3")).toHaveAccessibleName("Catch up: Wednesday's question");
   await expect(page.getByTestId("spc-week-5").getByRole("button")).toHaveCount(0); // future days not answerable
   await page.getByTestId("spc-catchup-3").click();
@@ -189,7 +208,7 @@ test("streak: Mon and Tue on the day -> 2-day streak; a missed Wednesday shows i
   await page.goto(DAILY);
   await expect(page.getByTestId("spc-catchup-3")).toHaveCount(0);
   await expect(page.getByTestId("spc-week-3").getByRole("button", { name: "Wednesday: Caught up" })).toBeVisible();
-  await expect(page.getByTestId("spc-today")).toContainText("2-day streak"); // catch-up never extends it
+  await expect(page.locator(".spc-streak-chip")).toContainText("2-day streak"); // catch-up never extends it
 });
 
 test("no prevalence guess (D012); a flagged answer shows the private support card", async ({ page }) => {
@@ -214,26 +233,78 @@ test("weekend: lock closes answers, week sky and formation are labeled previews,
   await expect(page.locator("#main-content").getByRole("textbox")).toHaveCount(0);
   await page.getByRole("button", { name: "View sky" }).click();
   const sky = page.getByTestId("spc-canvas-sky");
-  await expect(sky.getByText("Preview · synthetic")).toBeVisible();
-  await expect(sky.getByText(/answers this week/)).toBeVisible();
+  await expect(sky.getByText(/stars in the sky this week|sky count not available yet/)).toBeVisible();
   await sky.getByRole("button", { name: "Find my people" }).click();
-  await expect(page.getByTestId("spc-canvas-forming").getByRole("status")).toHaveText(/Trying connections|Ready/);
+  await expect(page.getByTestId("spc-canvas-forming").getByRole("status")).toHaveText(/Finding your people|Ready/);
   await page.goto(`${DAILY}?s=main`);
   await expect(page.getByText("Not revealed yet")).toBeVisible();
   await expect(page.getByRole("button", { name: "Open chat" })).toHaveCount(0);
   await advance(page, 2); // forming, revealed
   await page.goto(DAILY);
-  await expect(page.getByTestId("spc-weekend-sun")).toContainText("Your constellation is ready");
+  await expect(page.getByTestId("spc-weekend-sun")).toContainText("Sunday's reveal is open");
   await page.getByRole("button", { name: "View constellation" }).click();
-  await page.getByRole("button", { name: "Open chat" }).click();
-  const chat = page.getByTestId("spc-chat");
-  await expect(chat.getByText("Preview", { exact: true })).toBeVisible();
-  await chat.getByRole("textbox", { name: "Message" }).fill("text me 765 555 0142");
-  await chat.getByRole("button", { name: "Send", exact: true }).click();
-  await expect(chat.getByRole("alert")).toContainText("couldn't be sent");
-  await expect(chat.getByText("765 555 0142")).toHaveCount(0); // never posted, stays in the box only
-  await chat.getByRole("button", { name: "Star 3" }).click();
-  await expect(page.getByRole("dialog", { name: "Star 3" }).getByText("Names only show if you both ask.")).toBeVisible();
+  // Fixture mode has no formation data: the canvas says so, shows no member count and offers no chat.
+  await expect(page.getByTestId("spc-main-unavailable")).toBeVisible();
+  await expect(page.getByTestId("spc-main-count")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open chat" })).toHaveCount(0);
+});
+
+test("reveal thread in Messenger: @muse finds a catalog event and drafts one; no vendor action", async ({ page }) => {
+  const sent: { kind: string; senders: string[] }[] = [];
+  await page.route("**/api/muse-chat", async (route) => {
+    const body = route.request().postDataJSON();
+    sent.push({ kind: body?.kind, senders: (body?.context ?? []).map((n: { sender: string }) => n.sender) });
+    const replies: Record<string, object> = {
+      hangout: { text: "Board game night fits you two.", eventIds: ["ev-board-games", "not-a-real-event"] },
+      create: {
+        text: "Here's a draft you can create.",
+        draft: { title: "Thursday study session", placeId: "v-library-commons", day: "Thursday", time: "19:00", description: "Bring notes." },
+      },
+    };
+    await route.fulfill({ json: { source: "live", itemIds: [], eventIds: [], draft: null, ...replies[body?.kind] } });
+  });
+  // Test double for a thread that a real mutual reveal would have opened.
+  const name = "Test Player (synthetic)";
+  await page.addInitScript((title) => {
+    const thread = { id: "reveal-test-player", kind: "direct", title, memberNames: [title], messages: [], preview: "", synthetic: true };
+    sessionStorage.setItem("fb-space-messenger-demo", JSON.stringify([thread]));
+  }, name);
+  await page.goto("/messages?chat=reveal-test-player");
+  const convo = page.getByRole("region", { name });
+  await expect(convo.getByText("Synthetic player · Simulated Facebook")).toBeVisible();
+  const actions = convo.getByRole("group", { name: "Ask Muse" });
+  await expect(actions.getByRole("button")).toHaveText(["Find an event", "Create an event"]);
+  await expect(page.getByText("Ask a vendor")).toHaveCount(0);
+
+  const box = convo.getByRole("textbox", { name: "Message" });
+  await actions.getByRole("button", { name: "Find an event" }).click();
+  await expect(box).toHaveValue(/@muse/);
+  expect(sent).toHaveLength(0); // a chip only fills the box
+  await box.press("Enter");
+  await expect(convo.getByText("Board game night fits you two.")).toBeVisible();
+  await expect(convo.getByTestId("cat-event-ev-board-games")).toBeVisible();
+  await expect(convo.getByTestId(/cat-event-not-a-real/)).toHaveCount(0); // off-catalog ids are dropped
+
+  await actions.getByRole("button", { name: "Create an event" }).click();
+  await box.press("Enter");
+  const draft = convo.getByTestId("cat-draft");
+  await expect(draft).toContainText("Library Commons"); // approved venue from the catalog
+  await draft.getByRole("button", { name: "Create event" }).click();
+  await expect(draft.getByRole("link", { name: /Created · View event/ })).toBeVisible();
+
+  // A cafe or table request is no longer a vendor errand: it is answered as an event lookup.
+  await box.fill("can the cafe hold a table for us @muse");
+  await box.press("Enter");
+  await expect.poll(() => sent.map((r) => r.kind)).toEqual(["hangout", "create", "hangout"]);
+  // The revealed name never reaches Muse.
+  for (const r of sent) for (const sender of r.senders) expect(sender).toMatch(/^(You|Muse|Member [1-9])$/);
+});
+
+test("operator adds synthetic players from the Space demo panel and sees the label", async ({ page }) => {
+  await newCycle(page);
+  await openSpace(page);
+  await page.getByTestId("spc-demo-topup").click();
+  await expect(page.getByTestId("spc-demo-note")).toContainText('each labeled "Synthetic player"');
 });
 
 test("privacy: turning matching off shows it on Sunday; delete my data returns to Join", async ({ page }) => {
@@ -420,26 +491,83 @@ test("operator posts an event nudge to the revealed room (fixture replay, approv
   await expect(nudge).toContainText("Fixture mode");
 });
 
-test("v3 operator: custom-event proposals are approved or rejected and the decision is logged", async ({ page }) => {
+async function toSundayChat(page: Page) {
   await newCycle(page);
-  const queue = page.getByTestId("cst-op-custom-events");
-  await expect(queue.locator(".cst-proposal")).toHaveCount(2);
-  await expect(queue.getByText("Replay of a saved round").first()).toBeVisible();
-  await expect(queue.getByText(/muse-spark-1\.3 · M7/).first()).toBeVisible();
-  await queue.locator(".cst-proposal").first().getByRole("button", { name: "Approve" }).click();
-  await expect(queue.locator(".cst-proposal")).toHaveCount(1);
-  await queue.locator(".cst-proposal").first().getByRole("textbox").fill("Venue too far");
-  await queue.locator(".cst-proposal").first().getByRole("button", { name: "Reject" }).click();
-  await expect(queue.getByText("No proposals waiting.")).toBeVisible();
-  const log = page.getByTestId("cst-op-decision-log");
-  await expect(log.locator("li")).toHaveCount(2);
-  await expect(log).toContainText("Approved “Saturday dumpling night”");
-  await expect(log).toContainText("Rejected “Sunday morning walk and coffee”");
+  await openSpace(page);
+  await answer(page, 1, LONG);
+  await advance(page, 7); // Tue..Fri, lock, forming, revealed
+  await page.goto(`${DAILY}?s=chat`);
+  return page.getByTestId("spc-chat");
+}
+
+test("v3 sky: entering the sky plays the telescope zoom; Sunday draws the Meta logo ribbon", async ({ page }) => {
+  await newCycle(page);
+  await openSpace(page);
+  await answer(page, 1, LONG);
+  await advance(page, 5);
+  await page.goto(DAILY);
+  await page.getByRole("button", { name: "View sky" }).click();
+  await expect(page.getByTestId("spc-telescope")).toBeVisible(); // iris + streaks on entry
+  await expect(page.getByTestId("spc-telescope")).toHaveCount(0, { timeout: 5000 }); // removes itself
+  await advance(page, 2);
+  await page.goto(`${DAILY}?s=main`);
+  await expect(page.getByTestId("spc-canvas-main")).toBeVisible();
 });
 
-test("operator reasoning panel: Muse proposes, code enforces (fixture shows none)", async ({ page }) => {
-  await newCycle(page);
-  const panel = page.getByTestId("cst-op-reasoning");
-  await expect(panel.getByRole("heading", { name: "Muse proposes, code enforces" })).toBeVisible();
-  await expect(panel.getByText("None. Fixture mode never calls Muse.")).toBeVisible();
+test("v3 chat: without the live server the room is honestly unavailable", async ({ page }) => {
+  const chat = await toSundayChat(page);
+  await expect(chat).toHaveCount(0);
+  await expect(page.getByTestId("spc-chat-unavailable")).toContainText("Chat needs the live server");
+  await expect(page.getByTestId("spc-chat-dock")).toHaveCount(0);
+});
+
+test("Marketplace and Events use one demo catalog: item pages, register, and a Muse-created event", async ({ page }) => {
+  await page.goto("/marketplace");
+  await page.getByRole("link", { name: /Coffee set for your next study session/ }).click();
+  await expect(page).toHaveURL(/\/marketplace\/mk-coffee-set$/);
+  const item = page.getByTestId("cat-item-detail");
+  await expect(item.getByRole("heading", { name: "Coffee set for your next study session" })).toBeVisible();
+  await expect(item).toContainText("$20");
+  await expect(item).toContainText("Demo listing. Nothing is sold");
+  await page.goto("/events");
+  const row = page.getByTestId("cat-event-row-ev-open-mic");
+  await expect(row).toContainText("41 going");
+  await row.getByRole("button", { name: "Register for Open mic night" }).click();
+  await expect(row).toContainText("42 going");
+  await expect(page.getByRole("heading", { name: "You're going" })).toBeVisible();
+  await page.reload(); // registration survives a reload in this browser
+  await page.getByRole("link", { name: /Open mic night/ }).first().click();
+  await expect(page).toHaveURL(/\/events\/ev-open-mic$/);
+  const detail = page.getByTestId("cat-event-detail");
+  await expect(detail).toContainText("Campus Cafe");
+  await detail.getByRole("button", { name: /Registered for Open mic night/ }).click();
+  await expect(detail.getByRole("button", { name: "Register for Open mic night" })).toBeVisible();
+  await page.goto("/marketplace/not-real");
+  await expect(page.getByRole("heading", { name: "Listing not found" })).toBeVisible();
+  // Without Muse, code still picks exact catalog entries and builds a checked draft.
+  const fallback = await page.evaluate(async () => {
+    const m = await import("/src/features/constellations/messenger/museHelp.ts");
+    const you = (text: string) => [{ sender: "You", text }];
+    return {
+      create: m.catalogReply("create", you("@muse create a picnic on saturday at 2pm")).draft,
+      supplies: m.catalogReply("supplies", you("we need a speaker for the quad @muse")).itemIds,
+      hangout: m.catalogReply("hangout", you("anyone into movies outside? @muse")).eventIds,
+      kinds: ["create a movie night friday", "@muse create a picnic on saturday", "we need snacks", "can the cafe hold a table", "what should we do"].map(m.inferKind),
+    };
+  });
+  expect(fallback.create).toMatchObject({ title: "Picnic", placeId: "v-quad", day: "Saturday", time: "14:00" });
+  expect(fallback.supplies[0]).toBe("mk-speaker");
+  expect(fallback.hangout[0]).toBe("ev-film-club");
+  // A cafe or table request is an event lookup now; no vendor is contacted.
+  expect(fallback.kinds).toEqual(["create", "create", "supplies", "hangout", "hangout"]);
+  // Catalog events that share an id with Adam's approved campus events use the same venue and start.
+  const drift = await page.evaluate(async () => {
+    const { BASE_EVENTS } = await import("/src/features/catalog/catalog.ts");
+    const { APPROVED_EVENTS } = await import("/src/features/constellations/nudges/venues.ts");
+    return APPROVED_EVENTS.flatMap((a) => {
+      const c = BASE_EVENTS.find((e) => e.eventId === a.eventId);
+      return !c || c.placeId !== a.placeId || c.start !== a.start ? [a.eventId] : [];
+    });
+  });
+  expect(drift).toEqual([]);
 });

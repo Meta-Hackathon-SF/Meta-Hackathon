@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from server.cycle import CycleError, CycleService, Session, compute_streak, compute_weight
 from server.cycle import calendar as cal
+from server.privacy import demo_population
 from server.cycle.testing import (
     FixtureAnswerStore,
     FixtureQuestionPort,
@@ -486,7 +487,19 @@ def test_synthetic_topup_is_labeled_weighted_and_keeps_the_distress_flag():
     env.service.advance(cycle.cycleId)
     env.service.advance(cycle.cycleId)  # Wednesday, like the fixture
     result = env.service.synthetic_topup(cycle.cycleId)
-    assert result == {"label": "Synthetic player", "syntheticPlayers": 8, "answersAdded": 14}
+    # 8 fixture players + the synthetic demo cast (server/privacy/demo_population.py)
+    cast = demo_population.players()
+    questions = {a.day: a.questionId for a in env.store.answers.values() if a.cycleId == cycle.cycleId}
+    cast_rows = demo_population.topup_rows(questions)
+    assert len(cast) == 100
+    assert result["label"] == "Synthetic player" and result["syntheticPlayers"] == 8 + len(cast)
+    assert result["answersAdded"] == 14 + len(cast_rows)
+    # Cast members keep their own timing: an on-day Monday answer is not marked late on Wednesday.
+    on_day = next(r for r in cast_rows if r["day"] == 1 and not r["isCatchUp"])
+    late = next(r for r in cast_rows if r["isCatchUp"])
+    assert env.store.get(cycle.cycleId, on_day["playerId"], 1).weight == 1.0
+    assert env.store.get(cycle.cycleId, late["playerId"], late["day"]).isCatchUp is True
+    assert env.store.get_guess(cycle.cycleId, cast[0]["playerId"]) is not None
     assert all(p["isSynthetic"] for p in env.seeder.players.values())
     day1 = env.store.get(cycle.cycleId, "p-maya", 1)
     assert (day1.isCatchUp, day1.weight) == (True, 0.6)  # day 1 answered on Wednesday

@@ -4,7 +4,7 @@ export const TOGGLES: { key: keyof ConsentToggles; label: string; detail: string
   {
     key: "matchAnswers",
     label: "Match me by my answers",
-    detail: "Muse reads your answers privately to place you with 3 to 5 people this week. Nobody sees your answers.",
+    detail: "Muse reads your answers privately to place you with 5 or more people this week. Nobody sees your answers.",
   },
   {
     key: "anonymousChat",

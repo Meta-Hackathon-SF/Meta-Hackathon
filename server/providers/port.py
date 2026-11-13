@@ -132,6 +132,8 @@ class KeywordMusePort:
     rejected the previous answer (e.g. "2 unknown member ids; group 3 has 6
     members"). It must be code-generated: never player or model text. The
     adapter bounds its length.
+    ``deadline_s`` (optional) is the caller's remaining time budget for this call; it overrides the
+    adapter default so the router can budget its fallback inside it.
     """
 
     def __init__(self, muse: MusePort, *, deadline_s: float | None = None) -> None:

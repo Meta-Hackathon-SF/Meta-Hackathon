@@ -15,7 +15,6 @@ from dataclasses import dataclass
 
 from server.matching.baseline import Similarity, partition
 from server.matching.models import (
-    MAX_CONSTELLATION_SIZE,
     MIN_CONSTELLATION_SIZE,
     MatchingError,
     pair,
@@ -58,11 +57,6 @@ def _sanitize(proposal: Sequence[tuple[Sequence[str], str, float]], eligible: se
                 pool.add(ref)
                 continue
             group.append(ref)
-        while len(group) > MAX_CONSTELLATION_SIZE:
-            weakest = min(group, key=lambda r: (_affinity(r, [m for m in group if m != r], sim),
-                                                r))
-            group.remove(weakest)
-            pool.add(weakest)
         if len(group) < MIN_CONSTELLATION_SIZE:
             pool.update(group)
             continue
@@ -77,8 +71,8 @@ def _place(pool: Iterable[str], groups: list[list[str]], blocked: set[tuple[str,
     """Put pool refs into groups with room, best affinity first. Returns leftovers."""
     leftovers = []
     for ref in sorted(pool):
-        options = [i for i, g in enumerate(groups) if len(g) < MAX_CONSTELLATION_SIZE
-                   and not any(pair(ref, m) in blocked for m in g)]
+        options = [i for i, g in enumerate(groups)
+                   if not any(pair(ref, m) in blocked for m in g)]
         if not options:
             leftovers.append(ref)
             continue
@@ -95,14 +89,14 @@ def _swap_in(ref: str, groups: list[list[str]], blocked: set[tuple[str, str]],
 
     moves = []
     for gi, group in enumerate(groups):
-        if len(group) < MAX_CONSTELLATION_SIZE or not legal(ref, group):
+        if not legal(ref, group):
             continue
         for member in group:
             rest = [m for m in group if m != member]
             if not legal(ref, rest):
                 continue
             for hi, host in enumerate(groups):
-                if hi != gi and len(host) < MAX_CONSTELLATION_SIZE and legal(member, host):
+                if hi != gi and legal(member, host):
                     score = _affinity(ref, rest, sim) + _affinity(member, host, sim)
                     moves.append((score, gi, member, hi))
     if not moves:

@@ -11,11 +11,11 @@ import {
   type WeeklyCycle,
 } from "../daily/client";
 import { getCycleClient } from "../daily/clientContext";
+import { getPrivacyClient, usePrivacySession } from "../privacy";
 import { CONSTELLATIONS_PATH, FEATURE_NAME, PLAY_COMMUNITY } from "../daily/communities";
 import { FormationDebug } from "../formation";
 import { OperatorNudgePanel } from "../nudges";
-import { CloseDayControl, CustomEventQueue } from "./V3Panels";
-import ReasoningPanel from "./ReasoningPanel";
+import { CloseDayControl } from "./V3Panels";
 import "../daily/daily.css";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -76,7 +76,36 @@ function median(values: number[]): number {
 
 type Confirm = "reset" | "new" | null;
 
-export default function OperatorConsole() {
+export default function OperatorEntry() {
+  const privacy = getPrivacyClient();
+  const { state, set } = usePrivacySession(privacy, PLAY_COMMUNITY);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  if (privacy.mode === "fixture") return <OperatorConsole />;
+  if (state.status === "ready" && state.view.isOperator) return <OperatorConsole />;
+  return <main className="cst-page" id="main-content">
+    <h1>Demo host sign in</h1>
+    {state.status === "loading" ? <p>Checking session…</p> :
+      state.status !== "ready" ? <p>First <Link to="/space">join Facebook Space</Link> and accept the required consent.</p> :
+      <form onSubmit={(event) => {
+        event.preventDefault();
+        setBusy(true);
+        setError("");
+        void privacy.hostLogin(password).then((view) => { setPassword(""); set(view); }, (err: unknown) => {
+          setPassword("");
+          setError(err instanceof Error ? err.message : "Unable to sign in.");
+        }).finally(() => setBusy(false));
+      }}>
+        <label htmlFor="demo-host-password">Demo host password</label>
+        <input id="demo-host-password" type="password" autoComplete="current-password" required maxLength={1024} value={password} onChange={(event) => setPassword(event.target.value)} />
+        <button type="submit" disabled={busy}>Sign in as demo host</button>
+        {error && <p role="alert">{error}</p>}
+      </form>}
+  </main>;
+}
+
+function OperatorConsole() {
   const communityId = PLAY_COMMUNITY;
   const client = getCycleClient(communityId);
   const [current, setCurrent] = useState<CurrentCycle | null>(null);
@@ -433,10 +462,6 @@ export default function OperatorConsole() {
         selected={nudgeRoom}
         onSelect={setNudgeRoom}
       />
-
-      <CustomEventQueue client={client} />
-
-      <ReasoningPanel client={client} />
 
       <section className="card cst-panel" aria-labelledby="cst-op-formation">
         <h2 id="cst-op-formation" className="cst-card-title">

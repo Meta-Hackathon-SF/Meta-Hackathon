@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import secrets
 import sqlite3
 from collections.abc import Callable
@@ -180,7 +181,10 @@ class PrivacyService:
             return None
         return conn.execute(
             """
-            SELECT s.session_id, s.player_id, s.community_id, m.is_operator
+            SELECT s.session_id, s.player_id, s.community_id,
+                   (m.is_operator OR EXISTS (
+                     SELECT 1 FROM demo_host_sessions h WHERE h.session_id = s.session_id
+                   )) AS is_operator
             FROM sessions s
             JOIN players p ON p.player_id = s.player_id
             JOIN memberships m ON m.player_id = s.player_id AND m.community_id = s.community_id
@@ -203,6 +207,46 @@ class PrivacyService:
                 "UPDATE sessions SET revoked_at = ? WHERE session_id = ? AND player_id = ? AND revoked_at IS NULL",
                 (self._now(), actor.session_id, actor.player_id),
             )
+
+    def authenticate_demo_host(self, actor: Actor, password: str) -> str:
+        """Upgrade only this consented session; never store or log a secret."""
+        secret = os.getenv("CST_DEMO_HOST_SECRET", "")
+        if len(secret) < 32 or len(secret.encode("utf-8")) > 1024:
+            raise errors.provider_unavailable()
+        if actor.community_id != "facebook-space":
+            raise errors.forbidden()
+        now = self._clock()
+        cutoff = format_time(now - timedelta(minutes=5))
+        token = None
+        limited = False
+        with self._store.tx() as conn:
+            self.require_consent(actor)
+            conn.execute("DELETE FROM demo_host_attempts WHERE attempted_at <= ?", (cutoff,))
+            count = conn.execute("SELECT COUNT(*) FROM demo_host_attempts").fetchone()[0]
+            if count >= 5:
+                limited = True
+            elif secrets.compare_digest(
+                hashlib.sha256(password.encode("utf-8")).digest(),
+                hashlib.sha256(secret.encode("utf-8")).digest(),
+            ):
+                token = secrets.token_urlsafe(32)
+                changed = conn.execute(
+                    "UPDATE sessions SET token_hash = ? WHERE session_id = ? AND player_id = ? "
+                    "AND revoked_at IS NULL AND expires_at > ?",
+                    (hash_token(token), actor.session_id, actor.player_id, self._now()),
+                ).rowcount
+                if changed:
+                    conn.execute("INSERT OR IGNORE INTO demo_host_sessions VALUES (?)", (actor.session_id,))
+                    conn.execute("DELETE FROM demo_host_attempts")
+                else:
+                    token = None
+            else:
+                conn.execute("INSERT INTO demo_host_attempts VALUES (?)", (format_time(now),))
+        if limited:
+            raise errors.PrivacyError("RATE_LIMITED", "Try again later.")
+        if token is None:
+            raise errors.forbidden()
+        return token
 
     def _issue_session(self, conn: sqlite3.Connection, player_id: str, community_id: str) -> str:
         token = secrets.token_urlsafe(32)
@@ -324,6 +368,12 @@ class PrivacyService:
                 (actor.player_id, actor.community_id, req.expected_version + 1, int(req.match_answers),
                  int(req.anonymous_chat), int(req.is_adult), revoked_at, now),
             )
+            if withdrawn:
+                conn.execute(
+                    "DELETE FROM demo_host_sessions WHERE session_id IN "
+                    "(SELECT session_id FROM sessions WHERE player_id = ? AND community_id = ?)",
+                    (actor.player_id, actor.community_id),
+                )
             if event_change and req.event_signals:
                 conn.execute(
                     "INSERT OR IGNORE INTO event_signal_optins (player_id, community_id, updated_at) VALUES (?, ?, ?)",

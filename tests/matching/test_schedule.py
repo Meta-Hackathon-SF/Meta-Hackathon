@@ -13,7 +13,7 @@ from tests.matching.adapters import FixtureGuard, evidence
 
 SCALE = 0.01
 LIVE_S = {"theme_discovery": 21.5, "constellation_formation": 38.8, "sky_narration": 18.8}
-M5_S = [12.7, 14.0, 15.5, 17.2, 20.9, 999.0, 999.0]  # two hung calls in the live run
+M5_S = [12.7, 15.5, 20.9, 999.0, 999.0, 17.2]  # two hung calls in the live run
 
 
 class LatencyMuse:
@@ -26,7 +26,7 @@ class LatencyMuse:
         if task == "constellation_naming":
             delay = self.m5.pop(0) if self.m5 else 15.0
             await asyncio.sleep(delay * SCALE)
-            shape = {3: "triangle", 4: "kite", 5: "pentagon"}[payload["size"]]
+            shape = "pentagon"
             return {"output": {"name": "Quiet Lanterns", "shapeId": shape, "colorId": "dusk"},
                     "evidence": evidence("M5")}
         await asyncio.sleep(LIVE_S[task] * SCALE)
@@ -37,7 +37,7 @@ class LatencyMuse:
                     "evidence": evidence("M3")}
         if task == "constellation_formation":
             refs = sorted({a["id"] for a in payload["answers"]}, key=lambda r: int(r[1:]))
-            sizes = [5, 5, 5, 5, 4, 3, 3]
+            sizes = [5, 5, 5, 5, 5, 5]
             groups, i = [], 0
             for n in sizes:
                 groups.append(refs[i:i + n])
@@ -91,7 +91,7 @@ def test_live_latency_replay_fits_sixty_seconds():
     started = time.monotonic()
     raw = asyncio.run(port.form("c"))
     elapsed = (time.monotonic() - started) / SCALE
-    assert raw["status"] == "ok" and len(raw["constellations"]) == 7
+    assert raw["status"] == "ok" and len(raw["constellations"]) == 6
     slop = SEQUENTIAL_WAITS * timer_slop_s() / SCALE  # coarse timers (Windows) inflate replay
     print(f"simulated formation {elapsed:.1f} s (timer allowance {slop:.1f} s)")
     assert elapsed - slop < 60, f"simulated {elapsed:.1f} s, allowance {slop:.1f} s"

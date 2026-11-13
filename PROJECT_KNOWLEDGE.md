@@ -52,3 +52,14 @@ Role-branch work from teammates is not claimed integrated here; inspect their la
 | Question generation + synthetic signals (step 7, cuttable) | Adam, Rishi | Generation with operator approval implemented, offline tests pass; approval routes proposed, not in API.md; synthetic signals not started here | ACK of approval routes; aggregate signals from Rishi; live M6 call |
 | v3 daily UI: day colors, daily reveal (S5), your week (S6), `answeredToday` (D012) | Will | Implemented on main (#61) behind a labeled TEST-ONLY adapter; guess UI removed; guess route held until 3.0.0 | Contract 3.0.0 + Rishi's S5/S6 routes, then a live run |
 | User impact | all | Unknown | Actual observations only |
+
+
+## Verified 2026-11-13 (branch rishi/space-ui-audit)
+
+- Tests run this session: `tests/matching`, `tests/orchestration`, `tests/privacy` pass; web `tsc` clean; CI green on the earlier push, not yet re-run after the latest commits.
+- v3 daily groups come from M3 member lists; Sunday main refines with M4. Both are tested with a stub Muse only. Not run against live Muse.
+- Constellations are 5 or more with no maximum (D016). No ACK collected.
+- v3 routes are mounted (`server/app/v3_routes.py`); a scheduler closes finished days and forms main on lock.
+- Client friend ids and profile id are no longer stored (audit P1).
+- formation-debug returns keyword groups next to Muse groups (operator, player ids).
+- Not verified: live Muse quality on v3, hosting, phones, speed of `dailyPlace` at scale.

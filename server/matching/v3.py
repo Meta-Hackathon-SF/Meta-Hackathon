@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from server.matching import prompts
+from server.matching.adaptive import adaptive_weights
 from server.matching.baseline import tokens
 from server.matching.closeness import bands_for_viewer, pair_closeness
 from server.matching.daily import (
@@ -31,6 +32,7 @@ from server.matching.daily import (
     SKY_STARS,
     Tag,
     daily_groups,
+    groups_from_themes,
     main_groups,
     second_degree,
     sky_positions,
@@ -43,10 +45,13 @@ from server.matching.models import (
     MuseCallEvidence,
     PromptText,
     ValidationError,
+    pair,
 )
 from server.matching.ports import MusePortLike
+from server.matching.validation import violations
 
 M3_TIMEOUT_S = 45.0
+MIN_MEANING_MEMBERS = 3
 BAND_ORDER = {"bright": 0, "mid": 1, "faint": 2}
 
 
@@ -61,6 +66,9 @@ class DayGroup:
     group_id: str
     members: tuple[str, ...]  # private player ids
     brightness: Mapping[str, str]  # viewer player id -> band
+    meaning: str | None = None  # Muse line, guarded; only set for 3+ members
+    is_fallback: bool = False  # keyword grouping, labeled as such
+    evidence: tuple[dict, ...] = ()  # Muse call metadata only (model, call type, latency)
 
 
 @dataclass(frozen=True)
@@ -68,6 +76,7 @@ class DayRecord:
     final: bool
     groups: tuple[DayGroup, ...]
     players: tuple[str, ...]  # everyone placed or not, private ids
+    blocked: tuple[tuple[str, str], ...] = ()  # private-id pairs, for the Sunday main
 
 
 class InMemoryDayStore:
@@ -76,6 +85,7 @@ class InMemoryDayStore:
     def __init__(self) -> None:
         self.days: dict[tuple[str, int], DayRecord] = {}
         self.mains: dict[str, tuple[tuple[str, ...], ...]] = {}
+        self.main_meanings: dict[tuple[str, tuple[str, ...]], str] = {}
 
     def save_day(self, cycle: str, day: int, record: DayRecord) -> None:
         self.days = {**self.days, (cycle, day): record}
@@ -101,6 +111,14 @@ def _gid(cycle: str, day: int, members: tuple[str, ...]) -> str:
 
 def _failure(code: str, message: str, retryable: bool = False) -> dict:
     return {"status": "failed", "error": {"code": code, "message": message, "retryable": retryable}}
+
+
+def _evidence_chip(evidence) -> dict | None:
+    """Model name, call type and latency only. No prompt, no text."""
+    if not evidence:
+        return None
+    e = evidence[0]
+    return {"model": e.get("model"), "callType": e.get("callType"), "latencyMs": e.get("latencyMs")}
 
 
 def _best_band(bands: Mapping[str, str]) -> str:
@@ -129,7 +147,9 @@ class FormationV3:
         store: InMemoryDayStore | None = None,
         *,
         m3_timeout_s: float = M3_TIMEOUT_S,
+        guard=None,
     ) -> None:
+        self._guard = guard
         self._muse, self._snapshots = muse, snapshots
         self.store = store or InMemoryDayStore()
         self._m3_timeout_s = m3_timeout_s
@@ -137,11 +157,28 @@ class FormationV3:
     async def _snap(self, cycle: str, day: int) -> FormationSnapshot:
         return FormationSnapshot.from_dict(await self._snapshots.day_snapshot(cycle, day))
 
+    def _safe_meaning(self, text, answer_texts, size: int) -> str | None:
+        """A Muse-written line, shown only for 3+ members and only if OutputGuard passes it.
+        No guard configured means no line: never ship unguarded model text."""
+        if size < MIN_MEANING_MEMBERS or self._guard is None or not isinstance(text, str):
+            return None
+        text = text.strip()
+        if not text:
+            return None
+        verdict = self._guard.check(text, answer_texts)
+        return text if isinstance(verdict, Mapping) and verdict.get("ok") is True else None
+
     def _record(
-        self, cycle: str, day: int, snap: FormationSnapshot, tags, final: bool
+        self, cycle: str, day: int, snap: FormationSnapshot, tags, final: bool, themes=None,
+        evidence=None,
     ) -> DayRecord:
-        groups, _unplaced = daily_groups(snap.answers, _ref_blocks(snap), tags)
-        close = pair_closeness(snap, snap.refs)
+        if themes:  # Muse's own groups; code only enforces the guarantees
+            groups, _unplaced = groups_from_themes(
+                [t[3] for t in themes], snap.refs, _ref_blocks(snap)
+            )
+        else:
+            groups, _unplaced = daily_groups(snap.answers, _ref_blocks(snap), tags)
+        close = pair_closeness(snap, snap.refs, adaptive_weights(snap))
         out = []
         for g in groups:
             ids = tuple(sorted(snap.id_map[r] for r in g))
@@ -151,8 +188,18 @@ class FormationV3:
                 )
                 for r in g
             }
-            out.append(DayGroup(_gid(cycle, day, ids), ids, bright))
-        return DayRecord(final, tuple(out), tuple(sorted(snap.id_map[r] for r in snap.refs)))
+            meaning = None
+            if themes:
+                best = max(themes, key=lambda t: len(set(t[3]) & set(g)))
+                if set(best[3]) & set(g):
+                    meaning = self._safe_meaning(best[2], [a.text for a in snap.answers], len(g))
+            out.append(
+                DayGroup(_gid(cycle, day, ids), ids, bright, meaning, not themes, tuple(evidence or ()))
+            )
+        blocked = tuple(sorted({pair(a, b) for a, b in snap.blocked_pairs}))
+        return DayRecord(
+            final, tuple(out), tuple(sorted(snap.id_map[r] for r in snap.refs)), blocked
+        )
 
     # ---- FormationPort ----------------------------------------------------
 
@@ -161,8 +208,13 @@ class FormationV3:
             snap = await self._snap(cycleId, day)
         except ValidationError:
             return _failure("INVALID_INPUT", "Bad snapshot")
-        rec = self._record(cycleId, day, snap, None, final=False)
-        self.store.save_day(cycleId, day, rec)
+        existing = self.store.load_days(cycleId).get(day)
+        if existing is not None and existing.final:
+            # A closed day is never overwritten by a late answer's keyword groups.
+            rec = existing
+        else:
+            rec = self._record(cycleId, day, snap, None, final=False)
+            self.store.save_day(cycleId, day, rec)
         ids = [
             g.group_id
             for g in rec.groups
@@ -176,8 +228,11 @@ class FormationV3:
             snap = await self._snap(cycleId, day)
         except ValidationError:
             return _failure("INVALID_INPUT", "Bad snapshot")
-        tags, evidence = await self._propose_tags(cycleId, day, snap)
-        rec = self._record(cycleId, day, snap, tags, final=True)
+        themes, evidence = await self._propose_themes(cycleId, day, snap)
+        if themes:
+            rec = self._record(cycleId, day, snap, None, final=True, themes=themes, evidence=evidence)
+        else:
+            rec = self._record(cycleId, day, snap, None, final=True)
         self.store.save_day(cycleId, day, rec)
         placed = {p for g in rec.groups for p in g.members}
         return {
@@ -187,8 +242,8 @@ class FormationV3:
             "evidence": evidence,
         }
 
-    async def _propose_tags(self, cycle: str, day: int, snap: FormationSnapshot):
-        """M3 tags if Muse answers validly; else None (daily_groups falls back to keyword tags)."""
+    async def _propose_themes(self, cycle: str, day: int, snap: FormationSnapshot):
+        """Validated M3 themes if Muse answers; else None (keyword fallback, no evidence)."""
         if self._muse is None or not snap.answers:
             return None, []
         try:
@@ -202,8 +257,7 @@ class FormationV3:
                 timeout=self._m3_timeout_s,
             )
             themes = prompts.parse_m3(resp["output"], set(snap.refs))
-            tags = tags_from_themes(themes, snap.answers)
-            return (tags or None), [MuseCallEvidence.from_dict(resp["evidence"]).to_wire()]
+            return (themes or None), [MuseCallEvidence.from_dict(resp["evidence"]).to_wire()]
         except (TimeoutError, Exception):  # noqa: BLE001 - keyword fallback, never fails the day
             return None, []
 
@@ -226,9 +280,62 @@ class FormationV3:
         if not days:
             return _failure("NOT_FOUND", "No days formed for this cycle")
         players = sorted({p for r in days.values() for p in r.players})
-        groups, unplaced = main_groups(players, self._graph(cycleId))
+        blocked = sorted({p for r in days.values() for p in r.blocked})
+        graph = self._graph(cycleId)
+        groups, unplaced = main_groups(players, graph, (), blocked)
+        evidence: list = []
+        refined = await self._refine_main(cycleId, days, players, blocked)
+        if refined is not None:
+            (groups, unplaced), evidence = refined
         self.store.save_main(cycleId, groups)
-        return {"status": "ok", "groups": len(groups), "unplaced": len(unplaced), "evidence": []}
+        return {
+            "status": "ok",
+            "groups": len(groups),
+            "unplaced": len(unplaced),
+            "evidence": evidence,
+        }
+
+    async def _refine_main(self, cycle: str, days, players, blocked):
+        """M4 over the week's answers. Used only if it passes the same guarantees; else None."""
+        if self._muse is None:
+            return None
+        try:
+            ref_of = {p: f"w{i}" for i, p in enumerate(players)}
+            answers: list[PromptText] = []
+            for day in sorted(days):
+                snap = await self._snap(cycle, day)
+                answers += [
+                    PromptText(ref_of[snap.id_map[a.id]], a.text, a.weight)
+                    for a in snap.answers
+                    if snap.id_map.get(a.id) in ref_of
+                ]
+            refs = {ref_of[p] for p in players}
+            ref_blocks = [(ref_of[a], ref_of[b]) for a, b in blocked if a in ref_of and b in ref_of]
+            resp = await asyncio.wait_for(
+                self._muse.run(
+                    task="constellation_formation",
+                    requestId=f"main-{cycle}",
+                    promptVersion=prompts.PROMPT_VERSION_M4,
+                    payload=prompts.build_m4_payload((), answers[:400], ref_blocks),
+                ),
+                timeout=self._m3_timeout_s,
+            )
+            proposed = prompts.parse_m4(resp["output"], refs)
+            groups = [tuple(m) for m, _meaning, _conf in proposed]
+            placed = {r for g in groups for r in g}
+            if violations(groups, placed, ref_blocks):
+                return None
+            by_ref = {v: k for k, v in ref_of.items()}
+            out = tuple(tuple(sorted(by_ref[r] for r in g)) for g in groups)
+            texts = [a.text for a in answers]
+            for (_m, meaning, _c), g in zip(proposed, out, strict=True):
+                safe = self._safe_meaning(meaning, texts, len(g))
+                if safe:
+                    self.store.main_meanings = {**self.store.main_meanings, (cycle, g): safe}
+            unplaced = tuple(sorted(set(players) - {p for g in out for p in g}))
+            return (out, unplaced), [MuseCallEvidence.from_dict(resp["evidence"]).to_wire()]
+        except Exception:  # noqa: BLE001 - code grouping stands, never fails Sunday
+            return None
 
     async def skyLayout(self, cycleId: str) -> dict:  # noqa: N802,N803
         days = self.store.load_days(cycleId)
@@ -273,6 +380,10 @@ class FormationV3:
                     "constellationId": g.group_id,
                     "starIndices": sorted(stars[m] for m in g.members),
                     "brightness": g.brightness.get(player, "mid"),
+                    "sharedMeaning": g.meaning,
+                    "memberCount": len(g.members) if len(g.members) >= MIN_MEANING_MEMBERS else None,
+                    "isFallback": g.is_fallback,
+                    "museEvidence": _evidence_chip(g.evidence),
                     "anchors": [
                         {
                             "index": stars[m],
@@ -341,6 +452,7 @@ class FormationV3:
                 "roomIndices": sorted(idx.values()),
                 "anchors": [{"index": idx[m], "t": round(idx[m] / n, 3)} for m in group],
                 "brightness": {idx[m]: "mid" for m in group if m != player},
+                "sharedMeaning": self.store.main_meanings.get((cycle, tuple(sorted(group)))),
                 "revealedAt": revealed_at,
                 "roomExpiresAt": expires_at,
             },
@@ -351,3 +463,25 @@ class FormationV3:
 def _ref_blocks(snap: FormationSnapshot) -> list[tuple[str, str]]:
     by_id = {v: k for k, v in snap.id_map.items()}
     return [(by_id[a], by_id[b]) for a, b in snap.blocked_pairs if a in by_id and b in by_id]
+
+
+class QuietSignals:
+    """One anonymous pulse per member per constellation. Stores counts only, never who."""
+
+    def __init__(self) -> None:
+        self._sent: set[tuple[str, str]] = set()
+        self._pulses: dict[str, int] = {}
+
+    def send(self, constellation_id: str, player: str) -> dict:
+        key = (constellation_id, player)
+        if key in self._sent:
+            return {"sent": False, "pulses": self._pulses.get(constellation_id, 0)}
+        self._sent.add(key)
+        self._pulses[constellation_id] = self._pulses.get(constellation_id, 0) + 1
+        return {"sent": True, "pulses": self._pulses[constellation_id]}
+
+    def pulses(self, constellation_id: str) -> int:
+        return self._pulses.get(constellation_id, 0)
+
+    def has_sent(self, constellation_id: str, player: str) -> bool:
+        return (constellation_id, player) in self._sent

@@ -126,7 +126,9 @@ def open_rooms(
                         {
                             "roomId": room_id,
                             "handle": handle,
-                            "starColor": colors[i],
+                            "starColor": colors[
+                                i % len(colors)
+                            ],  # D016: rooms can exceed 5 members
                             "isSelf": False,
                         }
                         for i, handle in enumerate(members.values())
