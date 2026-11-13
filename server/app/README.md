@@ -52,3 +52,20 @@ python -m ruff check server/app server/orchestration server/chat tests/orchestra
 ```
 
 See docs/handoffs/kai.md for actual checks, blockers and fixture versus live status.
+
+## Public composition and operator readers
+
+`server.app.composition.compose(privacy=privacy_service, registrations=[...])`
+mounts Patrik's published privacy registration and error handler, preserving Kai's
+request/validation middleware. Caller configures the service and its lifespan;
+Kai never opens or queries the privacy store.
+
+`server.app.operator.operator_registration(session_dependency=...,
+require_operator=privacy.require_operator, calls_source=..., reports_source=...)`
+provides GET /operator/calls and /operator/reports under the orchestration area.
+Sources are synchronous callbacks taking the verified Group-scoped Actor and
+returning approved wire dictionaries. Scope the reader to that Group; do not pass
+a multi-Group global log. Output is projected to MuseCallEvidence/Report fields
+and runtime-validated. A missing source returns 503, never a fake empty queue.
+Combine this router into the orchestration registration when adding formation
+routes rather than registering the same area twice.
