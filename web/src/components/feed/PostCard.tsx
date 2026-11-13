@@ -276,9 +276,9 @@ export default function PostCard({ post }: { post: Post }) {
           )}
           {post.comments?.map((item) => (
             <div className="comment-row" key={item.id}>
-              <Avatar person={currentUser} size={32} />
+              <Avatar person={item.author ?? currentUser} size={32} />
               <div className="comment-bubble">
-                <strong>{currentUser.name}</strong>
+                <strong>{(item.author ?? currentUser).name}</strong>
                 <p>{item.text}</p>
               </div>
             </div>
