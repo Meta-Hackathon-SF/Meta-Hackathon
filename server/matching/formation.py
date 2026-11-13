@@ -29,7 +29,6 @@ from server.matching.models import (
     FALLBACK_LABEL,
     LOOSE_MATCH_CONFIDENCE,
     MAX_NAME_CHARS,
-    shapes_for,
     Constellation,
     FormationResult,
     FormationSnapshot,
@@ -37,6 +36,7 @@ from server.matching.models import (
     MuseCallEvidence,
     Theme,
     ValidationError,
+    shapes_for,
 )
 from server.matching.ports import MusePortLike, OutputGuardLike, SnapshotSource
 from server.matching.repair import repair_proposal

@@ -541,6 +541,56 @@ def test_operator_topup_records_canonical_synthetic_labels():
             assert all(row["communityId"] == COMMUNITY for row in labeled.values())
 
 
+def test_operator_topup_is_operator_only_labeled_and_seeds_the_maya_dev_pair():
+    with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
+        operator = join(client, "operator")
+        grant_operator(env.privacy_store, operator.player_id, COMMUNITY)
+        player = join(client, "player")
+        created = call(
+            client,
+            operator,
+            "POST",
+            "/operator/cycles",
+            json={"communityId": COMMUNITY, "weekStart": "2026-11-09", "demoTiming": True},
+        )
+        cycle_id = created.json()["cycleId"]
+        path = f"/operator/cycles/{cycle_id}/synthetic-topup"
+
+        denied = call(client, player, "POST", path)
+        assert denied.status_code == 403 and denied.json()["error"]["code"] == "FORBIDDEN"
+        with env.privacy_store.tx() as conn:
+            assert (
+                conn.execute("SELECT count(*) FROM players WHERE is_synthetic = 1").fetchone()[0]
+                == 0
+            )
+
+        topped = call(client, operator, "POST", path)
+        assert topped.status_code == 200
+        assert (
+            topped.json()["label"] == "Synthetic player" and topped.json()["syntheticPlayers"] == 38
+        )
+        with env.privacy_store.tx() as conn:
+            rows = conn.execute(
+                "SELECT player_id, display_name, is_synthetic FROM players"
+            ).fetchall()
+            seeded = {r[0]: r for r in rows if r[0] not in (operator.player_id, player.player_id)}
+            # Every generated account carries the synthetic flag and says so in its name.
+            assert len(seeded) == 38
+            assert all(r[2] == 1 and "(synthetic)" in r[1] for r in seeded.values())
+            assert {"p-maya", "p-dev"} <= set(seeded)
+            day_one = dict(
+                conn.execute(
+                    "SELECT player_id, text FROM answers WHERE cycle_id = ? AND day = 1"
+                    " AND player_id IN ('p-maya', 'p-dev')",
+                    (cycle_id,),
+                ).fetchall()
+            )
+        # The semantic pair: no shared keywords, same meaning.
+        assert "alone" in day_one["p-maya"] and "cooking for one" in day_one["p-dev"]
+        # Still refused for a normal player after the cast exists.
+        assert call(client, player, "POST", path).status_code == 403
+
+
 def test_v3_live_routes_serve_indices_only_from_the_verified_session():
     with runtime_environment() as env, TestClient(env.app, base_url="https://testserver") as client:
         players, cycle_id, _job = formed(env, client)

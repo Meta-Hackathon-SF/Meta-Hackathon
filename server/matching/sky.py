@@ -212,7 +212,7 @@ class SkyService:
                     continue
                 evidence.append(MuseCallEvidence.from_dict(response["evidence"]))
                 lines = parse_m8(response["output"], allowed)
-            except (Exception, asyncio.TimeoutError):  # noqa: BLE001 - counts as an attempt
+            except (TimeoutError, Exception):  # noqa: BLE001 - counts as an attempt
                 continue
             if all(_guard_ok(self._guard, line, answers) for line in lines):
                 return lines

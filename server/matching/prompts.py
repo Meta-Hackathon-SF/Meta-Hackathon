@@ -18,10 +18,10 @@ from server.matching.models import (
     MAX_MEANING_CHARS,
     MAX_NAME_CHARS,
     SHAPES_BY_SIZE,
-    shapes_for,
     PromptText,
     QuestionText,
     ValidationError,
+    shapes_for,
 )
 
 # v2: voice rules (labels are public in Sky) + D014 question context
