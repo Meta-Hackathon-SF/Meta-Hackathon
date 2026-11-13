@@ -4,8 +4,8 @@ Every agent follows its own playbook while sharing the contracts and integration
 
 | Owner | Branch | Playbook | Start in |
 | --- | --- | --- | --- |
-| Rishi | `role/rishi-matching` | [Induction phases](rishi.md) | `server/matching/`, `web/src/features/constellations/matching/`, `induction/` |
-| Adam | `role/adam-planning` | [Keeper and Muse job phases](adam.md) | `server/providers/`, `server/planning/`, `web/src/features/constellations/hunt/` |
+| Rishi | `role/rishi-matching` | [Formation phases](rishi.md) | `server/matching/`, `web/src/features/constellations/matching/`, `formation/` |
+| Adam | `role/adam-planning` | [Muse and Muse job phases](adam.md) | `server/providers/`, `server/planning/`, `web/src/features/constellations/search/` |
 | Will | `role/will-voice-ui` | [Join, Confession and composition phases](will.md) | `web/src/features/constellations/shell/`, `join/`, `confession/`, `server/voice/` |
 | Patrik | `role/patrik-privacy` | [Privacy and safety phases](patrik.md) | `server/privacy/`, `db/privacy/`, `web/src/features/constellations/privacy/` |
 | Kai | `role/kai-orchestration` | [Round lifecycle phases](kai.md) | `server/app/`, `server/orchestration/`, `web/src/features/constellations/operator/`, `sky/` |
@@ -18,13 +18,13 @@ Product: Constellations (D001; contract `contracts/protocol.ts` v1.0.0, pending 
 | --- | --- | --- |
 | P0 | 16:00-17:00 | Tags checked; D001/D003 and contracts acknowledged by all five owners; Muse call re-verified; ownership and branches confirmed |
 | P1 | 17:00-20:00 | Each module runs alone against explicit, labeled synthetic fixtures |
-| P2 | 20:00-23:00 | Integrated round on 3+ phones: join, confess, induct, riddles, confirm in person |
-| P3 | 23:00-02:00 | Sky, safety triage, blocks and operator console complete; induction timing for 30 players measured against 60 s |
-| P4 | 02:00-03:30 | P1 features (ritual, riddle veto) only if P3 is green; hardening |
+| P2 | 20:00-23:00 | Integrated round on 3+ phones: join, confess, form, clues, confirm in person |
+| P3 | 23:00-02:00 | Sky, safety triage, blocks and operator console complete; formation timing for 30 players measured against 60 s |
+| P4 | 02:00-03:30 | P1 features (meetup, clue veto) only if P3 is green; hardening |
 | P5 | 03:30-04:30 | Integration and failure cases pass; FEATURE FREEZE at 04:30; backup captured |
 | P6 | 04:30-10:30 | UI polish, rehearsal, backup video, Devpost, submission; critical fixes only |
 
-P6 is reserved for UI and demo-related work; functional UI must already exist by P2. Never cut: consent, safety triage, no-quote guard, Sky threshold, truth labels. Cut order: P2 vision items, ritual, riddle veto, voice (text always works). Runtime completion is separate from documentation completion.
+P6 is reserved for UI and demo-related work; functional UI must already exist by P2. Never cut: consent, safety triage, no-quote guard, Sky threshold, truth labels. Cut order: P2 vision items, meetup, clue veto, voice (text always works). Runtime completion is separate from documentation completion.
 
 ## What each agent does on every work session
 
@@ -44,11 +44,11 @@ P6 is reserved for UI and demo-related work; functional UI must already exist by
 | Producer | Deliverable | Consumer |
 | --- | --- | --- |
 | Kai + Patrik | Server registration, authenticated session and `/api/v1` conventions | Everyone |
-| Adam | Single Muse adapter, test fake, Keeper prompt rules | Rishi, Patrik, Will, Kai |
+| Adam | Single Muse adapter, test fake, Muse prompt rules | Rishi, Patrik, Will, Kai |
 | Will | Component slots/routes, join and answer payloads, Muse chip | Every UI owner, Patrik, Kai |
 | Patrik | Authorized unflagged answers, M1 flags, output guard, prompt builder, blocks | Rishi, Adam, Kai |
-| Rishi | Validated societies (`Society[]`) and themes | Adam, Kai |
-| Adam | Society identity, riddles, Sky headlines, ritual quest (all guarded) | Kai, Will |
+| Rishi | Validated constellations (`Constellation[]`) and themes | Adam, Kai |
+| Adam | Constellation identity, clues, Sky headlines, meetup plan (all guarded) | Kai, Will |
 | Kai | Round state, finds, SSE stream, Sky counts, operator API | Will, Adam (M8 counts), every UI owner |
 
 This is an integration graph, not a requirement to wait serially. P1 uses synthetic adapters to unblock parallel implementation. Replace them with real ports for P2 and distinguish fixture verification from live evidence.

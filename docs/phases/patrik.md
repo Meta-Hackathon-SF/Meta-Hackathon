@@ -23,7 +23,7 @@ Times are PST on Nov 12-13, 2026 (P0 starts 16:00; feature freeze 04:30; deadlin
 ## P2: Integrated round on 3+ phones (20:00-23:00)
 
 - [ ] Build: Read contracts/protocol.ts (v1.0.0) and D001/D003. Plan ConsentV2 (3 toggles incl. 18+), sessions and projections. Agree session mechanism with Kai.
-- [ ] Exit evidence: Seeded distress answer never appears in societies, riddles or themes; live M1 latency recorded.
+- [ ] Exit evidence: Seeded distress answer never appears in constellations, clues or themes; live M1 latency recorded.
 - [ ] Dependency / fallback: Fallback: keyword distress screen labeled as fallback. If a dependency is missing at the phase boundary: stop, push, open/update a `[BLOCKED]` draft PR tagging @adamzhang06 and @beatopia (COORDINATION §2), and continue with a labeled test adapter.
 - [ ] Handoff: update `docs/handoffs/patrik.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/patrik.md`.
 
@@ -37,8 +37,8 @@ Times are PST on Nov 12-13, 2026 (P0 starts 16:00; feature freeze 04:30; deadlin
 ## P4: P1 features and hardening (02:00-03:30)
 
 - [ ] Build: Read contracts/protocol.ts (v1.0.0) and D001/D003. Plan ConsentV2 (3 toggles incl. 18+), sessions and projections. Agree session mechanism with Kai.
-- [ ] Exit evidence: Quest outside allowlist rejected; vetoed riddle never sent.
-- [ ] Dependency / fallback: Cut order: veto and ritual. If a dependency is missing at the phase boundary: stop, push, open/update a `[BLOCKED]` draft PR tagging @adamzhang06 and @beatopia (COORDINATION §2), and continue with a labeled test adapter.
+- [ ] Exit evidence: Quest outside allowlist rejected; vetoed clue never sent.
+- [ ] Dependency / fallback: Cut order: veto and meetup. If a dependency is missing at the phase boundary: stop, push, open/update a `[BLOCKED]` draft PR tagging @adamzhang06 and @beatopia (COORDINATION §2), and continue with a labeled test adapter.
 - [ ] Handoff: update `docs/handoffs/patrik.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/patrik.md`.
 
 ## P5: Freeze verification (03:30-04:30)

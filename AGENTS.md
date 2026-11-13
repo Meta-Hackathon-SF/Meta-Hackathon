@@ -32,7 +32,7 @@ The human authorizes automatic integration at meaningful work checkpoints. No ad
 This is authorization for agents while they are working, not a claim that an unattended merge bot or GitHub repository auto-merge is configured. Respect repository permissions and protection rules.
 
 ## Shared facts
-**Constellations** is the product: a campus secret-society game inside Facebook Groups. Muse (Spark, Wonder or Ember) is the required model family and plays the game master, "the Keeper". Main was reset on 2026-11-12 to the mock Facebook web UI (`web/`) plus Constellations docs and contracts. Earlier Group Quests code is archived on `archive/group-quests-before-pivot` and is not part of main; do not cite it as evidence. contracts/protocol.ts is the Constellations contract (1.0.0, pending ACK in docs/DECISIONS.md). Build the feature UI under web/src/features/constellations/. Do not rewrite the feed, reuse its localStorage as production persistence, or claim its mock sessions provide authentication. Keep shell integration small.
+**Constellations** is the product: a campus constellation game inside Facebook Groups. Muse (Spark, Wonder or Ember) is the required model family and plays the game master, Muse. Main was reset on 2026-11-12 to the mock Facebook web UI (`web/`) plus Constellations docs and contracts. Earlier Group Quests code is archived on `archive/group-quests-before-pivot` and is not part of main; do not cite it as evidence. contracts/protocol.ts is the Constellations contract (1.0.0, pending ACK in docs/DECISIONS.md). Build the feature UI under web/src/features/constellations/. Do not rewrite the feed, reuse its localStorage as production persistence, or claim its mock sessions provide authentication. Keep shell integration small.
 
 Runtime systems are not implemented merely because a contract or directory exists. Preserve planned / implemented / verified / deployed distinctions. All code must be new for this hackathon. Use dor only as documentation inspiration.
 
@@ -50,7 +50,7 @@ Claim shared-file edits in your handoff before starting. Contract changes requir
 ## Build behavior
 Implement one integrated happy path before extras. Never require a paid/live model call for ordinary offline tests. Keep test doubles in test/fixture adapters and label replay in the UI. No fake production success when a provider fails. Handle cancellation and stale responses.
 
-Muse interprets and proposes (themes, societies, names, riddles, quests, Sky headlines). Server code authorizes, validates and enforces every guarantee. Code detects thresholds and computes every Sky number. Only the orchestration layer persists side effects. Model prompts cannot grant permissions. Never turn untrusted user text into system instructions or arbitrary tool names/URLs.
+Muse interprets and proposes (themes, constellations, names, clues, quests, Sky headlines). Server code authorizes, validates and enforces every guarantee. Code detects thresholds and computes every Sky number. Only the orchestration layer persists side effects. Model prompts cannot grant permissions. Never turn untrusted user text into system instructions or arbitrary tool names/URLs.
 
 ## Data and operational boundaries
 No keys, real participant content, raw audio, tokens, resumes, or private constraints in commits, docs, logs, error bodies, or public telemetry. Do not log whole model prompts. Store minimized request metadata and validation outcomes. Public explanations must be constructed/validated from an allowlist. Synthetic profile flags survive every projection.
@@ -60,7 +60,7 @@ Auth comes from server-verified sessions, never a client-supplied participantId 
 ## Handoffs and verification
 Update docs/handoffs/<name>.md and append docs/updates/<name>.md at checkpoints with timestamp, branch/commit, changed contracts/files, commands/results, blocked dependencies and exact next consumer action. Inspect remote role logs when local main is stale. Shared context lives on main, not in private copies.
 
-Use focused tests for your behavior. Document failures honestly. For UI work run relevant web checks; for security/concurrency changes include adversarial cases. Never call a plan implemented, a replay live, or a target achieved. Never let a player see another player's words: riddles, society names and Sky themes pass the no-quote and sensitive-term guards, and safety-flagged answers never reach any game output. Update PROJECT_KNOWLEDGE.md when a merged implementation changes the evidence.
+Use focused tests for your behavior. Document failures honestly. For UI work run relevant web checks; for security/concurrency changes include adversarial cases. Never call a plan implemented, a replay live, or a target achieved. Never let a player see another player's words: clues, constellation names and Sky themes pass the no-quote and sensitive-term guards, and safety-flagged answers never reach any game output. Update PROJECT_KNOWLEDGE.md when a merged implementation changes the evidence.
 
 ## Finish
 Push your role branch, report exact scope and verification, and open or prepare a reviewable PR if authorized. Keep main's documentation synchronized with implemented contracts. No unrequested new services, paid provider runs, or public deployments solely to verify documentation.

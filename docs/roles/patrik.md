@@ -1,7 +1,7 @@
 # Patrik: Privacy, safety and output guard
 Branch: `role/patrik-privacy`. Read root AGENTS.md, PROJECT_KNOWLEDGE.md, docs/COORDINATION.md, docs/DECISIONS.md (D001, D003) and `contracts/protocol.ts` (`CONTRACT_VERSION` 1.0.0, pending D001/D003 ACK) first.
 
-Product: Constellations, a campus secret-society game inside Facebook Groups. Muse is the Keeper (game master). Weekly Confession, Induction into societies of 3-5 by meaning, Hunt with 3-level riddles, in-person passphrase/found-code confirm, Sky reveal (guessed vs actual prevalence), then a Ritual quest (P1). Friendship only, 18+. Muse proposes, code enforces.
+Product: Constellations, a campus constellation game inside Facebook Groups. Muse is Muse (game master). Weekly Confession, Formation into constellations of 3-5 by meaning, Search with 3-level clues, in-person found-code confirm, Sky reveal (guessed vs actual prevalence), then a Meetup plan (P1). Friendship only, 18+. Muse proposes, code enforces.
 
 ## Mission
 Start with [your phase-by-phase build checklist](../phases/patrik.md). It specifies paths, work, dependencies, exit evidence and handoffs for P0-P6 on the re-based timeline (P0 16:00 PST, freeze 04:30, deadline 10:30 AM PST Nov 13, team-supplied and not independently verified).
@@ -38,27 +38,27 @@ Consent screen (3 toggles, all required), private support card (campus counselin
 2. ConsentV2 and join: no answer stored before all three toggles; revoke honored during model calls.
 3. Private answers with row-level checks; deletion before lock and 14-day TTL; deleted answer absent from re-runs.
 4. Prompt builder (random IDs plus answer text only) and output guard; expose both to Adam, Rishi and Kai; wire to every Muse text output before release.
-5. M1 safety triage through Adam's adapter before matching; flagged answers excluded from societies, riddles and themes; support card.
+5. M1 safety triage through Adam's adapter before matching; flagged answers excluded from constellations, clues and themes; support card.
 6. Blocks API and validation hook for M4 output; Sky threshold filter on server aggregates; venue allowlist check for quests; red-team list of 30 answers.
 
 ## Checkpoints
 H0-1 (16:00-17:00 PST, P0): check tags (COORDINATION §1), ACK D001/D003, confirm dependencies, claim shared files.
 17:00-20:00 (P1): module runs alone against labeled synthetic fixtures with clear status.
-20:00-23:00 (P2): integrated round on 3+ phones: join, confess, induct, riddles, confirm.
+20:00-23:00 (P2): integrated round on 3+ phones: join, confess, form, clues, confirm.
 23:00-02:00 (P3): Sky, safety triage, blocks and operator console complete; failure cases pass.
-02:00-04:30 (P4/P5): P1 features (ritual, riddle veto) only if the critical path is green; hardening; feature freeze at 04:30 with test evidence and no contract ambiguity.
+02:00-04:30 (P4/P5): P1 features (meetup, clue veto) only if the critical path is green; hardening; feature freeze at 04:30 with test evidence and no contract ambiguity.
 04:30-10:30 (P6): UI/demo/submission only. Polish your component, verify integration, rehearse, support backup video and Devpost.
 
 ## Required checks
 Privacy tests from the PRD table:
 - Another player's session gets 403 on any answer endpoint.
 - Unit test on every prompt payload: only random IDs and answer text.
-- Fuzz test with known answers: no riddle, name or theme contains 5+ consecutive words from any answer.
-- Red-team list of 30 answers: no sensitive categories in riddles.
+- Fuzz test with known answers: no clue, name or theme contains 5+ consecutive words from any answer.
+- Red-team list of 30 answers: no sensitive categories in clues.
 - Theme with 2 members never renders (threshold 3 demo, 25 prod).
-- Seeded distress answer never appears in any society, riddle or theme.
+- Seeded distress answer never appears in any constellation, clue or theme.
 - Deleted answer absent from re-run; expired answers removed after 14 days.
-- Blocked pair rejected and re-solved; quest outside venue allowlist rejected; vetoed riddle never sent (P1).
+- Blocked pair rejected and re-solved; quest outside venue allowlist rejected; vetoed clue never sent (P1).
 - Forged IDs; unauthenticated writes; consent revoked during a model call; no answer collected before consent.
 Report exact commands/results; do not manufacture performance or quality numbers. Fixture or fake-provider tests prove local behavior, not live Muse integration; label every synthetic element.
 

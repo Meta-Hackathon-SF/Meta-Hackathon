@@ -1,7 +1,7 @@
 # Will: Join, Confession and feature composition
 Branch: `role/will-voice-ui`. Read root AGENTS.md, PROJECT_KNOWLEDGE.md, docs/COORDINATION.md, docs/DECISIONS.md (D001, D003) and `contracts/protocol.ts` (`CONTRACT_VERSION` 1.0.0, pending D001/D003 ACK) first.
 
-Product: Constellations, a campus secret-society game inside Facebook Groups. Muse is the Keeper (game master). Weekly Confession, Induction into societies of 3-5 by meaning, Hunt with 3-level riddles, in-person passphrase/found-code confirm, Sky reveal (guessed vs actual prevalence), then a Ritual quest (P1). Friendship only, 18+. Muse proposes, code enforces.
+Product: Constellations, a campus constellation game inside Facebook Groups. Muse is Muse (game master). Weekly Confession, Formation into constellations of 3-5 by meaning, Search with 3-level clues, in-person found-code confirm, Sky reveal (guessed vs actual prevalence), then a Meetup plan (P1). Friendship only, 18+. Muse proposes, code enforces.
 
 ## Mission
 Start with [your phase-by-phase build checklist](../phases/will.md). It specifies paths, work, dependencies, exit evidence and handoffs for P0-P6 on the re-based timeline (P0 16:00 PST, freeze 04:30, deadline 10:30 AM PST Nov 13, team-supplied and not independently verified).
@@ -36,8 +36,8 @@ Muse model: `muse-spark-1.3` was echoed by the provider during earlier testing o
 Join, explainer, Confession, follow-up, guess slider (0-100), answer review with edit/delete, Muse metadata chip component, tab/route in the shell.
 
 ## Implementation sequence
-1. Build the shell in `features/constellations/shell` with a Constellations tab; keep existing mock pages working; define component slots for induction, hunt, sky, operator.
-2. Join flow: explainer (what the Keeper does, what is private, what is shared), consent screen slot from Patrik (no answer collected before consent), display name and avatar color, QR deep link.
+1. Build the shell in `features/constellations/shell` with a Constellations tab; keep existing mock pages working; define component slots for formation, search, sky, operator.
+2. Join flow: explainer (what Muse does, what is private, what is shared), consent screen slot from Patrik (no answer collected before consent), display name and avatar color, QR deep link.
 3. Confession: voice via a recorder and `server/voice/` transcription with text always available; voice failure falls back to text without losing the session; mic denial and unsupported browser handled.
 4. One follow-up at most (skippable); guess slider saved separately; show own answer; edit/delete until lock; handle stale async results and cancelled requests.
 5. Compose Rishi, Adam, Patrik and Kai components with scoped CSS, mobile-first; real-time via SSE client; Muse chip and truth labels everywhere.
@@ -45,9 +45,9 @@ Join, explainer, Confession, follow-up, guess slider (0-100), answer review with
 ## Checkpoints
 H0-1 (16:00-17:00 PST, P0): check tags (COORDINATION §1), ACK D001/D003, confirm dependencies, claim shared files.
 17:00-20:00 (P1): module runs alone against labeled synthetic fixtures with clear status.
-20:00-23:00 (P2): integrated round on 3+ phones: join, confess, induct, riddles, confirm.
+20:00-23:00 (P2): integrated round on 3+ phones: join, confess, form, clues, confirm.
 23:00-02:00 (P3): Sky, safety triage, blocks and operator console complete; failure cases pass.
-02:00-04:30 (P4/P5): P1 features (ritual, riddle veto) only if the critical path is green; hardening; feature freeze at 04:30 with test evidence and no contract ambiguity.
+02:00-04:30 (P4/P5): P1 features (meetup, clue veto) only if the critical path is green; hardening; feature freeze at 04:30 with test evidence and no contract ambiguity.
 04:30-10:30 (P6): UI/demo/submission only. Polish your component, verify integration, rehearse, support backup video and Devpost.
 
 ## Required checks

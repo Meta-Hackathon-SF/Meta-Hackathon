@@ -14,7 +14,7 @@ Each teammate clones this repository locally and checks out their branch. The co
 Paste this, substituting your name:
 > I am NAME. Read AGENTS.md, PROJECT_KNOWLEDGE.md, docs/COORDINATION.md, docs/DECISIONS.md (D001, D003), contracts/protocol.ts (v1.0.0, pending ACK), and docs/roles/NAME.md and docs/phases/NAME.md. FIRST check open PRs/issues for tags addressed to me (COORDINATION §1) and answer them before anything else; then record my D001/D003 ACK. Switch to my assigned role branch only if the checkout is clean; otherwise preserve work and use a separate worktree. Implement my first incomplete checkpoint within my ownership boundaries. Build against the shared interfaces and coordinate any change through docs/DECISIONS.md. If I am blocked on another owner's interface, contract change, data shape, ACK or endpoint: stop at the phase boundary, push, open or update a `[BLOCKED]` draft PR tagging that owner's handle with the exact request block (COORDINATION §2), and continue only with a labeled test-only adapter; never invent their interface. Update my handoff with exact verification and dependencies. The web app is a mock Facebook shell; Constellations feature UI lives at web/src/features/constellations/. Muse proposes, code enforces; label every synthetic element.
 
-Product in one line: a campus secret-society game inside Facebook Groups where Muse (the Keeper) turns private weekly confessions into societies of 3-5 matched by meaning, who find each other in person.
+Product in one line: a campus constellation game inside Facebook Groups where Muse  turns private weekly confessions into constellations of 3-5 matched by meaning, who find each other in person.
 
 ## Keeping shared knowledge current
 ```sh

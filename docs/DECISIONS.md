@@ -5,13 +5,13 @@ ACKs are recorded as a reply in the PR that proposed the decision (`ACK`, `CHANG
 
 ## D001: Product and ownership
 ID / UTC timestamp: D001 / 2026-11-13T00:00Z
-Decision and rationale: Build **Constellations**, per the team PRD of Nov 12 2026. It is a campus secret-society game inside Facebook Groups. Muse (the Keeper) reads private weekly confessions, forms societies of 3-5 by meaning, writes riddle chains, and reveals the community as a Sky of guessed vs actual prevalence. Main was reset to the mock Facebook web UI. Earlier Group Quests code is archived on `archive/group-quests-before-pivot` and is not part of this build.
+Decision and rationale: Build **Constellations**, per the team PRD of Nov 12 2026. It is a campus constellation game inside Facebook Groups. Muse  reads private weekly confessions, forms constellations of 3-5 by meaning, writes clue chains, and reveals the community as a Sky of guessed vs actual prevalence. Main was reset to the mock Facebook web UI. Earlier Group Quests code is archived on `archive/group-quests-before-pivot` and is not part of this build.
 Owners (branches unchanged):
-- Rishi: induction engine (M3 theme discovery, M4 society formation, validation, keyword baseline), induction UI.
-- Adam: single Muse adapter, Keeper prompting, M2 clarify, M5 identity, M6 riddles, M7 ritual quest, M8 Sky narration; Hunt UI.
+- Rishi: formation engine (M3 theme discovery, M4 constellation formation, validation, keyword baseline), formation UI.
+- Adam: single Muse adapter, Muse prompting, M2 clarify, M5 identity, M6 clues, M7 meetup plan, M8 Sky narration; Search UI.
 - Will: join/QR, confession capture (voice/text), follow-up, guess slider, edit/delete, feature composition and routing; Muse metadata chip.
 - Patrik: consent (3 toggles incl. 18+), private answers, blocks, M1 safety triage, output guard, Sky threshold, deletion and TTL; consent screen and support card.
-- Kai: server scaffold, round lifecycle, parallel Muse job orchestration, find confirm, SSE, Sky aggregates, ritual event (P1), operator console, synthetic top-up, reset.
+- Kai: server scaffold, round lifecycle, parallel Muse job orchestration, find confirm, SSE, Sky aggregates, meetup event (P1), operator console, synthetic top-up, reset.
 Status: proposed by Rishi.
 ACK evidence: pending `@adamzhang06`, `@willapat`, `@patrikliska13`, `@beatopia`.
 Contract version / migration: see D003.
@@ -26,7 +26,7 @@ Verification: none yet.
 
 ## D003: Contract 1.0.0
 ID / UTC timestamp: D003 / 2026-11-13T00:00Z
-Decision and rationale: `contracts/protocol.ts` 1.0.0 defines the Constellations wire types, Muse job I/O M1-M8 and the ports between owners (KeeperPort, InductionPort, OutputGuard). JSON keys are camelCase everywhere. Each producer must ACK its shapes; any change goes through a PR plus an entry here.
+Decision and rationale: `contracts/protocol.ts` 1.0.0 defines the Constellations wire types, Muse job I/O M1-M8 and the ports between owners (MusePort, FormationPort, OutputGuard). JSON keys are camelCase everywhere. Each producer must ACK its shapes; any change goes through a PR plus an entry here.
 Status: proposed.
 ACK evidence: pending all owners.
 Contract version / migration: 1.0.0, first version.

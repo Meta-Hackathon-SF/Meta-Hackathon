@@ -38,7 +38,7 @@ Times are PST on Nov 12-13, 2026 (P0 starts 16:00; feature freeze 04:30; deadlin
 
 - [ ] Build: Read contracts/protocol.ts (v1.0.0) and D001/D003. Plan the Constellations shell and the join/Confession screens against the existing mock Facebook UI in `web/`; plan voice via `server/voice/`. Claim shared web routing files.
 - [ ] Exit evidence: Veto path works or is explicitly cut.
-- [ ] Dependency / fallback: Cut order: veto, ritual, voice. If a dependency is missing at the phase boundary: stop, push, open/update a `[BLOCKED]` draft PR tagging @adamzhang06 and @rishibagri and @beatopia (COORDINATION §2), and continue with a labeled test adapter.
+- [ ] Dependency / fallback: Cut order: veto, meetup, voice. If a dependency is missing at the phase boundary: stop, push, open/update a `[BLOCKED]` draft PR tagging @adamzhang06 and @rishibagri and @beatopia (COORDINATION §2), and continue with a labeled test adapter.
 - [ ] Handoff: update `docs/handoffs/will.md` with exact interface, branch/commit, checks/results and the next consumer action; append `docs/updates/will.md`.
 
 ## P5: Freeze verification (03:30-04:30)

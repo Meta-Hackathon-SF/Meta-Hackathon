@@ -4,7 +4,7 @@ Base: /api/v1. Contracts to implement, not existing endpoints; no server exists 
 ## Common envelope and errors
 Authenticated requests use a server-verified session (Patrik's auth flow); never accept a playerId as proof of identity. JSON is camelCase. Return X-Request-Id on every response. Mutations require Idempotency-Key, bound to actor, route and normalized body; reuse with a different body returns 409 IDEMPOTENCY_CONFLICT. Async commands return 202 with {jobId, status:"pending"}; GET /jobs/:jobId returns authorized status, public result or ApiError.
 
-Errors use ApiError in protocol.ts: 400 INVALID_INPUT, 401 UNAUTHENTICATED, 403 FORBIDDEN/CONSENT_REQUIRED, 404 NOT_FOUND, 409 STALE_REVISION/CAPACITY_REACHED/IDEMPOTENCY_CONFLICT/ROUND_LOCKED, 429 RATE_LIMITED, 503 PROVIDER_UNAVAILABLE. Do not disclose another player's existence through private-resource errors. A wrong found code returns the generic not_a_match result, never NOT_IN_SOCIETY.
+Errors use ApiError in protocol.ts: 400 INVALID_INPUT, 401 UNAUTHENTICATED, 403 FORBIDDEN/CONSENT_REQUIRED, 404 NOT_FOUND, 409 STALE_REVISION/CAPACITY_REACHED/IDEMPOTENCY_CONFLICT/ROUND_LOCKED, 429 RATE_LIMITED, 503 PROVIDER_UNAVAILABLE. Do not disclose another player's existence through private-resource errors. A wrong found code returns the generic not_a_match result, never NOT_IN_CONSTELLATION.
 
 ## Player routes
 | Route | Owner | Input | Output |
@@ -19,19 +19,19 @@ Errors use ApiError in protocol.ts: 400 INVALID_INPUT, 401 UNAUTHENTICATED, 403 
 | PATCH / DELETE /rounds/:id/answers/me | Patrik | text / none | updated or deleted; ROUND_LOCKED after lock |
 | GET /rounds/:id/followup | Adam | session | {needsFollowup, question} (max 1 per round) |
 | POST /rounds/:id/guess | Will | percent 0-100 | stored separately from the answer |
-| GET /rounds/:id/induction | Rishi + Kai | session | my society card: name, motto, sigil, color, my passphrase half, members to find, isLooseMatch |
-| GET /rounds/:id/riddles | Adam + Kai | session | my riddles, released levels only |
-| POST /rounds/:id/riddles/:rid/veto | Adam (P1) | none | target vetoes a riddle about self before release |
+| GET /rounds/:id/formation | Rishi + Kai | session | my constellation card: name, shape, color, my found code, members to find, isLooseMatch |
+| GET /rounds/:id/clues | Adam + Kai | session | my clues, released levels only |
+| POST /rounds/:id/clues/:rid/veto | Adam (P1) | none | target vetoes a clue about self before release |
 | POST /rounds/:id/finds | Kai | foundCode | confirmed / pending / not_a_match |
 | GET /rounds/:id/sky | Kai | session | SkyStats (thresholded) |
 | GET /rounds/:id/stream | Kai | Last-Event-ID | SSE of round events, authorized per player |
-| POST /societies/:id/ritual/vote | Kai (P1) | choice in / not_this_week | RitualQuest approvals |
+| POST /constellations/:id/meetup/vote | Kai (P1) | choice in / not_this_week | MeetupPlan approvals |
 
 ## Operator routes
 | Route | Owner | Input | Output |
 | --- | --- | --- | --- |
 | POST /operator/rounds | Kai | questionId | Round (open) |
-| POST /operator/rounds/:id/lock | Kai | none | 202 induction job |
+| POST /operator/rounds/:id/lock | Kai | none | 202 formation job |
 | POST /operator/rounds/:id/advance-level | Kai | none | Round with levelUnlocked+1 ("Demo timing") |
 | POST /operator/rounds/:id/sky | Kai | none | 202 job; SkyStats |
 | POST /operator/rounds/:id/reset | Kai | none | fixture reset only; cannot touch other sessions |
@@ -39,7 +39,7 @@ Errors use ApiError in protocol.ts: 400 INVALID_INPUT, 401 UNAUTHENTICATED, 403 
 | GET /operator/rounds/:id/calls | Kai | none | MuseCallEvidence list (model, callType, latency, source) |
 
 ## Exposure
-Never return another player's Answer, SafetyFlag, Guess, Theme.memberIds, Society.sharedMeaning, raw prompts or private model payloads. Society members see names only after a confirmed Find. Public DTO validators are Patrik's integration deliverable.
+Never return another player's Answer, SafetyFlag, Guess, Theme.memberIds, Constellation.sharedMeaning, raw prompts or private model payloads. Constellation members see names only after a confirmed Find. Public DTO validators are Patrik's integration deliverable.
 
 ## Async and stale responses
 Client retains requestId and ignores superseded results. Job writes check consent and answer versions at publish time. GET and SSE recheck membership on every call.
