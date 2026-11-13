@@ -1,7 +1,7 @@
 # Kai handoff - Constellations 2.0.0
 
 Branch: `role/kai-orchestration`; handle: `@beatopia`; repository: `Meta-Hackathon-SF/Meta-Hackathon`.
-Updated 2026-11-13T05:39Z. Source checkpoints: b1192cb composed app, 057f5aa delivery docs, de0f646 private support-card UI, 0c51048 clean merge of current main (3f62413); operator nudge checkpoint follows. PR #13 remains draft pending final CI/integration review.
+Updated 2026-11-13T05:44Z. Source checkpoints: b1192cb composed app, 057f5aa delivery docs, de0f646 private support-card UI, 0c51048 clean merge of current main (3f62413); 43f6009 guarded operator nudge composition. All source pushed; checkout clean before this docs checkpoint. PR #13 remains draft at the baseline-debug/public reveal projection and owner UI-mount boundaries. Source checkpoint CI is green.
 
 ## Current implementation and consumer action
 
@@ -27,25 +27,25 @@ No deployment, physical-phone run, live provider run or complete live journey is
 - #13 Patrik privacy lease/publish guard, M1/OutputGuard/answer snapshots/report-block storage and #30 full registration delivery ACKed. These are delivered and used, not blockers.
 - #14 registry, cycle slot/hooks, operator readers and UI exports delivered to Will. Root SerializedCycle uses only public owner methods; late session/consent/cycle gates tested.
 - #26 Rishi timeout request delivered in 0c35cde (120s configurable execution ceiling, not under-60s performance evidence). Actual debug-baseline artifact requested separately; no fabricated data.
-- #13 Adam composed app delivered in b1192cb/057f5aa (comment6844866340). Adam independently ran 271 passing planning/provider/orchestration tests with 2 PostgreSQL skips. His ChatSystemPoster/nudge wiring request ACKed in comment6845039376; adapter delivered on main and merged cleanly. Operator route now wired with both private lookups, durable dedupe and fresh publication checks; 13 new offline tests pass.
+- #13 Adam composed app delivered in b1192cb/057f5aa (comment6844866340). Adam independently ran 271 passing planning/provider/orchestration tests with 2 PostgreSQL skips. His ChatSystemPoster/nudge wiring request ACKed in comment6845039376; adapter delivered on main and merged cleanly. Operator route now wired with both private lookups, durable dedupe and fresh publication checks; 13 new offline tests pass. DELIVERED comment6845201965 links pushed43f6009 and exact next scripted integration action.
 - #31 D009 optional brightness proposal ACKed conditionally (comment6845059137): await producer/privacy ACKs and matching version/fixtures/validators before carrying bands; current app stays exact 2.0.0.
 - #13 Patrik stale-handoff correction ACKed in comment6845039376; this handoff replaces the obsolete missing-privacy list.
 
 ## Checks and actual results
 
-- Full local `pytest tests -q`: 782 passed, 2 skipped, 13 subtests passed, one Starlette TestClient httpx deprecation warning. The 2 skips require actual PostgreSQL admin DSN, absent locally. No model call.
-- Focused composed app/recovery/provider-auth/bootstrap/serialization: 34 passed. Separate support/service/runtime/app agent check: 75 passed. Storage/planning: 51 passed + 2 PostgreSQL skips; chat real-port integration: 15 passed. Ruff check/format clean on 51 owned Python files.
+- Full local `pytest tests -q` at43f6009: 800 passed, 2 skipped, 13 subtests passed (23.04s), one Starlette TestClient httpx deprecation warning. The 2 skips require actual PostgreSQL admin DSN, absent locally. No model call.
+- Focused composed app/recovery/provider-auth/bootstrap/serialization: 34 passed. Separate support/service/runtime/app agent check: 75 passed. Storage/planning: 51 passed + 2 PostgreSQL skips; chat real-port integration: 15 passed. Nudge/recovery/chat combined43passed; Ruff check/format clean on53owned Python files.
 - Web lint exit0 with 2 existing warnings in Will-owned DailyPage/OperatorConsole; build passed. Initial full E2E: 36 passed/2 mobile page-load timeouts; both passed isolated with one worker (8.2s). Full single-worker repeat passed all 38 tests (1.8m). No browser suites overlapped.
 - Full custom chat/Sky suite: 42 passed desktop/mobile (44.6s), including sender support cue vs contact rejection, pair-only identity, auth loss, replay, stale expiry and runtime privacy validation. Browser HTTP is intercepted by labeled TEST-ONLY adapter; not a backend/live integration claim.
-- Earlier foundation CI at 62e6487 passed backend/PostgreSQL and frontend/browser. CI run43372465531 verified exact head de0f646: Backend/PostgreSQL passed46s and frontend/browser passed2m8s, including the configured real disposable PostgreSQL tests. Nudge/main-merge head needs its own run; do not reuse de0f646 as evidence for later code.
+- Earlier foundation CI at 62e6487 passed backend/PostgreSQL and frontend/browser. CI run43372465531 verified exact head de0f646: Backend/PostgreSQL passed46s and frontend/browser passed2m8s, including the configured real disposable PostgreSQL tests. Current source CI run43373392258 verified exact43f60093cd5cbf505079ff99997123a813f808d0: backend/PostgreSQL passed47s and frontend/browser passed1m50s. The disposable PostgreSQL jobs execute the actual storage/migration/RLS checks, not local skips. Subsequent docs-only checkpoint is not a new source validation claim.
 
 ## Remaining boundaries and next actions
 
 - Rishi: actual IDs-only baseline debug artifact/public method needed for operator comparison (#26 comment6843775909). Current route returns retryable PROVIDER_UNAVAILABLE rather than deriving nonexistent groups from agreement flags.
-- Named reveal-card metadata is absent from ChatRoom. Need producer/consumer-approved public projection for name/shape/isLooseMatch; do not expose full private Constellation or add fields silently. Generic room/chat UI works.
+- Named reveal-card metadata is absent from ChatRoom. Need producer/consumer-approved public projection for name/shape/isLooseMatch/evidence; do not expose full private Constellation or add fields silently. Formal Needs from Will recorded in #13 body alongside his verified Groups mount. Generic room/chat UI works; no fixture is claimed live.
 - Will's cycle state/once-per-answer M2 cache is process-local; cycle owner routes validate idempotency headers but lack full actor/route/body replay. Public cache TTL hook not supplied. Workflow/chat/formation state and planning selection/decision stores are durable; this does not imply durable owner cycle/M2 state.
 - Step6 operator M7 is now mounted using Adam's NudgeService/VenueCatalog/ChatSystemPoster. Both async private lookups scope to verified operator community; fresh consent/session/cycle/formation gates run before persistence, after M7 and inside chat commit after M1. Every public field/text passes real OutputGuard; member answers stay guard-only. First proposal wins durably, rows bind cycle + formation version, and chat command replay recovers a crash after posting. Private nudge data is removed on invalidation/14-day retention. Mid-week scheduling and step7 generation remain first cuts; no live M7 run.
-- Before ready: finish required web acceptance and verify current CI including actual disposable PostgreSQL tests, then review exact head against current main. Source remains available to Adam now.
+- Required local acceptance and exact source-head CI now pass. Ownership/diff whitespace review clean across85changed paths relative to main; no contracts changed. Before ready/integration: resolve or explicitly cut the public card/debug/UI-mount boundaries through the named owners; do not merge a teammate draft. No independent required Kai task remains outside these interface boundaries. Source is available to Adam now.
 
 ## Parallelism and ownership
 
