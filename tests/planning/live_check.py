@@ -4,9 +4,8 @@
     python3 -m tests.planning.live_check m2-vague   # only the named calls: m2-vague m2-specific m7 m6
 
 Not collected by pytest. Inputs are synthetic (shared fixtures). Uses the real
-Muse adapter and the TEST-ONLY OutputGuard double, so a pass here says the
-prompts and validators work with live Muse output, not that Patrik's guard
-accepts it. Prints model text to the terminal only; nothing is written to disk.
+Muse adapter and Patrik's real OutputGuard when server.privacy is importable
+(otherwise the TEST-ONLY double; the output names which one ran). Prints model text to the terminal only; nothing is written to disk.
 """
 from __future__ import annotations
 
@@ -51,7 +50,11 @@ async def main() -> int:
     transport = CappedTransport(MetaChatCompletionsTransport(config))
     muse = build_muse_adapter(register_planning_tasks(TaskRegistry()), config, transport=transport,
                               telemetry=lambda _r: None)
-    guard = TestOnlyOutputGuard()
+    try:  # Patrik's real guard when its dependencies are installed
+        from server.privacy import OutputGuard
+        guard, guard_name = OutputGuard(), "server.privacy.OutputGuard (real)"
+    except ImportError:
+        guard, guard_name = TestOnlyOutputGuard(), "TEST-ONLY double"
     bank = load_default_bank()
     week = json.loads((FIXTURES / "week-sample.json").read_text())
     answers = [a["text"] for a in week["answers"] if a["playerId"] in ("p-maya", "p-dev", "p-jordan")]
@@ -104,7 +107,7 @@ async def main() -> int:
         except PlanningError as exc:
             report.append({"call": "M6", "error": exc.code, "message": exc.message})
 
-    print(json.dumps({"providerCalls": transport.calls, "report": report}, indent=2))
+    print(json.dumps({"guard": guard_name, "providerCalls": transport.calls, "report": report}, indent=2))
     return 0
 
 
