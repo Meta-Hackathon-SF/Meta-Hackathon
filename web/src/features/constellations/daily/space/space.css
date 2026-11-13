@@ -2291,7 +2291,7 @@
   padding: 4px 16px 10px;
 }
 
-/* ---- Telescoping entry: iris opens, stars streak out, sky settles from a zoomed view ---- */
+/* ---- Telescoping entry: a lens aperture opens while the sky pulls back from a tight zoom ---- */
 .spc-telescope {
   position: absolute;
   inset: 0;
@@ -2299,59 +2299,59 @@
   overflow: hidden;
   pointer-events: none;
 }
-.spc-telescope-streaks {
+.spc-telescope-mask {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-}
-.spc-telescope-iris {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 36vmin;
-  height: 36vmin;
-  margin: -18vmin 0 0 -18vmin;
-  border-radius: 50%;
-  box-shadow: 0 0 0 150vmax #02030a;
-  transform: scale(0.12);
-  animation: spc-iris 1500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  background: #02030a;
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent var(--r, 6%), #000 calc(var(--r, 6%) + 2%));
+  mask: radial-gradient(circle at 50% 50%, transparent var(--r, 6%), #000 calc(var(--r, 6%) + 2%));
+  animation: spc-aperture 1600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .spc-telescope-ring {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 36vmin;
-  height: 36vmin;
-  margin: -18vmin 0 0 -18vmin;
+  width: 150vmax;
+  height: 150vmax;
+  margin: -75vmax 0 0 -75vmax;
   border-radius: 50%;
-  border: 2px solid rgba(160, 190, 255, 0.55);
-  box-shadow: 0 0 24px rgba(69, 153, 255, 0.5), inset 0 0 24px rgba(69, 153, 255, 0.25);
-  transform: scale(0.12);
-  opacity: 1;
-  animation: spc-iris-ring 1500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  border: 1px solid rgba(170, 200, 255, 0.55);
+  box-shadow: 0 0 18px rgba(80, 150, 255, 0.45);
+  transform: scale(0.06);
+  animation: spc-lens 1600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-@keyframes spc-iris {
+.spc-telescope-ring.is-inner {
+  border-color: rgba(170, 200, 255, 0.25);
+  box-shadow: none;
+  animation-delay: 70ms;
+}
+@property --r {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 6%;
+}
+@keyframes spc-aperture {
   to {
-    transform: scale(4.2);
+    --r: 85%;
+    opacity: 0;
   }
 }
-@keyframes spc-iris-ring {
+@keyframes spc-lens {
   70% {
     opacity: 0.9;
   }
   to {
-    transform: scale(4.2);
+    transform: scale(1);
     opacity: 0;
   }
 }
 .spc-stage .spc-canvas {
-  animation: spc-zoom-settle 1500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: spc-zoom-settle 1600ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes spc-zoom-settle {
   from {
-    transform: scale(2.6);
-    filter: blur(6px);
+    transform: scale(2.4);
+    filter: blur(5px);
   }
   to {
     transform: scale(1);
@@ -2465,39 +2465,32 @@
 .spc-feed-compose {
   padding: 14px 18px 18px;
 }
-.spc-feed .spc-comment-box {
-  min-height: 64px;
-  padding: 8px 8px 8px 16px;
-  border-radius: 22px;
-  box-shadow: inset 0 0 0 1.5px rgba(24, 119, 242, 0.45);
-  background: #fff;
-}
 .spc-feed .spc-comment-box textarea {
-  font-size: 17px;
-  min-height: 46px;
+  font-size: 15px;
+  min-height: 40px;
 }
 .spc-feed .spc-comment-icon.is-send:not(:disabled) {
-  background: var(--spc-blue, #1877f2);
-  color: #fff;
+  color: var(--spc-blue, #1877f2);
 }
 .spc-starters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 10px 0 2px 42px;
+  margin: 6px 0 0 42px;
+  font-size: 13px;
+  color: var(--spc-sub, #65676b);
 }
 .spc-starter {
-  padding: 7px 14px;
+  padding: 0;
+  margin-right: 12px;
   border: 0;
-  border-radius: 999px;
-  background: rgba(24, 119, 242, 0.1);
-  color: var(--spc-blue, #1877f2);
-  font-size: 14px;
-  font-weight: 600;
+  background: none;
+  color: var(--spc-sub, #65676b);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: #ced0d4;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 .spc-starter:hover {
-  background: rgba(24, 119, 242, 0.18);
+  color: var(--spc-text, #050505);
 }
 
 /* Mobile: sit above the bottom tab bar (which now also carries the Space tab). */
@@ -2506,4 +2499,75 @@
     bottom: calc(84px + env(safe-area-inset-bottom, 0px));
     right: 12px;
   }
+}
+
+/* ---- Chat -> Messenger send: the panel becomes the Messenger bubble, folds to a plane, flies to the icon ---- */
+.spc-msgsend {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.spc-msgsend-card {
+  position: relative;
+  width: min(300px, 80vw);
+  height: min(380px, 60vh);
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #00b2ff 0%, #006aff 55%, #a033ff 100%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 120, 255, 0.45);
+  color: #fff;
+  will-change: transform;
+}
+.spc-msgsend-body {
+  display: grid;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+}
+.spc-msgsend-body span {
+  font-size: 14px;
+  opacity: 0.85;
+}
+.spc-msgsend-plane {
+  position: absolute;
+  opacity: 0;
+}
+
+/* ---- Text boxes: flat and native. One neutral fill, a hairline on focus, no blue rings or glow. ---- */
+.spc-composer,
+.spc-textarea,
+.spc-comment-box {
+  background: #f0f2f5;
+  border-radius: 10px;
+  box-shadow: none;
+  transition: background 120ms ease;
+}
+.spc-comment-box {
+  border-radius: 18px;
+}
+.spc-composer:focus-within,
+.spc-textarea:focus,
+.spc-comment-box:focus-within {
+  box-shadow: none;
+  background: #e8eaee;
+}
+.spc-composer textarea,
+.spc-textarea {
+  font-size: 16px;
+  line-height: 1.45;
+}
+.spc-chat-input {
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.spc-chat-input:focus {
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.14);
+}
+@media (prefers-color-scheme: dark) {
+  .spc-composer, .spc-textarea, .spc-comment-box { background: #3a3b3c; }
+  .spc-composer:focus-within, .spc-textarea:focus, .spc-comment-box:focus-within { background: #4a4b4d; }
 }

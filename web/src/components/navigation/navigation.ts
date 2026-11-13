@@ -36,11 +36,11 @@ export const tabIcons = {
 
 export const primaryNavigation = [
   { to: "/", label: "Home", icon: tabIcons.home },
+  { to: "/space", label: "Facebook Space", icon: tabIcons.space },
   { to: "/friends", label: "Friends", icon: tabIcons.friends },
   { to: "/watch", label: "Video", icon: tabIcons.video },
   { to: "/marketplace", label: "Marketplace", icon: tabIcons.marketplace },
   { to: "/gaming", label: "Gaming", icon: tabIcons.gaming },
-  { to: "/space", label: "Facebook Space", icon: tabIcons.space },
 ];
 
 /** Left sidebar, in Facebook's order. Feeds ("/") never shows as active, like Facebook. */

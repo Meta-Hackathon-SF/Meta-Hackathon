@@ -11,6 +11,9 @@ const LONG = "Mostly the dining hall with my floor, loud but good";
 
 async function fakeMicrophone(page: Page, behavior: "allow" | "deny") {
   await page.addInitScript((mode) => {
+    // Force the recorder path: the demo-only browser speech engine would bypass the fixture transcript.
+    Object.defineProperty(window, "SpeechRecognition", { configurable: true, value: undefined });
+    Object.defineProperty(window, "webkitSpeechRecognition", { configurable: true, value: undefined });
     const stream = { getTracks: () => [{ stop() {} }] };
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true,
@@ -488,7 +491,9 @@ test("v3 chat: minimise to the dock, reopen, and a room not everyone kept disapp
 test("v3 chat: if everyone keeps it, it moves into Messenger", async ({ page }) => {
   const chat = await toSundayChat(page);
   await chat.getByRole("button", { name: "Keep", exact: true }).click(); // the others follow
-  await expect(chat.getByText("Everyone kept it. It moved to Messenger.")).toBeVisible({ timeout: 6000 });
+  await expect(page.getByTestId("spc-send-messenger")).toBeVisible({ timeout: 6000 }); // fold + fly animation
+  await expect(page.getByTestId("spc-send-messenger")).toHaveCount(0, { timeout: 6000 });
+  await expect(chat.getByText("Everyone kept it. It moved to Messenger.")).toBeVisible();
   await chat.getByTestId("spc-open-messenger").click();
   await expect(page).toHaveURL(/\/messages/);
   await expect(page.getByTestId("messenger-constellation-thread")).toContainText("Your constellation");

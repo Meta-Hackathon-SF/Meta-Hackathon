@@ -8,6 +8,7 @@ import { CONTACT_PATTERN, PREVIEW_DAY_COUNTS, PREVIEW_MEMBERS } from "./preview"
 import SkyCanvas from "./SkyCanvas";
 import Telescope from "./Telescope";
 import { chat, KEEP_KEYS, useChat } from "./chatStore";
+import MessengerSend from "./MessengerSend";
 
 type CanvasMode = "daily" | "sky" | "forming" | "main";
 
@@ -213,6 +214,13 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
     chat.start();
     chat.minimize(false);
   }, []);
+  // Everyone keeping it plays the send-to-Messenger move once, on the transition (not on re-entry).
+  const [sending, setSending] = useState(false);
+  const wasKept = useRef(kept);
+  useEffect(() => {
+    if (kept && !wasKept.current) setSending(true);
+    wasKept.current = kept;
+  }, [kept]);
 
   const send = () => {
     const t = draft.trim();
@@ -237,6 +245,7 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
     later(3200, () => vote("3"));
   };
   const member = sheet >= 0 ? PREVIEW_MEMBERS[sheet] : null;
+  const sendOverlay = sending ? <MessengerSend onDone={() => setSending(false)} /> : null;
   if (store.status === "expired")
     return (
       <div className="spc-screen spc-night" data-testid="spc-chat-expired">
@@ -254,6 +263,7 @@ export function ChatScreen({ onBack, onRevealed }: { onBack: () => void; onRevea
 
   return (
     <div className="spc-screen spc-night" data-testid="spc-chat">
+      {sendOverlay}
       <StarField dense />
       <div className="spc-chat-head">
         <button type="button" className="spc-round is-glass" onClick={onBack} aria-label="Back">
