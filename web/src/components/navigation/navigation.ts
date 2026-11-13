@@ -1,16 +1,17 @@
+import { Clapperboard, Home, Store, Users, UsersRound } from "lucide-react";
 import {
-  Bookmark,
-  CalendarDays,
-  Clapperboard,
-  History,
-  Home,
-  LayoutList,
-  MessageCircle,
-  Sparkles,
-  Store,
-  Users,
-  UsersRound,
-} from "lucide-react";
+  AiIcon,
+  ConstellationsIcon,
+  EventsIcon,
+  FeedsIcon,
+  FriendsIcon,
+  GroupsIcon,
+  MarketplaceIcon,
+  MemoriesIcon,
+  MessengerIcon,
+  SavedIcon,
+  VideoIcon,
+} from "./AppIcons";
 
 export const primaryNavigation = [
   { to: "/", label: "Home", icon: Home },
@@ -21,28 +22,28 @@ export const primaryNavigation = [
 ];
 
 export const sidebarNavigation = [
-  { to: "/friends", label: "Friends", icon: Users, color: "blue" },
-  { to: "/memories", label: "Memories", icon: History, color: "cyan" },
-  { to: "/saved", label: "Saved", icon: Bookmark, color: "purple" },
-  { to: "/groups", label: "Groups", icon: UsersRound, color: "blue" },
+  { to: "/friends", label: "Friends", icon: FriendsIcon, color: "blue" },
+  { to: "/memories", label: "Memories", icon: MemoriesIcon, color: "cyan" },
+  { to: "/saved", label: "Saved", icon: SavedIcon, color: "purple" },
+  { to: "/groups", label: "Groups", icon: GroupsIcon, color: "blue" },
   {
     to: "/constellations",
     label: "Constellations",
-    icon: Sparkles,
+    icon: ConstellationsIcon,
     color: "purple",
   },
-  { to: "/watch", label: "Video", icon: Clapperboard, color: "pink" },
-  { to: "/marketplace", label: "Marketplace", icon: Store, color: "cyan" },
-  { to: "/events", label: "Events", icon: CalendarDays, color: "red" },
+  { to: "/watch", label: "Video", icon: VideoIcon, color: "pink" },
+  { to: "/marketplace", label: "Marketplace", icon: MarketplaceIcon, color: "cyan" },
+  { to: "/events", label: "Events", icon: EventsIcon, color: "red" },
 ];
 
 export const extraNavigation = [
   {
     to: "/groups",
     label: "Meta AI Explorers",
-    icon: Sparkles,
+    icon: AiIcon,
     color: "purple",
   },
-  { to: "/", label: "Feeds", icon: LayoutList, color: "blue" },
-  { to: "/messages", label: "Messenger", icon: MessageCircle, color: "blue" },
+  { to: "/", label: "Feeds", icon: FeedsIcon, color: "blue" },
+  { to: "/messages", label: "Messenger", icon: MessengerIcon, color: "blue" },
 ];
