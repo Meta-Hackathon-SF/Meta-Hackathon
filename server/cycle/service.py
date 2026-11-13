@@ -488,6 +488,20 @@ class CycleService:
         record = self._load(cycle_id, session)
         return [self._question(record, d) for d in self._released_days(record)]
 
+    def question_texts(self, cycle_id: str, community_id: str) -> dict[str, str]:
+        """Server-side, no-session reader for formation (#50, D014): ``{questionId: text}``
+        for the cycle's released days, from the questions already stored on the cycle.
+        Never selects new questions and never fires cycle hooks (safe to call from a job).
+        A cycle in another community is indistinguishable from a missing one."""
+        with self._repo.lock:
+            record = self._repo.get(cycle_id)
+            if record is None or record.cycle.communityId != community_id:
+                raise CycleError("NOT_FOUND")
+            return {
+                q.question.questionId: q.question.text
+                for q in (self._question(record, d) for d in self._released_days(record))
+            }
+
     def my_answers(self, session: Session, cycle_id: str) -> list[DailyAnswer]:
         self._load(cycle_id, session)
         return sorted(self._answers.list_for_player(cycle_id, session.playerId), key=lambda a: a.day)

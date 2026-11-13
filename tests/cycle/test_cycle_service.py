@@ -608,3 +608,29 @@ def test_answered_today_is_zero_once_the_week_locks():
     assert env.service.current(COMMUNITY).status != "open"
     assert env.service.answered_today(cycle.cycleId) == 0
     assert env.service.answered_today(cycle.cycleId, 1) == 1
+
+
+def test_question_texts_returns_stored_released_questions_without_a_session():
+    env = Env()
+    cycle = env.new()
+    first = env.service.question_texts(cycle.cycleId, COMMUNITY)
+    released = env.service.released_questions(MAYA, cycle.cycleId)
+    assert first == {q.question.questionId: q.question.text for q in released}
+    assert len(first) == 1  # future days never leak
+    for _ in range(4):
+        env.service.advance(cycle.cycleId)
+    week = env.service.question_texts(cycle.cycleId, COMMUNITY)
+    assert len(week) == 5 and set(first) <= set(week)
+    assert env.service.question_texts(cycle.cycleId, COMMUNITY) == week  # stable: never re-selects
+    hooks_before = list(env.hooks.events)
+    env.service.question_texts(cycle.cycleId, COMMUNITY)
+    assert env.hooks.events == hooks_before  # read-only, fires no hooks
+
+
+def test_question_texts_hides_other_communities_and_missing_cycles():
+    env = Env()
+    cycle = env.new()
+    for cycle_id, community in ((cycle.cycleId, "community-other"), ("cycle-missing", COMMUNITY)):
+        with pytest.raises(CycleError) as excinfo:
+            env.service.question_texts(cycle_id, community)
+        assert code(excinfo) == "NOT_FOUND"
