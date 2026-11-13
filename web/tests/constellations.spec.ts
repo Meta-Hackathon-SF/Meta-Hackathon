@@ -237,15 +237,20 @@ test("weekend: lock closes answers, week sky and formation are labeled previews,
 });
 
 test("everyone keeping the Sunday chat moves it to Messenger with real names", async ({ page }) => {
+  const sent: { kind: string; senders: string[] }[] = [];
   await page.route("**/api/muse-chat", async (route) => {
-    const kind = route.request().postDataJSON()?.kind;
-    const text =
-      kind === "supplies"
-        ? "The coffee set on Marketplace is a demo listing, not a purchase."
-        : kind === "barter"
-          ? "Ask Campus Cafe for a table and bring the coffee set. Nothing is booked until the cafe agrees."
-          : "Library Commons has board game night on Thursday.";
-    await route.fulfill({ json: { text, source: "live" } });
+    const body = route.request().postDataJSON();
+    sent.push({ kind: body?.kind, senders: (body?.context ?? []).map((n: { sender: string }) => n.sender) });
+    const replies: Record<string, object> = {
+      hangout: { text: "Board game night fits this group.", eventIds: ["ev-board-games", "not-a-real-event"] },
+      supplies: { text: "The coffee set is a demo listing, not a purchase.", itemIds: ["mk-coffee-set"] },
+      barter: { text: "Ask Campus Cafe for a table and bring the coffee set. Nothing is booked until the cafe agrees.", itemIds: ["mk-coffee-set"] },
+      create: {
+        text: "Here's a draft you can create.",
+        draft: { title: "Thursday study session", placeId: "v-library-commons", day: "Thursday", time: "19:00", description: "Bring notes." },
+      },
+    };
+    await route.fulfill({ json: { source: "live", itemIds: [], eventIds: [], draft: null, ...replies[body?.kind] } });
   });
   await newCycle(page);
   await openSpace(page);
@@ -256,29 +261,57 @@ test("everyone keeping the Sunday chat moves it to Messenger with real names", a
   await page.getByRole("button", { name: "View constellation" }).click();
   await page.getByRole("button", { name: "Open chat" }).click();
   const chat = page.getByTestId("spc-chat");
-  await chat.getByRole("button", { name: "Keep", exact: true }).click();
+  await expect(chat.getByText(/If everyone keeps it, names are shown/)).toBeVisible(); // consent is explicit
+  await chat.getByRole("button", { name: "Keep and show my name" }).click();
   await expect(chat.getByText("Everyone agreed. Names are visible, and this chat is in Messenger.")).toBeVisible();
   await expect(chat.getByRole("button", { name: "Maya Chen" })).toBeVisible();
   await chat.getByRole("link", { name: "Open in Messenger" }).click();
   await expect(page).toHaveURL(/\/messages\?chat=sunday-constellation/);
   await expect(page.getByRole("heading", { level: 1, name: "Messenger" })).toBeVisible();
   const convo = page.getByRole("region", { name: "Sunday constellation" });
-  await expect(convo.getByText("Maya Chen, Jordan Davis, Sofia Patel, Daniel Kim")).toBeVisible();
+  await expect(convo.getByText(/Maya Chen, Jordan Davis, Sofia Patel, Daniel Kim/)).toBeVisible();
   await expect(convo.getByText("Same vibe")).toBeVisible();
   await convo.getByRole("button", { name: "Close shared vibe" }).click();
   await expect(convo.getByText("Same vibe")).toHaveCount(0);
   await expect(convo.getByText("i really thought i was the only one who felt that way")).toBeVisible();
-  await expect(convo.getByRole("button", { name: "Plan a hangout" })).toBeDisabled();
-  await convo.getByRole("textbox", { name: "Message" }).fill("we should get together this week");
-  await convo.getByRole("button", { name: "Plan a hangout" }).click();
+  const box = convo.getByRole("textbox", { name: "Message" });
+  // A suggestion chip only fills the box; nothing is sent until you press Send.
+  await convo.getByRole("button", { name: "Find an event" }).click();
+  await expect(box).toHaveValue(/@muse/);
+  expect(sent).toHaveLength(0);
+  await box.fill("we should get together this week @muse");
+  await box.press("Enter");
   await expect(convo.getByText("we should get together this week @muse")).toBeVisible();
-  await expect(convo.getByText("Library Commons has board game night on Thursday.")).toBeVisible();
-  await convo.getByRole("textbox", { name: "Message" }).fill("we will need drinks");
-  await convo.getByRole("button", { name: "Find supplies" }).click();
-  await expect(convo.getByText("The coffee set on Marketplace is a demo listing, not a purchase.")).toBeVisible();
-  await convo.getByRole("textbox", { name: "Message" }).fill("can the cafe hold a table");
-  await convo.getByRole("button", { name: "Ask a vendor" }).click();
+  await expect(convo.getByText("Board game night fits this group.")).toBeVisible();
+  // The exact catalog event shows as a card; unknown ids are dropped. Register from the chat.
+  const eventCard = convo.getByTestId("cat-event-ev-board-games");
+  await expect(eventCard).toContainText("Library Commons");
+  await expect(convo.getByTestId(/cat-event-not-a-real/)).toHaveCount(0);
+  await eventCard.getByRole("button", { name: "Register for Board game night" }).click();
+  await expect(eventCard.getByRole("button", { name: /Registered for Board game night/ })).toBeVisible();
+  await box.fill("we will need drinks @muse");
+  await box.press("Enter");
+  await expect(convo.getByText("The coffee set is a demo listing, not a purchase.")).toBeVisible();
+  await expect(convo.getByTestId("cat-item-mk-coffee-set").last()).toHaveAttribute("href", "/marketplace/mk-coffee-set");
+  await box.fill("can the cafe hold a table @muse");
+  await box.press("Enter");
   await expect(convo.getByText("Ask Campus Cafe for a table and bring the coffee set. Nothing is booked until the cafe agrees.")).toBeVisible();
+  // Muse drafts an event; nothing is posted until someone taps Create.
+  await box.fill("@muse create a study session on thursday at 7pm");
+  await box.press("Enter");
+  const draft = convo.getByTestId("cat-draft");
+  await expect(draft).toContainText("Thursday study session");
+  await expect(draft).toContainText("Library Commons");
+  await draft.getByRole("button", { name: "Create event" }).click();
+  await expect(draft.getByRole("link", { name: /Created · View event/ })).toBeVisible();
+  await expect(convo.getByText("Created Thursday study session. Register here:")).toBeVisible();
+  // A message without @muse stays between people.
+  await box.fill("see you all thursday");
+  await box.press("Enter");
+  await expect(convo.getByText("see you all thursday")).toBeVisible();
+  expect(sent.map((r) => r.kind)).toEqual(["hangout", "supplies", "barter", "create"]);
+  // Real names never reach Muse.
+  for (const r of sent) for (const name of r.senders) expect(name).toMatch(/^(You|Muse|Member [1-9])$/);
 });
 
 test("privacy: turning matching off shows it on Sunday; delete my data returns to Join", async ({ page }) => {
@@ -487,4 +520,54 @@ test("operator reasoning panel: Muse proposes, code enforces (fixture shows none
   const panel = page.getByTestId("cst-op-reasoning");
   await expect(panel.getByRole("heading", { name: "Muse proposes, code enforces" })).toBeVisible();
   await expect(panel.getByText("None. Fixture mode never calls Muse.")).toBeVisible();
+});
+
+test("Marketplace and Events use one demo catalog: item pages, register, and a Muse-created event", async ({ page }) => {
+  await page.goto("/marketplace");
+  await page.getByRole("link", { name: /Coffee set for your next study session/ }).click();
+  await expect(page).toHaveURL(/\/marketplace\/mk-coffee-set$/);
+  const item = page.getByTestId("cat-item-detail");
+  await expect(item.getByRole("heading", { name: "Coffee set for your next study session" })).toBeVisible();
+  await expect(item).toContainText("$20");
+  await expect(item).toContainText("Demo listing. Nothing is sold");
+  await page.goto("/events");
+  const row = page.getByTestId("cat-event-row-ev-open-mic");
+  await expect(row).toContainText("41 going");
+  await row.getByRole("button", { name: "Register for Open mic night" }).click();
+  await expect(row).toContainText("42 going");
+  await expect(page.getByRole("heading", { name: "You're going" })).toBeVisible();
+  await page.reload(); // registration survives a reload in this browser
+  await page.getByRole("link", { name: /Open mic night/ }).first().click();
+  await expect(page).toHaveURL(/\/events\/ev-open-mic$/);
+  const detail = page.getByTestId("cat-event-detail");
+  await expect(detail).toContainText("Campus Cafe");
+  await detail.getByRole("button", { name: /Registered for Open mic night/ }).click();
+  await expect(detail.getByRole("button", { name: "Register for Open mic night" })).toBeVisible();
+  await page.goto("/marketplace/not-real");
+  await expect(page.getByRole("heading", { name: "Listing not found" })).toBeVisible();
+  // Without Muse, code still picks exact catalog entries and builds a checked draft.
+  const fallback = await page.evaluate(async () => {
+    const m = await import("/src/features/constellations/messenger/museHelp.ts");
+    const you = (text: string) => [{ sender: "You", text }];
+    return {
+      create: m.catalogReply("create", you("@muse create a picnic on saturday at 2pm")).draft,
+      supplies: m.catalogReply("supplies", you("we need a speaker for the quad @muse")).itemIds,
+      hangout: m.catalogReply("hangout", you("anyone into movies outside? @muse")).eventIds,
+      kinds: ["create a movie night friday", "@muse create a picnic on saturday", "we need snacks", "can the cafe hold a table", "what should we do"].map(m.inferKind),
+    };
+  });
+  expect(fallback.create).toMatchObject({ title: "Picnic", placeId: "v-quad", day: "Saturday", time: "14:00" });
+  expect(fallback.supplies[0]).toBe("mk-speaker");
+  expect(fallback.hangout[0]).toBe("ev-film-club");
+  expect(fallback.kinds).toEqual(["create", "create", "supplies", "barter", "hangout"]);
+  // Catalog events that share an id with Adam's approved campus events use the same venue and start.
+  const drift = await page.evaluate(async () => {
+    const { BASE_EVENTS } = await import("/src/features/catalog/catalog.ts");
+    const { APPROVED_EVENTS } = await import("/src/features/constellations/nudges/venues.ts");
+    return APPROVED_EVENTS.flatMap((a) => {
+      const c = BASE_EVENTS.find((e) => e.eventId === a.eventId);
+      return !c || c.placeId !== a.placeId || c.start !== a.start ? [a.eventId] : [];
+    });
+  });
+  expect(drift).toEqual([]);
 });
