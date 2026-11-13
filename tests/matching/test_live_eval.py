@@ -30,3 +30,16 @@ def test_report_has_no_answer_text():
     report = json.dumps(asyncio.run(evaluate(12, live=False)))
     for answer in synthetic_snapshot(12)["answers"]:
         assert answer["text"] not in report
+
+
+def test_gold_mode_reports_baseline_quality_without_answer_text():
+    from server.matching.evaluation import gold_snapshot
+
+    report = asyncio.run(evaluate(30, live=False, gold=True))
+    q = report["quality"]
+    assert q["keywordBaseline"]["goldPairs"] == 60
+    assert q["keywordBaseline"]["precision"] < 0.5  # keywords miss paraphrased feelings
+    assert "scripted" in report["qualityNote"]
+    blob = json.dumps(report)
+    for a in gold_snapshot(30)[0]["answers"]:
+        assert a["text"] not in blob
