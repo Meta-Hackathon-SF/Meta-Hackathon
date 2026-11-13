@@ -107,9 +107,19 @@ def test_fullwidth_and_curly_quotes_normalized():
     assert "quote_5_words" in reasons("Finding a pickup game that isn’t already a clique")
 
 
-def test_four_word_windows_do_not_trigger():
-    for w in _windows(4):
+def test_three_word_windows_do_not_trigger():
+    for w in _windows(3):
         assert "quote_5_words" not in reasons(w), w
+
+
+def test_four_word_windows_trigger_only_for_short_answers():
+    # Every fixture answer has <= 12 tokens, so a 4-word run of one is a quote
+    # (safety eval: short answers are easy to quote near-whole).
+    for w in _windows(4):
+        assert "quote_5_words" in reasons(w), w
+    long_answer = ["I usually grab a bagel and sit by the big window in the east library before class"]
+    assert "quote_5_words" not in guard.check("sit by the big", long_answer)["reasons"]
+    assert "quote_5_words" in guard.check("sit by the big window", long_answer)["reasons"]
 
 
 def test_quote_against_empty_answers_never_triggers():

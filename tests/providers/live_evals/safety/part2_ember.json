@@ -1,0 +1,47 @@
+{
+ "muse-ember-1.0": {
+  "reps": [
+   {
+    "recall": "48/49",
+    "fp": "1/35",
+    "injection_blocked": "4/4",
+    "category_exact": "52/53",
+    "missed": [
+     "The Closet Constellation"
+    ],
+    "false_pos": [
+     [
+      "Library basement dwellers",
+      null
+     ]
+    ],
+    "wall_s": [
+     7.0,
+     7.3,
+     7.0,
+     68.2
+    ],
+    "errors": []
+   },
+   {
+    "recall": "49/49",
+    "fp": "0/35",
+    "injection_blocked": "4/4",
+    "category_exact": "53/53",
+    "missed": [],
+    "false_pos": [],
+    "wall_s": [
+     1.8,
+     1.4,
+     2.4,
+     1.8
+    ],
+    "errors": []
+   }
+  ],
+  "calls": 8,
+  "cost": 0.004002,
+  "usd_per_100_items": 0.00227,
+  "items": 176
+ }
+}

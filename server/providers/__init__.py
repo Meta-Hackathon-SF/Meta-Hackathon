@@ -3,6 +3,7 @@ from .config import DEFAULT_MODEL, MuseConfig, load_muse_config
 from .contract import IN_SCHEMAS, OUT_SCHEMAS, contract_spec
 from .errors import ProviderError
 from .muse import EvidenceLog, MuseAdapter, build_muse_adapter
+from .router import MuseRouter, Route, build_muse_router, parse_routes
 from .trace import NullTrace, ReasoningTrace
 from .port import (
     CALL_TYPES,
@@ -21,7 +22,11 @@ __all__ = [
     "CALL_TYPES",
     "DEFAULT_MODEL",
     "EvidenceLog",
+    "MuseRouter",
     "NullTrace",
+    "Route",
+    "build_muse_router",
+    "parse_routes",
     "ReasoningTrace",
     "IN_SCHEMAS",
     "KeywordMusePort",

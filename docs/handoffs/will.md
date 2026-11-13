@@ -12,6 +12,8 @@ Branch `will/v3-daily-ui` (from main after #55). Verification: `pytest tests` 88
 
 - Audit #50: follow-up reply is a soft limit (never truncated, send blocked when over); reasoning panel mounted from `GET /operator/reasoning`. R6 storage change (reply + its question to M3/M4) still needs a contract decision.
 
+- Delivered for #50/#59: `CycleService.question_texts(cycle_id, community_id) -> {questionId: text}`: released days only, from the questions stored on the cycle; no session, never re-selects, fires no hooks; `NOT_FOUND` for another community. Kai injects it into Patrik's snapshot.
+
 ### Needs from others (exact)
 - @rishibagri: contract 3.0.0 in `contracts/protocol.ts` with `DayColorId`, `DailyConstellationsView`, `WeekView`, `CustomEventProposal`, `WeeklyCycle.answeredToday`; routes `GET /cycles/:id/days/:day/constellations`, `GET /cycles/:id/week` (I can serve `week` days/answers; need his per-day `constellationCount`). Use `CycleService.answered_today` for the count.
 - @beatopia: day-close job behind `POST /operator/cycles/:id/close-day` (my control calls it), SSE `daily.updated` / `day.closed` (UI refetches on client change today).
