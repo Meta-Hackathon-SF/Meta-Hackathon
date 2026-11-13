@@ -7,7 +7,7 @@ import { useState, type ReactNode } from "react";
 import { CalendarDays, ChevronRight, Flame, Lock, MessageCircle } from "lucide-react";
 import type { CycleClient, CycleDay, DailyQuestion } from "../client";
 import { MAX_CHARS } from "../useDaily";
-import { DAY_LONG, DAY_SHORT, dayHex, type Screen, type WeekModel } from "./model";
+import { DAY_LONG, DAY_SHORT, type Screen, type WeekModel } from "./model";
 import { MicIcon, Waveform } from "./parts";
 import SkyCanvas from "./SkyCanvas";
 import { useVoiceInput } from "./useVoiceInput";
@@ -15,61 +15,22 @@ import { useAnsweredToday } from "./stats";
 
 type Go = (screen: Screen, day?: number) => void;
 
-// ---------------------------------------------------------------- day tracker
-const W = 360, H = 78;
-const PTS = DAY_SHORT.map((_, i) => ({ x: 26 + i * 51.3, y: 34 + Math.sin(i * 1.25 + 0.6) * 14 }));
-const path = (n: number) =>
-  PTS.slice(0, n).reduce((a, p, i) => (i ? `${a} C ${PTS[i - 1].x + 20} ${PTS[i - 1].y}, ${p.x - 20} ${p.y}, ${p.x} ${p.y}` : `M${p.x} ${p.y}`), "");
-
-export function DayTracker({ week, go }: { week: WeekModel; go: Go }) {
+// One straight week strip. Only released question text is exposed.
+export function DayTracker({ week, go, question }: { week: WeekModel; go: Go; question: (d: number) => DailyQuestion | undefined }) {
   return (
-    <div className="spc-tracker" role="list" aria-label="Your week">
-      <svg viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
-        <path d={path(7)} className="spc-tracker-all" />
-        <path d={path(Math.max(1, Math.min(week.day, 7)))} className="spc-tracker-done" />
-      </svg>
-      {PTS.map((p, i) => {
-        const d = i + 1;
-        let cls = "is-future", status = "Not yet", action: (() => void) | null = null, style: React.CSSProperties = {};
-        if (d <= 5) {
-          const hex = dayHex(d);
-          if (week.answered.has(d)) {
-            cls = "is-done";
-            status = week.answers.get(d)?.isCatchUp ? "Caught up" : "Answered";
-            style = { background: hex, boxShadow: `0 0 12px ${hex}` };
-            action = () => go("daily", d);
-          } else if (d === week.day) {
-            cls = "is-today";
-            status = "Today";
-            style = { borderColor: hex, boxShadow: `0 0 16px ${hex}` };
-          } else if (d < week.day) {
-            cls = "is-missed";
-            status = week.day <= 5 ? "Catch up" : "Missed";
-            if (week.day <= 5) action = () => go("answer", d);
-          }
-        } else if (week.day >= d) {
-          cls = "is-weekend";
-          status = d === 6 ? "Week sky" : "Constellation";
-          action = () => go(d === 6 ? "sky" : "main");
-        }
-        const label = `${DAY_LONG[i]}: ${status}`;
-        const inner = (
-          <>
-            <span className={`spc-node ${cls}`} style={style} />
-            <span className={`spc-node-l${d === week.day ? " is-now" : ""}`}>{DAY_SHORT[i]}</span>
-          </>
-        );
-        return (
-          <div role="listitem" key={d} className="spc-tracker-item" style={{ left: `${(p.x / W) * 100}%`, top: `${(p.y / H) * 100}%` }} data-testid={`spc-week-${d}`}>
-            {action ? (
-              <button type="button" onClick={action} aria-label={label}>
-                {inner}
-              </button>
-            ) : (
-              <span aria-label={label}>{inner}</span>
-            )}
-          </div>
-        );
+    <div className="spc-week-strip" role="list" aria-label="Your week">
+      {DAY_SHORT.map((label, i) => {
+        const day = i + 1;
+        const answered = week.answered.has(day);
+        const catchUp = day < week.day && day <= 5 && week.day <= 5 && !answered;
+        const status = answered ? (week.answers.get(day)?.isCatchUp ? "Caught up" : "Answered") : day === week.day ? "Today" : catchUp ? "Catch up" : day > week.day ? "Not yet" : "Missed";
+        const text = day <= 5 && day <= week.day ? question(day)?.question.text : undefined;
+        const action = answered ? () => go("daily", day) : catchUp ? () => go("answer", day) : day >= 6 && week.day >= day ? () => go(day === 6 ? "sky" : "main") : null;
+        const inside = <><span className={`spc-week-check${answered ? " is-done" : ""}${day === week.day ? " is-today" : ""}`} aria-hidden="true">{answered ? "✓" : day}</span><span>{label}</span></>;
+        return <div className="spc-week-item" role="listitem" key={day} data-testid={`spc-week-${day}`}>
+          {action ? <button type="button" aria-label={`${DAY_LONG[i]}: ${status}`} aria-describedby={`spc-day-tip-${day}`} onClick={action} data-testid={catchUp ? `spc-catchup-${day}` : undefined}>{inside}</button> : <span className="spc-week-static" tabIndex={0} aria-label={`${DAY_LONG[i]}: ${status}`} aria-describedby={`spc-day-tip-${day}`}>{inside}</span>}
+          <span className="spc-week-tip" role="tooltip" id={`spc-day-tip-${day}`}><b>{DAY_LONG[i]} · {status}</b>{text ?? (day === 6 ? "Your week’s sky" : day === 7 ? "Your constellation reveal" : "Question opens on this day.")}</span>
+        </div>;
       })}
     </div>
   );
@@ -103,9 +64,9 @@ function QuestionPost({
     const t = draft.trim();
     if (!t || busy || releasing) return;
     setReleasing(t);
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
     try {
-      await Promise.all([onPost(day, t, voice.source), new Promise((r) => window.setTimeout(r, reduce ? 0 : 1800))]);
+      await onPost(day, t, voice.source);
       setDraft("");
       voice.reset();
     } catch {
@@ -117,7 +78,7 @@ function QuestionPost({
   return (
     <section className="spc-block spc-today" aria-labelledby="spc-today-q" data-testid="spc-today">
       <p className="spc-kicker">
-        {DAY_LONG[day - 1]}
+        {DAY_LONG[day - 1]} · Today’s question
         <span className="spc-kicker-private">
           <Lock size={12} aria-hidden="true" /> Only you
         </span>
@@ -140,18 +101,13 @@ function QuestionPost({
             ) : (
               <textarea
                 aria-label="Your answer"
-                value={releasing ? "" : draft}
+                value={draft}
                 maxLength={MAX_CHARS}
                 disabled={Boolean(releasing)}
                 onChange={(e) => setDraft(e.target.value.slice(0, MAX_CHARS))}
-                placeholder="Say it to the sky. Nobody's reading this but you."
               />
             )}
-            {releasing && (
-              <div className="spc-float" aria-hidden="true">
-                {releasing}
-              </div>
-            )}
+
           </div>
           <div className="spc-composer-row">
             <button
@@ -168,7 +124,7 @@ function QuestionPost({
               {voice.hint}
             </span>
             <button type="button" className="spc-btn spc-btn-primary" disabled={!draft.trim() || busy || Boolean(releasing)} onClick={() => void post()}>
-              Post privately
+              {busy || releasing ? "Saving…" : "Post privately"}
             </button>
           </div>
           {error && (
@@ -207,79 +163,12 @@ function StatsCard({ answered, count }: { answered: boolean; count: number | nul
       <p className="spc-stat-line">
         {answered ? (
           <>
-            <b data-testid="spc-stat-count">{count !== null ? count.toLocaleString() : "-"}</b>
-            <span>people answered</span>
+            {count !== null ? <><b data-testid="spc-stat-count">{count.toLocaleString()}</b><span>people answered</span></> : <span>Today’s answer count is unavailable.</span>}
           </>
         ) : (
           <span>Answer to see how many people answered.</span>
         )}
       </p>
-    </section>
-  );
-}
-
-function AboutCard() {
-  return (
-    <section className="spc-side-block" aria-labelledby="spc-about-title">
-      <h3 id="spc-about-title">How it works</h3>
-      <dl className="spc-about">
-        <dt>Mon-Fri: one question a day</dt>
-        <dd>Type or talk. Missed one? Catch up until Saturday noon.</dd>
-        <dt>Sunday: meet your people</dt>
-        <dd>5 or more people whose answers meant the same thing.</dd>
-        <dt>Private by default</dt>
-        <dd>Nobody reads your answers. Names show only if you both reveal.</dd>
-      </dl>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------- this week
-function WeekList({ week, question, go }: { week: WeekModel; question: (d: number) => DailyQuestion | undefined; go: Go }) {
-  const days = ([1, 2, 3, 4, 5] as CycleDay[]).filter((d) => d !== week.today);
-  return (
-    <section className="spc-block spc-weeklist" aria-labelledby="spc-week-title" data-testid="spc-weeklist">
-      <h3 id="spc-week-title" className="spc-block-title">
-        This week
-      </h3>
-      {days.map((d) => {
-        const a = week.answers.get(d);
-        const q = question(d);
-        const released = week.day > d || (week.day <= 5 && d <= week.day);
-        const canCatchUp = !a && week.day <= 5 && d < week.day;
-        const status = a ? (a.isCatchUp ? "Caught up" : "Answered") : canCatchUp ? "Catch up" : released ? "Missed" : `Opens ${DAY_LONG[d - 1]}`;
-        const badgeCls = a ? "" : canCatchUp ? " is-open" : " is-future";
-        const body = (
-          <>
-            <span className={`spc-day-badge${badgeCls}`} style={{ background: dayHex(d), color: a ? "#fff" : dayHex(d) }} aria-hidden="true">
-              {a ? "✓" : DAY_SHORT[d - 1]}
-            </span>
-            <span className="spc-list-main">
-              <b>{DAY_LONG[d - 1]}</b>
-              {released && q ? q.question.text : "Question not out yet"}
-            </span>
-            <span className={`spc-status-pill${a ? " is-done" : canCatchUp ? " is-action" : ""}`}>{canCatchUp ? "Answer" : status}</span>
-          </>
-        );
-        if (canCatchUp)
-          return (
-            <button type="button" key={d} className="spc-list-row" onClick={() => go("answer", d)} data-testid={`spc-catchup-${d}`} aria-label={`Catch up: ${DAY_LONG[d - 1]}'s question`}>
-              {body}
-            </button>
-          );
-        if (a)
-          return (
-            <button type="button" key={d} className="spc-list-row" onClick={() => go("daily", d)} aria-label={`${DAY_LONG[d - 1]}: ${status}. See that day's stars`}>
-              {body}
-            </button>
-          );
-        return (
-          <div key={d} className="spc-list-row is-static">
-            {body}
-          </div>
-        );
-      })}
-      {week.catchUps.length > 0 && <p className="spc-fine spc-weeklist-foot">Catch-ups close Saturday at noon. They don't extend your streak.</p>}
     </section>
   );
 }
@@ -333,7 +222,6 @@ export function SkyHome({
       <header className="spc-cover">
         <div className="spc-cover-sky">
           <SkyCanvas input={{ mode: "home", answered: week.answered, viewDay: statsDay, emptyDay: false, noMatch: false }} />
-          <DayTracker week={week} go={go} />
         </div>
         <div className="spc-cover-id">
           <div className="spc-grow">
@@ -380,7 +268,11 @@ export function SkyHome({
             />
           )}
 
-          <WeekList week={week} question={question} go={go} />
+          <section className="spc-block spc-week-progress" aria-labelledby="spc-week-title">
+            <h3 id="spc-week-title" className="spc-block-title">This week</h3>
+            <DayTracker week={week} go={go} question={question} />
+            {week.catchUps.length > 0 && <p className="spc-fine">Select a missed day to catch up before Saturday noon.</p>}
+          </section>
 
           {week.day === 6 && (
             <section className="spc-block spc-today" data-testid="spc-weekend-sat">
@@ -457,7 +349,6 @@ export function SkyHome({
         </div>
         <aside className="spc-col-side" aria-label="About this week">
           {week.day <= 5 && <StatsCard answered={answeredToday} count={count} />}
-          <AboutCard />
           {demo}
         </aside>
       </div>

@@ -1,3 +1,4 @@
+import { apiBase } from "../apiBase";
 /**
  * Muse helps the Sunday Messenger group plan. Facts come from the demo catalog
  * (server/cycle/data/catalog.json): Muse may only point at catalog items and events by
@@ -139,7 +140,7 @@ function parseLive(kind: MuseKind, body: unknown): MuseHelp | null {
 
 /** Hosted (live backend): the API route keeps the Muse key on the server. Fixture mode: the dev server route. */
 function museUrl(): string {
-  const base = (import.meta.env.VITE_CONSTELLATIONS_API as string | undefined)?.replace(/\/$/, "");
+  const base = apiBase();
   return base ? `${base}/muse-chat` : "/api/muse-chat";
 }
 
@@ -151,6 +152,7 @@ export async function askMuse(kind: MuseKind, context: MuseNote[]): Promise<Muse
   if (!notes.length) return catalogReply(kind, []);
   try {
     const response = await fetch(museUrl(), {
+      signal: AbortSignal.timeout(45_000),
       method: "POST",
       credentials: "include",
       // The API requires an Idempotency-Key on every POST; the dev route ignores it.

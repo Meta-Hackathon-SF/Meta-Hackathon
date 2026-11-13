@@ -12,6 +12,11 @@ import catalog from "../server/cycle/data/catalog.json" with { type: "json" };
 import { handleMuseChat, type MuseConfig } from "./museChat.ts";
 
 function readKey(root: string): MuseConfig | null {
+  // Honor server-process configuration before the optional local file.
+  const envKey = process.env.MUSE_API_KEY || process.env.MODEL_API_KEY;
+  if (envKey && envKey !== "replace-me") {
+    return { key: envKey, model: process.env.MUSE_MODEL || "muse-spark-1.3" };
+  }
   const file = path.resolve(root, "../server/providers/muse.env");
   let text = "";
   try {

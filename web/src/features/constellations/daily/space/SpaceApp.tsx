@@ -20,6 +20,7 @@ import { AnswerScreen, DistressScreen, EventsScreen, FollowUpScreen, HomeBar, In
 import { SkyHome } from "./skyhome";
 import { DropGate } from "./ConstellationDrop";
 import "./space.css";
+import "./daylight.css";
 
 const PREFS_KEY = "spc-prefs";
 function readPrefs(): LocalPrefs {
