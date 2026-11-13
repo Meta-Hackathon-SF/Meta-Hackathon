@@ -1,7 +1,7 @@
 # server/planning: question bank, weekly selection, M2 follow-up, M7 event nudges (owner: Adam)
 
 Contract: `contracts/protocol.ts` 2.0.0 (`Question`, `DailyQuestion`, `QuestionPort`, `M2In`/`M2Out`, `Venue`, `EventNudge`, `NudgePort`, `M7In`/`M7Out`).
-Status (2026-11-12): **implemented and offline-tested against fixtures and labeled test-only adapters.** No HTTP route is mounted, nothing is persisted durably, and no live Muse call has run through this code. Question generation (M6) is not implemented.
+Status (2026-11-12): **implemented and offline-tested against fixtures and labeled test-only adapters.** The operator router exists but is not mounted in a running app, nothing is persisted durably, and no live Muse call has run through this code. Question generation (M6) is not implemented.
 
 ## What is here
 | File | What |
@@ -12,6 +12,8 @@ Status (2026-11-12): **implemented and offline-tested against fixtures and label
 | `clarify.py` | `ClarifyService.follow_up` (M2), prompt `clarify.v1`, `InMemoryClarifyStore`. |
 | `venues.py`, `data/venues.json` | `VenueCatalog`: the approved public venue allowlist (same rows as the shared fixture). |
 | `nudges.py` | `NudgeService.propose` (NudgePort), `propose_and_post`, prompt `event_nudge.v1`. |
+| `adapters.py` | `CycleQuestionPort`, `SyncClarify`: the synchronous shapes Will's cycle service consumes. `run_sync`. |
+| `api.py` | FastAPI router factory `build_router(runtime, session_dependency)`, `PlanningRuntime.ready`, `install_planning_error_handler`. The only module that needs FastAPI. |
 | `ports.py` | The ports planning consumes: `OutputGuardPort` (Patrik), `ChatPostPort` (Kai), `WeekStartLookup` (Will). |
 
 ## Weekly selection
@@ -58,8 +60,29 @@ There is **no invented fallback nudge**: `EventNudge.evidence` must be a real Mu
 
 The mid-week schedule and the operator button are not wired: both call `propose_and_post` once the route and Kai's job runner exist.
 
+## Wiring for the cycle service (Will)
+```python
+from server.planning import (ClarifyService, CycleQuestionPort, InMemorySelectionStore,
+                             QuestionService, SyncClarify, load_default_bank)
+bank = load_default_bank()
+questions = QuestionService(bank, InMemorySelectionStore(), week_start_lookup)
+question_port = CycleQuestionPort(questions)                      # .select_week(cycle_id, community_id) -> 5 DailyQuestion dicts
+clarify = SyncClarify(ClarifyService(muse, output_guard), bank)   # clarify(question_text, answer_text) -> M2Out dict
+```
+Both are synchronous. `SyncClarify` is stateless (the cycle service keeps the once-per-answer rule and the M1 skip) and never raises on provider failure: it returns the curated hint or no follow-up. Call it from a sync handler; a Muse call can take 20 s.
+
+## Operator router (Kai mounts it)
+```python
+from server.planning.api import PlanningRuntime, build_router, install_planning_error_handler
+runtime = PlanningRuntime(questions, nudges, room_constellation, venues, muse_configured=muse.configured)
+ServiceRegistration(owner="planning", router=build_router(runtime, session_dependency),
+                    authorize=session_dependency, ready=runtime.ready)
+install_planning_error_handler(app)
+```
+Routes (paths without `/api/v1`): `GET /operator/questions` (`active`, `category`, `source` filters), `POST /operator/cycles/{cycleId}/select-week`, `POST /operator/rooms/{roomId}/nudge` (registered only when `nudges` and `room_constellation` are given). Each handler rechecks the operator role from the session (`is_operator` / `isOperator`) and takes the community from the session, never from the client. `POST /operator/questions/generate` is not registered. `ready()` checks local state only (bank, venues, Muse key present) and never calls the model.
+
 ## Not done / needs other owners
-- Routes in contracts/API.md ("Questions and nudges (Adam)") need Kai's router registry and Patrik's operator session check.
+- The router is tested on a bare FastAPI app with a test-only session stand-in. It has not run inside Kai's composed app or behind Patrik's real session.
 - `OutputGuardPort`, `WeekStartLookup`, `ConstellationContext`, `ChatPostPort` and the selection/clarify/nudge stores are satisfied in tests by `tests/planning/doubles.py` (TEST ONLY) and the in-memory stores. Durable stores belong to orchestration.
 
 ## Tests

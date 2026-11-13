@@ -126,12 +126,23 @@ class QuestionService:
 
     async def select_week(self, cycle_id: str, community_id: str, *, seed: int | None = None) -> list[dict[str, Any]]:
         """``DailyQuestion[]`` for Mon-Fri. Operator-only: it contains future days."""
-        existing = self._store.get(cycle_id)
+        existing = self._existing(cycle_id, community_id)
         if existing is not None:
-            if existing["communityId"] != community_id:
-                raise PlanningError("NOT_FOUND", "cycle not found")
-            return self._daily(existing)
-        week_start = await self._week_start(cycle_id)
+            return existing
+        try:
+            week_start = await self._week_start(cycle_id)
+        except PlanningError:
+            raise
+        except Exception:
+            raise PlanningError("NOT_FOUND", "cycle not found") from None
+        return self.select_week_on(cycle_id, community_id, week_start, seed=seed)
+
+    def select_week_on(self, cycle_id: str, community_id: str, week_start: str, *,
+                       seed: int | None = None) -> list[dict[str, Any]]:
+        """Synchronous core: the caller already knows the cycle's Monday."""
+        existing = self._existing(cycle_id, community_id)
+        if existing is not None:
+            return existing
         try:
             monday = date.fromisoformat(week_start)
         except (TypeError, ValueError):
@@ -152,6 +163,14 @@ class QuestionService:
         }
         self._store.put(cycle_id, record)
         return self._daily(record)
+
+    def _existing(self, cycle_id: str, community_id: str) -> list[dict[str, Any]] | None:
+        existing = self._store.get(cycle_id)
+        if existing is None:
+            return None
+        if existing["communityId"] != community_id:
+            raise PlanningError("NOT_FOUND", "cycle not found")
+        return self._daily(existing)
 
     def released(self, cycle_id: str, current_day: int, *, cycle_open: bool = True) -> list[dict[str, Any]]:
         """Player-safe projection: days 1..currentDay only. Never a future day.

@@ -1,9 +1,11 @@
 """Constellations planning (owner: Adam): question bank, weekly selection, M2 follow-up, M7 event nudges.
 
-See README.md. Other owners import from this package root only.
+See README.md. Other owners import from this package root only; the FastAPI
+router lives in ``server.planning.api`` so the rest stays standard-library only.
 """
 from server.providers import TaskRegistry
 
+from .adapters import CycleQuestionPort, SyncClarify, run_sync
 from .clarify import (
     CLARIFY_PROMPT_VERSION,
     ClarifyResult,
@@ -38,6 +40,7 @@ __all__ = [
     "ChatPostPort",
     "ClarifyResult",
     "ClarifyService",
+    "CycleQuestionPort",
     "InMemoryClarifyStore",
     "InMemoryNudgeStore",
     "InMemorySelectionStore",
@@ -49,12 +52,14 @@ __all__ = [
     "QuestionBank",
     "QuestionService",
     "SelectionStore",
+    "SyncClarify",
     "VenueCatalog",
     "WeekStartLookup",
     "load_default_bank",
     "pick_week",
     "question_problems",
     "register_clarify_task",
+    "run_sync",
     "register_nudge_task",
     "register_planning_tasks",
     "validate_question",
