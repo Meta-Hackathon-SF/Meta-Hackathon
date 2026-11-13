@@ -61,8 +61,14 @@ Nothing blocks the merged scope. Live wiring needs (requested in PR #12):
 - `OperatorNudgePanel` + `createNudgeRequester` + `APPROVED_VENUES` in web/src/features/constellations/nudges/ give the demo beat "Muse posts an event nudge" an operator button (Will's console has none). Chat itself only gets the nudge text as a `muse_nudge` bubble (Kai's ChatPanel already renders it).
 - Checks: web lint (no new warnings), build ok, `PLAYWRIGHT_CHANNEL=chrome npx playwright test` 38 passed; `python -m pytest tests` 563 passed, 1 skipped; temporary preview in Chrome covered posted/failure/bad venue/cancel. Not mounted; not run against the server.
 
+## Nudge route in Kai's composed app (2026-11-13T05:56Z)
+- Kai wired `NudgeService` + `ChatSystemPoster` + both lookups in 43f6009 (role/kai-orchestration, now cad28cb; not on main yet).
+- Consumer check (scratch, uncommitted) with Kai's `runtime_environment` + scripted Muse: the route's output has exactly the EventNudge keys, UTC times and an allowlisted venue, so it passes `parseEventNudge` rules. The M7 input has only `{sharedMeaning, venues, window, campusEvents}`. One `muse_nudge` message from handle Muse. Non-operator gets 403 FORBIDDEN, unknown room 404 NOT_FOUND.
+- One paid live M7 through the same route (all other tasks scripted): 200, `v-cafe`, 8.0 s, evidence live `muse-spark-1.3`. M1 on the nudge text was scripted.
+- Full suite on Kai's branch: `python -m pytest tests` 801 passed, 2 skipped (PostgreSQL DSN not set).
+
 ## API budget
-Adam's Muse key has a $100 cap for the whole event including the demo. About 44 live calls so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
+Adam's Muse key has a $100 cap for the whole event including the demo. About 45 live calls so far on Adam's key (1 smoke, 9 planning live checks, 28 for Rishi's formation timing, plus retries); Adam reported about 10 cents after the first 12. Live runs stay manual, capped (`MAX_PROVIDER_CALLS = 6` in tests/planning/live_check.py) and targeted with the name filter; ordinary tests never call the model.
 
 ## Next action
 - Will or Kai: mount `OperatorNudgePanel` in the operator console for an open room.
