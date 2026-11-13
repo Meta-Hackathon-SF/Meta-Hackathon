@@ -8,6 +8,8 @@ import type {
   Report,
 } from "../../../../../contracts/protocol";
 import { EvidenceChip } from "./EvidenceChip";
+import { ChatHttpError } from "./client";
+import { SupportCard } from "../privacy";
 import { object, oneOf, parseMessage, parseReveal, parseRoom } from "./runtime";
 import "./chat.css";
 
@@ -74,6 +76,7 @@ function ChatSession(props: ChatPanelProps) {
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
+  const [supportAvailable, setSupportAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const request = useRef<{ seq: number; controller?: AbortController }>({
@@ -117,6 +120,7 @@ function ChatSession(props: ChatPanelProps) {
     request.current.controller = controller;
     setBusy(true);
     setError("");
+    if (name === "send") setSupportAvailable(false);
     setRetry(null);
     try {
       const result = await call({ key, signal: controller.signal });
@@ -125,7 +129,17 @@ function ChatSession(props: ChatPanelProps) {
       keys.current.delete(identity);
     } catch (failure) {
       if (controller.signal.aborted || seq !== request.current.seq) return;
-      setError(safeError(failure));
+      const offerSupport =
+        name === "send" &&
+        failure instanceof ChatHttpError &&
+        failure.code === "MESSAGE_REJECTED" &&
+        failure.supportAvailable;
+      if (name === "send") setSupportAvailable(offerSupport);
+      setError(
+        offerSupport
+          ? "Your message was held. The support card below stays private."
+          : safeError(failure),
+      );
       setRetry(() => () => {
         void perform(name, body, call, done);
       });
@@ -371,6 +385,7 @@ function ChatSession(props: ChatPanelProps) {
           )}
         </p>
       )}
+      {supportAvailable && <SupportCard />}
     </section>
   );
 }

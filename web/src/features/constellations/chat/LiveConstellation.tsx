@@ -13,6 +13,7 @@ export interface LiveConstellationProps {
   messageEvidence?: Record<string, MuseCallEvidence>;
   nudgeSlot?: ReactNode;
   projector?: boolean;
+  demoTiming?: boolean; // Display only, sourced from the verified WeeklyCycle.
 }
 
 /** Will mounts this behind the existing verified privacy gate. No fixture mode. */
@@ -46,6 +47,11 @@ function LiveView(props: LiveConstellationProps & { retry(): void }) {
   }, [session]);
   return (
     <div className="cst-live" aria-label="Constellation and Sky">
+      {props.demoTiming && (
+        <p className="cst-notice">
+          Demo timing | Eligible counts may include labeled synthetic players.
+        </p>
+      )}
       <p className="cst-muted" role="status">
         {snapshot.status === "connected"
           ? "Chat connection established"

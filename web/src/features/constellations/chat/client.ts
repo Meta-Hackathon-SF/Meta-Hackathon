@@ -33,14 +33,20 @@ const CODES: ErrorCode[] = [
   "ROOM_EXPIRED",
   "MESSAGE_REJECTED",
 ];
+const PRIVATE_SUPPORT_MESSAGE =
+  "This message was held. A private support card is available.";
+
 export class ChatHttpError extends Error {
   code: ErrorCode;
   retryable: boolean;
-  constructor(code: ErrorCode, retryable = false) {
+  readonly supportAvailable: boolean;
+  constructor(code: ErrorCode, retryable = false, supportAvailable = false) {
     super("The chat service could not complete this request.");
     this.name = "ChatHttpError";
     this.code = code;
     this.retryable = retryable;
+    this.supportAvailable =
+      code === "MESSAGE_REJECTED" && supportAvailable === true;
   }
 }
 export type StreamState = "connecting" | "connected" | "reconnecting";
@@ -91,6 +97,9 @@ async function responseError(response: Response): Promise<ChatHttpError> {
         ? statusCode
         : error.code,
       error.retryable,
+      response.status === 422 &&
+        error.code === "MESSAGE_REJECTED" &&
+        error.message === PRIVATE_SUPPORT_MESSAGE,
     );
   } catch {
     return new ChatHttpError(

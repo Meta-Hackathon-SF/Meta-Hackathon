@@ -172,3 +172,44 @@ test("a room from another requested cycle is rejected before display", async () 
     client.getRoom("synthetic-cycle", new AbortController().signal),
   ).rejects.toBeInstanceOf(ChatHttpError);
 });
+
+test("only the exact private support rejection variant sets the local support marker", async () => {
+  const exact = "This message was held. A private support card is available.";
+  for (const [status, code, message, expected] of [
+    [422, "MESSAGE_REJECTED", exact, true],
+    [422, "MESSAGE_REJECTED", "This message cannot be shared.", false],
+    [422, "MESSAGE_REJECTED", `${exact} Unexpected extra text`, false],
+    [422, "INVALID_INPUT", exact, false],
+    [503, "MESSAGE_REJECTED", exact, false],
+  ] as const) {
+    const client = createChatClient({
+      fetcher: (async () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              code,
+              message,
+              requestId: "synthetic-request",
+              retryable: false,
+            },
+          }),
+          { status },
+        )) as typeof fetch,
+    });
+    try {
+      await client
+        .actions("synthetic-room")
+        .send("Synthetic message", {
+          key: "synthetic-support-key",
+          signal: new AbortController().signal,
+        });
+      throw new Error("expected rejection");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ChatHttpError);
+      expect((error as ChatHttpError).supportAvailable).toBe(expected);
+      expect((error as Error).message).toBe(
+        "The chat service could not complete this request.",
+      );
+    }
+  }
+});

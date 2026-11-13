@@ -35,7 +35,8 @@ Also run the role's normal lint/build/test:e2e before declaring the PR ready.
 
 Will can import `LiveConstellation` from this directory's index.ts and mount it
 inside the existing server-backed privacy gate. Props are `cycleId`, `viewerPlayerId` from the verified own-session, optional
-`baseUrl` (default `/api/v1`), `messageEvidence`, `nudgeSlot` and `projector`.
+`baseUrl` (default `/api/v1`), `messageEvidence`, `nudgeSlot`, `projector` and `demoTiming`.
+Pass demoTiming from the verified WeeklyCycle to show the Demo timing notice.
 The container keys its memory by that viewer and cycle. viewerPlayerId is used
 only to reject mutual-reveal events for another pair, never sent as identity;
 HTTP authentication still comes solely from the server session cookie.

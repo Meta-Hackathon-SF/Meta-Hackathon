@@ -401,3 +401,50 @@ test("mutual identities require the current viewer even inside the same room", a
   await expect(page.locator(".cst-mutual")).toContainText("Synthetic viewer");
   await expect(page.getByText("SYNTHETIC WRONG PAIR")).toHaveCount(0);
 });
+
+test("held safety message shows only the sender support card; contact rejection does not", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.route("**/test-api/rooms/*/messages", async (route) => {
+    if (route.request().method() !== "POST") {
+      await route.fallback();
+      return;
+    }
+    const body = route.request().postDataJSON() as { text: string };
+    const message =
+      body.text === "SYNTHETIC SAFETY TEST"
+        ? "This message was held. A private support card is available."
+        : "This message cannot be shared.";
+    await route.fulfill({
+      status: 422,
+      json: {
+        error: {
+          code: "MESSAGE_REJECTED",
+          message,
+          requestId: "synthetic-private-support",
+          retryable: false,
+        },
+      },
+    });
+  });
+  await page.goto(live);
+  const input = page.getByLabel("Message your constellation");
+  await expect(input).toBeEnabled();
+  await input.fill("SYNTHETIC SAFETY TEST");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByTestId("cstp-support-card")).toBeVisible();
+  await expect(page.locator(".cst-messages")).not.toContainText(
+    "SYNTHETIC SAFETY TEST",
+  );
+  await expect(page.getByRole("alert")).toContainText(
+    "The support card below stays private",
+  );
+  await input.fill("555-0100");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Keep contact details and private answers out of chat",
+  );
+  await expect(page.getByTestId("cstp-support-card")).toHaveCount(0);
+  await expect(page.locator(".cst-messages")).not.toContainText("555-0100");
+});
