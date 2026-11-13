@@ -4,9 +4,13 @@ controls in contracts/API.md (owner: Will). Kai mounts this router under
 
     router = build_router(service, session_dependency, transcriber=...)
 
-``session_dependency`` is a FastAPI dependency returning ``Session`` from
-Patrik's verified session. Identity is never read from the request body, path
-or query. Bodies are validated here (400 INVALID_INPUT, ApiError envelope).
+``session_dependency`` is a FastAPI dependency backed by Patrik's verified
+session. It may return this package's ``Session`` or Patrik's ``Actor``
+(``player_id``, ``community_id``, ``is_operator``); both are accepted without
+importing his module. ``require_consent(actor)`` (Patrik's
+``PrivacyService.require_consent``) runs before every answer or guess write.
+Identity is never read from the request body, path or query. Bodies are
+validated here (400 INVALID_INPUT, ApiError envelope).
 
 Routes not yet in contracts/API.md (proposed, additive; see handoff):
 GET /cycles/{id}/answers (own answers only) and POST /voice/transcribe.
@@ -89,14 +93,37 @@ def _json(model: BaseModel | list[Any] | dict, status: int = 200) -> JSONRespons
     return JSONResponse(content, status_code=status)
 
 
+def _as_session(actor: Any) -> Session:
+    """Accept this package's Session or Patrik's Actor. Anything else is no session."""
+    if isinstance(actor, Session):
+        return actor
+    player = getattr(actor, "player_id", None)
+    community = getattr(actor, "community_id", None)
+    operator = getattr(actor, "is_operator", None)
+    if not (isinstance(player, str) and player and isinstance(community, str) and community):
+        raise CycleError("UNAUTHENTICATED")
+    return Session(playerId=player, communityId=community, isOperator=operator is True)
+
+
 def build_router(
     service: CycleService,
-    session_dependency: Callable[..., Session],
+    session_dependency: Callable[..., Any],
     *,
     transcriber: Transcriber | None = None,
+    require_consent: Callable[[Any], Any] | None = None,
 ) -> APIRouter:
     router = APIRouter()
     stt: Transcriber = transcriber or UnconfiguredTranscriber()
+    actor_dependency = session_dependency
+
+    def session_dependency(actor: Any = Depends(actor_dependency)) -> Session:  # noqa: F811
+        return _as_session(actor)
+
+    def consenting(actor: Any = Depends(actor_dependency)) -> Session:
+        """Writes need current consent; Patrik's check raises CONSENT_REQUIRED."""
+        if require_consent is not None:
+            require_consent(actor)
+        return _as_session(actor)
 
     def operator(session: Session = Depends(session_dependency)) -> Session:
         if session.isOperator is not True:
@@ -119,12 +146,12 @@ def build_router(
         return _json(await call(service.my_answers, session, cycle_id))
 
     @router.post("/cycles/{cycle_id}/answers")
-    async def submit(cycle_id: str, request: Request, session: Session = Depends(session_dependency)):
+    async def submit(cycle_id: str, request: Request, session: Session = Depends(consenting)):
         body = await _body(request, SubmitAnswerRequest)
         return _json(await call(service.submit_answer, session, cycle_id, body), 202)
 
     @router.patch("/cycles/{cycle_id}/answers/{day}")
-    async def edit(cycle_id: str, day: str, request: Request, session: Session = Depends(session_dependency)):
+    async def edit(cycle_id: str, day: str, request: Request, session: Session = Depends(consenting)):
         body = await _body(request, EditAnswerRequest)
         return _json(await call(service.edit_answer, session, cycle_id, _day(day), body))
 
@@ -134,11 +161,11 @@ def build_router(
         return Response(status_code=204)
 
     @router.get("/cycles/{cycle_id}/answers/{day}/followup")
-    async def followup(cycle_id: str, day: str, session: Session = Depends(session_dependency)):
+    async def followup(cycle_id: str, day: str, session: Session = Depends(consenting)):
         return _json(await call(service.followup, session, cycle_id, _day(day)))
 
     @router.put("/cycles/{cycle_id}/guess")
-    async def guess(cycle_id: str, request: Request, session: Session = Depends(session_dependency)):
+    async def guess(cycle_id: str, request: Request, session: Session = Depends(consenting)):
         body = await _body(request, GuessRequest)
         return _json(await call(service.put_guess, session, cycle_id, body))
 

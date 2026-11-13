@@ -13,6 +13,7 @@ import {
   parseDailyQuestion,
   parseEvidence,
   parseFollowUp,
+  parseFormationResponse,
   parseGuess,
   parseList,
   parseReport,
@@ -110,6 +111,14 @@ export function createHttpClient(
     reset: (id) => mutate(call("POST", `${op(id)}/reset`, parseCycle)),
     calls: (signal) => call("GET", "/operator/calls", (v) => parseList(v, parseEvidence), { signal }),
     reports: (signal) => call("GET", "/operator/reports", (v) => parseList(v, parseReport), { signal }),
+    async formationDebug(id, signal) {
+      try {
+        return await call("GET", `${op(id)}/formation-debug`, parseFormationResponse, { signal });
+      } catch (error) {
+        if (error instanceof ClientError && error.code === "NOT_FOUND") return null;
+        throw error;
+      }
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);

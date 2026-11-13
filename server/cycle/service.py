@@ -66,6 +66,7 @@ ERRORS: dict[str, tuple[int, str, bool]] = {
     "NOT_FOUND": (404, "Resource not found.", False),
     "STALE_REVISION": (409, "This was already answered. Refresh, then edit instead.", False),
     "CYCLE_LOCKED": (409, "This week is locked. Answers can no longer change.", False),
+    "CONSENT_REQUIRED": (403, "Current consent is required.", False),
     "PROVIDER_UNAVAILABLE": (503, "The requested service is not available. Try again later.", True),
 }
 
@@ -107,6 +108,18 @@ class CycleRecord:
     flagged: set[str] = field(default_factory=set)
     # transitions committed inside a write path whose hooks have not fired yet
     pending: list[str] = field(default_factory=list)
+    # bumps on every committed change to the cycle; see CycleService.gate
+    revision: int = 1
+
+
+@dataclass(frozen=True)
+class CycleGate:
+    """A cycle and the revision it was read at. Other owners (formation job,
+    reveal, chat expiry) read a gate, do their work, then call ``check_gate``
+    inside their commit so stale work is dropped instead of published."""
+
+    cycle: WeeklyCycle
+    revision: int
 
 
 class InMemoryCycleRepository:
@@ -168,6 +181,13 @@ class CycleService:
 
     def _set(self, record: CycleRecord, **changes: object) -> WeeklyCycle:
         record.cycle = WeeklyCycle.model_validate({**record.cycle.model_dump(), **changes})
+        record.revision += 1
+        if changes.get("status") == "locked":
+            # Patrik's store refuses writes for a locked cycle and starts the
+            # 14-day retention clock from this moment.
+            mark_locked = getattr(self._answers, "mark_locked", None)
+            if callable(mark_locked):
+                mark_locked(record.cycle.cycleId, cal.iso(self._clock()))
         return record.cycle
 
     def _sync(self, record: CycleRecord) -> list[str]:
@@ -289,6 +309,24 @@ class CycleService:
                 events.append(to if to in ("locked", "revealed") else "changed")
         self._fire(record, events)
         return record.cycle
+
+    # ---- gates for other owners --------------------------------------------
+    def gate(self, cycle_id: str) -> CycleGate:
+        record = self._load(cycle_id)
+        with self._repo.lock:
+            return CycleGate(cycle=record.cycle, revision=record.revision)
+
+    def check_gate(self, cycle_id: str, revision: int, status: CycleStatus | None = None) -> WeeklyCycle:
+        """STALE_REVISION unless the cycle is still at ``revision`` (and, when
+        given, in ``status``). The clock is the server's, never the client's."""
+        with self._repo.lock:
+            record = self._repo.get(cycle_id)
+            if record is None:
+                raise CycleError("NOT_FOUND")
+            record.pending += self._sync(record)
+            if record.revision != revision or (status is not None and record.cycle.status != status):
+                raise CycleError("STALE_REVISION")
+            return record.cycle
 
     # ---- operator ----------------------------------------------------------
     def create_cycle(self, request: NewCycleRequest) -> WeeklyCycle:

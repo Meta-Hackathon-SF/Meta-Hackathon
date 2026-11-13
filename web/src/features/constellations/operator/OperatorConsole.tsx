@@ -3,12 +3,14 @@ import { Link, useParams } from "react-router";
 import {
   ClientError,
   type CurrentCycle,
+  type FormationDebugProps,
   type MuseCallEvidence,
   type Report,
   type WeeklyCycle,
 } from "../daily/client";
 import { getCycleClient } from "../daily/clientContext";
 import { COMMUNITIES } from "../daily/communities";
+import { FormationDebug } from "../formation";
 import "../daily/daily.css";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -40,6 +42,7 @@ export default function OperatorConsole() {
   const [loaded, setLoaded] = useState(false);
   const [calls, setCalls] = useState<MuseCallEvidence[] | string>("Loading…");
   const [reports, setReports] = useState<Report[] | string>("Loading…");
+  const [formation, setFormation] = useState<FormationDebugProps | string | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +55,12 @@ export default function OperatorConsole() {
       if (id !== request.current) return;
       setCurrent(value);
       setLoaded(true);
+      if (value && value.cycle.status !== "open")
+        client.formationDebug(value.cycle.cycleId).then(
+          (debug) => id === request.current && setFormation(debug),
+          (err) => id === request.current && setFormation(`Not available: ${text(err)}`),
+        );
+      else setFormation(null);
     } catch (err) {
       if (id === request.current) setError(text(err));
     }
@@ -232,6 +241,25 @@ export default function OperatorConsole() {
               ))}
             </tbody>
           </table>
+        )}
+      </section>
+
+      <section className="cst-card" aria-labelledby="cst-op-formation">
+        <h2 id="cst-op-formation" className="cst-question">
+          Formation
+        </h2>
+        {typeof formation === "string" ? (
+          <p className="cst-note">{formation}</p>
+        ) : formation ? (
+          <FormationDebug {...formation} />
+        ) : (
+          <p className="cst-note" data-testid="cst-op-formation-empty">
+            {client.mode === "fixture"
+              ? "Formation runs on the server. Fixture mode has no formation result."
+              : cycle && cycle.status !== "open"
+                ? "No formation result yet."
+                : "Formation runs when the week locks."}
+          </p>
         )}
       </section>
 

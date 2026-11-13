@@ -32,6 +32,36 @@ export type {
   WeeklyCycle,
 };
 
+import { parseFormationDebug, type FormationDebugProps } from "../formation";
+
+export type { FormationDebugProps };
+
+/** Accepts Rishi's debug object alone or wrapped as {data, evidence, totalMs, usedFallback}. */
+export function parseFormationResponse(v: unknown): FormationDebugProps | null {
+  if (typeof v !== "object" || v === null) return null;
+  const o = v as Record<string, unknown>;
+  const data = parseFormationDebug(o.data ?? o);
+  if (!data) return null;
+  const evidence = Array.isArray(o.evidence)
+    ? o.evidence.flatMap((item) => {
+        try {
+          const e = parseEvidence(item);
+          return e.callType === "M3" || e.callType === "M4" || e.callType === "M5" || e.callType === "M8"
+            ? [{ callType: e.callType, model: e.model, source: e.source, latencyMs: e.latencyMs }]
+            : [];
+        } catch {
+          return [];
+        }
+      })
+    : [];
+  return {
+    data,
+    evidence,
+    totalMs: typeof o.totalMs === "number" && Number.isFinite(o.totalMs) ? o.totalMs : 0,
+    usedFallback: o.usedFallback === true,
+  };
+}
+
 export interface CurrentCycle {
   cycle: WeeklyCycle;
   question: DailyQuestion | null;
@@ -95,6 +125,8 @@ export interface CycleClient {
   reset(cycleId: string): Promise<WeeklyCycle>;
   calls(signal?: AbortSignal): Promise<MuseCallEvidence[]>;
   reports(signal?: AbortSignal): Promise<Report[]>;
+  /** Rishi's operator-only formation comparison (ids only). Null when there is none. */
+  formationDebug(cycleId: string, signal?: AbortSignal): Promise<FormationDebugProps | null>;
   /** Fires when cycle state may have changed (operator action, SSE later). */
   subscribe(listener: () => void): () => void;
 }

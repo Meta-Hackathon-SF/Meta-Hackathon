@@ -516,3 +516,45 @@ def test_reset_only_touches_fixture_cycles():
 
 def test_clock_is_utc_aware():
     assert cal.iso(datetime(2026, 11, 14, 20, 0, tzinfo=UTC)) == "2026-11-14T20:00:00Z"
+
+
+# ---- gates for other owners (Kai's formation / reveal / expiry) -----------------
+def test_gate_revision_detects_any_change_since_it_was_read():
+    env = Env()
+    cycle = env.new()
+    for _ in range(5):
+        env.service.advance(cycle.cycleId)
+    gate = env.service.gate(cycle.cycleId)
+    assert gate.cycle.status == "locked"
+    assert env.service.check_gate(cycle.cycleId, gate.revision, "locked").status == "locked"
+    with pytest.raises(CycleError) as exc:
+        env.service.check_gate(cycle.cycleId, gate.revision, "forming")
+    assert code(exc) == "STALE_REVISION"
+    env.service.reset(cycle.cycleId)  # operator reset while a formation job is in flight
+    for call in (
+        lambda: env.service.check_gate(cycle.cycleId, gate.revision),
+        lambda: env.service.check_gate(cycle.cycleId, gate.revision, "locked"),
+    ):
+        with pytest.raises(CycleError) as exc:
+            call()
+        assert code(exc) == "STALE_REVISION"
+    with pytest.raises(CycleError) as exc:
+        env.service.check_gate("cycle-missing", 1)
+    assert code(exc) == "NOT_FOUND"
+
+
+def test_lock_tells_the_answer_store_once_with_the_lock_time():
+    class LockAwareStore(FixtureAnswerStore):
+        def __init__(self):
+            super().__init__()
+            self.locked = []
+
+        def mark_locked(self, cycle_id, locked_at):
+            self.locked.append((cycle_id, locked_at))
+
+    env = Env(answers=LockAwareStore())
+    env.store = env.service._answers
+    cycle = env.new()
+    for _ in range(7):
+        env.service.advance(cycle.cycleId)
+    assert env.store.locked == [(cycle.cycleId, "2026-11-09T17:00:00Z")]

@@ -293,6 +293,9 @@ export function createFixtureClient(): CycleClient {
     async reports() {
       return [];
     },
+    async formationDebug() {
+      return null; // formation runs on the server; the fixture adapter has none
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
