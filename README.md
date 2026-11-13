@@ -221,6 +221,14 @@ Typing always works if the microphone fails. A provider outage shows a retryable
 ## Privacy and safety
 No player ever sees another player's answers. They see anonymous constellations, moderated chat, bucketed counts, and real names only after a mutual reveal. Enforced by server code.
 
+### Demo host sign-in
+
+On `/space`, choose a display name and accept the three required consent switches. The simulated Facebook profile is not a verified identity. The server issues a session cookie; the privacy settings screen has a sign-out button. An existing session resumes after refresh until it expires or is signed out.
+
+For a deployed demo, set `CST_DEMO_HOST_SECRET` privately in the existing Railway service to a unique, randomly generated secret of at least 32 characters. Do not put its value in source code, logs, frontend variables, or chat. Restart or redeploy the backend after setting it. The existing privacy database must be durable and shared by the backend instances; the failed-login limit is stored there. The demo host first joins and consents, then opens `/space/operator` and enters the secret. Successful verification rotates the session cookie and grants operator access to that session only. Signing out or session expiry removes access. Without the variable, host login is unavailable.
+
+Use the operator console or the demo controls to advance a demo-timing cycle. Ordinary participants cannot perform operator actions. The shared five-failure/five-minute throttle protects against repeated guessing but can temporarily lock out the host if someone intentionally triggers it. This is a demo-host secret, not a production identity provider or a general account system. Fixture mode is labeled and does not provide real authentication; full live cycle functionality depends on the deployed backend and matching services.
+
 | Rule | Enforced by | Test |
 | --- | --- | --- |
 | Answers readable only by author and server | Privacy module access checks | Another session gets 403 on every answer route |

@@ -89,3 +89,20 @@ the cycle and formation version and follow private-data invalidation/retention.
 The route is an explicit operator action; no mid-week scheduler is installed.
 The venue allowlist describes the fictional demo campus. Tests use labeled
 scripted Muse and never call a live model.
+
+## Proposed demo-host session endpoint (issue #77)
+
+Pending privacy producer and UI consumer ACKs, `POST /api/v1/operator/login`
+accepts `{ "password": string }` from an existing, consented `facebook-space`
+session with an `Idempotency-Key`. The password is sent over HTTPS and compared
+server-side against `CST_DEMO_HOST_SECRET`; it is never returned or logged.
+Success returns the existing `SessionView` with `isOperator: true` and rotates
+the existing HttpOnly, Secure, SameSite=Lax session cookie. Privilege belongs
+only to that session; logout, expiry and consent withdrawal revoke it.
+
+Invalid credentials return `FORBIDDEN`; an absent or invalid-length secret
+returns `PROVIDER_UNAVAILABLE`; five failed attempts in five minutes return
+`RATE_LIMITED` to all host-login attempts for the remaining window. This shared
+limit requires one durable privacy database shared by all backend instances and
+can be intentionally exhausted. Ordinary participants do not need a password.
+This is a proposal for shared API documentation, not an approved contract change.

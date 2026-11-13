@@ -39,6 +39,7 @@ from server.planning import (
     CycleQuestionPort,
     QuestionService,
     SyncClarify,
+    VenueCatalog,
     load_default_bank,
     register_planning_tasks,
 )
@@ -60,6 +61,8 @@ from server.privacy import (
 )
 from server.privacy import build_router as privacy_router
 from server.privacy.fixtures import seed_players
+from server.privacy.sensitivity import register_sensitivity_task
+from server.privacy.topics import register_activity_task
 from server.providers import KeywordMusePort, TaskRegistry, build_muse_router, load_muse_config
 
 VERIFIED_TOKEN = contextvars.ContextVar("verified_session_token", default=None)
@@ -118,6 +121,8 @@ def build_weekly_app(
     registry = register_planning_tasks(TaskRegistry())
     register_safety_task(registry)
     register_formation_specs(registry)
+    register_activity_task(registry)
+    register_sensitivity_task(registry)
     base_muse = (
         muse_factory(registry)
         if muse_factory is not None
@@ -130,9 +135,16 @@ def build_weekly_app(
         privacy_store, privacy, answer_model=DailyAnswer, guess_model=PrevalenceGuess
     )
     moderation = ModerationStore(privacy_store, privacy)
-    formation = PrivacyFormation(privacy_store, answers, moderation)
-    guard, safety = OutputGuard(), SafetyScreener(muse)
     holder = {}
+    formation = PrivacyFormation(
+        privacy_store,
+        answers,
+        moderation,
+        question_texts=lambda cycle_id, community_id: holder["cycles"].question_texts(
+            cycle_id, community_id
+        ),
+    )
+    guard, safety = OutputGuard(), SafetyScreener(muse)
 
     async def week_start(cycle_id):
         cycle = holder["cycles"].gate(cycle_id).cycle
@@ -226,6 +238,8 @@ def build_weekly_app(
             guesses=LeaseGuesses(lease, answers),
             guard=guard,
             themes=themes,
+            approved_event_ids=VenueCatalog.load().event_ids(),
+            precompute_threshold=None,
         )
 
     runtime = holder["runtime"] = WeeklyRuntime(
