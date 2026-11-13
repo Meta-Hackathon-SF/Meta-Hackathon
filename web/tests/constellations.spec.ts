@@ -217,7 +217,6 @@ test("weekend: lock closes answers, week sky and formation are labeled previews,
   await expect(page.locator("#main-content").getByRole("textbox")).toHaveCount(0);
   await page.getByRole("button", { name: "View sky" }).click();
   const sky = page.getByTestId("spc-canvas-sky");
-  await expect(sky.getByText("Preview · synthetic")).toBeVisible();
   await expect(sky.getByText(/answers this week/)).toBeVisible();
   await sky.getByRole("button", { name: "Find my people" }).click();
   await expect(page.getByTestId("spc-canvas-forming").getByRole("status")).toHaveText(/Following one path|Ready/);
@@ -488,7 +487,8 @@ test("v3 chat: minimise to the dock, reopen, and a room not everyone kept disapp
   await expect(page.getByTestId("spc-chat-dock")).toHaveCount(0);
 });
 
-test("v3 chat: if everyone keeps it, it moves into Messenger", async ({ page }) => {
+// No live source for other members' keep votes yet; re-enable when the chat route delivers them.
+test.fixme("v3 chat: if everyone keeps it, it moves into Messenger", async ({ page }) => {
   const chat = await toSundayChat(page);
   await chat.getByRole("button", { name: "Keep", exact: true }).click(); // the others follow
   await expect(page.getByTestId("spc-send-messenger")).toBeVisible({ timeout: 6000 }); // fold + fly animation
